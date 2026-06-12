@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { HebrewCalendar, flags } from "@hebcal/core";
 import { calculateZmanim } from "../lib/zmanim";
 import { Location } from "../lib/locations";
-import { getUpcomingParashiyot } from "../lib/parasha";
+import { getUpcomingParashiyot, getUpcomingHolidays as getLibHolidays } from "../lib/parasha";
 
 export type NotificationPrefs = {
   shabbat: boolean;
@@ -12,6 +12,7 @@ export type NotificationPrefs = {
   prayers: boolean;
   parasha: boolean;
   shema: boolean;
+  shabbatDigest: boolean;
 };
 
 export type LeadTime = 5 | 10 | 15 | 30;
@@ -23,6 +24,7 @@ const REMIND_MINUTES_BEFORE_CANDLES = 18;
 const HOLIDAY_REMIND_HOUR = 8;
 const HOLIDAY_LOOKAHEAD_DAYS = 30;
 const OMER_LOOKAHEAD_DAYS = 50;
+const DIGEST_FIRE_HOUR = 8; // 8 AM on Friday
 
 const OMER_SEFIROT = [
   "Chesed (Lovingkindness)",
@@ -113,6 +115,13 @@ function getUpcomingHolidays(): Array<{ name: string; date: Date }> {
   return results;
 }
 
+/** Get holidays in the 7 days following `from` */
+function getWeekHolidays(from: Date): Array<{ name: string; date: Date }> {
+  const all = getLibHolidays(from, 10);
+  const cutoff = new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000);
+  return all.filter(h => h.date >= from && h.date <= cutoff);
+}
+
 export function getLeadTime(): LeadTime {
   try {
     const raw = localStorage.getItem(LEAD_KEY);
@@ -126,6 +135,10 @@ export function saveLeadTime(mins: LeadTime) {
   try { localStorage.setItem(LEAD_KEY, String(mins)); } catch {}
 }
 
+function fmt2(date: Date, tz: string): string {
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: tz });
+}
+
 export function useNotifications(location: Location) {
   const [permission, setPermission] = useState<NotificationPermission>(getPermission);
   const [leadTime, setLeadTimeState] = useState<LeadTime>(getLeadTime);
@@ -134,10 +147,14 @@ export function useNotifications(location: Location) {
       const raw = localStorage.getItem(PREFS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as NotificationPrefs;
-        return { shema: false, ...parsed };
+        return { shema: false, shabbatDigest: false, ...parsed };
       }
     } catch {}
-    return { shabbat: false, havdalah: false, holiday: false, omer: false, prayers: false, parasha: false, shema: false };
+    return {
+      shabbat: false, havdalah: false, holiday: false,
+      omer: false, prayers: false, parasha: false,
+      shema: false, shabbatDigest: false,
+    };
   });
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -158,12 +175,13 @@ export function useNotifications(location: Location) {
       clearTimers();
       if (!isNotifSupported() || Notification.permission !== "granted") return;
 
+      // ── Candle lighting ────────────────────────────────────────────────
       if (p.shabbat) {
         const friday = getNextWeekday(5);
         const zmanim = calculateZmanim(friday, loc.lat, loc.lng, loc.candleLightingMinutes);
         if (zmanim.candleLighting) {
           const remindAt = new Date(zmanim.candleLighting.getTime() - REMIND_MINUTES_BEFORE_CANDLES * 60 * 1000);
-          const candleStr = zmanim.candleLighting.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          const candleStr = fmt2(zmanim.candleLighting, loc.tz);
           scheduleFor(remindAt, () =>
             sendNotification(
               "🕯️ Shabbat Candle Lighting",
@@ -174,11 +192,12 @@ export function useNotifications(location: Location) {
         }
       }
 
+      // ── Havdalah ───────────────────────────────────────────────────────
       if (p.havdalah) {
         const saturday = getNextWeekday(6);
         const zmanim = calculateZmanim(saturday, loc.lat, loc.lng);
         if (zmanim.havdalah) {
-          const havdalahStr = zmanim.havdalah.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          const havdalahStr = fmt2(zmanim.havdalah, loc.tz);
           scheduleFor(zmanim.havdalah, () =>
             sendNotification(
               "✨ Havdalah Time",
@@ -189,6 +208,7 @@ export function useNotifications(location: Location) {
         }
       }
 
+      // ── Holiday alerts ─────────────────────────────────────────────────
       if (p.holiday) {
         const holidays = getUpcomingHolidays();
         for (const { name, date } of holidays) {
@@ -207,6 +227,7 @@ export function useNotifications(location: Location) {
         }
       }
 
+      // ── Prayer / Shema reminders ───────────────────────────────────────
       if (p.prayers || p.shema) {
         const prayerDate = new Date();
         prayerDate.setHours(0, 0, 0, 0);
@@ -218,11 +239,11 @@ export function useNotifications(location: Location) {
 
           if (p.shema && pz.latestShema) {
             const remindAt = new Date(pz.latestShema.getTime() - lead * 60 * 1000);
-            const shemaStr = pz.latestShema.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            const shemaStr = fmt2(pz.latestShema, loc.tz);
             scheduleFor(remindAt, () =>
               sendNotification(
                 `📖 Latest Shema in ${lead} min`,
-                `The deadline to recite Shema is at ${shemaStr} today (${dateStr}). Don't miss it!`,
+                `The deadline to recite Shema is at ${shemaStr} (${dateStr}). Don't miss it!`,
                 `shema-${i}`
               )
             );
@@ -231,41 +252,30 @@ export function useNotifications(location: Location) {
           if (p.prayers) {
             if (pz.sunrise) {
               const remindAt = new Date(pz.sunrise.getTime() - lead * 60 * 1000);
-              const str = pz.sunrise.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+              const str = fmt2(pz.sunrise, loc.tz);
               scheduleFor(remindAt, () =>
-                sendNotification(
-                  `🌅 Shacharit in ${lead} min`,
-                  `Morning prayer begins at ${str} in ${loc.name}. ${dateStr}.`,
-                  `shacharit-${i}`
-                )
+                sendNotification(`🌅 Shacharit in ${lead} min`, `Morning prayer at ${str} in ${loc.name}. ${dateStr}.`, `shacharit-${i}`)
               );
             }
             if (pz.minchaKetana) {
               const remindAt = new Date(pz.minchaKetana.getTime() - lead * 60 * 1000);
-              const str = pz.minchaKetana.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+              const str = fmt2(pz.minchaKetana, loc.tz);
               scheduleFor(remindAt, () =>
-                sendNotification(
-                  `🌤 Mincha in ${lead} min`,
-                  `Ideal Mincha time at ${str} in ${loc.name}. ${dateStr}.`,
-                  `mincha-${i}`
-                )
+                sendNotification(`🌤 Mincha in ${lead} min`, `Ideal Mincha at ${str} in ${loc.name}. ${dateStr}.`, `mincha-${i}`)
               );
             }
             if (pz.tzais) {
               const remindAt = new Date(pz.tzais.getTime() - lead * 60 * 1000);
-              const str = pz.tzais.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+              const str = fmt2(pz.tzais, loc.tz);
               scheduleFor(remindAt, () =>
-                sendNotification(
-                  `🌙 Maariv in ${lead} min`,
-                  `Nightfall and Maariv at ${str} in ${loc.name}. ${dateStr}.`,
-                  `maariv-${i}`
-                )
+                sendNotification(`🌙 Maariv in ${lead} min`, `Nightfall and Maariv at ${str} in ${loc.name}. ${dateStr}.`, `maariv-${i}`)
               );
             }
           }
         }
       }
 
+      // ── Weekly Parasha ─────────────────────────────────────────────────
       if (p.parasha) {
         const upcoming = getUpcomingParashiyot(new Date(), 8);
         for (const { name, date, hebrewName } of upcoming) {
@@ -284,6 +294,7 @@ export function useNotifications(location: Location) {
         }
       }
 
+      // ── Omer ───────────────────────────────────────────────────────────
       if (p.omer) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -295,14 +306,65 @@ export function useNotifications(location: Location) {
           const zmanim = calculateZmanim(checkDate, loc.lat, loc.lng);
           const nightfall = zmanim.tzais ?? zmanim.havdalah;
           if (!nightfall) continue;
-          const fireAt = new Date(nightfall);
           const sefirahLabel = getOmerSefirahLabel(omerDay);
-          const tag = `omer-day-${omerDay}`;
-          scheduleFor(fireAt, () =>
+          scheduleFor(nightfall, () =>
             sendNotification(
               `🌾 Count the Omer — Day ${omerDay}`,
               `Tonight is day ${omerDay} of 49. ${sefirahLabel}. Time to count!`,
-              tag
+              `omer-day-${omerDay}`
+            )
+          );
+        }
+      }
+
+      // ── Shabbat weekly digest ──────────────────────────────────────────
+      if (p.shabbatDigest) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayDay = today.getDay();
+        const daysUntilFriday = (5 - todayDay + 7) % 7;
+
+        for (let w = 0; w < 8; w++) {
+          const friday = new Date(today);
+          friday.setDate(today.getDate() + daysUntilFriday + w * 7);
+
+          const fireAt = new Date(friday);
+          fireAt.setHours(DIGEST_FIRE_HOUR, 0, 0, 0);
+
+          const saturday = new Date(friday);
+          saturday.setDate(friday.getDate() + 1);
+
+          const fridayZmanim = calculateZmanim(friday, loc.lat, loc.lng, loc.candleLightingMinutes);
+          const saturdayZmanim = calculateZmanim(saturday, loc.lat, loc.lng, loc.candleLightingMinutes);
+
+          const parashiyot = getUpcomingParashiyot(friday, 1);
+          const parashaName = parashiyot[0]?.name ?? "Shabbat";
+          const parashaHebrew = parashiyot[0]?.hebrewName ? ` ${parashiyot[0].hebrewName}` : "";
+
+          const candleStr = fridayZmanim.candleLighting ? fmt2(fridayZmanim.candleLighting, loc.tz) : "--:--";
+          const havdalahStr = saturdayZmanim.havdalah ? fmt2(saturdayZmanim.havdalah, loc.tz) : "--:--";
+
+          const weekHolidays = getWeekHolidays(friday);
+          let holidayLine = "";
+          if (weekHolidays.length > 0) {
+            const items = weekHolidays.slice(0, 3).map(h => {
+              const day = h.date.toLocaleDateString("en-US", { weekday: "short" });
+              return `${h.name} (${day})`;
+            });
+            holidayLine = ` · 📅 ${items.join(", ")}`;
+          }
+
+          const body =
+            `🕯 Candle lighting: ${candleStr} in ${loc.name}` +
+            ` · ✨ Havdalah: ${havdalahStr}` +
+            holidayLine +
+            ` · Shabbat Shalom!`;
+
+          scheduleFor(fireAt, () =>
+            sendNotification(
+              `📜 Parashat ${parashaName}${parashaHebrew}`,
+              body,
+              `shabbat-digest-w${w}`
             )
           );
         }

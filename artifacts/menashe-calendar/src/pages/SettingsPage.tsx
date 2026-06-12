@@ -276,6 +276,18 @@ export default function SettingsPage({
               />
             }
           />
+          <div style={{ height: 1, background: "var(--border)" }} />
+          <Row
+            label="📋 Shabbat Digest"
+            sub={notifSubtitle("shabbatDigest", "Friday 8 AM · Parasha, candle lighting & week's holidays")}
+            right={
+              <Toggle
+                on={notifPrefs.shabbatDigest}
+                onToggle={() => handleNotifToggle("shabbatDigest", !notifPrefs.shabbatDigest)}
+                disabled={notifBlocked || notifUnsupported || pendingKey === "shabbatDigest"}
+              />
+            }
+          />
         </div>
 
         {/* Tools */}
