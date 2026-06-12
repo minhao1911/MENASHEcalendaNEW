@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { HebrewCalendar, flags } from "@hebcal/core";
+import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 import { getOmerDay } from "../modals/OmerModal";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
@@ -175,6 +175,183 @@ function TodayHolidayCard({ name }: { name: string }) {
   );
 }
 
+const TORAH_THOUGHTS: Array<{ quote: string; source: string }> = [
+  { quote: "Who is wise? One who learns from every person.", source: "Pirkei Avot 4:1" },
+  { quote: "In a place where there are no men, strive to be a man.", source: "Pirkei Avot 2:5" },
+  { quote: "Make for yourself a teacher, acquire for yourself a friend.", source: "Pirkei Avot 1:6" },
+  { quote: "The world stands on three things: Torah, service, and acts of loving kindness.", source: "Pirkei Avot 1:2" },
+  { quote: "Do not judge your fellow until you have reached his place.", source: "Pirkei Avot 2:4" },
+  { quote: "A good name is better than precious oil.", source: "Kohelet 7:1" },
+  { quote: "Wherever you go, go with all your heart.", source: "Talmud, Bavli" },
+  { quote: "A person does not see his own faults, as it is written.", source: "Talmud, Shabbat 119a" },
+  { quote: "The seal of the Holy One, Blessed be He, is truth.", source: "Talmud, Shabbat 55a" },
+  { quote: "Repentance, prayer and charity avert the evil decree.", source: "Unetanneh Tokef" },
+  { quote: "Guard your tongue from evil and your lips from speaking deceit.", source: "Psalms 34:14" },
+  { quote: "The beginning of wisdom is the fear of God.", source: "Psalms 111:10" },
+  { quote: "Beloved is man, for he was created in the image of God.", source: "Pirkei Avot 3:14" },
+  { quote: "Receive every person with a pleasant countenance.", source: "Pirkei Avot 1:15" },
+  { quote: "If I am not for myself, who will be for me? And if not now, when?", source: "Pirkei Avot 1:14" },
+  { quote: "Do not trust in yourself until the day of your death.", source: "Pirkei Avot 2:4" },
+  { quote: "Love peace and pursue peace.", source: "Pirkei Avot 1:12" },
+  { quote: "Better one hour of repentance in this world than all of the World to Come.", source: "Pirkei Avot 4:17" },
+  { quote: "Envy, lust, and honor remove a person from the world.", source: "Pirkei Avot 4:21" },
+  { quote: "Know from where you came, and to where you are going.", source: "Pirkei Avot 3:1" },
+  { quote: "Everything is foreseen, yet free will is given.", source: "Pirkei Avot 3:15" },
+  { quote: "The reward for a mitzvah is a mitzvah.", source: "Pirkei Avot 4:2" },
+  { quote: "Be bold as a leopard, light as an eagle, swift as a deer, and mighty as a lion.", source: "Pirkei Avot 5:20" },
+  { quote: "Do not say 'I will study when I have time' — lest you never have time.", source: "Pirkei Avot 2:4" },
+  { quote: "A good heart encompasses all good things.", source: "Pirkei Avot 2:9" },
+  { quote: "Say little and do much.", source: "Pirkei Avot 1:15" },
+  { quote: "Whoever saves a single soul, Scripture accounts it as if he saved an entire world.", source: "Talmud, Sanhedrin 37a" },
+  { quote: "God is close to all who call upon Him, to all who call upon Him sincerely.", source: "Psalms 145:18" },
+  { quote: "Cast your burden upon God and He will sustain you.", source: "Psalms 55:23" },
+  { quote: "This is the day God has made; let us rejoice and be glad in it.", source: "Psalms 118:24" },
+  { quote: "A wise man hears one word and understands two.", source: "Yiddish Proverb" },
+  { quote: "The candle of God is the soul of man.", source: "Proverbs 20:27" },
+  { quote: "Teach a child in the way he should go, and when he is old he will not depart from it.", source: "Proverbs 22:6" },
+  { quote: "Three things sustain the world: truth, justice, and peace.", source: "Pirkei Avot 1:18" },
+  { quote: "Who is rich? One who is satisfied with his portion.", source: "Pirkei Avot 4:1" },
+  { quote: "Love your neighbor as yourself — this is the great principle of the Torah.", source: "Vayikra 19:18" },
+  { quote: "Shema Yisrael — Hear O Israel, the Lord our God, the Lord is One.", source: "Devarim 6:4" },
+  { quote: "Be very careful with the truth, for truth leads to trust.", source: "Talmud, Makkot 24a" },
+  { quote: "Honor your father and your mother.", source: "Shemot 20:12" },
+  { quote: "You shall love the Lord your God with all your heart.", source: "Devarim 6:5" },
+  { quote: "One who speaks falsehood shall not stand before My eyes.", source: "Psalms 101:7" },
+  { quote: "The path of the righteous is like a shining light.", source: "Proverbs 4:18" },
+  { quote: "Choose life, so that you and your descendants may live.", source: "Devarim 30:19" },
+  { quote: "Be holy, for I the Lord your God am holy.", source: "Vayikra 19:2" },
+  { quote: "A good deed done in secret is better than charity done openly.", source: "Talmud, Sukkah 49b" },
+  { quote: "Turn it and turn it, for everything is in it.", source: "Pirkei Avot 5:22" },
+  { quote: "The Torah is a tree of life to those who grasp it.", source: "Proverbs 3:18" },
+  { quote: "One who is brazen-faced is destined for Gehinnom; one who is shamefaced, for Gan Eden.", source: "Pirkei Avot 5:20" },
+  { quote: "Despise no person and consider nothing impossible.", source: "Pirkei Avot 4:3" },
+];
+
+function getTodaySpecialStatus(today: Date): { label: string; emoji: string; type: string } | null {
+  try {
+    const fastEvents = HebrewCalendar.calendar({
+      start: today, end: today, il: true, isHebrewYear: false,
+      mask: flags.MINOR_FAST | flags.MAJOR_FAST,
+    });
+    if (fastEvents.length > 0) {
+      return { type: "fast", label: fastEvents[0].render("en"), emoji: "📿" };
+    }
+    const rcEvents = HebrewCalendar.calendar({
+      start: today, end: today, il: true, isHebrewYear: false,
+      mask: flags.ROSH_CHODESH,
+    });
+    if (rcEvents.length > 0) {
+      return { type: "roshChodesh", label: rcEvents[0].render("en"), emoji: "🌙" };
+    }
+    const specialShabbat = HebrewCalendar.calendar({
+      start: today, end: today, il: true, isHebrewYear: false,
+      mask: flags.SPECIAL_SHABBAT,
+    });
+    if (specialShabbat.length > 0) {
+      return { type: "specialShabbat", label: specialShabbat[0].render("en"), emoji: "✨" };
+    }
+  } catch {}
+  return null;
+}
+
+function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
+  today: Date;
+  hdate: HDate;
+  omerDay: number | null;
+  onShowOmer: () => void;
+}) {
+  const dayIndex = Math.abs(hdate.abs()) % TORAH_THOUGHTS.length;
+  const thought = TORAH_THOUGHTS[dayIndex];
+  const specialStatus = getTodaySpecialStatus(today);
+  const isShabbat = today.getDay() === 6;
+
+  const dayOfWeekHebrew = [
+    "Yom Rishon", "Yom Sheni", "Yom Shlishi", "Yom Revi'i",
+    "Yom Chamishi", "Yom Shishi", "Shabbat Kodesh",
+  ][today.getDay()];
+
+  const statusColor =
+    specialStatus?.type === "fast" ? "#94a3b8" :
+    specialStatus?.type === "roshChodesh" ? "#818cf8" :
+    specialStatus?.type === "specialShabbat" ? "#d4a843" :
+    isShabbat ? "#d4a843" : "var(--text-muted)";
+
+  const statusBg =
+    specialStatus?.type === "fast" ? "rgba(148,163,184,0.08)" :
+    specialStatus?.type === "roshChodesh" ? "rgba(129,140,248,0.08)" :
+    specialStatus?.type === "specialShabbat" ? "rgba(212,168,67,0.08)" :
+    isShabbat ? "rgba(212,168,67,0.08)" : "rgba(255,255,255,0.04)";
+
+  const statusBorder =
+    specialStatus?.type === "fast" ? "rgba(148,163,184,0.2)" :
+    specialStatus?.type === "roshChodesh" ? "rgba(129,140,248,0.22)" :
+    specialStatus?.type === "specialShabbat" ? "rgba(212,168,67,0.22)" :
+    isShabbat ? "rgba(212,168,67,0.2)" : "var(--border)";
+
+  return (
+    <div className="card" style={{ marginBottom: 12, padding: 0, overflow: "hidden" }}>
+      {/* Status bar */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "10px 14px 8px",
+        background: statusBg,
+        borderBottom: `1px solid ${statusBorder}`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 14 }}>
+            {specialStatus ? specialStatus.emoji : isShabbat ? "✡" : "☀️"}
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: statusColor, letterSpacing: "0.03em" }}>
+            {specialStatus ? specialStatus.label : dayOfWeekHebrew}
+          </span>
+        </div>
+        {omerDay !== null && (
+          <button
+            onClick={onShowOmer}
+            style={{
+              display: "flex", alignItems: "center", gap: 5, cursor: "pointer",
+              background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)",
+              borderRadius: 99, padding: "3px 10px 3px 6px",
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 52 52" style={{ flexShrink: 0 }}>
+              <circle cx="26" cy="26" r="20" fill="none" stroke="rgba(212,168,67,0.2)" strokeWidth="5" />
+              <circle cx="26" cy="26" r="20" fill="none" stroke="#d4a843" strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 20}
+                strokeDashoffset={2 * Math.PI * 20 - (omerDay / 49) * 2 * Math.PI * 20}
+                transform="rotate(-90 26 26)"
+              />
+            </svg>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#d4a843", whiteSpace: "nowrap" }}>
+              Omer {omerDay}/49
+            </span>
+          </button>
+        )}
+      </div>
+
+      {/* Torah thought */}
+      <div style={{ padding: "12px 14px 14px" }}>
+        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "var(--text-muted)", marginBottom: 8 }}>
+          📖 DAILY TORAH THOUGHT
+        </div>
+        <blockquote style={{
+          margin: 0, padding: "10px 12px",
+          background: "rgba(212,168,67,0.05)", borderRadius: 10,
+          borderLeft: "3px solid rgba(212,168,67,0.4)",
+        }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.6, margin: "0 0 6px" }}>
+            "{thought.quote}"
+          </p>
+          <p style={{ fontSize: 11, color: "#d4a843", fontWeight: 700, margin: 0 }}>
+            — {thought.source}
+          </p>
+        </blockquote>
+      </div>
+    </div>
+  );
+}
+
 function getTodayHolidays(): string[] {
   const today = new Date();
   const events = HebrewCalendar.calendar({
@@ -299,6 +476,9 @@ export default function Home({
             </div>
           </div>
         </div>
+
+        {/* ── Daily Spiritual Briefing ── */}
+        <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
 
         {/* ── Today's Holiday ── */}
         {todayHolidays.map(name => (
