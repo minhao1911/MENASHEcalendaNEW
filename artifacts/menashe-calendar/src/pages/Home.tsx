@@ -940,6 +940,130 @@ function DateZmanimCard({
   );
 }
 
+function PremiumCandleCard({
+  isPremium, candleEnabled, location, onNavigate, onShowPremium,
+}: {
+  isPremium: boolean;
+  candleEnabled: boolean;
+  location: Location;
+  onNavigate: (page: string) => void;
+  onShowPremium: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div style={{
+      marginBottom: 12, borderRadius: 18, overflow: "hidden",
+      background: "linear-gradient(140deg, #130d00 0%, #1a1000 55%, #0e0b00 100%)",
+      border: `1px solid ${expanded ? "rgba(212,168,67,0.5)" : "rgba(212,168,67,0.28)"}`,
+      boxShadow: expanded
+        ? "0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,168,67,0.12)"
+        : "0 3px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(212,168,67,0.06)",
+      transition: "border-color 0.25s, box-shadow 0.25s",
+    }}>
+      <style>{`
+        @keyframes premiumSlide {
+          from { opacity: 0; transform: translateY(-10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes candleFlicker {
+          0%, 100% { transform: scaleY(1) rotate(-1deg); opacity: 1; }
+          25% { transform: scaleY(1.06) rotate(1.5deg); opacity: 0.9; }
+          75% { transform: scaleY(0.96) rotate(-1.5deg); opacity: 0.95; }
+        }
+      `}</style>
+
+      {/* ── Header row (always visible) ── */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          width: "100%", background: "none", border: "none", cursor: "pointer",
+          padding: "14px 16px", display: "flex", alignItems: "center", gap: 13,
+          textAlign: "left",
+        }}
+      >
+        {/* Candle icon with flicker */}
+        <div style={{
+          width: 42, height: 42, borderRadius: 12, flexShrink: 0,
+          background: "linear-gradient(135deg, rgba(212,168,67,0.2), rgba(240,192,80,0.08))",
+          border: "1px solid rgba(212,168,67,0.35)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 22, boxShadow: "0 2px 10px rgba(212,168,67,0.2)",
+        }}>
+          <span style={{ display: "inline-block", animation: "candleFlicker 2.5s ease-in-out infinite" }}>🕯</span>
+        </div>
+
+        {/* Labels */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+            <span style={{
+              fontSize: 9, fontWeight: 900, letterSpacing: "0.1em",
+              padding: "2px 7px", borderRadius: 99,
+              background: "linear-gradient(90deg, #6b4800, #d4a843)",
+              color: "#1a0900",
+            }}>👑 PREMIUM</span>
+            {isPremium && (
+              <span style={{
+                fontSize: 9, fontWeight: 800, letterSpacing: "0.08em",
+                padding: "2px 7px", borderRadius: 99,
+                background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)",
+                color: "#4ade80",
+              }}>● LIVE</span>
+            )}
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#f0c050", lineHeight: 1.1 }}>
+            Candle Lighting Countdown
+          </div>
+        </div>
+
+        {/* Chevron */}
+        <svg
+          width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="rgba(212,168,67,0.65)" strokeWidth="2.5" strokeLinecap="round"
+          style={{
+            flexShrink: 0,
+            transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+            transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {/* ── Expanded content ── */}
+      {expanded && (
+        <div style={{ animation: "premiumSlide 0.22s cubic-bezier(0.4,0,0.2,1)" }}>
+          <div style={{ height: 1, background: "rgba(212,168,67,0.12)", margin: "0 16px 14px" }} />
+
+          {isPremium && candleEnabled ? (
+            <div style={{ padding: "0 14px 16px" }}>
+              <CandleLightingCountdown location={location} onNavigate={onNavigate} />
+            </div>
+          ) : (
+            <div style={{ padding: "0 16px 18px", textAlign: "center" }}>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 14, lineHeight: 1.6 }}>
+                Unlock the live Shabbat candle lighting countdown with real-time alerts for your location.
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); onShowPremium(); }}
+                style={{
+                  padding: "10px 28px", borderRadius: 99, cursor: "pointer",
+                  background: "linear-gradient(90deg, #6b4800, #d4a843, #f0c050, #d4a843, #6b4800)",
+                  backgroundSize: "200% auto",
+                  border: "none", fontSize: 13, fontWeight: 900, color: "#1a0900",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                👑 Upgrade to Premium
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function getTodayHolidays(): string[] {
   const today = new Date();
   const events = HebrewCalendar.calendar({
@@ -990,7 +1114,6 @@ export default function Home({
   const isShabbat = today.getDay() === 6;
   const showCandleLighting = isFriday || isShabbat;
   const isLight = theme === "light";
-  const [candleDismissed, setCandleDismissed] = useState(false);
   const todayHolidays = getTodayHolidays();
   const omerDay = getOmerDay(today);
 
@@ -1233,40 +1356,17 @@ export default function Home({
           </div>
         </div>
 
+        {/* ── Premium Card — Live Candle Countdown ── */}
+        <PremiumCandleCard
+          isPremium={isPremium} candleEnabled={candleEnabled}
+          location={location} onNavigate={onNavigate} onShowPremium={onShowPremium}
+        />
+
         {/* ── Community Card (collapsible) ── */}
         <CommunityCard onShowCommunity={onShowCommunity} onShowCensus={onShowCensus} />
 
       </div>
 
-      {/* ── Floating Candle Countdown Popup ── */}
-      {isPremium && candleEnabled && !candleDismissed && (
-        <div style={{
-          position: "fixed", bottom: 68, left: 12, right: 12, zIndex: 50,
-          animation: "slideUpPop 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-        }}>
-          <style>{`
-            @keyframes slideUpPop {
-              from { opacity: 0; transform: translateY(24px) scale(0.97); }
-              to   { opacity: 1; transform: translateY(0)   scale(1);    }
-            }
-          `}</style>
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setCandleDismissed(true)}
-              aria-label="Close countdown"
-              style={{
-                position: "absolute", top: -9, right: -9, zIndex: 51,
-                width: 24, height: 24, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.18)",
-                background: "rgba(14,14,28,0.95)", color: "rgba(255,255,255,0.75)",
-                fontSize: 14, cursor: "pointer", display: "flex",
-                alignItems: "center", justifyContent: "center", padding: 0,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
-              }}
-            >×</button>
-            <CandleLightingCountdown location={location} onNavigate={onNavigate} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
