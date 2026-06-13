@@ -603,56 +603,6 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
   );
 }
 
-function CandleLightingTeaser({ onShowPremium }: { onShowPremium: () => void }) {
-  return (
-    <div style={{
-      marginBottom: 12, borderRadius: 16, overflow: "hidden",
-      background: "linear-gradient(135deg, #100d00 0%, #0d1020 60%, #0a0d00 100%)",
-      border: "1px solid rgba(212,168,67,0.25)",
-      position: "relative",
-    }}>
-      {/* Blurred preview behind a lock */}
-      <div style={{ filter: "blur(3px)", opacity: 0.35, pointerEvents: "none", padding: "12px 14px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🕯</div>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 900, color: "#d4a843", letterSpacing: "0.12em" }}>CANDLE LIGHTING</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Friday</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: "white", letterSpacing: "-1px" }}>06 : 47 : 22</div>
-        </div>
-        <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
-          <div style={{ width: "62%", height: "100%", background: "linear-gradient(90deg, #6b4800, #d4a843)", borderRadius: "0 2px 2px 0" }} />
-        </div>
-      </div>
-      {/* Lock overlay */}
-      <div style={{
-        position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center", gap: 6,
-        background: "rgba(10,10,20,0.55)",
-      }}>
-        <div style={{ fontSize: 22 }}>🔒</div>
-        <div style={{ fontSize: 13, fontWeight: 800, color: "white" }}>Live Candle Countdown</div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", textAlign: "center", maxWidth: 200 }}>
-          Real-time Shabbat timer — Premium feature
-        </div>
-        <button
-          onClick={onShowPremium}
-          style={{
-            marginTop: 4, padding: "7px 18px", borderRadius: 20, border: "none", cursor: "pointer",
-            background: "linear-gradient(135deg, #b8860b, #d4a843)",
-            color: "white", fontSize: 12, fontWeight: 800, letterSpacing: "0.05em",
-          }}
-        >
-          👑 Unlock Premium
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function getTodayHolidays(): string[] {
   const today = new Date();
   const events = HebrewCalendar.calendar({
@@ -701,6 +651,7 @@ export default function Home({
   const isShabbat = today.getDay() === 6;
   const showCandleLighting = isFriday || isShabbat;
   const isLight = theme === "light";
+  const [candleDismissed, setCandleDismissed] = useState(false);
   const todayHolidays = getTodayHolidays();
   const omerDay = getOmerDay(today);
 
@@ -814,14 +765,6 @@ export default function Home({
             </div>
           </div>
         </div>
-
-        {/* ── Candle Lighting Countdown ── */}
-        {!isPremium
-          ? <CandleLightingTeaser onShowPremium={onShowPremium} />
-          : candleEnabled
-            ? <CandleLightingCountdown location={location} onNavigate={onNavigate} />
-            : null
-        }
 
         {/* ── Daily Spiritual Briefing ── */}
         <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
@@ -1018,6 +961,36 @@ export default function Home({
         </div>
 
       </div>
+
+      {/* ── Floating Candle Countdown Popup ── */}
+      {isPremium && candleEnabled && !candleDismissed && (
+        <div style={{
+          position: "fixed", bottom: 68, left: 12, right: 12, zIndex: 50,
+          animation: "slideUpPop 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+        }}>
+          <style>{`
+            @keyframes slideUpPop {
+              from { opacity: 0; transform: translateY(24px) scale(0.97); }
+              to   { opacity: 1; transform: translateY(0)   scale(1);    }
+            }
+          `}</style>
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setCandleDismissed(true)}
+              aria-label="Close countdown"
+              style={{
+                position: "absolute", top: -9, right: -9, zIndex: 51,
+                width: 24, height: 24, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.18)",
+                background: "rgba(14,14,28,0.95)", color: "rgba(255,255,255,0.75)",
+                fontSize: 14, cursor: "pointer", display: "flex",
+                alignItems: "center", justifyContent: "center", padding: 0,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+              }}
+            >×</button>
+            <CandleLightingCountdown location={location} onNavigate={onNavigate} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
