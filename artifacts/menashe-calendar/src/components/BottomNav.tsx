@@ -8,7 +8,6 @@ const NAV_ITEMS = [
   { id: "calendar", label: "Calendar", icon: CalendarIcon },
   { id: "zmanim", label: "Zmanim", icon: ClockIcon },
   { id: "siddur", label: "Siddur", icon: SiddurIcon },
-  { id: "community", label: "Community", icon: CommunityIcon },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 

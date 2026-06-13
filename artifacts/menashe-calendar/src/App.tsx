@@ -229,10 +229,7 @@ export default function App() {
               {renderPage()}
             </div>
 
-            <BottomNav active={activePage} onNavigate={(p) => {
-              if (p === "community") { setModal("community"); return; }
-              setActivePage(p as Page);
-            }} />
+            <BottomNav active={activePage} onNavigate={(p) => setActivePage(p as Page)} />
 
             {toast && <div className="toast">{toast}</div>}
 
