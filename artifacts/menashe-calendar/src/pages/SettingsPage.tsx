@@ -288,6 +288,18 @@ export default function SettingsPage({
               />
             }
           />
+          <div style={{ height: 1, background: "var(--border)" }} />
+          <Row
+            label="🕯 Yahrtzeit Reminders"
+            sub={notifSubtitle("yahrzeit", "7 AM on each Yahrtzeit day")}
+            right={
+              <Toggle
+                on={notifPrefs.yahrzeit}
+                onToggle={() => handleNotifToggle("yahrzeit", !notifPrefs.yahrzeit)}
+                disabled={notifBlocked || notifUnsupported || pendingKey === "yahrzeit"}
+              />
+            }
+          />
         </div>
 
         {/* Tools */}
