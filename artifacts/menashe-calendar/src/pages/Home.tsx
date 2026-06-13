@@ -354,6 +354,17 @@ function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
 
 function CandleLightingCountdown({ location, onNavigate }: { location: Location; onNavigate: (page: string) => void }) {
   const [now, setNow] = useState(() => new Date());
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem("menashe-candle-collapsed") === "true"; } catch { return false; }
+  });
+
+  function toggleCollapse(e: React.MouseEvent) {
+    e.stopPropagation();
+    const next = !collapsed;
+    setCollapsed(next);
+    try { localStorage.setItem("menashe-candle-collapsed", String(next)); } catch {}
+  }
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
@@ -413,6 +424,51 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
 
   const pad = (n: number) => String(n).padStart(2, "0");
 
+  /* ── Collapse chevron button ── */
+  const CollapseBtn = ({ light }: { light?: boolean }) => (
+    <button
+      onClick={toggleCollapse}
+      aria-label="Minimize"
+      style={{
+        background: "none", border: "none", cursor: "pointer", padding: "4px 6px",
+        color: light ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.35)",
+        fontSize: 14, lineHeight: 1, borderRadius: 6,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}
+    >▲</button>
+  );
+
+  /* ── Collapsed compact row ── */
+  if (collapsed) {
+    const compactEmoji = mode === "havdalah" ? "✨" : mode === "shavua_tov" ? "🌟" : "🕯";
+    const compactColor = (mode === "havdalah" || mode === "shavua_tov") ? "#a78bfa" : "#d4a843";
+    const compactText =
+      mode === "shabbat_begun" ? "שַׁבָּת שָׁלוֹם · Shabbat in progress" :
+      mode === "shavua_tov"    ? "שָׁבוּעַ טוֹב · Shavua Tov!" :
+      mode === "havdalah"      ? `Havdalah · ${timeStr}` :
+      `Candle Lighting · ${subLabel}${timeStr ? ` · ${timeStr}` : ""}`;
+    return (
+      <div
+        onClick={() => onNavigate("zmanim")}
+        style={{
+          marginBottom: 12, borderRadius: 12, cursor: "pointer",
+          background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+          display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+        }}
+      >
+        <span style={{ fontSize: 18, flexShrink: 0 }}>{compactEmoji}</span>
+        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: compactColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {compactText}
+        </span>
+        <button
+          onClick={toggleCollapse}
+          aria-label="Expand"
+          style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px", color: "rgba(255,255,255,0.4)", fontSize: 14 }}
+        >▼</button>
+      </div>
+    );
+  }
+
   /* ── Shabbat has begun ── */
   if (mode === "shabbat_begun") {
     return (
@@ -428,7 +484,10 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
           <div style={{ fontSize: 13, color: "rgba(74,222,128,0.7)", fontWeight: 600 }}>Shabbat is in progress</div>
           {timeStr && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>Havdalah at {timeStr}</div>}
         </div>
-        <div style={{ fontSize: 40, flexShrink: 0 }}>✨</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <div style={{ fontSize: 36 }}>✨</div>
+          <CollapseBtn />
+        </div>
       </div>
     );
   }
@@ -447,7 +506,10 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
           <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 22, color: "#a78bfa", direction: "rtl", lineHeight: 1.1, marginBottom: 4 }}>שָׁבוּעַ טוֹב</div>
           <div style={{ fontSize: 13, color: "rgba(167,139,250,0.7)", fontWeight: 600 }}>Shavua Tov — a wonderful week!</div>
         </div>
-        <div style={{ fontSize: 40, flexShrink: 0 }}>🌟</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <div style={{ fontSize: 36 }}>🌟</div>
+          <CollapseBtn />
+        </div>
       </div>
     );
   }
@@ -488,9 +550,12 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>{subLabel}</div>
           </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>{location.name}</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: accentColor, letterSpacing: "-0.5px" }}>{timeStr}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>{location.name}</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: accentColor, letterSpacing: "-0.5px" }}>{timeStr}</div>
+          </div>
+          <CollapseBtn />
         </div>
       </div>
 
@@ -538,6 +603,56 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
   );
 }
 
+function CandleLightingTeaser({ onShowPremium }: { onShowPremium: () => void }) {
+  return (
+    <div style={{
+      marginBottom: 12, borderRadius: 16, overflow: "hidden",
+      background: "linear-gradient(135deg, #100d00 0%, #0d1020 60%, #0a0d00 100%)",
+      border: "1px solid rgba(212,168,67,0.25)",
+      position: "relative",
+    }}>
+      {/* Blurred preview behind a lock */}
+      <div style={{ filter: "blur(3px)", opacity: 0.35, pointerEvents: "none", padding: "12px 14px 14px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🕯</div>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 900, color: "#d4a843", letterSpacing: "0.12em" }}>CANDLE LIGHTING</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Friday</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: "white", letterSpacing: "-1px" }}>06 : 47 : 22</div>
+        </div>
+        <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
+          <div style={{ width: "62%", height: "100%", background: "linear-gradient(90deg, #6b4800, #d4a843)", borderRadius: "0 2px 2px 0" }} />
+        </div>
+      </div>
+      {/* Lock overlay */}
+      <div style={{
+        position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", gap: 6,
+        background: "rgba(10,10,20,0.55)",
+      }}>
+        <div style={{ fontSize: 22 }}>🔒</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "white" }}>Live Candle Countdown</div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", textAlign: "center", maxWidth: 200 }}>
+          Real-time Shabbat timer — Premium feature
+        </div>
+        <button
+          onClick={onShowPremium}
+          style={{
+            marginTop: 4, padding: "7px 18px", borderRadius: 20, border: "none", cursor: "pointer",
+            background: "linear-gradient(135deg, #b8860b, #d4a843)",
+            color: "white", fontSize: 12, fontWeight: 800, letterSpacing: "0.05em",
+          }}
+        >
+          👑 Unlock Premium
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function getTodayHolidays(): string[] {
   const today = new Date();
   const events = HebrewCalendar.calendar({
@@ -553,6 +668,8 @@ function getTodayHolidays(): string[] {
 interface HomeProps {
   location: Location;
   theme: string;
+  isPremium: boolean;
+  candleEnabled: boolean;
   onNavigate: (page: string) => void;
   onMoreTools: () => void;
   onShowHolidays: () => void;
@@ -566,7 +683,7 @@ interface HomeProps {
 }
 
 export default function Home({
-  location, theme,
+  location, theme, isPremium, candleEnabled,
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
   onLocationClick, onToggleTheme, onOpenSiddur,
 }: HomeProps) {
@@ -699,7 +816,12 @@ export default function Home({
         </div>
 
         {/* ── Candle Lighting Countdown ── */}
-        <CandleLightingCountdown location={location} onNavigate={onNavigate} />
+        {!isPremium
+          ? <CandleLightingTeaser onShowPremium={onShowPremium} />
+          : candleEnabled
+            ? <CandleLightingCountdown location={location} onNavigate={onNavigate} />
+            : null
+        }
 
         {/* ── Daily Spiritual Briefing ── */}
         <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />

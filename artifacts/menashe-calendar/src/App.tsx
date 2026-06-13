@@ -59,6 +59,24 @@ export default function App() {
     return LOCATIONS[0];
   });
   const [shareToken] = useState(() => new URLSearchParams(window.location.search).get("share"));
+  const [isPremium, setIsPremium] = useState(() => {
+    try { return localStorage.getItem("menashe-is-premium") === "true"; } catch { return false; }
+  });
+  const [candleEnabled, setCandleEnabled] = useState(() => {
+    try { return localStorage.getItem("menashe-candle-enabled") !== "false"; } catch { return true; }
+  });
+
+  function onPremiumActivated() {
+    setIsPremium(true);
+    try { localStorage.setItem("menashe-is-premium", "true"); } catch {}
+    showToast("✨ Premium activated!");
+  }
+
+  function onToggleCandle() {
+    const next = !candleEnabled;
+    setCandleEnabled(next);
+    try { localStorage.setItem("menashe-candle-enabled", String(next)); } catch {}
+  }
 
   const { permission: notifPermission, prefs: notifPrefs, leadTime, updatePref: updateNotifPref, updateLeadTime } = useNotifications(location);
 
@@ -116,6 +134,8 @@ export default function App() {
           <Home
             location={location}
             theme={theme}
+            isPremium={isPremium}
+            candleEnabled={candleEnabled}
             onNavigate={(p) => setActivePage(p as Page)}
             onMoreTools={() => setModal("more")}
             onShowHolidays={() => setModal("holidays")}
@@ -219,7 +239,7 @@ export default function App() {
               <LocationModal current={location} onSelect={selectLocation} onClose={closeModal} />
             )}
             {modal === "holidays" && <HolidaysModal onClose={closeModal} />}
-            {modal === "premium" && <PremiumModal onClose={closeModal} />}
+            {modal === "premium" && <PremiumModal onClose={closeModal} onActivated={onPremiumActivated} />}
             {modal === "parashah" && <ParashahModal onClose={closeModal} />}
             {modal === "dafyomi" && <DafYomiModal onClose={closeModal} />}
             {modal === "zmaniminfo" && <ZmanimInfoModal onClose={closeModal} />}
@@ -249,6 +269,10 @@ export default function App() {
                 onBirthday={() => setModal("birthday")}
                 onOmer={() => setModal("omer")}
                 onPrayers={() => setModal("prayers")}
+                isPremium={isPremium}
+                candleEnabled={candleEnabled}
+                onToggleCandle={onToggleCandle}
+                onShowPremium={() => { closeModal(); setActivePage("premium"); }}
               />
             )}
           </>

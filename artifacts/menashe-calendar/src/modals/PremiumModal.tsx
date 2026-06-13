@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 
-interface Props { onClose: () => void; }
+interface Props { onClose: () => void; onActivated?: () => void; }
 
 type Step = "plans" | "payment" | "upi" | "card" | "processing" | "success";
 type Plan = "monthly" | "annual";
@@ -234,7 +234,7 @@ function Spinner() {
 }
 
 /* ═══════════════════════════════════════════════════════ */
-export default function PremiumModal({ onClose }: Props) {
+export default function PremiumModal({ onClose, onActivated }: Props) {
   const [step, setStep] = useState<Step>("plans");
   const [plan, setPlan] = useState<Plan>("annual");
   const [payMethod, setPayMethod] = useState<PayMethod>("upi");
@@ -264,7 +264,7 @@ export default function PremiumModal({ onClose }: Props) {
   function handleAppPay(appName: string) {
     setSelectedApp(appName);
     setPayMethod("upi");
-    setTimeout(() => setStep("success"), 1000);
+    setTimeout(() => { setStep("success"); onActivated?.(); }, 1000);
   }
 
   function handleCardNumberChange(val: string) {
@@ -311,7 +311,7 @@ export default function PremiumModal({ onClose }: Props) {
     if (!validateCard()) return;
     setPayMethod("card");
     setStep("processing");
-    setTimeout(() => setStep("success"), 2800);
+    setTimeout(() => { setStep("success"); onActivated?.(); }, 2800);
   }
 
   const BackBtn = ({ to }: { to: Step }) => (
