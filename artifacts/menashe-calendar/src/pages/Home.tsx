@@ -603,6 +603,145 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
   );
 }
 
+function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () => void; onShowCensus: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div style={{
+      marginBottom: 4, borderRadius: 18, overflow: "hidden",
+      background: "linear-gradient(140deg, #0b1628 0%, #091320 55%, #0e1520 100%)",
+      border: `1px solid ${expanded ? "rgba(99,179,237,0.35)" : "rgba(99,179,237,0.18)"}`,
+      boxShadow: expanded
+        ? "0 6px 28px rgba(0,0,0,0.55), inset 0 1px 0 rgba(99,179,237,0.08)"
+        : "0 3px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)",
+      transition: "border-color 0.25s, box-shadow 0.25s",
+    }}>
+      <style>{`
+        @keyframes communitySlideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      {/* ── Collapsed / Header row (always visible, tappable) ── */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          width: "100%", background: "none", border: "none", cursor: "pointer",
+          padding: "14px 16px", display: "flex", alignItems: "center", gap: 13,
+          textAlign: "left",
+        }}
+      >
+        {/* Icon */}
+        <div style={{
+          width: 42, height: 42, borderRadius: 12, flexShrink: 0,
+          background: "linear-gradient(135deg, rgba(99,179,237,0.22), rgba(59,130,246,0.1))",
+          border: "1px solid rgba(99,179,237,0.3)",
+          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+        }}>🤝</div>
+
+        {/* Label */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "#63b3ed", marginBottom: 2 }}>
+            BNEI MENASHE
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "white", lineHeight: 1.1 }}>Community</div>
+        </div>
+
+        {/* Badge count + chevron */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <div style={{
+            display: "flex", gap: 5,
+          }}>
+            <div style={{
+              fontSize: 9, fontWeight: 800, letterSpacing: "0.06em",
+              padding: "3px 8px", borderRadius: 99,
+              background: "rgba(99,179,237,0.12)", border: "1px solid rgba(99,179,237,0.22)",
+              color: "#93c5fd",
+            }}>2 SERVICES</div>
+          </div>
+          <svg
+            width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="rgba(99,179,237,0.7)" strokeWidth="2.5" strokeLinecap="round"
+            style={{ transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </button>
+
+      {/* Divider (only when expanded) */}
+      {expanded && (
+        <div style={{ height: 1, background: "rgba(99,179,237,0.12)", margin: "0 16px" }} />
+      )}
+
+      {/* ── Expanded content ── */}
+      {expanded && (
+        <div style={{
+          padding: "12px 14px 16px",
+          animation: "communitySlideDown 0.22s cubic-bezier(0.4,0,0.2,1)",
+        }}>
+          {/* Sub-heading */}
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", marginBottom: 12, lineHeight: 1.6, paddingLeft: 2 }}>
+            Connect with the worldwide Bnei Menashe community and access official records.
+          </div>
+
+          {/* Community Button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onShowCommunity(); }}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14, marginBottom: 10,
+              background: "rgba(99,179,237,0.07)", border: "1px solid rgba(99,179,237,0.2)",
+              borderRadius: 13, padding: "13px 15px", cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <div style={{
+              width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+              background: "rgba(99,179,237,0.14)", border: "1px solid rgba(99,179,237,0.25)",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+            }}>🏛</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Community</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.42)", lineHeight: 1.4 }}>
+                Shavei Israel, Torah classes, connect with members
+              </div>
+            </div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(99,179,237,0.55)" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+
+          {/* Census & Demographics Button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onShowCensus(); }}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14,
+              background: "rgba(212,168,67,0.07)", border: "1px solid rgba(212,168,67,0.2)",
+              borderRadius: 13, padding: "13px 15px", cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <div style={{
+              width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+              background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.22)",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+            }}>📊</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Census & Demographics</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.42)", lineHeight: 1.4 }}>
+                Fill out the community census form and view statistics
+              </div>
+            </div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(212,168,67,0.55)" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function getTodayHolidays(): string[] {
   const today = new Date();
   const events = HebrewCalendar.calendar({
@@ -962,79 +1101,8 @@ export default function Home({
           </div>
         </div>
 
-        {/* ── Community Card ── */}
-        <div style={{
-          marginBottom: 4, borderRadius: 18, overflow: "hidden",
-          background: "linear-gradient(140deg, #0d1a2e 0%, #0a1520 55%, #111827 100%)",
-          border: "1px solid rgba(99,179,237,0.22)",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04)",
-        }}>
-          {/* Card Header */}
-          <div style={{ padding: "16px 18px 12px", borderBottom: "1px solid rgba(99,179,237,0.1)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 13, flexShrink: 0,
-                background: "linear-gradient(135deg, rgba(99,179,237,0.2), rgba(59,130,246,0.1))",
-                border: "1px solid rgba(99,179,237,0.28)",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-              }}>🤝</div>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", color: "#63b3ed", marginBottom: 2 }}>BNEI MENASHE</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "white", lineHeight: 1.1 }}>Community</div>
-              </div>
-            </div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 10, lineHeight: 1.6 }}>
-              Connect with the worldwide Bnei Menashe community and access official records.
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-            {/* Community Button */}
-            <button
-              onClick={onShowCommunity}
-              style={{
-                display: "flex", alignItems: "center", gap: 14,
-                background: "rgba(99,179,237,0.08)", border: "1px solid rgba(99,179,237,0.2)",
-                borderRadius: 13, padding: "13px 16px", cursor: "pointer", textAlign: "left",
-                transition: "background 0.15s",
-              }}
-            >
-              <div style={{
-                width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-                background: "rgba(99,179,237,0.15)", border: "1px solid rgba(99,179,237,0.25)",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-              }}>🏛</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Community</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>Shavei Israel, Torah classes, connect with members</div>
-              </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(99,179,237,0.6)" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-
-            {/* Census & Demographics Button */}
-            <button
-              onClick={onShowCensus}
-              style={{
-                display: "flex", alignItems: "center", gap: 14,
-                background: "rgba(212,168,67,0.07)", border: "1px solid rgba(212,168,67,0.2)",
-                borderRadius: 13, padding: "13px 16px", cursor: "pointer", textAlign: "left",
-                transition: "background 0.15s",
-              }}
-            >
-              <div style={{
-                width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-                background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.22)",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-              }}>📊</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Census & Demographics</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>Fill out the community census form and view statistics</div>
-              </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(212,168,67,0.6)" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
-        </div>
+        {/* ── Community Card (collapsible) ── */}
+        <CommunityCard onShowCommunity={onShowCommunity} onShowCensus={onShowCensus} />
 
       </div>
 
