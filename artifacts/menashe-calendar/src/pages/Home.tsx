@@ -742,6 +742,204 @@ function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () 
   );
 }
 
+function DateZmanimCard({
+  today, hdate, zmanim, location, showCandleLighting, onNavigate,
+}: {
+  today: Date;
+  hdate: import("@hebcal/core").HDate;
+  zmanim: ReturnType<typeof calculateZmanim>;
+  location: Location;
+  showCandleLighting: boolean;
+  onNavigate: (page: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const hebrewDay   = hebrewDayNumeral(hdate.getDate());
+  const hebrewMonth = getHebrewMonthName(hdate);
+  const hebrewYear  = hdate.getFullYear();
+  const dayName     = getDayOfWeek(today);
+  const monthStr    = today.toLocaleDateString("en-US", { month: "long" });
+  const yearStr     = today.getFullYear();
+
+  return (
+    <div style={{
+      marginBottom: 12, borderRadius: 18, overflow: "hidden",
+      background: "linear-gradient(160deg, #0e1020 0%, #0a0e1a 50%, #10090a 100%)",
+      border: `1px solid ${expanded ? "rgba(212,168,67,0.4)" : "rgba(212,168,67,0.22)"}`,
+      boxShadow: expanded
+        ? "0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,168,67,0.1)"
+        : "0 3px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(212,168,67,0.05)",
+      transition: "border-color 0.25s, box-shadow 0.25s",
+    }}>
+      <style>{`
+        @keyframes dateZmanimSlide {
+          from { opacity: 0; transform: translateY(-10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      {/* ── Header / Collapsed row ── */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          width: "100%", background: "none", border: "none", cursor: "pointer",
+          padding: "16px 16px 14px", display: "flex", alignItems: "center", gap: 14,
+          textAlign: "left",
+        }}
+      >
+        {/* Hebrew date block */}
+        <div style={{
+          flexShrink: 0, textAlign: "center",
+          padding: "10px 14px", borderRadius: 13,
+          background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.22)",
+          minWidth: 68,
+        }}>
+          <div style={{
+            fontFamily: "'Noto Serif Hebrew', serif",
+            fontSize: 22, fontWeight: 800, color: "#f0c050",
+            lineHeight: 1.1, direction: "rtl", marginBottom: 3,
+          }}>
+            {hebrewDay}
+          </div>
+          <div style={{
+            fontFamily: "'Noto Serif Hebrew', serif",
+            fontSize: 11, color: "#d4a843", fontWeight: 700,
+            direction: "rtl", lineHeight: 1.2,
+          }}>
+            {hebrewMonth}
+          </div>
+        </div>
+
+        {/* Center text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(212,168,67,0.6)", marginBottom: 3 }}>
+            {dayName.toUpperCase()} · TODAY
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "white", lineHeight: 1, letterSpacing: "-0.5px" }}>
+            {today.getDate()} {monthStr}
+          </div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 4, fontWeight: 600, letterSpacing: "0.04em" }}>
+            Hebrew Year {hebrewYear}
+          </div>
+        </div>
+
+        {/* Chevron */}
+        <svg
+          width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="rgba(212,168,67,0.6)" strokeWidth="2.5" strokeLinecap="round"
+          style={{
+            flexShrink: 0,
+            transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+            transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {/* ── Expanded content ── */}
+      {expanded && (
+        <div style={{ animation: "dateZmanimSlide 0.22s cubic-bezier(0.4,0,0.2,1)" }}>
+
+          {/* Full Hebrew date strip */}
+          <div style={{
+            margin: "0 14px 14px",
+            padding: "12px 16px",
+            borderRadius: 13,
+            background: "rgba(212,168,67,0.06)",
+            border: "1px solid rgba(212,168,67,0.18)",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,168,67,0.6)", marginBottom: 5 }}>
+                HEBREW DATE
+              </div>
+              <div style={{
+                fontFamily: "'Noto Serif Hebrew', serif",
+                fontSize: 26, color: "#f0c050", direction: "rtl", lineHeight: 1, fontWeight: 700,
+              }}>
+                {hebrewDay} {hebrewMonth} {hebrewYear}
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,0.3)", marginBottom: 5 }}>
+                GREGORIAN
+              </div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: "white", lineHeight: 1, letterSpacing: "-1px" }}>
+                {today.getDate()}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>
+                {monthStr} {yearStr}
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: "rgba(212,168,67,0.1)", margin: "0 14px 14px" }} />
+
+          {/* Zmanim section */}
+          <div style={{ padding: "0 14px 16px" }}>
+            <div
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, cursor: "pointer" }}
+              onClick={() => onNavigate("zmanim")}
+            >
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.1em" }}>ZMANIM</span>
+              <span style={{ fontSize: 10, color: "#d4a843", fontWeight: 700, letterSpacing: "0.06em" }}>VIEW ALL »</span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={{
+                padding: "10px 12px", borderRadius: 11,
+                background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.14)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                  <span style={{ fontSize: 14 }}>🌅</span>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.1em" }}>SUNRISE</span>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "white", letterSpacing: "-0.5px" }}>
+                  {formatTime(zmanim.sunrise, location.tz)}
+                </div>
+              </div>
+              <div style={{
+                padding: "10px 12px", borderRadius: 11,
+                background: "rgba(249,115,22,0.07)", border: "1px solid rgba(249,115,22,0.14)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                  <span style={{ fontSize: 14 }}>🌇</span>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.1em" }}>SUNSET</span>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "white", letterSpacing: "-0.5px" }}>
+                  {formatTime(zmanim.sunset, location.tz)}
+                </div>
+              </div>
+            </div>
+
+            {showCandleLighting && (
+              <div
+                onClick={() => onNavigate("zmanim")}
+                style={{
+                  marginTop: 10, padding: "9px 12px",
+                  background: "rgba(212,168,67,0.1)", borderRadius: 11,
+                  border: "1px solid rgba(212,168,67,0.22)",
+                  display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+                }}
+              >
+                <span style={{ fontSize: 18 }}>🕯</span>
+                <div>
+                  <div style={{ fontSize: 9, color: "#d4a843", fontWeight: 800, letterSpacing: "0.1em" }}>CANDLE LIGHTING</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "#f0c050", letterSpacing: "-0.5px" }}>
+                    {formatTime(zmanim.candleLighting, location.tz)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function getTodayHolidays(): string[] {
   const today = new Date();
   const events = HebrewCalendar.calendar({
@@ -866,46 +1064,12 @@ export default function Home({
 
       <div style={{ padding: "14px 16px 0" }}>
 
-        {/* ── Date Card ── */}
-        <div className="card" style={{
-          marginBottom: 12, overflow: "hidden",
-          borderTop: "2.5px solid var(--gold)",
-        }}>
-          <div style={{ padding: "14px 16px 16px" }}>
-            {/* Eyebrow row */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "var(--text-muted)", textTransform: "uppercase" }}>{dayName}</span>
-                <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--text-muted)", display: "inline-block" }} />
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "var(--gold)" }}>TODAY</span>
-              </div>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>{yearStr}</span>
-            </div>
-
-            {/* Main date row */}
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: 64, fontWeight: 900, color: "var(--text-primary)", lineHeight: 0.9, letterSpacing: "-2px" }}>
-                  {today.getDate()}
-                </div>
-                <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-secondary)", marginTop: 6 }}>{monthStr}</div>
-              </div>
-
-              {/* Hebrew date block */}
-              <div style={{
-                textAlign: "right", padding: "10px 14px", borderRadius: 12,
-                background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.18)",
-              }}>
-                <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 22, color: "var(--gold)", lineHeight: 1, direction: "rtl", marginBottom: 4 }}>
-                  {hebrewDay} {hebrewMonth}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.04em" }}>
-                  {hebrewYear}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* ── Date + Zmanim Card (collapsible) ── */}
+        <DateZmanimCard
+          today={today} hdate={hdate} zmanim={zmanim}
+          location={location} showCandleLighting={showCandleLighting}
+          onNavigate={onNavigate}
+        />
 
         {/* ── Daily Spiritual Briefing ── */}
         <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
@@ -952,38 +1116,6 @@ export default function Home({
           </div>
         )}
 
-        {/* ── Zmanim ── */}
-        <div className="card card-interactive" style={{ padding: 14, marginBottom: 12 }} onClick={() => onNavigate("zmanim")}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 800, letterSpacing: "0.1em" }}>ZMANIM</span>
-            <span style={{ fontSize: 10, color: "var(--gold)", fontWeight: 700, letterSpacing: "0.06em" }}>VIEW ALL »</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(251,191,36,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🌅</div>
-                <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>SUNRISE</span>
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>{formatTime(zmanim.sunrise, location.tz)}</div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(249,115,22,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🌇</div>
-                <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>SUNSET</span>
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>{formatTime(zmanim.sunset, location.tz)}</div>
-            </div>
-          </div>
-          {showCandleLighting && (
-            <div style={{ marginTop: 10, padding: "7px 10px", background: "rgba(212,168,67,0.1)", borderRadius: 8, border: "1px solid rgba(212,168,67,0.22)", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 14 }}>🕯</span>
-              <div>
-                <div style={{ fontSize: 9, color: "var(--gold)", fontWeight: 700, letterSpacing: "0.08em" }}>CANDLE LIGHTING</div>
-                <div style={{ fontSize: 17, fontWeight: 800, color: "var(--gold)", letterSpacing: "-0.5px" }}>{formatTime(zmanim.candleLighting, location.tz)}</div>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* ── Parasha Card ── */}
         {parasha && (
