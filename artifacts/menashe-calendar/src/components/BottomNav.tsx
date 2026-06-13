@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { id: "calendar", label: "Calendar", icon: CalendarIcon },
   { id: "zmanim", label: "Zmanim", icon: ClockIcon },
   { id: "siddur", label: "Siddur", icon: SiddurIcon },
-  { id: "premium", label: "Premium", icon: PremiumIcon },
+  { id: "community", label: "Community", icon: CommunityIcon },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -52,10 +52,13 @@ function SiddurIcon({ active }: { active: boolean }) {
   );
 }
 
-function PremiumIcon({ active }: { active: boolean }) {
+function CommunityIcon({ active }: { active: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" fill={active ? "#d4a843" : "none"} stroke={active ? "#d4a843" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill={active ? "rgba(212,168,67,0.15)" : "none"} />
+      <circle cx="9" cy="7" r="4" fill={active ? "rgba(212,168,67,0.15)" : "none"} />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
@@ -73,32 +76,16 @@ export default function BottomNav({ active, onNavigate }: BottomNavProps) {
   return (
     <div className="bottom-nav" style={{ display: "flex" }}>
       {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-        const isPremium = id === "premium";
         const isActive = active === id;
         return (
           <button
             key={id}
             className={`nav-item ${isActive ? "active" : ""}`}
             onClick={() => onNavigate(id)}
-            style={{
-              background: "none", border: "none", outline: "none",
-              flex: 1,
-              ...(isPremium ? {
-                color: isActive ? "#d4a843" : "rgba(212,168,67,0.7)",
-              } : {}),
-            }}
+            style={{ background: "none", border: "none", outline: "none", flex: 1 }}
           >
             <Icon active={isActive} />
-            <span style={isPremium ? {
-              background: isActive
-                ? "linear-gradient(135deg, #b8860b 0%, #d4a843 50%, #f0c96a 100%)"
-                : "none",
-              WebkitBackgroundClip: isActive ? "text" : "unset",
-              WebkitTextFillColor: isActive ? "transparent" : "rgba(212,168,67,0.8)",
-              fontWeight: isActive ? 800 : 700,
-            } : {}}>
-              {label}
-            </span>
+            <span>{label}</span>
           </button>
         );
       })}

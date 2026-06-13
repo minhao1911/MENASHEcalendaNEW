@@ -630,12 +630,14 @@ interface HomeProps {
   onLocationClick: () => void;
   onToggleTheme: () => void;
   onOpenSiddur: () => void;
+  onShowCommunity: () => void;
+  onShowCensus: () => void;
 }
 
 export default function Home({
   location, theme, isPremium, candleEnabled,
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
-  onLocationClick, onToggleTheme, onOpenSiddur,
+  onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus,
 }: HomeProps) {
   const today = new Date();
   const hdate = getHebrewDate(today);
@@ -945,7 +947,7 @@ export default function Home({
 
 
         {/* ── Quick Actions ── */}
-        <div className="quick-action-grid" style={{ marginBottom: 4 }}>
+        <div className="quick-action-grid" style={{ marginBottom: 12 }}>
           <div className="quick-action" onClick={onShowHolidays}>
             <div className="quick-action-icon" style={{ background: "rgba(59,130,246,0.13)", border: "1px solid rgba(59,130,246,0.18)", borderRadius: 12 }}>📅</div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>Holidays {hebrewYear}</div>
@@ -957,6 +959,80 @@ export default function Home({
           <div className="quick-action" onClick={onMoreTools}>
             <div className="quick-action-icon" style={{ background: "rgba(168,85,247,0.13)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 12 }}>🔧</div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>More Tools</div>
+          </div>
+        </div>
+
+        {/* ── Community Card ── */}
+        <div style={{
+          marginBottom: 4, borderRadius: 18, overflow: "hidden",
+          background: "linear-gradient(140deg, #0d1a2e 0%, #0a1520 55%, #111827 100%)",
+          border: "1px solid rgba(99,179,237,0.22)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04)",
+        }}>
+          {/* Card Header */}
+          <div style={{ padding: "16px 18px 12px", borderBottom: "1px solid rgba(99,179,237,0.1)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 13, flexShrink: 0,
+                background: "linear-gradient(135deg, rgba(99,179,237,0.2), rgba(59,130,246,0.1))",
+                border: "1px solid rgba(99,179,237,0.28)",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+              }}>🤝</div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", color: "#63b3ed", marginBottom: 2 }}>BNEI MENASHE</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "white", lineHeight: 1.1 }}>Community</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 10, lineHeight: 1.6 }}>
+              Connect with the worldwide Bnei Menashe community and access official records.
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Community Button */}
+            <button
+              onClick={onShowCommunity}
+              style={{
+                display: "flex", alignItems: "center", gap: 14,
+                background: "rgba(99,179,237,0.08)", border: "1px solid rgba(99,179,237,0.2)",
+                borderRadius: 13, padding: "13px 16px", cursor: "pointer", textAlign: "left",
+                transition: "background 0.15s",
+              }}
+            >
+              <div style={{
+                width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+                background: "rgba(99,179,237,0.15)", border: "1px solid rgba(99,179,237,0.25)",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+              }}>🏛</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Community</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>Shavei Israel, Torah classes, connect with members</div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(99,179,237,0.6)" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+
+            {/* Census & Demographics Button */}
+            <button
+              onClick={onShowCensus}
+              style={{
+                display: "flex", alignItems: "center", gap: 14,
+                background: "rgba(212,168,67,0.07)", border: "1px solid rgba(212,168,67,0.2)",
+                borderRadius: 13, padding: "13px 16px", cursor: "pointer", textAlign: "left",
+                transition: "background 0.15s",
+              }}
+            >
+              <div style={{
+                width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+                background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.22)",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+              }}>📊</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Census & Demographics</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>Fill out the community census form and view statistics</div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(212,168,67,0.6)" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         </div>
 
