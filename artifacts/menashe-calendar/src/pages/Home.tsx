@@ -409,6 +409,20 @@ export default function Home({
   return (
     <div style={{ padding: "0 0 4px" }}>
       {/* App Header */}
+      <style>{`
+        @keyframes goldShimmer {
+          0% { background-position: -300% center; }
+          100% { background-position: 300% center; }
+        }
+        @keyframes goldGlow {
+          0%, 100% { box-shadow: 0 0 5px rgba(212,168,67,0.25), 0 0 0 1px rgba(212,168,67,0.35); }
+          50% { box-shadow: 0 0 14px rgba(212,168,67,0.55), 0 0 0 1px rgba(212,168,67,0.7); }
+        }
+        @keyframes crownFloat {
+          0%, 100% { transform: translateY(0px) rotate(-4deg); }
+          50% { transform: translateY(-2px) rotate(4deg); }
+        }
+      `}</style>
       <div className="app-header">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div className="app-icon">✡</div>
@@ -417,7 +431,7 @@ export default function Home({
             <div style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.1em", fontWeight: 600 }}>CALENDAR</div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <button
             onClick={onLocationClick}
             style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--elevated)", border: "1px solid var(--border)", borderRadius: 99, padding: "5px 12px", cursor: "pointer" }}
@@ -425,9 +439,30 @@ export default function Home({
             <span style={{ fontSize: 12 }}>📍</span>
             <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{location.name}</span>
           </button>
+
+          {/* Premium Crown Button */}
+          <button
+            onClick={onShowPremium}
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              background: "linear-gradient(90deg, #6b4800 0%, #b8860b 20%, #f0c050 50%, #b8860b 80%, #6b4800 100%)",
+              backgroundSize: "300% auto",
+              animation: "goldShimmer 4s linear infinite, goldGlow 2.5s ease-in-out infinite",
+              border: "none",
+              borderRadius: 99, padding: "6px 12px 6px 8px",
+              cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <span style={{
+              fontSize: 14, lineHeight: 1, display: "inline-block",
+              animation: "crownFloat 3s ease-in-out infinite",
+            }}>👑</span>
+            <span style={{ fontSize: 10, fontWeight: 900, color: "#1a0900", letterSpacing: "0.07em" }}>PREMIUM</span>
+          </button>
+
           <button
             onClick={onToggleTheme}
-            style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--elevated)", border: "1px solid var(--border)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}
+            style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--elevated)", border: "1px solid var(--border)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}
           >
             {isLight ? "🌙" : "☀️"}
           </button>
@@ -522,65 +557,37 @@ export default function Home({
           </div>
         )}
 
-        {/* ── Zmanim + Premium row ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginBottom: 12 }}>
-          {/* Zmanim card */}
-          <div className="card card-interactive" style={{ padding: 14 }} onClick={() => onNavigate("zmanim")}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 800, letterSpacing: "0.1em" }}>ZMANIM</span>
-              <span style={{ fontSize: 10, color: "var(--gold)", fontWeight: 700, letterSpacing: "0.06em" }}>VIEW ALL »</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {/* Sunrise */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(251,191,36,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🌅</div>
-                  <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>SUNRISE</span>
-                </div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>{formatTime(zmanim.sunrise, location.tz)}</div>
-              </div>
-              {/* Sunset */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(249,115,22,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🌇</div>
-                  <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>SUNSET</span>
-                </div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>{formatTime(zmanim.sunset, location.tz)}</div>
-              </div>
-            </div>
-            {showCandleLighting && (
-              <div style={{ marginTop: 10, padding: "7px 10px", background: "rgba(212,168,67,0.1)", borderRadius: 8, border: "1px solid rgba(212,168,67,0.22)", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 14 }}>🕯</span>
-                <div>
-                  <div style={{ fontSize: 9, color: "var(--gold)", fontWeight: 700, letterSpacing: "0.08em" }}>CANDLE LIGHTING</div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: "var(--gold)", letterSpacing: "-0.5px" }}>{formatTime(zmanim.candleLighting, location.tz)}</div>
-                </div>
-              </div>
-            )}
+        {/* ── Zmanim ── */}
+        <div className="card card-interactive" style={{ padding: 14, marginBottom: 12 }} onClick={() => onNavigate("zmanim")}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 800, letterSpacing: "0.1em" }}>ZMANIM</span>
+            <span style={{ fontSize: 10, color: "var(--gold)", fontWeight: 700, letterSpacing: "0.06em" }}>VIEW ALL »</span>
           </div>
-
-          {/* Premium card */}
-          <div
-            onClick={onShowPremium}
-            style={{
-              background: "linear-gradient(160deg, #1c2d50 0%, #0f1e38 60%, #161228 100%)",
-              border: "1px solid rgba(212,168,67,0.3)",
-              borderRadius: 12,
-              padding: 12,
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
-              minWidth: 108, cursor: "pointer",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
-              transition: "transform 0.1s, box-shadow 0.15s",
-            }}
-          >
-            <div className="premium-badge">⭐ Premium</div>
-            <div style={{ textAlign: "center", margin: "10px 0" }}>
-              <div style={{ fontSize: 22, marginBottom: 4 }}>👑</div>
-              <div style={{ fontSize: 10, color: "#94a3b8", lineHeight: 1.5 }}>Full Zmanim</div>
-              <div style={{ fontSize: 10, color: "#94a3b8", lineHeight: 1.5 }}>Torah Library</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(251,191,36,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🌅</div>
+                <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>SUNRISE</span>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>{formatTime(zmanim.sunrise, location.tz)}</div>
             </div>
-            <button className="btn-gold" style={{ fontSize: 11, padding: "7px 10px", width: "100%", borderRadius: 8, textAlign: "center" }}>UPGRADE ↑</button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(249,115,22,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🌇</div>
+                <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>SUNSET</span>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>{formatTime(zmanim.sunset, location.tz)}</div>
+            </div>
           </div>
+          {showCandleLighting && (
+            <div style={{ marginTop: 10, padding: "7px 10px", background: "rgba(212,168,67,0.1)", borderRadius: 8, border: "1px solid rgba(212,168,67,0.22)", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 14 }}>🕯</span>
+              <div>
+                <div style={{ fontSize: 9, color: "var(--gold)", fontWeight: 700, letterSpacing: "0.08em" }}>CANDLE LIGHTING</div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "var(--gold)", letterSpacing: "-0.5px" }}>{formatTime(zmanim.candleLighting, location.tz)}</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Parasha Card ── */}
@@ -682,48 +689,6 @@ export default function Home({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
         </div>
 
-        {/* ── Premium Banner ── */}
-        <div
-          onClick={onShowPremium}
-          style={{
-            marginBottom: 12, borderRadius: 16, overflow: "hidden", cursor: "pointer",
-            background: "linear-gradient(135deg, #1a1500 0%, #2a1f00 40%, #1a1a2e 100%)",
-            border: "1.5px solid rgba(212,168,67,0.4)",
-            boxShadow: "0 4px 20px rgba(212,168,67,0.12), inset 0 1px 0 rgba(212,168,67,0.08)",
-            position: "relative",
-          }}
-        >
-          <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{
-              width: 46, height: 46, borderRadius: 13, flexShrink: 0,
-              background: "linear-gradient(135deg, rgba(212,168,67,0.25), rgba(212,168,67,0.08))",
-              border: "1px solid rgba(212,168,67,0.4)",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-            }}>👑</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "#d4a843", marginBottom: 3 }}>✦ MENASHE PREMIUM</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "white", marginBottom: 2 }}>Unlock All Features</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>Torah · AI Insights · Advanced Zmanim · More</div>
-            </div>
-            <div style={{
-              background: "linear-gradient(135deg, #b8860b 0%, #d4a843 50%, #f0c96a 100%)",
-              color: "#1a0f00", fontSize: 11, fontWeight: 800,
-              padding: "6px 12px", borderRadius: 8, whiteSpace: "nowrap",
-            }}>Try Free →</div>
-          </div>
-          <div style={{
-            display: "flex", borderTop: "1px solid rgba(212,168,67,0.12)",
-            padding: "8px 16px", gap: 0,
-          }}>
-            {["Torah Study", "AI Insights", "Full Zmanim", "Community"].map((feat, i, arr) => (
-              <div key={feat} style={{
-                flex: 1, fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
-                color: "rgba(212,168,67,0.7)", textAlign: "center",
-                borderRight: i < arr.length - 1 ? "1px solid rgba(212,168,67,0.12)" : "none",
-              }}>{feat}</div>
-            ))}
-          </div>
-        </div>
 
         {/* ── Quick Actions ── */}
         <div className="quick-action-grid" style={{ marginBottom: 4 }}>
