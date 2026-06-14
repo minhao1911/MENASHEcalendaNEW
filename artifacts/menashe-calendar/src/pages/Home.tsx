@@ -1117,6 +1117,47 @@ export default function Home({
   const todayHolidays = getTodayHolidays();
   const omerDay = getOmerDay(today);
 
+  const [candleCountdown, setCandleCountdown] = useState("");
+
+  useEffect(() => {
+    if (!isPremium || !candleEnabled) return;
+
+    function getNextCandleLighting(): Date | null {
+      const now = new Date();
+      let daysUntilFriday = (5 - now.getDay() + 7) % 7;
+      if (daysUntilFriday === 0 && zmanim.candleLighting && now >= zmanim.candleLighting) {
+        daysUntilFriday = 7;
+      }
+      const fridayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilFriday);
+      const fridayZmanim = calculateZmanim(fridayDate, location.lat, location.lng, location.candleLightingMinutes);
+      return fridayZmanim.candleLighting;
+    }
+
+    function tick() {
+      const target = getNextCandleLighting();
+      if (!target) { setCandleCountdown(""); return; }
+      const now = new Date();
+      const diff = target.getTime() - now.getTime();
+      if (diff <= 0) { setCandleCountdown("Now"); return; }
+      const totalSecs = Math.floor(diff / 1000);
+      const d = Math.floor(totalSecs / 86400);
+      const h = Math.floor((totalSecs % 86400) / 3600);
+      const m = Math.floor((totalSecs % 3600) / 60);
+      const s = totalSecs % 60;
+      if (d > 0) {
+        setCandleCountdown(`${d}d ${h}h`);
+      } else if (h > 0) {
+        setCandleCountdown(`${h}h ${m}m`);
+      } else {
+        setCandleCountdown(`${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+      }
+    }
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [isPremium, candleEnabled, location]);
+
   const nextShabbat = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (6 - today.getDay()));
   const dayName = getDayOfWeek(today);
   const monthStr = today.toLocaleDateString("en-US", { month: "long" });
@@ -1173,12 +1214,12 @@ export default function Home({
               fontSize: 14, lineHeight: 1, display: "inline-block",
               animation: "crownFloat 3s ease-in-out infinite",
             }}>👑</span>
-            {isPremium && candleEnabled && zmanim.candleLighting ? (
+            {isPremium && candleEnabled && candleCountdown ? (
               <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0 }}>
                 <span style={{ fontSize: 8, fontWeight: 900, color: "#1a0900", letterSpacing: "0.07em", lineHeight: 1 }}>PREMIUM</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 1 }}>
-                  <span style={{ fontSize: 10 }}>🕯</span>
-                  <span style={{ fontSize: 10, fontWeight: 900, color: "#1a0900", letterSpacing: "0.04em", lineHeight: 1 }}>{formatTime(zmanim.candleLighting)}</span>
+                  <span style={{ fontSize: 9 }}>🕯</span>
+                  <span style={{ fontSize: 10, fontWeight: 900, color: "#1a0900", letterSpacing: "0.04em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{candleCountdown}</span>
                 </span>
               </span>
             ) : (
