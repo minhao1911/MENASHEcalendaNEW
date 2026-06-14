@@ -139,140 +139,85 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
       </div>
 
       {/* ── Calendar Card ── */}
-      <div style={{ padding: "10px 10px 0", flex: 1, overflowY: "auto" }}>
+      <div style={{ padding: "8px 8px 0", flex: 1, overflowY: "auto" }}>
         <div style={{
-          background: "linear-gradient(160deg, #0e1a30 0%, #0b1525 100%)",
-          borderRadius: 18,
-          border: "1px solid rgba(255,255,255,0.09)",
+          borderRadius: 16,
           overflow: "hidden",
           marginBottom: 10,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+          boxShadow: "0 6px 32px rgba(0,0,0,0.55)",
+          border: "1px solid #1a2744",
         }}>
 
-          {/* ── Month Header + Navigation ── */}
+          {/* ── Gold Month Banner ── */}
           <div style={{
+            background: "linear-gradient(135deg, #c9920a 0%, #d4a843 50%, #b8860b 100%)",
+            padding: "13px 16px 11px",
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "14px 14px 12px",
-            borderBottom: "1px solid rgba(255,255,255,0.07)",
           }}>
             <button
               onClick={prevMonth}
               style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
-                cursor: "pointer", color: "#94a3b8",
+                width: 32, height: 32, borderRadius: 8,
+                background: "rgba(0,0,0,0.18)", border: "1px solid rgba(0,0,0,0.25)",
+                cursor: "pointer", color: "#fff",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18, lineHeight: 1,
+                fontSize: 20, lineHeight: 1, fontWeight: 300,
               }}
             >‹</button>
 
             <div style={{ textAlign: "center", flex: 1 }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "#f1f5f9", letterSpacing: "0.04em", lineHeight: 1.1 }}>
+              <div style={{
+                fontSize: 17, fontWeight: 900, color: "#fff",
+                letterSpacing: "0.06em", lineHeight: 1,
+                textShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              }}>
                 {MONTHS[month].toUpperCase()} {year}
               </div>
               <div style={{
-                fontSize: 12, color: "#d4a843", marginTop: 3,
-                letterSpacing: "0.03em", fontWeight: 600,
+                fontSize: 11, color: "rgba(255,255,255,0.88)", marginTop: 4,
+                letterSpacing: "0.12em", fontWeight: 700,
                 fontFamily: "'Noto Serif Hebrew', serif",
               }}>
-                {hebrewMonths}
+                — {hebrewMonths} —
               </div>
             </div>
 
             <button
               onClick={nextMonth}
               style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
-                cursor: "pointer", color: "#94a3b8",
+                width: 32, height: 32, borderRadius: 8,
+                background: "rgba(0,0,0,0.18)", border: "1px solid rgba(0,0,0,0.25)",
+                cursor: "pointer", color: "#fff",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18, lineHeight: 1,
+                fontSize: 20, lineHeight: 1, fontWeight: 300,
               }}
             >›</button>
           </div>
 
-          {/* ── Month Summary Strip ── */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1px 1fr 1px 1fr",
-            borderBottom: "1px solid rgba(255,255,255,0.07)",
-            background: "rgba(0,0,0,0.18)",
-          }}>
-            <div style={{ padding: "10px 0", textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: "#fca5a5", lineHeight: 1 }}>
-                {monthStats.shabbatot}
-              </div>
-              <div style={{ fontSize: 9, color: "#64748b", fontWeight: 700, letterSpacing: "0.07em", marginTop: 4, textTransform: "uppercase" }}>
-                Shabbatot
-              </div>
-            </div>
-            <div style={{ background: "rgba(255,255,255,0.07)", margin: "8px 0" }} />
-            <div style={{ padding: "10px 6px", textAlign: "center" }}>
-              {monthStats.parashiyot.length > 0 ? (
-                <>
-                  <div style={{
-                    fontSize: 10, fontWeight: 800, color: "#d4a843", lineHeight: 1.2,
-                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                  }}>
-                    {monthStats.parashiyot[0].name}
-                  </div>
-                  {monthStats.parashiyot.length > 1 && (
-                    <div style={{
-                      fontSize: 9, color: "#b8860b", opacity: 0.8, marginTop: 2,
-                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                    }}>
-                      +{monthStats.parashiyot.length - 1} more
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div style={{ fontSize: 10, color: "#475569" }}>—</div>
-              )}
-              <div style={{ fontSize: 9, color: "#64748b", fontWeight: 700, letterSpacing: "0.07em", marginTop: 4, textTransform: "uppercase" }}>
-                📖 Parasha
-              </div>
-            </div>
-            <div style={{ background: "rgba(255,255,255,0.07)", margin: "8px 0" }} />
-            <div style={{ padding: "10px 0", textAlign: "center" }}>
-              <div style={{
-                fontSize: 22, fontWeight: 900, lineHeight: 1,
-                color: monthStats.holidays > 0 ? "#f87171" : "#334155",
-              }}>
-                {monthStats.holidays}
-              </div>
-              <div style={{ fontSize: 9, color: "#64748b", fontWeight: 700, letterSpacing: "0.07em", marginTop: 4, textTransform: "uppercase" }}>
-                Holidays
-              </div>
-            </div>
-          </div>
-
           {/* ── Day Headers ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", background: "#162040" }}>
             {DAY_HEADERS.map((h, idx) => {
               const isSat = idx === 6;
-              const isFri = idx === 5;
               return (
                 <div
                   key={h.en}
                   style={{
                     textAlign: "center",
-                    padding: "9px 2px 7px",
-                    background: isSat
-                      ? "rgba(127,29,29,0.3)"
-                      : isFri ? "rgba(212,168,67,0.05)" : "transparent",
-                    borderBottom: "1px solid rgba(255,255,255,0.07)",
+                    padding: "8px 2px 6px",
+                    background: isSat ? "#7f1d1d" : "transparent",
+                    borderBottom: "1px solid #1e2d4a",
                   }}
                 >
                   <div style={{
                     fontSize: 12, fontWeight: 800,
-                    color: isSat ? "#fca5a5" : isFri ? "#d4a843" : "#cbd5e1",
-                    letterSpacing: "0.04em",
+                    color: isSat ? "#fecaca" : "#e2e8f0",
+                    letterSpacing: "0.05em",
                   }}>
                     {h.en}
                   </div>
                   <div style={{
                     fontSize: 9,
-                    color: isSat ? "#f87171" : "#475569",
+                    color: isSat ? "#fca5a5" : "#4a5568",
                     fontFamily: "'Noto Serif Hebrew', serif",
                     marginTop: 2, lineHeight: 1,
                   }}>
@@ -283,20 +228,23 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
             })}
           </div>
 
-          {/* ── Calendar Grid ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+          {/* ── Calendar Grid (light background) ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", background: "#f8fafc" }}>
             {/* Empty leading cells */}
-            {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-              <div
-                key={`empty-${i}`}
-                style={{
-                  minHeight: 72,
-                  borderRight: i < 6 ? "1px solid rgba(255,255,255,0.06)" : "none",
-                  borderBottom: "1px solid rgba(255,255,255,0.06)",
-                  background: i === 6 ? "rgba(127,29,29,0.07)" : "transparent",
-                }}
-              />
-            ))}
+            {Array.from({ length: firstDayOfWeek }).map((_, i) => {
+              const isSatCol = i === 6;
+              return (
+                <div
+                  key={`empty-${i}`}
+                  style={{
+                    minHeight: 66,
+                    borderRight: i < 6 ? "1px solid #e2e8f0" : "none",
+                    borderBottom: "1px solid #e2e8f0",
+                    background: isSatCol ? "#fee2e2" : "transparent",
+                  }}
+                />
+              );
+            })}
 
             {/* Day cells */}
             {days.map((day, i) => {
@@ -310,119 +258,116 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
               const nonRoshEvents = day.events.filter(e => !e.toLowerCase().includes("rosh chodesh"));
               const rawEvent = nonRoshEvents[0];
               const eventLabel = rawEvent
-                ? rawEvent.replace(/^Parashat\s+/, "").replace(/\s+\d+$/, "").split(" ").slice(0, 2).join(" ")
+                ? rawEvent.replace(/^Parashat\s+/, "").split(" ").slice(0, 2).join(" ")
                 : null;
 
-              let cellBg = "transparent";
-              if (day.isToday)       cellBg = "#c49a1a";
-              else if (isSelected)   cellBg = "rgba(212,168,67,0.12)";
-              else if (isFast)       cellBg = "rgba(148,163,184,0.06)";
-              else if (isSatCol)     cellBg = "rgba(127,29,29,0.10)";
-              else if (isFriCol)     cellBg = "rgba(212,168,67,0.04)";
+              // Cell background
+              let cellBg = isSatCol ? "#fef2f2" : "transparent";
+              if (day.isToday)     cellBg = "#d4a843";
+              else if (isSelected) cellBg = "#fef9ec";
+              else if (isFast)     cellBg = "#f1f5f9";
 
-              const dayNumColor = day.isToday ? "#0b1525" : day.isShabbat ? "#fca5a5" : "#f1f5f9";
-              const hebrewColor  = day.isToday ? "rgba(11,21,37,0.65)" : isSatCol ? "#7f5a5a" : "#4a5568";
+              const isOnGold = day.isToday;
+              const dayNumColor = isOnGold ? "#fff" : isSatCol ? "#991b1b" : "#1e293b";
+              const hebrewColor  = isOnGold ? "rgba(255,255,255,0.8)" : isSatCol ? "#b91c1c" : "#6b7280";
+              const monthColor   = isOnGold ? "rgba(255,255,255,0.7)" : isSatCol ? "#ef4444" : "#94a3b8";
 
               return (
                 <div
                   key={i}
                   onClick={() => handleDayClick(day.gregorianDay)}
                   style={{
-                    minHeight: 72,
-                    padding: "5px 4px 4px",
-                    borderRight: !isLastInRow ? "1px solid rgba(255,255,255,0.06)" : "none",
-                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                    minHeight: 66,
+                    padding: "5px 5px 4px",
+                    borderRight: !isLastInRow ? "1px solid #e2e8f0" : "none",
+                    borderBottom: "1px solid #e2e8f0",
                     background: cellBg,
                     cursor: "pointer",
                     display: "flex",
                     flexDirection: "column",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     position: "relative",
-                    outline: isSelected && !day.isToday ? "1.5px solid rgba(212,168,67,0.45)" : "none",
-                    outlineOffset: "-1.5px",
+                    outline: isSelected && !day.isToday ? "2px solid #d4a843" : "none",
+                    outlineOffset: "-2px",
                     transition: "background 0.12s",
                   }}
                 >
-                  {/* Candle icon + time for Fridays */}
-                  {isFriCol && candleLightingMap[day.gregorianDay] && (
+                  {/* Candle icon for Fridays */}
+                  {isFriCol && (
                     <div style={{
                       position: "absolute", top: 3, right: 3,
-                      display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0,
+                      display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1,
                     }}>
-                      <span style={{ fontSize: 9, lineHeight: 1 }}>🕯️</span>
-                      <span style={{
-                        fontSize: 7, lineHeight: 1.3,
-                        color: day.isToday ? "rgba(11,21,37,0.7)" : "#d4a843",
-                        fontWeight: 700, whiteSpace: "nowrap", marginTop: 1,
-                      }}>
-                        {candleLightingMap[day.gregorianDay]}
-                      </span>
+                      <span style={{ fontSize: 10, lineHeight: 1 }}>🕯️</span>
+                      {candleLightingMap[day.gregorianDay] && (
+                        <span style={{
+                          fontSize: 7, lineHeight: 1.2,
+                          color: "#b8860b", fontWeight: 700, whiteSpace: "nowrap",
+                        }}>
+                          {candleLightingMap[day.gregorianDay]}
+                        </span>
+                      )}
                     </div>
                   )}
 
-                  {/* Omer count — subtle top-left dot */}
-                  {omerMap[day.gregorianDay] !== undefined && (
+                  {/* Omer badge */}
+                  {omerMap[day.gregorianDay] !== undefined && !isFriCol && (
                     <div style={{
-                      position: "absolute", top: 4, left: 4,
-                      width: 14, height: 14, borderRadius: "50%",
-                      background: day.isToday ? "rgba(11,21,37,0.25)" : "rgba(212,168,67,0.18)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 7, fontWeight: 900,
-                      color: day.isToday ? "rgba(11,21,37,0.8)" : "#c49a1a",
+                      position: "absolute", top: 3, right: 3,
+                      fontSize: 7, fontWeight: 900, lineHeight: 1,
+                      color: isOnGold ? "rgba(255,255,255,0.7)" : "#b8860b",
                     }}>
-                      {omerMap[day.gregorianDay]}
+                      {omerMap[day.gregorianDay]}°
                     </div>
                   )}
 
-                  {/* Gregorian day number */}
+                  {/* Day number */}
                   <div style={{
-                    fontSize: 17, fontWeight: day.isToday ? 900 : 600,
+                    fontSize: 18, fontWeight: day.isToday ? 900 : 700,
                     color: dayNumColor,
                     lineHeight: 1,
-                    marginTop: 4,
-                    width: 30, height: 30,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    borderRadius: "50%",
+                    marginTop: 2,
                   }}>
                     {day.gregorianDay}
                   </div>
 
-                  {/* Hebrew date */}
+                  {/* Hebrew date: numeral + month name */}
                   <div style={{
-                    fontSize: 10,
+                    fontSize: 9, fontWeight: 500,
                     color: hebrewColor,
+                    lineHeight: 1.2, marginTop: 2,
                     fontFamily: "'Noto Serif Hebrew', serif",
-                    lineHeight: 1,
-                    marginTop: 3,
-                    fontWeight: 500,
                   }}>
                     {hebrewDayNumeral(day.hebrewDay)}
+                  </div>
+                  <div style={{
+                    fontSize: 8, color: monthColor,
+                    lineHeight: 1, marginTop: 1,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    maxWidth: "100%",
+                  }}>
+                    {day.hebrewMonth}
                   </div>
 
                   {/* Rosh Chodesh */}
                   {day.roshChodesh && (
                     <div style={{
-                      fontSize: 8, color: "#4ade80",
-                      background: "rgba(74,222,128,0.12)",
-                      border: "1px solid rgba(74,222,128,0.25)",
-                      padding: "1px 4px", borderRadius: 4,
-                      marginTop: "auto", fontWeight: 800,
-                      letterSpacing: "0.03em", lineHeight: 1.4,
+                      fontSize: 7.5, color: "#dc2626", fontWeight: 900,
+                      letterSpacing: "0.04em", lineHeight: 1,
+                      marginTop: "auto",
                     }}>
-                      🌙 R.Ch
+                      B.CH. {day.hebrewMonth?.toUpperCase()}
                     </div>
                   )}
 
                   {/* Holiday / Parasha label */}
                   {eventLabel && !day.roshChodesh && !isFast && (
                     <div style={{
-                      fontSize: 8, color: "#fca5a5",
-                      background: "rgba(239,68,68,0.12)",
-                      border: "1px solid rgba(239,68,68,0.2)",
-                      padding: "1px 4px", borderRadius: 4,
-                      marginTop: "auto", fontWeight: 800,
-                      letterSpacing: "0.02em", lineHeight: 1.4,
-                      maxWidth: "calc(100% - 4px)", overflow: "hidden",
+                      fontSize: 7.5,
+                      color: isOnGold ? "rgba(255,255,255,0.9)" : "#dc2626",
+                      fontWeight: 800, lineHeight: 1,
+                      marginTop: "auto",
+                      maxWidth: "100%", overflow: "hidden",
                       textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}>
                       {eventLabel}
@@ -432,14 +377,11 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
                   {/* Fast label */}
                   {isFast && (
                     <div style={{
-                      fontSize: 8, color: "#94a3b8",
-                      background: "rgba(148,163,184,0.13)",
-                      border: "1px solid rgba(148,163,184,0.2)",
-                      padding: "1px 4px", borderRadius: 4,
-                      marginTop: "auto", fontWeight: 800,
-                      letterSpacing: "0.03em", lineHeight: 1.4,
+                      fontSize: 7.5, color: "#64748b",
+                      fontWeight: 800, lineHeight: 1,
+                      marginTop: "auto",
                     }}>
-                      💧 Fast
+                      FAST
                     </div>
                   )}
                 </div>
@@ -447,34 +389,35 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
             })}
           </div>
 
-          {/* ── Footer: Legend + Today button ── */}
+          {/* ── Footer: Legend + Today ── */}
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "10px 14px",
-            borderTop: "1px solid rgba(255,255,255,0.07)",
+            padding: "9px 14px",
+            background: "#162040",
+            borderTop: "1px solid #1e2d4a",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {[
-                { color: "#c49a1a", label: "Today" },
-                { color: "rgba(127,29,29,0.45)", label: "Shabbat", border: "1px solid rgba(239,68,68,0.2)" },
-                { color: "rgba(148,163,184,0.1)", label: "Fast", border: "1px solid rgba(148,163,184,0.2)" },
+                { color: "#d4a843", label: "Today" },
+                { color: "#fef2f2", label: "Shabbat", border: "1px solid #fca5a5" },
+                { color: "#f1f5f9", label: "Fast", border: "1px solid #cbd5e1" },
               ].map(({ color, label, border }) => (
-                <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <div style={{
-                    width: 11, height: 11, borderRadius: 4,
-                    background: color, border: (border as string | undefined) ?? "none", flexShrink: 0,
+                    width: 10, height: 10, borderRadius: 3,
+                    background: color, border: border ?? "none", flexShrink: 0,
                   }} />
-                  <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}>{label}</span>
+                  <span style={{ fontSize: 9, color: "#64748b", fontWeight: 600 }}>{label}</span>
                 </div>
               ))}
             </div>
             <button
               onClick={() => { setMonth(today.getMonth()); setYear(today.getFullYear()); setSelectedDay(null); }}
               style={{
-                padding: "5px 12px", borderRadius: 99,
-                background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.3)",
+                padding: "5px 13px", borderRadius: 99,
+                background: "rgba(212,168,67,0.15)", border: "1px solid rgba(212,168,67,0.4)",
                 cursor: "pointer", color: "#d4a843",
-                fontSize: 10, fontWeight: 800, letterSpacing: "0.07em",
+                fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
               }}
             >TODAY</button>
           </div>
