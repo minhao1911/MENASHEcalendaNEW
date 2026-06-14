@@ -296,6 +296,27 @@ export default function ParashahModal({ onClose }: Props) {
               </p>
             </Section>
 
+            <Section icon="📜" title="Haftarah Reading" defaultOpen={false}>
+              <div style={{ marginTop: 12 }}>
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10, marginBottom: 10,
+                  padding: "8px 12px", borderRadius: 10,
+                  background: "rgba(212,168,67,0.06)", border: "1px solid rgba(212,168,67,0.15)",
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".08em" }}>HAFTARAH</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#d4a843", marginTop: 2 }}>
+                      {parasha.haftarah.book} {parasha.haftarah.verses}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 20 }}>📖</span>
+                </div>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+                  {parasha.haftarah.summary}
+                </p>
+              </div>
+            </Section>
+
             <Section icon={SECTION_ICONS.keyTheme} title="Key Theme" aiEnhanced={isAi}>
               <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7, marginTop: 12 }}>
                 {insights.keyTheme}
