@@ -117,6 +117,47 @@ export default function TranslationEditorModal({ onClose }: Props) {
     setSaved(false);
   }
 
+  /* ── Paste from Clipboard ── */
+  async function handlePaste() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setImportMsg({ type: "err", text: "Clipboard is empty." });
+        setTimeout(() => setImportMsg(null), 4000);
+        return;
+      }
+      const raw = JSON.parse(text);
+      if (typeof raw !== "object" || Array.isArray(raw)) throw new Error("Invalid format");
+      const incoming: Partial<Translations> = {};
+      let imported = 0;
+      let skipped = 0;
+      Object.entries(raw).forEach(([key, val]) => {
+        if (ALL_KEYS.has(key as keyof Translations) && typeof val === "string") {
+          (incoming as any)[key] = val;
+          imported++;
+        } else { skipped++; }
+      });
+      if (imported === 0) throw new Error("No valid translation keys found");
+      setEdits(prev => ({ ...prev, ...incoming }));
+      setSaved(false);
+      setImportMsg({
+        type: "ok",
+        text: `✓ Pasted ${imported} label${imported !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} unknown keys skipped)` : ""}. Hit Save to apply.`,
+      });
+      setTimeout(() => setImportMsg(null), 6000);
+    } catch (err: any) {
+      setImportMsg({
+        type: "err",
+        text: err.name === "SyntaxError"
+          ? "Clipboard doesn't contain valid JSON."
+          : err.message === "Invalid format" || err.message === "No valid translation keys found"
+          ? `Paste failed: ${err.message}`
+          : "Clipboard access denied — please use the ↑ Import button instead.",
+      });
+      setTimeout(() => setImportMsg(null), 5000);
+    }
+  }
+
   /* ── Copy to Clipboard ── */
   function handleCopy() {
     const payload: Record<string, string> = {};
@@ -324,6 +365,18 @@ export default function TranslationEditorModal({ onClose }: Props) {
             ↓ Export
           </button>
           <button
+            onClick={handlePaste}
+            title="Paste TK labels JSON from clipboard"
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+              background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)",
+              color: "#fbbf24", cursor: "pointer", whiteSpace: "nowrap",
+            }}
+          >
+            ⧉ Paste
+          </button>
+          <button
             onClick={handleImportClick}
             title="Import TK labels from a JSON file"
             style={{
@@ -442,6 +495,14 @@ export default function TranslationEditorModal({ onClose }: Props) {
             color: "#63b3ed", cursor: "pointer",
           }}
         >↓ Export</button>
+        <button
+          onClick={handlePaste}
+          style={{
+            padding: "11px 14px", borderRadius: 12, fontSize: 13, fontWeight: 700,
+            background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)",
+            color: "#fbbf24", cursor: "pointer",
+          }}
+        >⧉ Paste</button>
         <button
           onClick={handleImportClick}
           style={{
