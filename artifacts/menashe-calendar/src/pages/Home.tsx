@@ -1119,6 +1119,7 @@ export default function Home({
   const omerDay = getOmerDay(today);
 
   const [candleCountdown, setCandleCountdown] = useState("");
+  const [showShabbatBanner, setShowShabbatBanner] = useState(false);
   const candleNotifFiredRef = useRef<string>("");
 
   useEffect(() => {
@@ -1147,10 +1148,13 @@ export default function Home({
       const diff = target.getTime() - now.getTime();
       if (diff <= 0) {
         setCandleCountdown("Now!");
-        // Fire notification exactly once per candle lighting time
+        // Fire once per candle lighting time
         const key = target.toISOString();
         if (candleNotifFiredRef.current !== key) {
           candleNotifFiredRef.current = key;
+          // In-app banner (always)
+          setShowShabbatBanner(true);
+          // Push notification (if permission granted)
           sendNotification(
             "🕯 Shabbat Candle Lighting",
             `It's time to light candles in ${location.name}! Shabbat Shalom — שַׁבָּת שָׁלוֹם`,
@@ -1199,7 +1203,76 @@ export default function Home({
           0%, 100% { transform: translateY(0px) rotate(-4deg); }
           50% { transform: translateY(-2px) rotate(4deg); }
         }
+        @keyframes shabbatBannerIn {
+          from { opacity: 0; transform: translateY(-20px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes candleFlicker {
+          0%, 100% { transform: scaleY(1) rotate(-2deg); opacity: 1; }
+          25%       { transform: scaleY(1.08) rotate(2deg); opacity: 0.9; }
+          50%       { transform: scaleY(0.95) rotate(-1deg); opacity: 1; }
+          75%       { transform: scaleY(1.05) rotate(1deg); opacity: 0.95; }
+        }
       `}</style>
+
+      {/* ── Shabbat Shalom Banner ── */}
+      {showShabbatBanner && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999,
+          padding: "0 12px 12px",
+          animation: "shabbatBannerIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both",
+        }}>
+          <div style={{
+            borderRadius: "0 0 20px 20px",
+            background: "linear-gradient(135deg, #0d0a00 0%, #1a1000 40%, #100d00 100%)",
+            border: "1px solid rgba(212,168,67,0.5)",
+            borderTop: "none",
+            boxShadow: "0 8px 40px rgba(212,168,67,0.25), 0 2px 0 rgba(212,168,67,0.4) inset",
+            padding: "18px 20px 16px",
+            display: "flex", alignItems: "center", gap: 16,
+          }}>
+            {/* Candles */}
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              {[0, 1].map(i => (
+                <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+                  <div style={{
+                    width: 6, height: 14, borderRadius: "50% 50% 0 0 / 60% 60% 0 0",
+                    background: "linear-gradient(180deg, #fff9c4, #fbbf24)",
+                    animation: `candleFlicker ${1.2 + i * 0.3}s ease-in-out infinite`,
+                    transformOrigin: "bottom center",
+                    boxShadow: "0 0 8px 4px rgba(251,191,36,0.45)",
+                  }} />
+                  <div style={{ width: 8, height: 28, borderRadius: "2px 2px 4px 4px", background: "linear-gradient(180deg, #e8d5a0, #c8a855)" }} />
+                </div>
+              ))}
+            </div>
+
+            {/* Text */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(212,168,67,0.65)", marginBottom: 3 }}>
+                🕯 CANDLE LIGHTING · {location.name.toUpperCase()}
+              </div>
+              <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 22, color: "#f0c050", direction: "rtl", lineHeight: 1.1, marginBottom: 4 }}>
+                שַׁבָּת שָׁלוֹם
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.75)" }}>
+                Shabbat Shalom! Time to light candles.
+              </div>
+            </div>
+
+            {/* Dismiss */}
+            <button
+              onClick={() => setShowShabbatBanner(false)}
+              style={{
+                flexShrink: 0, width: 30, height: 30, borderRadius: "50%",
+                background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.25)",
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 14, color: "rgba(212,168,67,0.8)",
+              }}
+            >✕</button>
+          </div>
+        </div>
+      )}
       <div className="app-header">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div className="app-icon">✡</div>
