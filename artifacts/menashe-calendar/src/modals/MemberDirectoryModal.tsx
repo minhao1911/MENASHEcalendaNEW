@@ -1,0 +1,453 @@
+import { useState, useMemo } from "react";
+
+interface Props { onClose: () => void; }
+
+export interface Member {
+  id: string;
+  name: string;
+  city: string;
+  country: string;
+  role: string;
+  bio: string;
+  status: "pending" | "approved" | "hidden";
+  joinedAt: string;
+}
+
+const STORAGE_KEY = "menashe-member-directory";
+const ADMIN_PIN = "1948";
+
+const ROLES = ["Member", "Community Leader", "Rabbi", "Cantor", "Youth Leader", "Women's Group", "Student", "Elder"];
+const COUNTRIES = ["India", "Israel", "United States", "United Kingdom", "Australia", "Canada", "Other"];
+
+const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
+  "Rabbi":             { bg: "rgba(212,168,67,0.18)", color: "#d4a843" },
+  "Cantor":            { bg: "rgba(212,168,67,0.12)", color: "#c9a03a" },
+  "Community Leader":  { bg: "rgba(139,92,246,0.18)", color: "#a78bfa" },
+  "Youth Leader":      { bg: "rgba(59,130,246,0.18)", color: "#60a5fa" },
+  "Women's Group":     { bg: "rgba(236,72,153,0.15)", color: "#f472b6" },
+  "Student":           { bg: "rgba(74,222,128,0.12)", color: "#4ade80" },
+  "Elder":             { bg: "rgba(255,180,50,0.15)", color: "#fbbf24" },
+  "Member":            { bg: "rgba(100,116,139,0.15)", color: "#94a3b8" },
+};
+
+const FLAG: Record<string, string> = {
+  "India": "🇮🇳", "Israel": "🇮🇱", "United States": "🇺🇸",
+  "United Kingdom": "🇬🇧", "Australia": "🇦🇺", "Canada": "🇨🇦", "Other": "🌐",
+};
+
+function initials(name: string): string {
+  return name.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() || "").join("");
+}
+
+function avatarBg(name: string): string {
+  const colors = ["#1a3050","#2a1a40","#1a2a20","#30200a","#1a1a30","#2a1030","#0f2030","#301020"];
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % colors.length;
+  return colors[h];
+}
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+function loadMembers(): Member[] {
+  try { const r = localStorage.getItem(STORAGE_KEY); if (r) return JSON.parse(r); } catch {}
+  return DEFAULT_MEMBERS;
+}
+function saveMembers(m: Member[]) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(m)); } catch {}
+}
+
+const DEFAULT_MEMBERS: Member[] = [
+  { id: "d1", name: "Avichail Cohen", city: "Jerusalem", country: "Israel", role: "Community Leader", bio: "Leading the Bnei Menashe community in Jerusalem since aliyah.", status: "approved", joinedAt: "2023-03-15T00:00:00.000Z" },
+  { id: "d2", name: "Shmuel Haokip", city: "Churachandpur", country: "India", role: "Rabbi", bio: "Teaching Torah and preparing community members for aliyah.", status: "approved", joinedAt: "2023-06-01T00:00:00.000Z" },
+  { id: "d3", name: "Miriam Lhouvum", city: "Imphal", country: "India", role: "Women's Group", bio: "Organising women's Torah study and community events.", status: "approved", joinedAt: "2024-01-10T00:00:00.000Z" },
+  { id: "d4", name: "Yosef Thangkhiew", city: "Kiryat Arba", country: "Israel", role: "Elder", bio: "Keeper of Bnei Menashe traditions and oral history.", status: "approved", joinedAt: "2022-09-20T00:00:00.000Z" },
+];
+
+const inputStyle: React.CSSProperties = {
+  width: "100%", padding: "10px 12px", borderRadius: 10,
+  background: "var(--elevated)", border: "1px solid var(--border)",
+  color: "var(--text-primary)", fontSize: 13, outline: "none", boxSizing: "border-box",
+};
+const labelStyle: React.CSSProperties = {
+  fontSize: 11, fontWeight: 700, color: "var(--text-muted)",
+  letterSpacing: "0.06em", marginBottom: 5, display: "block",
+};
+
+function emptyReg(): Omit<Member, "id" | "status" | "joinedAt"> {
+  return { name: "", city: "", country: "India", role: "Member", bio: "" };
+}
+
+export default function MemberDirectoryModal({ onClose }: Props) {
+  const [members, setMembers] = useState<Member[]>(loadMembers);
+  const [view, setView] = useState<"directory" | "register" | "pin" | "admin">("directory");
+  const [pin, setPin] = useState(""); const [pinError, setPinError] = useState("");
+  const [reg, setReg] = useState(emptyReg());
+  const [regSent, setRegSent] = useState(false);
+  const [regError, setRegError] = useState("");
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState("All");
+  const [filterCountry, setFilterCountry] = useState("All");
+  const [adminFilter, setAdminFilter] = useState<"all" | "pending" | "approved" | "hidden">("all");
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [adminTap, setAdminTap] = useState(0);
+
+  function persist(list: Member[]) { setMembers(list); saveMembers(list); }
+
+  function submitPin() {
+    if (pin === ADMIN_PIN) { setView("admin"); setPin(""); setPinError(""); }
+    else { setPinError("Incorrect PIN"); setPin(""); }
+  }
+
+  function submitReg() {
+    if (!reg.name.trim()) { setRegError("Please enter your name."); return; }
+    if (!reg.city.trim()) { setRegError("Please enter your city."); return; }
+    setRegError("");
+    const m: Member = { ...reg, id: `m-${Date.now()}`, status: "pending", joinedAt: new Date().toISOString() };
+    persist([...members, m]);
+    setRegSent(true);
+  }
+
+  function approve(id: string) { persist(members.map(m => m.id === id ? { ...m, status: "approved" } : m)); }
+  function hide(id: string)    { persist(members.map(m => m.id === id ? { ...m, status: "hidden" } : m)); }
+  function deleteMember(id: string) { persist(members.filter(m => m.id !== id)); setDeleteConfirm(null); }
+
+  const approved = useMemo(() => {
+    let list = members.filter(m => m.status === "approved");
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(m => m.name.toLowerCase().includes(q) || m.city.toLowerCase().includes(q));
+    }
+    if (filterRole !== "All") list = list.filter(m => m.role === filterRole);
+    if (filterCountry !== "All") list = list.filter(m => m.country === filterCountry);
+    return list;
+  }, [members, search, filterRole, filterCountry]);
+
+  const pending  = members.filter(m => m.status === "pending");
+  const adminList = adminFilter === "all" ? members : members.filter(m => m.status === adminFilter);
+
+  // ── PIN ────────────────────────────────────────────────────────────────────
+  if (view === "pin") return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+        <div className="modal-handle" />
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Admin Access</div>
+          <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Enter your PIN to moderate the directory</div>
+        </div>
+        <input type="password" inputMode="numeric" value={pin}
+          onChange={e => { setPin(e.target.value); setPinError(""); }}
+          onKeyDown={e => e.key === "Enter" && submitPin()}
+          placeholder="• • • •" maxLength={8} autoFocus
+          style={{ ...inputStyle, fontSize: 22, textAlign: "center", letterSpacing: "0.4em", marginBottom: 10 }} />
+        {pinError && <div style={{ fontSize: 12, color: "#ef4444", textAlign: "center", marginBottom: 10 }}>⚠️ {pinError}</div>}
+        <button className="btn-gold" style={{ width: "100%", padding: 13, fontSize: 15, fontWeight: 700, marginBottom: 10 }} onClick={submitPin}>Enter Admin Panel</button>
+        <button onClick={() => setView("directory")} className="btn-close-full">Cancel</button>
+      </div>
+    </div>
+  );
+
+  // ── Register form ──────────────────────────────────────────────────────────
+  if (view === "register") return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
+        <div className="modal-handle" />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+          <button onClick={() => { setView("directory"); setRegSent(false); setReg(emptyReg()); setRegError(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-muted)" }}>← Back</button>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>👤 Join the Directory</div>
+          <div />
+        </div>
+
+        {regSent ? (
+          <div style={{ textAlign: "center", padding: "32px 0" }}>
+            <div style={{ fontSize: 52, marginBottom: 14 }}>✅</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>Registration Submitted!</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6, marginBottom: 24 }}>
+              Your profile is now <strong style={{ color: "#d4a843" }}>pending review</strong>.<br />
+              The admin will approve your listing shortly.
+            </div>
+            <button className="btn-gold" style={{ padding: "12px 32px", fontSize: 14, fontWeight: 700 }}
+              onClick={() => { setView("directory"); setRegSent(false); setReg(emptyReg()); }}>
+              Back to Directory
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ marginBottom: 18, padding: "10px 14px", borderRadius: 12, background: "rgba(212,168,67,0.06)", border: "1px solid rgba(212,168,67,0.2)", fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
+              Your profile will be <strong style={{ color: "#d4a843" }}>reviewed by the admin</strong> before appearing in the directory.
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>FULL NAME <span style={{ color: "#ef4444" }}>*</span></label>
+              <input style={inputStyle} value={reg.name} onChange={e => setReg(r => ({ ...r, name: e.target.value }))} placeholder="Your full name" />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+              <div>
+                <label style={labelStyle}>CITY <span style={{ color: "#ef4444" }}>*</span></label>
+                <input style={inputStyle} value={reg.city} onChange={e => setReg(r => ({ ...r, city: e.target.value }))} placeholder="Your city" />
+              </div>
+              <div>
+                <label style={labelStyle}>COUNTRY</label>
+                <select style={{ ...inputStyle, appearance: "none" }} value={reg.country} onChange={e => setReg(r => ({ ...r, country: e.target.value }))}>
+                  {COUNTRIES.map(c => <option key={c} value={c}>{FLAG[c]} {c}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>ROLE IN COMMUNITY</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {ROLES.map(role => {
+                  const rc = ROLE_COLORS[role] || ROLE_COLORS["Member"];
+                  return (
+                    <button key={role} onClick={() => setReg(r => ({ ...r, role }))}
+                      style={{
+                        padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                        background: reg.role === role ? rc.bg : "var(--elevated)",
+                        border: reg.role === role ? `1px solid ${rc.color}` : "1px solid var(--border)",
+                        color: reg.role === role ? rc.color : "var(--text-muted)", transition: "all 0.15s",
+                      }}>{role}</button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={labelStyle}>SHORT BIO (optional)</label>
+              <textarea style={{ ...inputStyle, minHeight: 72, resize: "vertical", lineHeight: 1.5 }}
+                value={reg.bio} onChange={e => setReg(r => ({ ...r, bio: e.target.value }))}
+                placeholder="A few words about yourself and your connection to the community…" />
+            </div>
+
+            {regError && <div style={{ fontSize: 12, color: "#ef4444", marginBottom: 10 }}>⚠️ {regError}</div>}
+
+            <button className="btn-gold" style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 800, marginBottom: 10 }}
+              onClick={submitReg}>
+              Submit for Review
+            </button>
+            <button onClick={() => setView("directory")} className="btn-close-full">Cancel</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── Admin panel ────────────────────────────────────────────────────────────
+  if (view === "admin") return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
+        <div className="modal-handle" />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <button onClick={() => setView("directory")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-muted)" }}>← Directory</button>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>👥 Moderate Members</div>
+          <div />
+        </div>
+
+        <div style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(212,168,67,0.06)", border: "1px solid rgba(212,168,67,0.15)", marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: "#d4a843", fontWeight: 600 }}>
+            ⚡ Admin Mode — {members.length} total · {pending.length} pending
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Approve or hide member registrations</div>
+        </div>
+
+        {/* Filter tabs */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4, marginBottom: 14 }}>
+          {(["all", "pending", "approved", "hidden"] as const).map(f => (
+            <button key={f} onClick={() => setAdminFilter(f)}
+              style={{
+                padding: "8px 0", borderRadius: 10, fontSize: 11, fontWeight: 800, cursor: "pointer",
+                background: adminFilter === f ? "rgba(212,168,67,0.15)" : "var(--elevated)",
+                border: adminFilter === f ? "1px solid rgba(212,168,67,0.4)" : "1px solid var(--border)",
+                color: adminFilter === f ? "#d4a843" : "var(--text-muted)", transition: "all 0.15s",
+                textTransform: "uppercase", letterSpacing: ".05em",
+              }}>
+              {f === "all" ? `All ${members.length}` : f === "pending" ? `⏳ ${pending.length}` : f === "approved" ? `✅ ${members.filter(m => m.status === "approved").length}` : `🙈 ${members.filter(m => m.status === "hidden").length}`}
+            </button>
+          ))}
+        </div>
+
+        {adminList.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 24, color: "var(--text-muted)", fontSize: 13 }}>No members in this filter.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+            {adminList.map(m => {
+              const rc = ROLE_COLORS[m.role] || ROLE_COLORS["Member"];
+              const statusColor = m.status === "approved" ? "#4ade80" : m.status === "pending" ? "#d4a843" : "#94a3b8";
+              return (
+                <div key={m.id} style={{ padding: 12, borderRadius: 14, background: "var(--card)", border: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: avatarBg(m.name), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "rgba(255,255,255,0.85)", fontFamily: "serif" }}>
+                      {initials(m.name)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                        <span style={{ fontSize: 9, fontWeight: 900, color: statusColor, letterSpacing: ".08em" }}>{m.status.toUpperCase()}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: rc.color, background: rc.bg, borderRadius: 4, padding: "1px 5px" }}>{m.role}</span>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{m.name}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+                        {FLAG[m.country] || "🌐"} {m.city}, {m.country} · Joined {fmtDate(m.joinedAt)}
+                      </div>
+                      {m.bio && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 4, lineHeight: 1.4 }}>{m.bio}</div>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                    {m.status !== "approved" && (
+                      <button onClick={() => approve(m.id)} style={{ flex: 1, padding: "7px", borderRadius: 8, background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#4ade80" }}>✓ Approve</button>
+                    )}
+                    {m.status !== "hidden" && (
+                      <button onClick={() => hide(m.id)} style={{ flex: 1, padding: "7px", borderRadius: 8, background: "rgba(100,116,139,0.12)", border: "1px solid rgba(100,116,139,0.3)", cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#94a3b8" }}>🙈 Hide</button>
+                    )}
+                    {deleteConfirm === m.id ? (
+                      <button onClick={() => deleteMember(m.id)} style={{ flex: 1, padding: "7px", borderRadius: 8, background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#ef4444" }}>CONFIRM DEL</button>
+                    ) : (
+                      <button onClick={() => setDeleteConfirm(m.id)} style={{ padding: "7px 10px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "none", cursor: "pointer", fontSize: 11, color: "#ef4444", fontWeight: 700 }}>DEL</button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <button onClick={() => setView("directory")} className="btn-close-full">Done</button>
+      </div>
+    </div>
+  );
+
+  // ── Public directory ───────────────────────────────────────────────────────
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
+        <div className="modal-handle" />
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", cursor: "default" }}
+              onClick={() => { const n = adminTap + 1; setAdminTap(n); if (n >= 5) { setAdminTap(0); setView("pin"); } }}>
+              👥 Member Directory
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{approved.length} approved member{approved.length !== 1 ? "s" : ""} worldwide</div>
+          </div>
+          <button className="modal-close-btn" onClick={onClose}>✕</button>
+        </div>
+
+        {/* Search */}
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontSize: 14 }}>🔍</span>
+          <input
+            style={{ ...inputStyle, paddingLeft: 34 }}
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name or city…"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 16 }}>✕</button>
+          )}
+        </div>
+
+        {/* Role filter chips */}
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 8, scrollbarWidth: "none" }}>
+          {["All", ...ROLES].map(r => {
+            const rc = ROLE_COLORS[r];
+            const active = filterRole === r;
+            return (
+              <button key={r} onClick={() => setFilterRole(r)}
+                style={{
+                  padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+                  whiteSpace: "nowrap", cursor: "pointer", transition: "all 0.15s", flexShrink: 0,
+                  background: active ? (rc?.bg || "rgba(212,168,67,0.15)") : "var(--elevated)",
+                  border: active ? `1px solid ${rc?.color || "#d4a843"}` : "1px solid var(--border)",
+                  color: active ? (rc?.color || "#d4a843") : "var(--text-muted)",
+                }}>{r}</button>
+            );
+          })}
+        </div>
+
+        {/* Country filter chips */}
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 14, scrollbarWidth: "none" }}>
+          {["All", ...COUNTRIES].map(c => (
+            <button key={c} onClick={() => setFilterCountry(c)}
+              style={{
+                padding: "5px 11px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+                whiteSpace: "nowrap", cursor: "pointer", transition: "all 0.15s", flexShrink: 0,
+                background: filterCountry === c ? "rgba(212,168,67,0.12)" : "var(--elevated)",
+                border: filterCountry === c ? "1px solid rgba(212,168,67,0.4)" : "1px solid var(--border)",
+                color: filterCountry === c ? "#d4a843" : "var(--text-muted)",
+              }}>{c !== "All" ? `${FLAG[c] || "🌐"} ` : ""}{c}</button>
+          ))}
+        </div>
+
+        {/* Member cards */}
+        {approved.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-muted)" }}>
+            <div style={{ fontSize: 44, marginBottom: 10 }}>🔍</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
+              {search || filterRole !== "All" || filterCountry !== "All" ? "No members match your search" : "No approved members yet"}
+            </div>
+            <div style={{ fontSize: 13 }}>
+              {search ? "Try a different name or city." : "Be the first to register!"}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+            {approved.map(m => {
+              const rc = ROLE_COLORS[m.role] || ROLE_COLORS["Member"];
+              return (
+                <div key={m.id} style={{
+                  borderRadius: 16, background: "var(--card)", border: "1px solid var(--border)",
+                  padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start",
+                }}>
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+                    background: avatarBg(m.name), display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 17, fontWeight: 800, color: "rgba(255,255,255,0.85)", fontFamily: "serif",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}>
+                    {initials(m.name)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 800, letterSpacing: ".06em",
+                        color: rc.color, background: rc.bg, borderRadius: 5, padding: "2px 7px",
+                      }}>{m.role}</span>
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginBottom: 3 }}>{m.name}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: m.bio ? 6 : 0, display: "flex", alignItems: "center", gap: 4 }}>
+                      <span>{FLAG[m.country] || "🌐"}</span>
+                      <span>{m.city}, {m.country}</span>
+                      <span style={{ color: "var(--border)" }}>·</span>
+                      <span>Member since {fmtDate(m.joinedAt)}</span>
+                    </div>
+                    {m.bio && (
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{m.bio}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Register CTA */}
+        <div style={{ marginBottom: 12, padding: "14px 16px", borderRadius: 16, background: "linear-gradient(135deg, #0f1e38, #1a2a1a)", border: "1px solid rgba(212,168,67,0.2)", textAlign: "center" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>Are you a Bnei Menashe member?</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>Add yourself to the community directory</div>
+          <button className="btn-gold" style={{ padding: "10px 28px", fontSize: 13, fontWeight: 800 }}
+            onClick={() => { setRegSent(false); setReg(emptyReg()); setView("register"); }}>
+            + Join the Directory
+          </button>
+        </div>
+
+        {/* Footer admin */}
+        <div style={{ textAlign: "center", marginBottom: 10 }}>
+          <button onClick={() => setView("pin")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", opacity: 0.5, padding: "6px 12px" }}>⚙ Admin</button>
+        </div>
+        <button onClick={onClose} className="btn-close-full">Close</button>
+      </div>
+    </div>
+  );
+}

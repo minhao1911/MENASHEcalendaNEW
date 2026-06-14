@@ -29,6 +29,7 @@ import CommunityModal from "./modals/CommunityModal";
 import CensusModal from "./modals/CensusModal";
 import AnnouncementsModal from "./modals/AnnouncementsModal";
 import EventsModal from "./modals/EventsModal";
+import MemberDirectoryModal from "./modals/MemberDirectoryModal";
 import SharePage from "./pages/SharePage";
 import BookReaderModal from "./modals/BookReaderModal";
 import AdminModal from "./modals/AdminModal";
@@ -44,7 +45,7 @@ type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
   | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar"
-  | "announcements" | "events" | null;
+  | "announcements" | "events" | "members" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -266,6 +267,7 @@ export default function App() {
             {modal === "census" && <CensusModal onClose={closeModal} />}
             {modal === "omer" && <OmerModal onClose={closeModal} />}
             {modal === "events" && <EventsModal onClose={closeModal} />}
+            {modal === "members" && <MemberDirectoryModal onClose={closeModal} />}
             {modal === "announcements" && (
               <AnnouncementsModal
                 onClose={closeModal}
@@ -301,6 +303,7 @@ export default function App() {
                 onMussar={() => setModal("mussar")}
                 onAnnouncements={() => setModal("announcements")}
                 onEvents={() => setModal("events")}
+                onMembers={() => setModal("members")}
                 isPremium={isPremium}
                 candleEnabled={candleEnabled}
                 onToggleCandle={onToggleCandle}
