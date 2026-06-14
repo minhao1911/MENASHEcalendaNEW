@@ -108,6 +108,36 @@ export default function DafYomiModal({ onClose }: Props) {
   const [heDisplay, setHeDisplay] = useState("");
   const [excerpts, setExcerpts] = useState<Array<{ en: string; he: string }>>([]);
   const [cycle] = useState(local.cycle);
+  const [shareState, setShareState] = useState<"idle" | "copied">("idle");
+
+  function handleShare() {
+    const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    const hebrewLine = heDisplay ? `${heDisplay}\n` : "";
+    const excerptLines = excerpts
+      .slice(0, 2)
+      .map(p => `${p.he ? p.he + "\n" : ""}${p.en}`)
+      .join("\n\n");
+
+    const text = [
+      `📚 Daf Yomi — ${tractate} ${dafNum}`,
+      hebrewLine.trim() ? hebrewLine.trim() : null,
+      `${dateStr} · Cycle ${cycle}`,
+      ``,
+      excerptLines || null,
+      ``,
+      `— Sacred Calendar of Bnei Menashe`,
+      sefariaUrl,
+    ].filter(Boolean).join("\n");
+
+    if (navigator.share) {
+      navigator.share({ title: `Daf Yomi — ${tractate} ${dafNum}`, text }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text).then(() => {
+        setShareState("copied");
+        setTimeout(() => setShareState("idle"), 2500);
+      }).catch(() => {});
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -354,6 +384,42 @@ export default function DafYomiModal({ onClose }: Props) {
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
             </svg>
           </a>
+        )}
+
+        {/* Share button */}
+        {!loading && (
+          <button
+            onClick={handleShare}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", padding: "14px 0", borderRadius: 12, marginBottom: 10,
+              background: shareState === "copied"
+                ? "linear-gradient(90deg, #166534, #16a34a)"
+                : "linear-gradient(90deg, #6b4800, #b8860b, #d4a843)",
+              border: shareState === "copied"
+                ? "1px solid rgba(74,222,128,0.4)"
+                : "1px solid rgba(212,168,67,0.4)",
+              color: shareState === "copied" ? "white" : "#1a0900",
+              fontSize: 14, fontWeight: 700,
+              cursor: "pointer",
+              transition: "background 0.3s, border 0.3s, color 0.3s",
+            }}
+          >
+            {shareState === "copied" ? (
+              <>
+                <span>✅</span>
+                <span>Copied to clipboard!</span>
+              </>
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                <span>Share Today's Daf</span>
+              </>
+            )}
+          </button>
         )}
 
         <button onClick={onClose} className="btn-close-full">Close</button>
