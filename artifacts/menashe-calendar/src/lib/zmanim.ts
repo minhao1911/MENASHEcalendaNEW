@@ -81,9 +81,9 @@ export function calculateZmanim(
 export function formatTime(date: Date | null, tz = "Asia/Jerusalem"): string {
   if (!date || isNaN(date.getTime())) return "--:--";
   return date.toLocaleTimeString("en-US", {
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
-    hour12: false,
+    hour12: true,
     timeZone: tz,
   });
 }
