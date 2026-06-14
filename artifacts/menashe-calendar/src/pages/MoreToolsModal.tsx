@@ -14,6 +14,7 @@ interface MoreToolsModalProps {
   onLuach: () => void;
   onMussar: () => void;
   onAnnouncements: () => void;
+  onEvents: () => void;
   isPremium: boolean;
   candleEnabled: boolean;
   onToggleCandle: () => void;
@@ -21,7 +22,7 @@ interface MoreToolsModalProps {
 }
 
 export default function MoreToolsModal({
-  onClose, onTahara, onYartzeit, onCommunity, onCensus, onSettings, onDafYomi, onBirthday, onOmer, onPrayers, onSefariaSearch, onHebrewDate, onLuach, onMussar, onAnnouncements,
+  onClose, onTahara, onYartzeit, onCommunity, onCensus, onSettings, onDafYomi, onBirthday, onOmer, onPrayers, onSefariaSearch, onHebrewDate, onLuach, onMussar, onAnnouncements, onEvents,
   isPremium, candleEnabled, onToggleCandle, onShowPremium,
 }: MoreToolsModalProps) {
   const TOOLS = [
@@ -37,6 +38,7 @@ export default function MoreToolsModal({
     { emoji: "🗓", bg: "rgba(74,222,128,0.12)",  label: "Luach",               sub: "Full year Jewish calendar & holidays",    action: onLuach },
     { emoji: "🤝", bg: "rgba(255,99,31,0.15)",   label: "Community",           sub: "Connect with Bnei Menashe",               action: onCommunity },
     { emoji: "📢", bg: "rgba(212,168,67,0.15)",  label: "Announcements",       sub: "Community notices & admin broadcasts",     action: onAnnouncements },
+    { emoji: "🗓", bg: "rgba(99,102,241,0.15)",  label: "Community Events",    sub: "Shabbat dinners, classes & gatherings",    action: onEvents },
     { emoji: "📊", bg: "rgba(22,163,74,0.15)",   label: "Community Census",    sub: "Demographics & statistics",               action: onCensus },
     { emoji: "⚙️", bg: "rgba(100,116,139,0.15)", label: "Settings",            sub: "App preferences & account",               action: onSettings },
   ];
