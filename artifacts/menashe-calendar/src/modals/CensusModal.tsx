@@ -1520,6 +1520,7 @@ function FamilyCard({ family, onUpdate, onDelete, branchInfo }: {
           {view === "share" && (() => {
             const url = buildShareUrl(branchInfo, family);
             const wa = `https://wa.me/?text=${encodeURIComponent(`Hi! Please fill in your census details for the Bnei Menashe Council India Census 2026-2027.\n\nTap this link, complete the form, and send me the return code:\n${url}`)}`;
+            const mailto = `mailto:?subject=${encodeURIComponent("BMC Census 2026-2027 — Please fill in your details")}&body=${encodeURIComponent(`Dear ${family.headCensus.namePerPassport || family.headName},\n\nPlease fill in your census details for the Bnei Menashe Council India Census 2026-2027.\n\nClick the link below, complete the official form, and send me the return code:\n\n${url}\n\nThank you.`)}`;
             const qr = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`;
             return (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1543,6 +1544,11 @@ function FamilyCard({ family, onUpdate, onDelete, branchInfo }: {
                     style={{ flex: 1, padding: "10px", borderRadius: 10, background: "#25d366", color: "#fff", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer", textDecoration: "none", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
                   >
                     💬 WhatsApp
+                  </a>
+                  <a href={mailto}
+                    style={{ flex: 1, padding: "10px", borderRadius: 10, background: "#4f8ef7", color: "#fff", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer", textDecoration: "none", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+                  >
+                    ✉️ Email
                   </a>
                 </div>
 
