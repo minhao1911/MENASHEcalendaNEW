@@ -1173,7 +1173,17 @@ export default function Home({
               fontSize: 14, lineHeight: 1, display: "inline-block",
               animation: "crownFloat 3s ease-in-out infinite",
             }}>👑</span>
-            <span style={{ fontSize: 10, fontWeight: 900, color: "#1a0900", letterSpacing: "0.07em" }}>PREMIUM</span>
+            {isPremium && candleEnabled && zmanim.candleLighting ? (
+              <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0 }}>
+                <span style={{ fontSize: 8, fontWeight: 900, color: "#1a0900", letterSpacing: "0.07em", lineHeight: 1 }}>PREMIUM</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 1 }}>
+                  <span style={{ fontSize: 10 }}>🕯</span>
+                  <span style={{ fontSize: 10, fontWeight: 900, color: "#1a0900", letterSpacing: "0.04em", lineHeight: 1 }}>{formatTime(zmanim.candleLighting)}</span>
+                </span>
+              </span>
+            ) : (
+              <span style={{ fontSize: 10, fontWeight: 900, color: "#1a0900", letterSpacing: "0.07em" }}>PREMIUM</span>
+            )}
           </button>
 
           <button
