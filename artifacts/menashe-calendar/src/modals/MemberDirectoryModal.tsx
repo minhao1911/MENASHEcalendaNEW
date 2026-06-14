@@ -1,6 +1,9 @@
 import { useState, useMemo } from "react";
 
-interface Props { onClose: () => void; }
+interface Props {
+  onClose: () => void;
+  userProfile?: { name: string; city: string; country: string; role: string; bio: string } | null;
+}
 
 export interface Member {
   id: string;
@@ -78,11 +81,22 @@ function emptyReg(): Omit<Member, "id" | "status" | "joinedAt"> {
   return { name: "", city: "", country: "India", role: "Member", bio: "" };
 }
 
-export default function MemberDirectoryModal({ onClose }: Props) {
+export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
   const [members, setMembers] = useState<Member[]>(loadMembers);
   const [view, setView] = useState<"directory" | "register" | "pin" | "admin">("directory");
   const [pin, setPin] = useState(""); const [pinError, setPinError] = useState("");
-  const [reg, setReg] = useState(emptyReg());
+  const [reg, setReg] = useState(() => {
+    if (userProfile) {
+      return {
+        name: userProfile.name,
+        city: userProfile.city,
+        country: COUNTRIES.includes(userProfile.country) ? userProfile.country : "India",
+        role: ROLES.includes(userProfile.role) ? userProfile.role : "Member",
+        bio: userProfile.bio,
+      };
+    }
+    return emptyReg();
+  });
   const [regSent, setRegSent] = useState(false);
   const [regError, setRegError] = useState("");
   const [search, setSearch] = useState("");

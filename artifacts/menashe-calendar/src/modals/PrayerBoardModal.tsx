@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 
-interface Props { onClose: () => void; }
+interface Props { onClose: () => void; userName?: string; }
 
 export interface PrayerRequest {
   id: string;
@@ -80,12 +80,12 @@ function emptyForm() {
   return { name: "", isAnonymous: false, text: "", category: "Blessing" };
 }
 
-export default function PrayerBoardModal({ onClose }: Props) {
+export default function PrayerBoardModal({ onClose, userName }: Props) {
   const [requests, setRequests] = useState<PrayerRequest[]>(loadRequests);
   const [castAmens, setCastAmens] = useState<Set<string>>(loadCastAmens);
   const [view, setView]       = useState<"board" | "submit" | "pin" | "admin">("board");
   const [pin, setPin]         = useState(""); const [pinError, setPinError] = useState("");
-  const [form, setForm]       = useState(emptyForm());
+  const [form, setForm]       = useState(() => ({ ...emptyForm(), name: userName || "" }));
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [adminFilter, setAdminFilter] = useState<"all" | "pending" | "approved" | "removed">("all");

@@ -105,3 +105,27 @@ export async function fetchTorahTrackerGoal(): Promise<number> {
 export async function saveTorahTrackerGoal(goalMins: number): Promise<void> {
   await apiFetch("/user/torah-tracker/goal", { method: "PUT", body: JSON.stringify({ goalMins }) });
 }
+
+// ── Public profile ────────────────────────────────────────────────────────────
+
+export interface PublicProfile {
+  displayName: string;
+  congregation: string;
+  bio: string;
+  role: string;
+  city: string;
+  country: string;
+  avatarEmoji: string;
+}
+
+export async function fetchPublicProfile(): Promise<PublicProfile | null> {
+  try {
+    return await apiFetch("/user/public-profile");
+  } catch {
+    return null;
+  }
+}
+
+export async function savePublicProfile(profile: PublicProfile): Promise<void> {
+  await apiFetch("/user/public-profile", { method: "PUT", body: JSON.stringify(profile) });
+}

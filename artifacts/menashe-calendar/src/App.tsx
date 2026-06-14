@@ -7,7 +7,7 @@ import {
   useClerk,
   useUser,
 } from "@clerk/react";
-import { fetchUserProfile, saveUserProfile } from "./lib/userApi";
+import { fetchUserProfile, saveUserProfile, fetchPublicProfile, type PublicProfile } from "./lib/userApi";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
@@ -46,6 +46,7 @@ import EventsModal from "./modals/EventsModal";
 import MemberDirectoryModal from "./modals/MemberDirectoryModal";
 import PrayerBoardModal from "./modals/PrayerBoardModal";
 import TorahTrackerModal from "./modals/TorahTrackerModal";
+import ProfileModal from "./modals/ProfileModal";
 import SharePage from "./pages/SharePage";
 import BookReaderModal from "./modals/BookReaderModal";
 import AdminModal from "./modals/AdminModal";
@@ -129,7 +130,7 @@ type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
   | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar"
-  | "announcements" | "events" | "members" | "prayers-board" | "torah-tracker" | null;
+  | "announcements" | "events" | "members" | "prayers-board" | "torah-tracker" | "profile" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -151,7 +152,9 @@ function SignUpPage() {
 
 function AppShell() {
   const { user, isLoaded: userLoaded } = useUser();
+  const { signOut } = useClerk();
   const profileSyncedRef = useRef(false);
+  const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
 
   const [activePage, setActivePage] = useState<Page>("home");
   const [modal, setModal] = useState<Modal>(null);
@@ -177,7 +180,15 @@ function AppShell() {
     try { return localStorage.getItem("menashe-candle-enabled") !== "false"; } catch { return true; }
   });
 
-  // Load profile from server on first sign-in
+  // Load public profile (name/role/etc.) on sign-in
+  useEffect(() => {
+    if (!userLoaded || !user) return;
+    fetchPublicProfile().then((p) => {
+      if (p) setPublicProfile(p);
+    });
+  }, [userLoaded, user?.id]);
+
+  // Load settings profile from server on first sign-in
   useEffect(() => {
     if (!userLoaded || !user) return;
     fetchUserProfile().then((profile) => {
@@ -323,6 +334,10 @@ function AppShell() {
             onBirthday={() => setModal("birthday")}
             onCommunity={() => setModal("community")}
             onCensus={() => setModal("census")}
+            onProfile={() => setModal("profile")}
+            onSignOut={() => signOut({ redirectUrl: `${basePath}/` })}
+            profileName={publicProfile?.displayName}
+            profileRole={publicProfile?.role !== "Member" ? publicProfile?.role : undefined}
             notifPermission={notifPermission}
             notifPrefs={notifPrefs}
             leadTime={leadTime}
@@ -396,9 +411,28 @@ function AppShell() {
               {modal === "census" && <CensusModal onClose={closeModal} />}
               {modal === "omer" && <OmerModal onClose={closeModal} />}
               {modal === "events" && <EventsModal onClose={closeModal} />}
-              {modal === "members" && <MemberDirectoryModal onClose={closeModal} />}
-              {modal === "prayers-board" && <PrayerBoardModal onClose={closeModal} />}
+              {modal === "members" && (
+                <MemberDirectoryModal
+                  onClose={closeModal}
+                  userProfile={publicProfile ? {
+                    name: publicProfile.displayName,
+                    city: publicProfile.city,
+                    country: publicProfile.country,
+                    role: publicProfile.role,
+                    bio: publicProfile.bio,
+                  } : null}
+                />
+              )}
+              {modal === "prayers-board" && (
+                <PrayerBoardModal onClose={closeModal} userName={publicProfile?.displayName} />
+              )}
               {modal === "torah-tracker" && <TorahTrackerModal onClose={closeModal} />}
+              {modal === "profile" && (
+                <ProfileModal
+                  onClose={closeModal}
+                  onSaved={(p) => setPublicProfile(p)}
+                />
+              )}
               {modal === "announcements" && (
                 <AnnouncementsModal
                   onClose={closeModal}

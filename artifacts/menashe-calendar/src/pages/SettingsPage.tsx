@@ -15,6 +15,10 @@ interface SettingsPageProps {
   onBirthday: () => void;
   onCommunity: () => void;
   onCensus: () => void;
+  onProfile: () => void;
+  onSignOut: () => void;
+  profileName?: string;
+  profileRole?: string;
   notifPermission: NotificationPermission;
   notifPrefs: NotificationPrefs;
   leadTime: LeadTime;
@@ -32,6 +36,7 @@ interface SettingsPageProps {
 export default function SettingsPage({
   theme, location,
   onToggleTheme, onLocationClick, onPremium, onTahara, onYartzeit, onBirthday, onCommunity, onCensus,
+  onProfile, onSignOut, profileName, profileRole,
   notifPermission, notifPrefs, leadTime, onUpdateNotifPref, onUpdateLeadTime,
   pushSubscribed, pushSupported, pushLoading, pushError, onSubscribePush, onUnsubscribePush, onTestPush,
 }: SettingsPageProps) {
@@ -111,6 +116,36 @@ export default function SettingsPage({
 
       <div style={{ padding: "16px 16px 0" }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 20 }}>{t.settingsTitle}</h1>
+
+        {/* My Profile */}
+        <div className="section-header">MY PROFILE</div>
+        <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
+          <div
+            onClick={onProfile}
+            style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", cursor: "pointer" }}
+          >
+            <div style={{
+              width: 46, height: 46, borderRadius: "50%",
+              background: "linear-gradient(135deg, #1a3050, #2a1a40)",
+              border: "1.5px solid rgba(212,168,67,0.35)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 18, fontWeight: 800, color: "var(--gold)", flexShrink: 0,
+            }}>
+              {profileName
+                ? profileName.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() || "").join("")
+                : "?"}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
+                {profileName || "Set up your profile"}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>
+                {profileRole || "Tap to add your name & community role"}
+              </div>
+            </div>
+            <span style={{ color: "var(--text-muted)" }}>›</span>
+          </div>
+        </div>
 
         {/* Location */}
         <div className="section-header">{t.settingsLocation}</div>
@@ -443,7 +478,7 @@ export default function SettingsPage({
         {/* Account */}
         <div className="section-header">{t.settingsAccount}</div>
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
-          <div style={{ padding: "14px 16px" }}>
+          <div style={{ padding: "14px 16px" }} onClick={onSignOut}>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#ef4444", cursor: "pointer" }}>{t.settingsSignOut}</div>
           </div>
         </div>

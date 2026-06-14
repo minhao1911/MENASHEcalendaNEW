@@ -35,6 +35,21 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // Public member profiles
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_public_profiles (
+        user_id       TEXT PRIMARY KEY,
+        display_name  TEXT NOT NULL DEFAULT '',
+        congregation  TEXT NOT NULL DEFAULT '',
+        bio           TEXT NOT NULL DEFAULT '',
+        role          TEXT NOT NULL DEFAULT 'Member',
+        city          TEXT NOT NULL DEFAULT '',
+        country       TEXT NOT NULL DEFAULT '',
+        avatar_emoji  TEXT NOT NULL DEFAULT '👤',
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
     // User profiles
     await client.query(`
       CREATE TABLE IF NOT EXISTS user_profiles (

@@ -236,4 +236,56 @@ router.put("/user/torah-tracker/goal", requireAuth, async (req, res) => {
   }
 });
 
+// ── Public member profiles ────────────────────────────────────────────────────
+
+router.get("/user/public-profile", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(
+      "SELECT * FROM user_public_profiles WHERE user_id = $1",
+      [userId],
+    );
+    if (rows.length === 0) return res.json(null);
+    const r = rows[0];
+    return res.json({
+      displayName: r.display_name,
+      congregation: r.congregation,
+      bio: r.bio,
+      role: r.role,
+      city: r.city,
+      country: r.country,
+      avatarEmoji: r.avatar_emoji,
+    });
+  } finally {
+    client.release();
+  }
+});
+
+router.put("/user/public-profile", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const { displayName, congregation, bio, role, city, country, avatarEmoji } = req.body;
+  if (!displayName?.trim()) return res.status(400).json({ error: "displayName required" });
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO user_public_profiles (user_id, display_name, congregation, bio, role, city, country, avatar_emoji, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         display_name = EXCLUDED.display_name,
+         congregation = EXCLUDED.congregation,
+         bio = EXCLUDED.bio,
+         role = EXCLUDED.role,
+         city = EXCLUDED.city,
+         country = EXCLUDED.country,
+         avatar_emoji = EXCLUDED.avatar_emoji,
+         updated_at = NOW()`,
+      [userId, displayName.trim(), congregation ?? "", bio ?? "", role ?? "Member", city ?? "", country ?? "", avatarEmoji ?? "👤"],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;
