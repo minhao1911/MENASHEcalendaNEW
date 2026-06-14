@@ -1346,10 +1346,6 @@ export default function Home({
             <div className="quick-action-icon" style={{ background: "rgba(59,130,246,0.13)", border: "1px solid rgba(59,130,246,0.18)", borderRadius: 12 }}>📅</div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>Holidays {hebrewYear}</div>
           </div>
-          <div className="quick-action" onClick={onShowParashah}>
-            <div className="quick-action-icon" style={{ background: "rgba(212,168,67,0.13)", border: "1px solid rgba(212,168,67,0.18)", borderRadius: 12 }}>📜</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>Parashah Schedule</div>
-          </div>
           <div className="quick-action" onClick={onMoreTools}>
             <div className="quick-action-icon" style={{ background: "rgba(168,85,247,0.13)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 12 }}>🔧</div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>More Tools</div>
