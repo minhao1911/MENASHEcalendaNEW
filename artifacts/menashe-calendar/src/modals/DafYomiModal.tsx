@@ -74,6 +74,32 @@ export default function DafYomiModal({ onClose }: Props) {
   const hdate = new HDate();
   const local = getLocalDaf();
 
+  // Progress calculations
+  const today = new Date();
+  const daysSinceStart = Math.floor((today.getTime() - CYCLE_START.getTime()) / 86400000);
+  const dayInCycle = daysSinceStart % TOTAL_PAGES;
+  const pagesRemaining = TOTAL_PAGES - dayInCycle;
+  const pct = Math.round((dayInCycle / TOTAL_PAGES) * 1000) / 10; // one decimal place
+  const cycleEndDate = new Date(CYCLE_START.getTime() + (Math.floor(daysSinceStart / TOTAL_PAGES) + 1) * TOTAL_PAGES * 86400000);
+  const cycleEndStr = cycleEndDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
+  // Current tractate progress
+  let tractateProgress = 0;
+  let tractateTotal = 1;
+  let tractatePageInside = 0;
+  {
+    let rem = dayInCycle;
+    for (const t of TRACTATES) {
+      if (rem < t.pages) {
+        tractatePageInside = rem + 1;
+        tractateTotal = t.pages;
+        tractateProgress = Math.round((rem / t.pages) * 100);
+        break;
+      }
+      rem -= t.pages;
+    }
+  }
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [officialRef, setOfficialRef] = useState<string | null>(null);
@@ -199,12 +225,74 @@ export default function DafYomiModal({ onClose }: Props) {
             <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)" }}>{cycle}</div>
           </div>
           <div className="card" style={{ flex: 1, padding: 14, textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>DAF</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#d4a843" }}>{dafNum}</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>REMAINING</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#d4a843" }}>{pagesRemaining.toLocaleString()}</div>
           </div>
           <div className="card" style={{ flex: 1, padding: 14, textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>TOTAL</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)" }}>{TOTAL_PAGES}</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>COMPLETE</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#4ade80" }}>{pct}%</div>
+          </div>
+        </div>
+
+        {/* ── Cycle Progress Bar ── */}
+        <div style={{
+          marginBottom: 14, padding: "16px 16px 14px",
+          borderRadius: 16,
+          background: "linear-gradient(135deg, #0f1e10, #0a160a)",
+          border: "1px solid rgba(74,222,128,0.2)",
+        }}>
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(74,222,128,0.7)" }}>
+              CYCLE {cycle} PROGRESS
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>
+              {dayInCycle.toLocaleString()} / {TOTAL_PAGES.toLocaleString()} dapim
+            </div>
+          </div>
+
+          {/* Main progress bar */}
+          <div style={{ height: 10, borderRadius: 99, background: "rgba(255,255,255,0.07)", marginBottom: 6, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", borderRadius: 99,
+              width: `${pct}%`,
+              background: "linear-gradient(90deg, #166534, #4ade80, #86efac)",
+              boxShadow: "0 0 8px rgba(74,222,128,0.4)",
+              transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+            }} />
+          </div>
+
+          {/* Percentage label */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: "rgba(74,222,128,0.8)", fontWeight: 700 }}>{pct}% done</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+              🏁 {cycleEndStr}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: "rgba(74,222,128,0.1)", marginBottom: 14 }} />
+
+          {/* Current tractate sub-bar */}
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "rgba(212,168,67,0.65)", marginBottom: 8 }}>
+            CURRENT TRACTATE — {tractate.toUpperCase()}
+          </div>
+          <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,0.07)", marginBottom: 6, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", borderRadius: 99,
+              width: `${tractateProgress}%`,
+              background: "linear-gradient(90deg, #6b4800, #d4a843, #f0c050)",
+              boxShadow: "0 0 6px rgba(212,168,67,0.35)",
+              transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+            }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div style={{ fontSize: 11, color: "rgba(212,168,67,0.75)", fontWeight: 700 }}>
+              Daf {tractatePageInside + 1} of {tractateTotal}
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+              {tractateTotal - tractatePageInside} left in tractate
+            </div>
           </div>
         </div>
 
