@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 import { getOmerDay } from "../modals/OmerModal";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import { getCurrentParasha, getUpcomingHolidays } from "../lib/parasha";
 import { Location } from "../lib/locations";
+import { sendNotification, isNotifSupported } from "../hooks/useNotifications";
 
 const API_BASE = "/api";
 
@@ -1118,9 +1119,15 @@ export default function Home({
   const omerDay = getOmerDay(today);
 
   const [candleCountdown, setCandleCountdown] = useState("");
+  const candleNotifFiredRef = useRef<string>("");
 
   useEffect(() => {
     if (!isPremium || !candleEnabled) return;
+
+    // Request notification permission silently for premium users
+    if (isNotifSupported() && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
 
     function getNextCandleLighting(): Date | null {
       const now = new Date();
@@ -1138,7 +1145,20 @@ export default function Home({
       if (!target) { setCandleCountdown(""); return; }
       const now = new Date();
       const diff = target.getTime() - now.getTime();
-      if (diff <= 0) { setCandleCountdown("Now"); return; }
+      if (diff <= 0) {
+        setCandleCountdown("Now!");
+        // Fire notification exactly once per candle lighting time
+        const key = target.toISOString();
+        if (candleNotifFiredRef.current !== key) {
+          candleNotifFiredRef.current = key;
+          sendNotification(
+            "🕯 Shabbat Candle Lighting",
+            `It's time to light candles in ${location.name}! Shabbat Shalom — שַׁבָּת שָׁלוֹם`,
+            "candle-lighting-premium"
+          );
+        }
+        return;
+      }
       const totalSecs = Math.floor(diff / 1000);
       const d = Math.floor(totalSecs / 86400);
       const h = Math.floor((totalSecs % 86400) / 3600);
