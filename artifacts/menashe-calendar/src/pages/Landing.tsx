@@ -416,16 +416,77 @@ export default function Landing({ onSignIn }: LandingProps) {
           filter: blur(80px);
           pointer-events: none;
         }
+
+        /* ── Saipikhup textile band ── */
+        .saipikhup-band {
+          position: absolute;
+          left: 0; right: 0;
+          height: 72px;
+          background: linear-gradient(180deg, #143d24 0%, #1d5c38 50%, #143d24 100%);
+          overflow: hidden;
+        }
+        .saipikhup-band::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-image: url('/saipikhup-light.svg');
+          background-repeat: repeat;
+          background-size: 64px 64px;
+          opacity: 0.32;
+        }
+        .saipikhup-band::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg,
+            rgba(8,17,32,0.9) 0%,
+            transparent 25%,
+            transparent 75%,
+            rgba(8,17,32,0.9) 100%
+          );
+        }
+        .saipikhup-border-top {
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, rgba(212,175,55,0.6), transparent);
+        }
+        .saipikhup-border-bottom {
+          position: absolute;
+          bottom: 0; left: 0; right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, rgba(212,175,55,0.6), transparent);
+        }
       `}</style>
 
       <div className="landing-root">
         {/* Stars */}
         <Stars />
 
+        {/* Full-page saipikhup background — ultra-faint */}
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundImage: "url('/saipikhup-light.svg')",
+            backgroundRepeat: "repeat",
+            backgroundSize: "80px 80px",
+            opacity: 0.03,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+
         {/* Sticky nav */}
         <nav className="landing-nav">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 20 }}>✡</span>
+            {/* M + Star of David nav logo */}
+            <svg viewBox="0 0 80 80" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="40,6 58,38 22,38" stroke="#D4AF37" strokeWidth="3.2" strokeLinejoin="round" fill="none"/>
+              <polygon points="40,62 22,30 58,30" stroke="#D4AF37" strokeWidth="3.2" strokeLinejoin="round" fill="none"/>
+              <polyline points="14,74 14,30 40,56 66,30 66,74" stroke="#D4AF37" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            </svg>
             <span style={{ fontSize: 14, fontWeight: 700, color: "#D4AF37", letterSpacing: ".08em" }}>{t.landingBadge}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -481,6 +542,12 @@ export default function Landing({ onSignIn }: LandingProps) {
             </svg>
           </div>
 
+          {/* ── Saipikhup textile band — sits above the Jerusalem skyline ── */}
+          <div className="saipikhup-band" style={{ bottom: 236, zIndex: 3 }}>
+            <div className="saipikhup-border-top" />
+            <div className="saipikhup-border-bottom" />
+          </div>
+
           {/* Jerusalem skyline at bottom of hero */}
           <div className="skyline-wrap" style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 240, overflow: "hidden" }}>
             {/* Dark overlay gradient above skyline */}
@@ -488,6 +555,11 @@ export default function Landing({ onSignIn }: LandingProps) {
             <JerusalemSkyline />
             {/* Ground fade */}
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 60, background: "linear-gradient(to bottom, transparent, #081120)", zIndex: 2, pointerEvents: "none" }} />
+          </div>
+
+          {/* ── Saipikhup textile band — at the very bottom edge ── */}
+          <div className="saipikhup-band" style={{ bottom: 0, zIndex: 3, height: 20, opacity: 0.7 }}>
+            <div className="saipikhup-border-top" />
           </div>
         </section>
 
