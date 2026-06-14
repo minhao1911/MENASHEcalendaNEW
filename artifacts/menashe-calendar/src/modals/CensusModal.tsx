@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Props { onClose: () => void; }
 
@@ -317,6 +319,165 @@ function exportCSV(branch: Branch) {
   a.download = `${branch.name.replace(/\s+/g, "_")}_Census_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EXPORT — PDF DOWNLOAD (direct save, no print dialog)
+══════════════════════════════════════════════════════════════ */
+
+function downloadPDF(branch: Branch) {
+  const fmt = (s?: string) => s || "";
+  const fmtDate = (s?: string) => {
+    if (!s) return "";
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? s : d.toLocaleDateString("en-GB");
+  };
+
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 12;
+
+  branch.families.forEach((fam, famIdx) => {
+    if (famIdx > 0) doc.addPage();
+
+    let y = 14;
+
+    /* ── Header ── */
+    doc.setFont("times", "bold");
+    doc.setFontSize(13);
+    doc.text("BNEI MENASHE COUNCIL INDIA CENSUS 2026 - 2027", pageW / 2, y, { align: "center" });
+    y += 5.5;
+    doc.setFont("times", "normal");
+    doc.setFontSize(8.5);
+    doc.text("Regd. No. 23/SR/2010-CCP", pageW / 2, y, { align: "center" });
+    y += 4.5;
+    doc.text("Head Office: Beith Shalom B.Vengnom, Churachandpur, Manipur, India - 795128", pageW / 2, y, { align: "center" });
+    y += 9;
+
+    /* ── Community / Head row ── */
+    doc.setFont("times", "bold");
+    doc.setFontSize(9.5);
+    const leftLabel = "Name of the Community:";
+    const rightLabel = "H Head of the Family:";
+    doc.text(leftLabel, margin, y);
+    const leftLabelW = doc.getTextWidth(leftLabel);
+    const communityVal = fmt(branch.name);
+    doc.setFont("times", "normal");
+    doc.text(communityVal, margin + leftLabelW + 2, y);
+    doc.line(margin + leftLabelW + 1, y + 0.8, margin + leftLabelW + 1 + 85, y + 0.8);
+
+    const rightX = pageW / 2 + 8;
+    doc.setFont("times", "bold");
+    doc.text(rightLabel, rightX, y);
+    const rightLabelW = doc.getTextWidth(rightLabel);
+    doc.setFont("times", "normal");
+    const headVal = fmt(fam.headCensus.namePerPassport || fam.headName);
+    doc.text(headVal, rightX + rightLabelW + 2, y);
+    doc.line(rightX + rightLabelW + 1, y + 0.8, rightX + rightLabelW + 1 + 72, y + 0.8);
+    y += 8;
+
+    /* ── Table rows ── */
+    const dataRows: CensusRow[] = [
+      fam.headCensus,
+      ...fam.members.slice(0, 9).map(m => m as CensusRow),
+    ];
+    while (dataRows.length < 10) dataRows.push({});
+
+    const body = dataRows.map((r, i) => [
+      String(i + 1),
+      fmt(r.surname),
+      fmt(r.namePerPassport),
+      fmt(r.hebrewName),
+      fmt(r.maritalStatus),
+      fmt(r.sex),
+      fmtDate(r.dob),
+      fmt(r.fatherName),
+      fmt(r.motherName),
+      fmtDate(r.dateOfJudaismPractice),
+      fmt(r.passportNo),
+      fmtDate(r.passportIssueDate),
+      fmtDate(r.passportExpiryDate),
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [
+        [
+          { content: "Sl.\nNo",                          rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Surname",                          rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Name According to\nAdhaar/Passport", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Hebrew\nName",                     rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Marital\nStatus",                  rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Sex\nM/F",                         rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Date of\nBirth",                   rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Father's\nName",                   rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Mother's\nName",                   rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Date of\nJudaism\nPractice",       rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Passport No.",                     rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Passport",                         colSpan: 2, styles: { halign: "center" } },
+        ],
+        [
+          { content: "Date of\nIssue",  styles: { halign: "center", valign: "middle" } },
+          { content: "Date of\nExpiry", styles: { halign: "center", valign: "middle" } },
+        ],
+      ],
+      body,
+      styles: {
+        font: "times",
+        fontSize: 7,
+        cellPadding: 2,
+        halign: "center",
+        valign: "middle",
+        lineColor: [0, 0, 0] as [number, number, number],
+        lineWidth: 0.3,
+        textColor: [0, 0, 0] as [number, number, number],
+        fillColor: false as unknown as [number, number, number],
+      },
+      headStyles: {
+        fillColor: [255, 255, 255] as [number, number, number],
+        textColor: [0, 0, 0] as [number, number, number],
+        fontStyle: "bold",
+        fontSize: 7,
+      },
+      bodyStyles: {
+        fillColor: false as unknown as [number, number, number],
+        minCellHeight: 8,
+      },
+      columnStyles: {
+        0:  { cellWidth: 9 },
+        4:  { cellWidth: 16 },
+        5:  { cellWidth: 10 },
+        6:  { cellWidth: 18 },
+        9:  { cellWidth: 18 },
+        11: { cellWidth: 18 },
+        12: { cellWidth: 18 },
+      },
+    });
+
+    /* ── Signatures ── */
+    const tableBottom = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+    const sigY = tableBottom + 20;
+    const third = (pageW - margin * 2) / 3;
+    const sigLabels = [
+      "Signature of head of the Family",
+      "Community Chairman/Secretary",
+      "BMC(I) Chairman/Secretary",
+    ];
+    sigLabels.forEach((label, i) => {
+      const cx = margin + third * i + third / 2;
+      const lineHalf = 30;
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.4);
+      doc.line(cx - lineHalf, sigY, cx + lineHalf, sigY);
+      doc.setFont("times", "bold");
+      doc.setFontSize(8);
+      doc.text(label, cx, sigY + 5, { align: "center" });
+    });
+  });
+
+  const fileName = `${branch.name.replace(/[^a-zA-Z0-9]+/g, "_")}_Census_2026-27.pdf`;
+  doc.save(fileName);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1823,6 +1984,11 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
                 <span style={{ fontSize: 24 }}>📥</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Download CSV</span>
                 <span style={{ fontSize: 10, color: "var(--text-muted)" }}>All census fields · Excel/Sheets</span>
+              </button>
+              <button onClick={() => downloadPDF(branch)} style={{ flex: 1, padding: "16px 10px", background: "transparent", border: "none", borderRight: "1px solid var(--border)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                <span style={{ fontSize: 24 }}>📄</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Download PDF</span>
+                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Official form · saves directly</span>
               </button>
               <button onClick={() => exportPrint(branch)} style={{ flex: 1, padding: "16px 10px", background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
                 <span style={{ fontSize: 24 }}>🖨️</span>
