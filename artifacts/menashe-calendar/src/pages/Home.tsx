@@ -1327,24 +1327,15 @@ export default function Home({
           </div>
         </div>
 
-        {/* ── Daf Yomi ── */}
-        <div className="card card-interactive" style={{ padding: 14, marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }} onClick={onShowDafYomi}>
-          <div className="icon-circle" style={{ background: "rgba(20,184,166,0.15)", border: "1px solid rgba(20,184,166,0.2)", fontSize: 22 }}>
-            📖
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>Daf Yomi</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Today's daily Talmud page</div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
-        </div>
-
-
         {/* ── Quick Actions ── */}
         <div className="quick-action-grid" style={{ marginBottom: 12 }}>
           <div className="quick-action" onClick={onShowHolidays}>
             <div className="quick-action-icon" style={{ background: "rgba(59,130,246,0.13)", border: "1px solid rgba(59,130,246,0.18)", borderRadius: 12 }}>📅</div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>Holidays {hebrewYear}</div>
+          </div>
+          <div className="quick-action" onClick={onShowDafYomi}>
+            <div className="quick-action-icon" style={{ background: "rgba(20,184,166,0.13)", border: "1px solid rgba(20,184,166,0.18)", borderRadius: 12 }}>📖</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>Daf Yomi</div>
           </div>
           <div className="quick-action" onClick={onMoreTools}>
             <div className="quick-action-icon" style={{ background: "rgba(168,85,247,0.13)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 12 }}>🔧</div>
