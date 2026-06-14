@@ -1,4 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  ClerkProvider,
+  SignIn,
+  SignUp,
+  Show,
+  useClerk,
+  useUser,
+} from "@clerk/react";
+import { publishableKeyFromHost } from "@clerk/react/internal";
+import { dark } from "@clerk/themes";
+import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { LanguageProvider } from "./context/LanguageContext";
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
@@ -44,6 +55,74 @@ import MoreToolsModal from "./pages/MoreToolsModal";
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
 
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function stripBase(path: string): string {
+  return basePath && path.startsWith(basePath)
+    ? path.slice(basePath.length) || "/"
+    : path;
+}
+
+if (!clerkPubKey) {
+  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
+}
+
+const clerkAppearance = {
+  baseTheme: dark,
+  cssLayerName: "clerk",
+  options: {
+    logoPlacement: "inside" as const,
+    logoLinkUrl: basePath || "/",
+    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+  },
+  variables: {
+    colorPrimary: "#D4AF37",
+    colorForeground: "#F5F0E8",
+    colorMutedForeground: "#A89070",
+    colorDanger: "#ef4444",
+    colorBackground: "#0F1829",
+    colorInput: "#1a2440",
+    colorInputForeground: "#F5F0E8",
+    colorNeutral: "#2a3a5c",
+    fontFamily: "'Inter', sans-serif",
+    borderRadius: "0.75rem",
+  },
+  elements: {
+    rootBox: "w-full flex justify-center",
+    cardBox: "bg-[#0F1829] border border-[#D4AF37]/20 rounded-2xl w-[440px] max-w-full overflow-hidden shadow-xl shadow-black/40",
+    card: "!shadow-none !border-0 !bg-transparent !rounded-none",
+    footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
+    headerTitle: "text-[#D4AF37] font-bold",
+    headerSubtitle: "text-[#A89070]",
+    socialButtonsBlockButtonText: "text-[#F5F0E8]",
+    formFieldLabel: "text-[#A89070]",
+    footerActionLink: "text-[#D4AF37] hover:text-[#F5F0E8]",
+    footerActionText: "text-[#A89070]",
+    dividerText: "text-[#A89070]",
+    identityPreviewEditButton: "text-[#D4AF37]",
+    formFieldSuccessText: "text-green-400",
+    alertText: "text-[#F5F0E8]",
+    logoBox: "flex justify-center mb-2",
+    logoImage: "h-10",
+    socialButtonsBlockButton: "border-[#2a3a5c] bg-[#1a2440] text-[#F5F0E8] hover:bg-[#243050]",
+    formButtonPrimary: "bg-[#D4AF37] text-[#0F1829] font-bold hover:bg-[#c9a430]",
+    formFieldInput: "bg-[#1a2440] border-[#2a3a5c] text-[#F5F0E8]",
+    footerAction: "bg-[#0a1020]",
+    dividerLine: "bg-[#2a3a5c]",
+    alert: "bg-[#1a2440] border-[#D4AF37]/30",
+    otpCodeFieldInput: "bg-[#1a2440] border-[#2a3a5c] text-[#F5F0E8]",
+    formFieldRow: "gap-2",
+    main: "gap-4",
+  },
+};
+
 type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium";
 type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
@@ -53,8 +132,23 @@ type Modal =
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
-export default function App() {
-  const [signedIn, setSignedIn] = useState(false);
+function SignInPage() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center px-4" style={{ background: "linear-gradient(135deg, #0a1020 0%, #0F1829 50%, #0a1525 100%)" }}>
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+    </div>
+  );
+}
+
+function SignUpPage() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center px-4" style={{ background: "linear-gradient(135deg, #0a1020 0%, #0F1829 50%, #0a1525 100%)" }}>
+      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+    </div>
+  );
+}
+
+function AppShell() {
   const [activePage, setActivePage] = useState<Page>("home");
   const [modal, setModal] = useState<Modal>(null);
   const [dayModal, setDayModal] = useState<DayInfo>(null);
@@ -131,18 +225,6 @@ export default function App() {
   }, [readingBook]);
 
   if (shareToken) return <SharePage token={shareToken} />;
-
-  if (!signedIn) {
-    return (
-      <LanguageProvider>
-        <div className={`app-container${isLight ? " light-theme" : ""}`}>
-          <div className="app-shell">
-            <Landing onSignIn={() => setSignedIn(true)} />
-          </div>
-        </div>
-      </LanguageProvider>
-    );
-  }
 
   function renderPage() {
     switch (activePage) {
@@ -232,107 +314,184 @@ export default function App() {
 
   return (
     <LanguageProvider>
-    <div className={`app-container${isLight ? " light-theme" : ""}`}>
-      <div className="app-shell">
-        {/* Book Reader — full-screen, shown above everything except itself */}
-        {readingBook && (
-          <BookReaderModal book={readingBook} onClose={() => setReadingBook(null)} />
-        )}
+      <div className={`app-container${isLight ? " light-theme" : ""}`}>
+        <div className="app-shell">
+          {readingBook && (
+            <BookReaderModal book={readingBook} onClose={() => setReadingBook(null)} />
+          )}
 
-        {/* Admin — full-screen */}
-        {modal === "admin" && (
-          <AdminModal
-            onClose={closeModal}
-            onRefresh={() => { setSiddurRefreshKey(k => k + 1); closeModal(); showToast("Library updated"); }}
-          />
-        )}
+          {modal === "admin" && (
+            <AdminModal
+              onClose={closeModal}
+              onRefresh={() => { setSiddurRefreshKey(k => k + 1); closeModal(); showToast("Library updated"); }}
+            />
+          )}
 
-        {/* Normal app shell (hidden behind full-screen modals) */}
-        {!readingBook && modal !== "admin" && (
-          <>
-            <div className="screen fade-in">
-              {renderPage()}
-            </div>
+          {!readingBook && modal !== "admin" && (
+            <>
+              <div className="screen fade-in">
+                {renderPage()}
+              </div>
 
-            <BottomNav active={activePage} onNavigate={(p) => setActivePage(p as Page)} />
+              <BottomNav active={activePage} onNavigate={(p) => setActivePage(p as Page)} />
 
-            {toast && <div className="toast">{toast}</div>}
+              {toast && <div className="toast">{toast}</div>}
 
-            {dayModal && (
-              <DayModal {...dayModal} location={location} onClose={() => setDayModal(null)} />
-            )}
+              {dayModal && (
+                <DayModal {...dayModal} location={location} onClose={() => setDayModal(null)} />
+              )}
 
-            {modal === "location" && (
-              <LocationModal current={location} onSelect={selectLocation} onClose={closeModal} />
-            )}
-            {modal === "holidays" && <HolidaysModal onClose={closeModal} />}
-            {modal === "premium" && <PremiumModal onClose={closeModal} onActivated={onPremiumActivated} />}
-            {modal === "parashah" && <ParashahModal onClose={closeModal} />}
-            {modal === "dafyomi" && <DafYomiModal onClose={closeModal} />}
-            {modal === "sefaria" && <SefariaSearchModal onClose={closeModal} />}
-            {modal === "hebrewdate" && <HebrewDateModal onClose={closeModal} />}
-            {modal === "luach" && <LuachModal onClose={closeModal} />}
-            {modal === "mussar" && <MussarModal onClose={closeModal} />}
-            {modal === "zmaniminfo" && <ZmanimInfoModal onClose={closeModal} />}
-            {modal === "torahnote" && <TorahNoteModal onClose={closeModal} />}
-            {modal === "birthday" && <BirthdayModal onClose={closeModal} />}
-            {modal === "tahara" && <TaharaModal onClose={closeModal} />}
-            {modal === "yartzeit" && <YartzeitModal onClose={closeModal} location={location} />}
-            {modal === "community" && <CommunityModal onClose={closeModal} />}
-            {modal === "census" && <CensusModal onClose={closeModal} />}
-            {modal === "omer" && <OmerModal onClose={closeModal} />}
-            {modal === "events" && <EventsModal onClose={closeModal} />}
-            {modal === "members" && <MemberDirectoryModal onClose={closeModal} />}
-            {modal === "prayers-board" && <PrayerBoardModal onClose={closeModal} />}
-            {modal === "torah-tracker" && <TorahTrackerModal onClose={closeModal} />}
-            {modal === "announcements" && (
-              <AnnouncementsModal
-                onClose={closeModal}
-                announcements={announcements}
-                onAdd={addAnnouncement}
-                onUpdate={updateAnnouncement}
-                onDelete={deleteAnnouncement}
-                onSendNow={sendNow}
-              />
-            )}
-            {modal === "prayers" && (
-              <PrayerTimesModal
-                onClose={closeModal}
-                location={location}
-                onSettings={() => { setActivePage("settings"); setModal(null); }}
-              />
-            )}
-            {modal === "more" && (
-              <MoreToolsModal
-                onClose={closeModal}
-                onTahara={() => setModal("tahara")}
-                onYartzeit={() => setModal("yartzeit")}
-                onCommunity={() => setModal("community")}
-                onCensus={() => setModal("census")}
-                onSettings={() => { setActivePage("settings"); setModal(null); }}
-                onDafYomi={() => setModal("dafyomi")}
-                onBirthday={() => setModal("birthday")}
-                onOmer={() => setModal("omer")}
-                onPrayers={() => setModal("prayers")}
-                onSefariaSearch={() => setModal("sefaria")}
-                onHebrewDate={() => setModal("hebrewdate")}
-                onLuach={() => setModal("luach")}
-                onMussar={() => setModal("mussar")}
-                onAnnouncements={() => setModal("announcements")}
-                onEvents={() => setModal("events")}
-                onMembers={() => setModal("members")}
-                onPrayerBoard={() => setModal("prayers-board")}
-                onTorahTracker={() => setModal("torah-tracker")}
-                isPremium={isPremium}
-                candleEnabled={candleEnabled}
-                onToggleCandle={onToggleCandle}
-                onShowPremium={() => { closeModal(); setActivePage("premium"); }}
-              />
-            )}
-          </>
-        )}
+              {modal === "location" && (
+                <LocationModal current={location} onSelect={selectLocation} onClose={closeModal} />
+              )}
+              {modal === "holidays" && <HolidaysModal onClose={closeModal} />}
+              {modal === "premium" && <PremiumModal onClose={closeModal} onActivated={onPremiumActivated} />}
+              {modal === "parashah" && <ParashahModal onClose={closeModal} />}
+              {modal === "dafyomi" && <DafYomiModal onClose={closeModal} />}
+              {modal === "sefaria" && <SefariaSearchModal onClose={closeModal} />}
+              {modal === "hebrewdate" && <HebrewDateModal onClose={closeModal} />}
+              {modal === "luach" && <LuachModal onClose={closeModal} />}
+              {modal === "mussar" && <MussarModal onClose={closeModal} />}
+              {modal === "zmaniminfo" && <ZmanimInfoModal onClose={closeModal} />}
+              {modal === "torahnote" && <TorahNoteModal onClose={closeModal} />}
+              {modal === "birthday" && <BirthdayModal onClose={closeModal} />}
+              {modal === "tahara" && <TaharaModal onClose={closeModal} />}
+              {modal === "yartzeit" && <YartzeitModal onClose={closeModal} location={location} />}
+              {modal === "community" && <CommunityModal onClose={closeModal} />}
+              {modal === "census" && <CensusModal onClose={closeModal} />}
+              {modal === "omer" && <OmerModal onClose={closeModal} />}
+              {modal === "events" && <EventsModal onClose={closeModal} />}
+              {modal === "members" && <MemberDirectoryModal onClose={closeModal} />}
+              {modal === "prayers-board" && <PrayerBoardModal onClose={closeModal} />}
+              {modal === "torah-tracker" && <TorahTrackerModal onClose={closeModal} />}
+              {modal === "announcements" && (
+                <AnnouncementsModal
+                  onClose={closeModal}
+                  announcements={announcements}
+                  onAdd={addAnnouncement}
+                  onUpdate={updateAnnouncement}
+                  onDelete={deleteAnnouncement}
+                  onSendNow={sendNow}
+                />
+              )}
+              {modal === "prayers" && (
+                <PrayerTimesModal
+                  onClose={closeModal}
+                  location={location}
+                  onSettings={() => { setActivePage("settings"); setModal(null); }}
+                />
+              )}
+              {modal === "more" && (
+                <MoreToolsModal
+                  onClose={closeModal}
+                  onTahara={() => setModal("tahara")}
+                  onYartzeit={() => setModal("yartzeit")}
+                  onCommunity={() => setModal("community")}
+                  onCensus={() => setModal("census")}
+                  onSettings={() => { setActivePage("settings"); setModal(null); }}
+                  onDafYomi={() => setModal("dafyomi")}
+                  onBirthday={() => setModal("birthday")}
+                  onOmer={() => setModal("omer")}
+                  onPrayers={() => setModal("prayers")}
+                  onSefariaSearch={() => setModal("sefaria")}
+                  onHebrewDate={() => setModal("hebrewdate")}
+                  onLuach={() => setModal("luach")}
+                  onMussar={() => setModal("mussar")}
+                  onAnnouncements={() => setModal("announcements")}
+                  onEvents={() => setModal("events")}
+                  onMembers={() => setModal("members")}
+                  onPrayerBoard={() => setModal("prayers-board")}
+                  onTorahTracker={() => setModal("torah-tracker")}
+                  isPremium={isPremium}
+                  candleEnabled={candleEnabled}
+                  onToggleCandle={onToggleCandle}
+                  onShowPremium={() => { closeModal(); setActivePage("premium"); }}
+                />
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
     </LanguageProvider>
+  );
+}
+
+function HomeRoute() {
+  return (
+    <>
+      <Show when="signed-in">
+        <Redirect to="/app" />
+      </Show>
+      <Show when="signed-out">
+        <LanguageProvider>
+          <div className="app-container">
+            <div className="app-shell">
+              <Landing onSignIn={() => { window.location.href = `${basePath}/sign-in`; }} />
+            </div>
+          </div>
+        </LanguageProvider>
+      </Show>
+    </>
+  );
+}
+
+function AppRoute() {
+  return (
+    <>
+      <Show when="signed-in">
+        <AppShell />
+      </Show>
+      <Show when="signed-out">
+        <Redirect to="/" />
+      </Show>
+    </>
+  );
+}
+
+function ClerkProviderWithRoutes() {
+  const [, setLocation] = useLocation();
+
+  return (
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      proxyUrl={clerkProxyUrl}
+      appearance={clerkAppearance}
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+      localization={{
+        signIn: {
+          start: {
+            title: "Welcome back",
+            subtitle: "Sign in to access the sacred calendar",
+          },
+        },
+        signUp: {
+          start: {
+            title: "Join Bnei Menashe",
+            subtitle: "Create your account to get started",
+          },
+        },
+      }}
+      routerPush={(to) => setLocation(stripBase(to))}
+      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+    >
+      <Switch>
+        <Route path="/" component={HomeRoute} />
+        <Route path="/app" component={AppRoute} />
+        <Route path="/sign-in/*?" component={SignInPage} />
+        <Route path="/sign-up/*?" component={SignUpPage} />
+        <Route>
+          <Redirect to="/" />
+        </Route>
+      </Switch>
+    </ClerkProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <WouterRouter base={basePath}>
+      <ClerkProviderWithRoutes />
+    </WouterRouter>
   );
 }
