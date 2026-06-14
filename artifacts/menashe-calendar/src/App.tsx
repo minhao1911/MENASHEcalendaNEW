@@ -8,6 +8,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PremiumPage from "./pages/PremiumPage";
 import BottomNav from "./components/BottomNav";
 import { useNotifications } from "./hooks/useNotifications";
+import { usePushSubscription } from "./hooks/usePushSubscription";
 import { useAnnouncements } from "./hooks/useAnnouncements";
 
 import LocationModal from "./modals/LocationModal";
@@ -90,6 +91,7 @@ export default function App() {
   }
 
   const { permission: notifPermission, prefs: notifPrefs, leadTime, updatePref: updateNotifPref, updateLeadTime } = useNotifications(location);
+  const { isSubscribed: pushSubscribed, isSupported: pushSupported, isLoading: pushLoading, error: pushError, subscribe: subscribePush, unsubscribe: unsubscribePush, sendTest: sendTestPush } = usePushSubscription(location, notifPrefs, leadTime);
   const { announcements, addAnnouncement, updateAnnouncement, deleteAnnouncement, sendNow } = useAnnouncements();
 
   const isLight = theme === "light";
@@ -206,6 +208,13 @@ export default function App() {
             leadTime={leadTime}
             onUpdateNotifPref={updateNotifPref}
             onUpdateLeadTime={updateLeadTime}
+            pushSubscribed={pushSubscribed}
+            pushSupported={pushSupported}
+            pushLoading={pushLoading}
+            pushError={pushError}
+            onSubscribePush={subscribePush}
+            onUnsubscribePush={unsubscribePush}
+            onTestPush={sendTestPush}
           />
         );
       case "premium":

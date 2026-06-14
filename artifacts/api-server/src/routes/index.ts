@@ -4,6 +4,7 @@ import booksRouter from "./books";
 import storageRouter from "./storage";
 import holidayInsightsRouter from "./holidayInsights";
 import parshaInsightsRouter from "./parshaInsights";
+import pushRouter from "./push";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(booksRouter);
 router.use(storageRouter);
 router.use(holidayInsightsRouter);
 router.use(parshaInsightsRouter);
+router.use(pushRouter);
 
 export default router;

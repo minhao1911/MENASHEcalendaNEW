@@ -18,15 +18,24 @@ interface SettingsPageProps {
   leadTime: LeadTime;
   onUpdateNotifPref: (key: keyof NotificationPrefs, value: boolean) => Promise<boolean>;
   onUpdateLeadTime: (mins: LeadTime) => void;
+  pushSubscribed: boolean;
+  pushSupported: boolean;
+  pushLoading: boolean;
+  pushError: string | null;
+  onSubscribePush: () => Promise<boolean>;
+  onUnsubscribePush: () => void;
+  onTestPush: () => Promise<boolean>;
 }
 
 export default function SettingsPage({
   theme, location,
   onToggleTheme, onLocationClick, onPremium, onTahara, onYartzeit, onBirthday, onCommunity, onCensus,
   notifPermission, notifPrefs, leadTime, onUpdateNotifPref, onUpdateLeadTime,
+  pushSubscribed, pushSupported, pushLoading, pushError, onSubscribePush, onUnsubscribePush, onTestPush,
 }: SettingsPageProps) {
   const [showHebrew, setShowHebrew] = useState(true);
   const [pendingKey, setPendingKey] = useState<keyof NotificationPrefs | null>(null);
+  const [testSent, setTestSent] = useState(false);
   const isLight = theme === "light";
   const notifBlocked = notifPermission === "denied";
   const notifUnsupported = typeof Notification === "undefined";
@@ -300,6 +309,68 @@ export default function SettingsPage({
               />
             }
           />
+        </div>
+
+        {/* Background Push Notifications */}
+        <div className="section-header">BACKGROUND PUSH NOTIFICATIONS</div>
+        <div className="card" style={{ marginBottom: 16, padding: "16px" }}>
+          <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.5 }}>
+            {pushSupported
+              ? "Receive notifications even when the app is closed or your device is locked. Your current notification preferences above will be sent in the background."
+              : "Background push notifications are not supported in this browser."}
+          </div>
+          {pushError && (
+            <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", fontSize: 12, color: "#ef4444" }}>
+              {pushError}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {!pushSubscribed ? (
+              <button
+                onClick={onSubscribePush}
+                disabled={!pushSupported || pushLoading}
+                style={{
+                  flex: 1, padding: "10px 16px", borderRadius: 10, border: "1px solid rgba(212,168,67,0.4)",
+                  background: "rgba(212,168,67,0.12)", color: "#d4a843", fontWeight: 700, fontSize: 14,
+                  cursor: pushSupported && !pushLoading ? "pointer" : "not-allowed",
+                  opacity: pushSupported && !pushLoading ? 1 : 0.5, transition: "all 0.15s",
+                }}
+              >
+                {pushLoading ? "Enabling…" : "🔔 Enable Background Push"}
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={async () => { const ok = await onTestPush(); if (ok) { setTestSent(true); setTimeout(() => setTestSent(false), 3000); } }}
+                  disabled={pushLoading}
+                  style={{
+                    flex: 1, padding: "10px 16px", borderRadius: 10, border: "1px solid rgba(212,168,67,0.4)",
+                    background: "rgba(212,168,67,0.12)", color: "#d4a843", fontWeight: 700, fontSize: 13,
+                    cursor: "pointer", transition: "all 0.15s",
+                  }}
+                >
+                  {testSent ? "✓ Test Sent!" : "🧪 Send Test Push"}
+                </button>
+                <button
+                  onClick={onUnsubscribePush}
+                  disabled={pushLoading}
+                  style={{
+                    padding: "10px 16px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)",
+                    background: "rgba(239,68,68,0.08)", color: "#ef4444", fontWeight: 600, fontSize: 13,
+                    cursor: "pointer", transition: "all 0.15s",
+                  }}
+                >
+                  {pushLoading ? "…" : "Disable"}
+                </button>
+              </>
+            )}
+          </div>
+          {pushSubscribed && (
+            <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
+              <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Active — notifications scheduled for {location.name}</span>
+            </div>
+          )}
         </div>
 
         {/* Tools */}
