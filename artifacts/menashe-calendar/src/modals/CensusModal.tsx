@@ -325,26 +325,25 @@ function exportCSV(branch: Branch) {
 ══════════════════════════════════════════════════════════════ */
 
 function exportPrint(branch: Branch) {
-  const fmt = (s?: string) => s || "";
+  const fmt = (s?: string) => (s || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const fmtDate = (s?: string) => {
     if (!s) return "";
     const d = new Date(s);
     return isNaN(d.getTime()) ? s : d.toLocaleDateString("en-GB");
   };
 
-  /* Build one form page per family (up to 10 rows per page) */
+  /* Build one form page per family — exactly 10 rows per official form */
   const pages = branch.families.map(fam => {
-    const allRows: { sl: number; data: CensusRow; label: string }[] = [
-      { sl: 1, data: fam.headCensus, label: "Head of Family" },
-      ...fam.members.map((m, i) => ({ sl: i + 2, data: m, label: RELATION_LABELS[m.relation] })),
+    const dataRows: { sl: number; data: CensusRow }[] = [
+      { sl: 1, data: fam.headCensus },
+      ...fam.members.slice(0, 9).map((m, i) => ({ sl: i + 2, data: m as CensusRow })),
     ];
-
-    /* Pad to 10 rows */
-    while (allRows.length < 10) {
-      allRows.push({ sl: allRows.length + 1, data: {}, label: "" });
+    /* Pad with empty rows to always reach exactly 10 */
+    while (dataRows.length < 10) {
+      dataRows.push({ sl: dataRows.length + 1, data: {} });
     }
 
-    const tableRows = allRows.map(r => `
+    const tableRows = dataRows.map(r => `
       <tr>
         <td class="c-sl">${r.sl}</td>
         <td>${fmt(r.data.surname)}</td>
@@ -407,15 +406,15 @@ function exportPrint(branch: Branch) {
       <div class="signatures">
         <div class="sig-block">
           <div class="sig-line"></div>
-          <div class="sig-label">Signature of Head of the Family</div>
+          <div class="sig-label">Signature of head of the Family</div>
         </div>
         <div class="sig-block">
           <div class="sig-line"></div>
-          <div class="sig-label">Community Chairman / Secretary</div>
+          <div class="sig-label">Community Chairman/Secretary</div>
         </div>
         <div class="sig-block">
           <div class="sig-line"></div>
-          <div class="sig-label">BMC(I) Chairman / Secretary</div>
+          <div class="sig-label">BMC(I) Chairman/Secretary</div>
         </div>
       </div>
     </div>`;
@@ -429,40 +428,38 @@ function exportPrint(branch: Branch) {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Times New Roman', Times, serif; font-size: 9pt; color: #000; background: #fff; }
-    .page { padding: 18mm 14mm 14mm; min-height: 297mm; }
+    .page { padding: 18mm 15mm 15mm; min-height: 297mm; }
     .page-break { page-break-after: always; }
 
     /* Header */
-    .form-header { text-align: center; margin-bottom: 10px; }
-    .form-title  { font-size: 13pt; font-weight: bold; letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 3px; }
+    .form-header { text-align: center; margin-bottom: 12px; }
+    .form-title  { font-size: 13pt; font-weight: bold; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
     .form-regd   { font-size: 8.5pt; margin-bottom: 2px; }
     .form-addr   { font-size: 8.5pt; }
 
-    /* Top fields (Name of Community / Head of Family) */
-    .top-fields  { display: flex; gap: 30px; margin: 10px 0 8px; font-size: 9.5pt; }
-    .top-field   { flex: 1; }
-    .field-label { font-weight: bold; }
-    .field-value { border-bottom: 1px solid #000; display: inline-block; min-width: 160px; padding: 0 4px; margin-left: 4px; }
+    /* Top meta row — community name + head of family */
+    .top-fields  { display: flex; gap: 40px; margin: 10px 0 10px; font-size: 9.5pt; }
+    .top-field   { flex: 1; white-space: nowrap; }
+    .field-label { font-weight: bold; margin-right: 4px; }
+    .field-value { border-bottom: 1px solid #000; display: inline-block; min-width: 170px; padding: 0 4px; }
 
-    /* Table */
-    table  { width: 100%; border-collapse: collapse; font-size: 7.5pt; margin-top: 6px; }
-    th, td { border: 1px solid #000; padding: 3px 3px; vertical-align: middle; text-align: center; }
-    th     { background: #f0f0f0; font-weight: bold; font-size: 7pt; line-height: 1.2; }
-    td     { height: 22px; font-size: 7.5pt; }
+    /* Table — strict official layout */
+    table  { width: 100%; border-collapse: collapse; font-size: 7.5pt; margin-top: 4px; }
+    th, td { border: 1px solid #000; padding: 3px 2px; vertical-align: middle; text-align: center; }
+    th     { background: #fff; font-weight: bold; font-size: 7pt; line-height: 1.25; }
+    td     { height: 24px; font-size: 7.5pt; background: #fff; }
     .c-sl  { width: 22px; }
-    .c-sm  { width: 40px; }
-    tr:nth-child(odd) td { background: #fafafa; }
-    tr:nth-child(even) td { background: #fff; }
+    .c-sm  { width: 42px; }
 
-    /* Signatures */
-    .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
-    .sig-block  { flex: 1; text-align: center; padding: 0 10px; }
-    .sig-line   { border-top: 1px solid #000; margin-bottom: 5px; margin-top: 30px; }
+    /* Signature row */
+    .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
+    .sig-block  { flex: 1; text-align: center; padding: 0 12px; }
+    .sig-line   { border-top: 1px solid #000; margin-bottom: 6px; margin-top: 36px; }
     .sig-label  { font-size: 8pt; font-weight: bold; }
 
     @media print {
-      body { margin: 0; }
-      .page { padding: 12mm 10mm 10mm; }
+      body  { margin: 0; }
+      .page { padding: 14mm 12mm 12mm; }
       .page-break { page-break-after: always; }
     }
   </style>
@@ -1672,42 +1669,6 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
     );
   }
 
-  /* ── PRINT CENSUS ── */
-  function printCensus() {
-    if (!branch) return;
-    const aliyahLabel = (a: string) => ({ in_israel: "In Israel", made_aliyah: "Made Aliyah", pending: "Pending Aliyah", not_eligible: "Not Eligible", unknown: "Unknown" }[a] || a);
-    const rows = branch.families.map((f, i) => {
-      const c = f.headCensus;
-      return `<tr style="border-bottom:1px solid #e5e7eb">
-        <td style="padding:8px 10px;font-weight:700">${i + 1}</td>
-        <td style="padding:8px 10px">${c.namePerPassport || f.headName || "—"}</td>
-        <td style="padding:8px 10px">${c.surname || "—"}</td>
-        <td style="padding:8px 10px">${c.hebrewName || "—"}</td>
-        <td style="padding:8px 10px">${c.fatherName || "—"}</td>
-        <td style="padding:8px 10px">${c.motherName || "—"}</td>
-        <td style="padding:8px 10px">${c.dob || "—"}</td>
-        <td style="padding:8px 10px">${c.gender || "—"}</td>
-        <td style="padding:8px 10px">${aliyahLabel(f.headAliyah)}</td>
-        <td style="padding:8px 10px">${c.passportNo || "—"}</td>
-        <td style="padding:8px 10px">${c.phone || "—"}</td>
-        <td style="padding:8px 10px">${c.address || "—"}</td>
-        <td style="padding:8px 10px">${f.members.length > 0 ? f.members.map(m => m.name || "(member)").join(", ") : "—"}</td>
-      </tr>`;
-    }).join("");
-    const html = `<!DOCTYPE html><html><head><title>BMC Census — ${branch.name}</title>
-    <style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:18px;margin-bottom:4px}h2{font-size:14px;color:#555;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;font-size:11px}tr:nth-child(even){background:#f9fafb}@media print{body{padding:12px}}</style>
-    </head><body>
-    <h1>🕍 Bnei Menashe Council India — Official Census 2026-2027</h1>
-    <h2>Branch: ${branch.name} · ${branch.cityName}${branch.adminName ? " · Admin: " + branch.adminName : ""}</h2>
-    <p style="font-size:11px;color:#888">Printed: ${new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"})} · Total families: ${branch.families.length} · Total members: ${totalMembers}</p>
-    <table><thead><tr>
-      <th>#</th><th>Name (Passport)</th><th>Surname</th><th>Hebrew Name</th><th>Father</th><th>Mother</th><th>DOB</th><th>Gender</th><th>Aliyah Status</th><th>Passport No.</th><th>Phone</th><th>Address</th><th>Family Members</th>
-    </tr></thead><tbody>${rows}</tbody></table>
-    <script>window.onload=()=>{window.print();}<\/script></body></html>`;
-    const w = window.open("", "_blank");
-    if (w) { w.document.write(html); w.document.close(); }
-  }
-
   function copyLink(url: string, label: string) {
     navigator.clipboard.writeText(url).then(() => alert(`✅ ${label} link copied!\n\n${url}`));
   }
@@ -1727,10 +1688,10 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
           <span>📎</span> Copy Submit Link
         </button>
         <button
-          onClick={printCensus}
+          onClick={() => exportPrint(branch)}
           style={{ flex: 1, padding: "10px", borderRadius: 10, fontWeight: 700, fontSize: 12, border: "1px solid rgba(212,168,67,0.4)", background: "rgba(212,168,67,0.08)", color: "#d4a843", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
         >
-          <span>🖨️</span> Print Census
+          <span>🖨️</span> Print Official Form
         </button>
       </div>
 
