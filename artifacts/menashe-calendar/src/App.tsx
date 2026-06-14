@@ -127,45 +127,59 @@ const clerkAppearance = {
 
 const darkCardAppearance = {
   cssLayerName: "clerk",
-  options: {
-    logoPlacement: "none" as const,
-  },
+  options: { logoPlacement: "none" as const },
   variables: {
     colorPrimary: "#D4AF37",
     colorForeground: "#F0EDE4",
-    colorMutedForeground: "#8a8070",
+    colorMutedForeground: "#9a9080",
     colorDanger: "#ef4444",
-    colorBackground: "#0e0e14",
-    colorInput: "#1c1c26",
+    colorBackground: "#111118",
+    colorInput: "#18181f",
     colorInputForeground: "#F0EDE4",
-    colorNeutral: "#2e2e3a",
-    fontFamily: "'Inter', sans-serif",
-    borderRadius: "0.5rem",
+    colorNeutral: "#2a2a36",
+    fontFamily: "'Inter', -apple-system, sans-serif",
+    borderRadius: "0.65rem",
+    fontSize: "15px",
   },
   elements: {
     rootBox: "w-full",
-    cardBox: "w-full !shadow-none !rounded-none !bg-[#0e0e14]",
-    card: "!shadow-none !border-0 !bg-[#0e0e14] !rounded-none",
-    footer: "!shadow-none !border-0 !bg-[#0e0e14] !rounded-none",
-    headerTitle: "!text-[#D4AF37] font-bold text-xl",
-    headerSubtitle: "!text-[#8a8070]",
-    socialButtonsBlockButton: "!border-[#2e2e3a] !bg-[#1c1c26] !text-[#F0EDE4] hover:!bg-[#24242e]",
-    socialButtonsBlockButtonText: "!text-[#F0EDE4]",
-    formFieldLabel: "!text-[#a09080] font-medium text-sm",
-    formFieldInput: "!bg-[#1c1c26] !border-[#2e2e3a] !text-[#F0EDE4]",
-    formButtonPrimary: "!bg-[#D4AF37] !text-[#080808] font-bold hover:!bg-[#c49e30]",
-    footerActionLink: "!text-[#D4AF37] hover:!text-[#f0c94a]",
-    footerActionText: "!text-[#8a8070]",
-    dividerText: "!text-[#8a8070]",
-    dividerLine: "!bg-[#2e2e3a]",
-    alert: "!bg-[#1c1c26] border-[#D4AF37]/30",
+    cardBox: "w-full !shadow-none !rounded-none !bg-[#111118]",
+    card: "!shadow-none !border-0 !bg-[#111118] !rounded-none !px-2",
+    footer: "!shadow-none !border-0 !bg-[#0e0e16] !rounded-none",
+    headerTitle: "!text-[#F5D982] !font-bold !text-[22px] !tracking-[-0.02em]",
+    headerSubtitle: "!text-[#807060] !text-[13px]",
+    socialButtonsBlockButton: "!border !border-[#d8d8d8] !bg-white !text-[#3c4043] hover:!bg-[#f5f5f5] !shadow-[0_1px_3px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)] !font-medium !transition-all",
+    socialButtonsBlockButtonText: "!text-[#3c4043] !font-medium",
+    formFieldLabel: "!text-[#807060] !font-semibold !text-[11px] !tracking-[0.08em] !uppercase",
+    formFieldInput: "!bg-[#18181f] !border-[#2a2a36] !text-[#F0EDE4] !rounded-[0.65rem] !text-[15px] focus:!border-[#D4AF37]/60 focus:!shadow-[0_0_0_3px_rgba(212,175,55,0.12)] !transition-all !h-[46px]",
+    formButtonPrimary: [
+      "!bg-[linear-gradient(180deg,#F0C840_0%,#C49A20_100%)]",
+      "!text-[#0a0800]",
+      "!font-bold",
+      "!text-[15px]",
+      "!tracking-[0.02em]",
+      "!h-[48px]",
+      "!shadow-[0_5px_0_rgba(100,70,5,0.85),0_8px_24px_rgba(212,175,55,0.25)]",
+      "hover:!shadow-[0_2px_0_rgba(100,70,5,0.85),0_4px_12px_rgba(212,175,55,0.2)]",
+      "hover:!translate-y-[3px]",
+      "active:!shadow-[0_0px_0_rgba(100,70,5,0.85)]",
+      "active:!translate-y-[5px]",
+      "!transition-all !duration-100",
+      "!rounded-[0.65rem]",
+    ].join(" "),
+    footerActionLink: "!text-[#D4AF37] hover:!text-[#f0c94a] !font-semibold",
+    footerActionText: "!text-[#706050]",
+    dividerText: "!text-[#706050] !text-[12px]",
+    dividerLine: "!bg-[#2a2a36]",
+    alert: "!bg-[#18181f] !border !border-[#D4AF37]/25",
     alertText: "!text-[#F0EDE4]",
     identityPreviewEditButton: "!text-[#D4AF37]",
-    formFieldSuccessText: "!text-green-400",
-    otpCodeFieldInput: "!bg-[#1c1c26] !border-[#2e2e3a]",
-    footerAction: "!bg-[#0e0e14]",
-    main: "gap-4 !bg-[#0e0e14]",
-    formFieldRow: "gap-2",
+    formFieldSuccessText: "!text-emerald-400",
+    otpCodeFieldInput: "!bg-[#18181f] !border-[#2a2a36] !text-[#F0EDE4] !h-[52px]",
+    footerAction: "!bg-[#0e0e16] !border-t !border-[#1e1e28]",
+    main: "!gap-5 !bg-[#111118]",
+    formFieldRow: "!gap-3",
+    formResendCodeLink: "!text-[#D4AF37]",
   },
 };
 
@@ -178,7 +192,7 @@ type Modal =
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
-/* ── Shared auth card wrapper ───────────────────────────────────── */
+/* ── Shared auth card wrapper — Bold 3D ─────────────────────────── */
 function AuthCard({ children }: { children: React.ReactNode }) {
   const photoUrl = `${basePath}/saipikhup-photo.jpg`;
   return (
@@ -188,86 +202,126 @@ function AuthCard({ children }: { children: React.ReactNode }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "20px 16px",
+        padding: "24px 16px",
         position: "relative",
         backgroundImage: `url(${photoUrl})`,
         backgroundSize: "cover",
         backgroundPosition: "center top",
       }}
     >
-      {/* Dark veil over the photo */}
-      <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(4,4,8,0.80)", pointerEvents: "none" }} />
+      {/* Deep dark veil */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(3,3,8,0.88)", pointerEvents: "none" }} />
+      {/* Subtle center radial glow */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 55% 50% at 50% 52%, rgba(212,175,55,0.05) 0%, transparent 70%)", pointerEvents: "none" }} />
 
-      {/* Card */}
+      {/* ── 3D CARD ── */}
       <div
         style={{
           position: "relative",
           zIndex: 10,
           width: "100%",
-          maxWidth: 440,
-          borderRadius: "14px",
+          maxWidth: 448,
+          borderRadius: "20px",
           overflow: "hidden",
-          border: "1px solid rgba(212,175,55,0.30)",
-          boxShadow: "0 32px 96px rgba(0,0,0,0.90), 0 0 0 1px rgba(212,175,55,0.08), 0 4px 24px rgba(212,175,55,0.10)",
+          /* Light source from top-left — brighter top border */
+          borderTop: "1.5px solid rgba(212,175,55,0.65)",
+          borderLeft: "1px solid rgba(212,175,55,0.28)",
+          borderRight: "1px solid rgba(212,175,55,0.18)",
+          borderBottom: "1px solid rgba(212,175,55,0.12)",
+          /* 5-layer shadow stack for floating 3D depth */
+          boxShadow: [
+            "0 1px 0 rgba(255,220,100,0.08)",
+            "0 6px 12px rgba(0,0,0,0.55)",
+            "0 20px 48px rgba(0,0,0,0.75)",
+            "0 52px 100px rgba(0,0,0,0.85)",
+            "0 80px 140px rgba(0,0,0,0.60)",
+            "0 0 80px rgba(212,175,55,0.07)",
+          ].join(", "),
+          transform: "perspective(1800px) rotateX(1.2deg)",
         }}
       >
-        {/* ── PHOTO HEADER — shows the embroidered band ── */}
+        {/* ── PHOTO HEADER — real embroidery band ── */}
         <div
           style={{
-            height: 170,
+            height: 210,
             position: "relative",
             overflow: "hidden",
             backgroundImage: `url(${photoUrl})`,
-            backgroundSize: "280%",
-            backgroundPosition: "center 88%",
+            backgroundSize: "310%",
+            backgroundPosition: "center 87%",
           }}
         >
-          {/* Gradient overlay: dark top + dark bottom, clear middle */}
+          {/* Dramatic vignette overlay */}
           <div aria-hidden style={{
             position: "absolute", inset: 0,
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.18) 45%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.70) 100%)",
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.08) 38%, rgba(0,0,0,0.08) 62%, rgba(0,0,0,0.85) 100%)",
           }} />
-          {/* Top gold rule */}
-          <div aria-hidden style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.85) 50%, transparent 100%)" }} />
+          {/* Gold shimmer top edge */}
+          <div aria-hidden style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, transparent 0%, rgba(212,175,55,1) 35%, rgba(255,235,120,1) 50%, rgba(212,175,55,1) 65%, transparent 100%)" }} />
+          {/* Side edge vignettes */}
+          <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,0,0,0.4) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.4) 100%)" }} />
 
-          {/* Logo + name */}
-          <div style={{ position: "relative", zIndex: 10, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, paddingTop: 6 }}>
-            {/* Circular backing for logo */}
+          {/* Logo badge + branding */}
+          <div style={{ position: "relative", zIndex: 10, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
+            {/* 3D logo badge */}
             <div style={{
-              width: 56, height: 56,
+              width: 80, height: 80,
               borderRadius: "50%",
-              background: "rgba(0,0,0,0.55)",
-              border: "1.5px solid rgba(212,175,55,0.55)",
+              background: "radial-gradient(circle at 38% 32%, rgba(50,34,4,0.98) 0%, rgba(8,8,14,0.98) 65%)",
+              border: "2px solid rgba(212,175,55,0.75)",
+              boxShadow: [
+                "inset 0 1.5px 0 rgba(255,230,100,0.35)",
+                "inset 0 -1px 0 rgba(0,0,0,0.6)",
+                "0 4px 20px rgba(0,0,0,0.9)",
+                "0 10px 40px rgba(0,0,0,0.7)",
+                "0 0 24px rgba(212,175,55,0.15)",
+              ].join(", "),
               display: "flex", alignItems: "center", justifyContent: "center",
-              backdropFilter: "blur(4px)",
             }}>
-              <svg viewBox="0 0 80 80" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="40,6 58,38 22,38" stroke="#D4AF37" strokeWidth="3.2" strokeLinejoin="round" fill="none"/>
-                <polygon points="40,62 22,30 58,30" stroke="#D4AF37" strokeWidth="3.2" strokeLinejoin="round" fill="none"/>
-                <polyline points="14,74 14,30 40,56 66,30 66,74" stroke="#D4AF37" strokeWidth="5.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              <svg viewBox="0 0 80 80" width="48" height="48" fill="none">
+                <polygon points="40,6 58,38 22,38" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="rgba(212,175,55,0.06)"/>
+                <polygon points="40,62 22,30 58,30" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="rgba(212,175,55,0.06)"/>
+                <polyline points="14,74 14,30 40,56 66,30 66,74" stroke="#D4AF37" strokeWidth="4.8" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
+
             <div style={{ textAlign: "center" }}>
-              <div style={{ color: "#F5D982", fontWeight: 700, fontSize: 17, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "Georgia, serif", textShadow: "0 1px 10px rgba(0,0,0,0.9)" }}>
+              <div style={{
+                color: "#F5D982",
+                fontWeight: 800,
+                fontSize: 22,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                fontFamily: "Georgia, serif",
+                textShadow: "0 2px 16px rgba(0,0,0,1), 0 1px 0 rgba(0,0,0,0.9), 0 0 30px rgba(212,175,55,0.2)",
+                lineHeight: 1,
+              }}>
                 Bnei Menashe
               </div>
-              <div style={{ color: "rgba(245,217,130,0.65)", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", marginTop: 3, textShadow: "0 1px 6px rgba(0,0,0,0.9)" }}>
+              <div style={{
+                color: "rgba(245,217,130,0.65)",
+                fontSize: 10,
+                letterSpacing: "0.30em",
+                textTransform: "uppercase",
+                marginTop: 6,
+                textShadow: "0 1px 8px rgba(0,0,0,1)",
+              }}>
                 Sacred Calendar
               </div>
             </div>
           </div>
         </div>
 
-        {/* Gold divider rule */}
-        <div aria-hidden style={{ height: 1, background: "linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.50) 50%, transparent 100%)" }} />
+        {/* Bold gold separator */}
+        <div aria-hidden style={{ height: 2, background: "linear-gradient(90deg, rgba(212,175,55,0.05) 0%, rgba(212,175,55,0.8) 30%, rgba(255,235,120,1) 50%, rgba(212,175,55,0.8) 70%, rgba(212,175,55,0.05) 100%)" }} />
 
-        {/* ── DARK FORM BODY ── */}
-        <div style={{ background: "#0e0e14" }}>
+        {/* ── FORM BODY ── */}
+        <div style={{ background: "linear-gradient(180deg, #111118 0%, #0f0f16 100%)" }}>
           {children}
         </div>
 
-        {/* Bottom gold rule */}
-        <div aria-hidden style={{ height: 1, background: "linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.25) 50%, transparent 100%)", background: "#0e0e14" }} />
+        {/* Bottom accent bar */}
+        <div style={{ height: 3, background: "linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.22) 40%, rgba(212,175,55,0.35) 50%, rgba(212,175,55,0.22) 60%, transparent 100%)" }} />
       </div>
     </div>
   );
