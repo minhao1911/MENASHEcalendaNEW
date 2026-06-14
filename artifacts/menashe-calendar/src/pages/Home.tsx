@@ -1343,12 +1343,6 @@ export default function Home({
           </div>
         </div>
 
-        {/* ── Premium Card — Live Candle Countdown ── */}
-        <PremiumCandleCard
-          isPremium={isPremium} candleEnabled={candleEnabled}
-          location={location} onNavigate={onNavigate} onShowPremium={onShowPremium}
-        />
-
         {/* ── Community Card (collapsible) ── */}
         <CommunityCard onShowCommunity={onShowCommunity} onShowCensus={onShowCensus} />
 
