@@ -1,0 +1,239 @@
+import { Router } from "express";
+import { pool } from "@workspace/db";
+import { requireAuth } from "../lib/requireAuth";
+
+const router = Router();
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+
+router.get("/user/profile", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(
+      "SELECT * FROM user_profiles WHERE user_id = $1",
+      [userId],
+    );
+    if (rows.length === 0) {
+      return res.json({
+        theme: "dark",
+        location: null,
+        isPremium: false,
+        candleEnabled: true,
+        language: "en",
+        notifPrefs: null,
+        leadTime: 10,
+      });
+    }
+    const r = rows[0];
+    return res.json({
+      theme: r.theme,
+      location: r.location,
+      isPremium: r.is_premium,
+      candleEnabled: r.candle_enabled,
+      language: r.language,
+      notifPrefs: r.notif_prefs,
+      leadTime: r.lead_time,
+    });
+  } finally {
+    client.release();
+  }
+});
+
+router.put("/user/profile", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const { theme, location, isPremium, candleEnabled, language, notifPrefs, leadTime } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO user_profiles (user_id, theme, location, is_premium, candle_enabled, language, notif_prefs, lead_time, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         theme = EXCLUDED.theme,
+         location = EXCLUDED.location,
+         is_premium = EXCLUDED.is_premium,
+         candle_enabled = EXCLUDED.candle_enabled,
+         language = EXCLUDED.language,
+         notif_prefs = EXCLUDED.notif_prefs,
+         lead_time = EXCLUDED.lead_time,
+         updated_at = NOW()`,
+      [
+        userId,
+        theme ?? "dark",
+        location ? JSON.stringify(location) : null,
+        isPremium ?? false,
+        candleEnabled ?? true,
+        language ?? "en",
+        notifPrefs ? JSON.stringify(notifPrefs) : null,
+        leadTime ?? 10,
+      ],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
+// ── Yahrzeit entries ──────────────────────────────────────────────────────────
+
+router.get("/user/yahrzeit", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(
+      "SELECT * FROM yahrzeit_entries WHERE user_id = $1 ORDER BY created_at ASC",
+      [userId],
+    );
+    return res.json(
+      rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        hebrewDay: r.hebrew_day,
+        hebrewMonth: r.hebrew_month,
+        displayDate: r.display_date,
+        wasAfterSunset: r.was_after_sunset,
+      })),
+    );
+  } finally {
+    client.release();
+  }
+});
+
+router.post("/user/yahrzeit", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const { id, name, hebrewDay, hebrewMonth, displayDate, wasAfterSunset } = req.body;
+  if (!id || !name || hebrewDay == null || hebrewMonth == null) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO yahrzeit_entries (id, user_id, name, hebrew_day, hebrew_month, display_date, was_after_sunset)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (user_id, id) DO UPDATE SET
+         name = EXCLUDED.name,
+         hebrew_day = EXCLUDED.hebrew_day,
+         hebrew_month = EXCLUDED.hebrew_month,
+         display_date = EXCLUDED.display_date,
+         was_after_sunset = EXCLUDED.was_after_sunset`,
+      [id, userId, name, hebrewDay, hebrewMonth, displayDate ?? "", wasAfterSunset ?? false],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete("/user/yahrzeit/:id", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query(
+      "DELETE FROM yahrzeit_entries WHERE user_id = $1 AND id = $2",
+      [userId, id],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
+// ── Torah tracker entries ─────────────────────────────────────────────────────
+
+router.get("/user/torah-tracker", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(
+      "SELECT * FROM torah_tracker_entries WHERE user_id = $1 ORDER BY date DESC",
+      [userId],
+    );
+    return res.json(
+      rows.map((r) => ({
+        id: r.id,
+        date: r.date,
+        subject: r.subject,
+        description: r.description,
+        duration: r.duration,
+        notes: r.notes,
+      })),
+    );
+  } finally {
+    client.release();
+  }
+});
+
+router.post("/user/torah-tracker", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const { id, date, subject, description, duration, notes } = req.body;
+  if (!id || !date || !subject) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO torah_tracker_entries (id, user_id, date, subject, description, duration, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (user_id, id) DO UPDATE SET
+         date = EXCLUDED.date,
+         subject = EXCLUDED.subject,
+         description = EXCLUDED.description,
+         duration = EXCLUDED.duration,
+         notes = EXCLUDED.notes`,
+      [id, userId, date, subject, description ?? "", duration ?? 0, notes ?? ""],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete("/user/torah-tracker/:id", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query(
+      "DELETE FROM torah_tracker_entries WHERE user_id = $1 AND id = $2",
+      [userId, id],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
+router.get("/user/torah-tracker/goal", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(
+      "SELECT goal_mins FROM torah_tracker_goals WHERE user_id = $1",
+      [userId],
+    );
+    return res.json({ goalMins: rows.length > 0 ? rows[0].goal_mins : 0 });
+  } finally {
+    client.release();
+  }
+});
+
+router.put("/user/torah-tracker/goal", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const { goalMins } = req.body;
+  if (goalMins == null) return res.status(400).json({ error: "Missing goalMins" });
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO torah_tracker_goals (user_id, goal_mins, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET goal_mins = EXCLUDED.goal_mins, updated_at = NOW()`,
+      [userId, goalMins],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
+export default router;

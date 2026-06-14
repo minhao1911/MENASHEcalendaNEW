@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HDate } from "@hebcal/core";
 import { hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim } from "../lib/zmanim";
@@ -9,6 +9,11 @@ import {
   saveYahrzeitEntries,
   getNextYahrzeit,
 } from "../lib/yahrzeit";
+import {
+  fetchYahrzeitEntries,
+  saveYahrzeitEntry,
+  deleteYahrzeitEntry,
+} from "../lib/userApi";
 
 interface CalculationResult {
   hebrewDay: number;
@@ -29,6 +34,16 @@ interface Props {
 export default function YartzeitModal({ onClose, location }: Props) {
   const [entries, setEntries] = useState<YartzeitEntry[]>(() => getYahrzeitEntries());
   const [showForm, setShowForm] = useState(false);
+
+  // Sync from server on open (server is source of truth)
+  useEffect(() => {
+    fetchYahrzeitEntries().then((serverEntries) => {
+      if (serverEntries.length > 0) {
+        setEntries(serverEntries);
+        saveYahrzeitEntries(serverEntries);
+      }
+    }).catch(() => {});
+  }, []);
 
   const [name, setName] = useState("");
   const [passDateStr, setPassDateStr] = useState("");
@@ -117,6 +132,7 @@ export default function YartzeitModal({ onClose, location }: Props) {
     const next = [...entries, entry];
     setEntries(next);
     saveYahrzeitEntries(next);
+    saveYahrzeitEntry(entry).catch(() => {});
     setJustSaved(true);
     setTimeout(() => {
       setShowForm(false);
@@ -128,6 +144,7 @@ export default function YartzeitModal({ onClose, location }: Props) {
     const next = entries.filter(e => e.id !== id);
     setEntries(next);
     saveYahrzeitEntries(next);
+    deleteYahrzeitEntry(id).catch(() => {});
     setDeleteConfirm(null);
   }
 

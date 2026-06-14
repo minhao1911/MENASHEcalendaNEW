@@ -7,6 +7,7 @@ import {
   useClerk,
   useUser,
 } from "@clerk/react";
+import { fetchUserProfile, saveUserProfile } from "./lib/userApi";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
@@ -149,6 +150,9 @@ function SignUpPage() {
 }
 
 function AppShell() {
+  const { user, isLoaded: userLoaded } = useUser();
+  const profileSyncedRef = useRef(false);
+
   const [activePage, setActivePage] = useState<Page>("home");
   const [modal, setModal] = useState<Modal>(null);
   const [dayModal, setDayModal] = useState<DayInfo>(null);
@@ -172,6 +176,37 @@ function AppShell() {
   const [candleEnabled, setCandleEnabled] = useState(() => {
     try { return localStorage.getItem("menashe-candle-enabled") !== "false"; } catch { return true; }
   });
+
+  // Load profile from server on first sign-in
+  useEffect(() => {
+    if (!userLoaded || !user) return;
+    fetchUserProfile().then((profile) => {
+      if (!profile) { profileSyncedRef.current = true; return; }
+      if (profile.theme) {
+        setThemeState(profile.theme);
+        try { localStorage.setItem("menashe-theme", profile.theme); } catch {}
+      }
+      if (profile.location) {
+        setLocation(profile.location);
+        try { localStorage.setItem("menashe-location", JSON.stringify(profile.location)); } catch {}
+      }
+      if (profile.isPremium) {
+        setIsPremium(profile.isPremium);
+        try { localStorage.setItem("menashe-is-premium", "true"); } catch {}
+      }
+      if (profile.candleEnabled !== undefined) {
+        setCandleEnabled(profile.candleEnabled);
+        try { localStorage.setItem("menashe-candle-enabled", String(profile.candleEnabled)); } catch {}
+      }
+      profileSyncedRef.current = true;
+    });
+  }, [userLoaded, user?.id]);
+
+  // Save profile to server whenever key preferences change
+  useEffect(() => {
+    if (!profileSyncedRef.current) return;
+    saveUserProfile({ theme, location, isPremium, candleEnabled });
+  }, [theme, location, isPremium, candleEnabled]);
 
   function onPremiumActivated() {
     setIsPremium(true);

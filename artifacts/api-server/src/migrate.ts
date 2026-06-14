@@ -35,6 +35,60 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // User profiles
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_profiles (
+        user_id       TEXT PRIMARY KEY,
+        theme         TEXT NOT NULL DEFAULT 'dark',
+        location      JSONB,
+        is_premium    BOOLEAN NOT NULL DEFAULT false,
+        candle_enabled BOOLEAN NOT NULL DEFAULT true,
+        language      TEXT NOT NULL DEFAULT 'en',
+        notif_prefs   JSONB,
+        lead_time     INTEGER NOT NULL DEFAULT 10,
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Yahrzeit entries
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS yahrzeit_entries (
+        id              TEXT NOT NULL,
+        user_id         TEXT NOT NULL,
+        name            TEXT NOT NULL,
+        hebrew_day      INTEGER NOT NULL,
+        hebrew_month    INTEGER NOT NULL,
+        display_date    TEXT NOT NULL,
+        was_after_sunset BOOLEAN NOT NULL DEFAULT false,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, id)
+      )
+    `);
+
+    // Torah tracker entries
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS torah_tracker_entries (
+        id          TEXT NOT NULL,
+        user_id     TEXT NOT NULL,
+        date        TEXT NOT NULL,
+        subject     TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        duration    INTEGER NOT NULL DEFAULT 0,
+        notes       TEXT NOT NULL DEFAULT '',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, id)
+      )
+    `);
+
+    // Torah tracker goals
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS torah_tracker_goals (
+        user_id   TEXT PRIMARY KEY,
+        goal_mins INTEGER NOT NULL DEFAULT 0,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");

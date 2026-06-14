@@ -1,4 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  fetchTorahTrackerEntries,
+  saveTorahTrackerEntry,
+  deleteTorahTrackerEntry,
+  fetchTorahTrackerGoal,
+  saveTorahTrackerGoal,
+} from "../lib/userApi";
 import { HDate, HebrewCalendar, flags } from "@hebcal/core";
 
 interface Props { onClose: () => void; }
@@ -176,17 +183,45 @@ export default function TorahTrackerModal({ onClose }: Props) {
 
   const thisWeekParasha = useMemo(() => getThisWeekParasha(), []);
 
+  // Sync from server on open
+  useEffect(() => {
+    fetchTorahTrackerEntries().then((serverEntries) => {
+      if (serverEntries.length > 0) {
+        setEntries(serverEntries);
+        saveEntries(serverEntries);
+      }
+    }).catch(() => {});
+    fetchTorahTrackerGoal().then((serverGoal) => {
+      if (serverGoal > 0) {
+        setGoal(serverGoal);
+        saveGoal(serverGoal);
+      }
+    }).catch(() => {});
+  }, []);
+
   function persist(list: StudyEntry[]) { setEntries(list); saveEntries(list); }
 
   function submitLog() {
     if (!form.description.trim()) return;
-    persist([{ ...form, id: `se-${Date.now()}` }, ...entries]);
+    const newEntry: StudyEntry = { ...form, id: `se-${Date.now()}` };
+    persist([newEntry, ...entries]);
+    saveTorahTrackerEntry(newEntry).catch(() => {});
     setSaved(true);
   }
 
-  function deleteEntry(id: string) { persist(entries.filter(e => e.id !== id)); setDeleteConfirm(null); }
+  function deleteEntry(id: string) {
+    persist(entries.filter(e => e.id !== id));
+    deleteTorahTrackerEntry(id).catch(() => {});
+    setDeleteConfirm(null);
+  }
 
-  function applyGoal(mins: number) { setGoal(mins); saveGoal(mins); setView("dashboard"); setCustomGoal(false); }
+  function applyGoal(mins: number) {
+    setGoal(mins);
+    saveGoal(mins);
+    saveTorahTrackerGoal(mins).catch(() => {});
+    setView("dashboard");
+    setCustomGoal(false);
+  }
 
   const streak        = useMemo(() => calcStreak(entries), [entries]);
   const weekMins      = useMemo(() => sumMinutes(entries, 7), [entries]);
