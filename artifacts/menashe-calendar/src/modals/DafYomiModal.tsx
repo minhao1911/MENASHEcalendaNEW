@@ -1,6 +1,9 @@
+import { useState, useEffect } from "react";
 import { HDate } from "@hebcal/core";
 
 interface Props { onClose: () => void; }
+
+const SEFARIA_BASE = "https://www.sefaria.org";
 
 const TRACTATES = [
   { name: "Berakhot", pages: 64 },
@@ -40,16 +43,14 @@ const TRACTATES = [
   { name: "Meilah", pages: 22 },
   { name: "Niddah", pages: 73 },
 ];
-
 const TOTAL_PAGES = TRACTATES.reduce((a, t) => a + t.pages, 0);
-const CYCLE_START = new Date(2020, 0, 5); // Jan 5, 2020 — cycle 14 start
+const CYCLE_START = new Date(2020, 0, 5);
 
-function getDafYomi(): { tractate: string; daf: number; cycle: number } {
+function getLocalDaf(): { tractate: string; daf: number; cycle: number } {
   const today = new Date();
   const daysSinceStart = Math.floor((today.getTime() - CYCLE_START.getTime()) / 86400000);
   const dayInCycle = daysSinceStart % TOTAL_PAGES;
   const cycle = Math.floor(daysSinceStart / TOTAL_PAGES) + 14;
-
   let remaining = dayInCycle;
   for (const t of TRACTATES) {
     if (remaining < t.pages) return { tractate: t.name, daf: remaining + 2, cycle };
@@ -58,22 +59,106 @@ function getDafYomi(): { tractate: string; daf: number; cycle: number } {
   return { tractate: TRACTATES[0].name, daf: 2, cycle };
 }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function flattenText(val: unknown): string[] {
+  if (!val) return [];
+  if (typeof val === "string") return val ? [stripHtml(val)] : [];
+  if (Array.isArray(val)) return (val as unknown[]).flatMap(v => flattenText(v)).filter(Boolean);
+  return [];
+}
+
 export default function DafYomiModal({ onClose }: Props) {
-  const daf = getDafYomi();
   const hdate = new HDate();
+  const local = getLocalDaf();
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [officialRef, setOfficialRef] = useState<string | null>(null);
+  const [tractate, setTractate] = useState(local.tractate);
+  const [dafNum, setDafNum] = useState(local.daf);
+  const [heDisplay, setHeDisplay] = useState("");
+  const [excerpts, setExcerpts] = useState<Array<{ en: string; he: string }>>([]);
+  const [cycle] = useState(local.cycle);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchDaf() {
+      try {
+        // 1. Get today's official Daf Yomi from Sefaria calendar
+        const calRes = await fetch(`${SEFARIA_BASE}/api/calendars`);
+        const calData = await calRes.json();
+        const dafItem = (calData.calendar_items as Array<{
+          title: { en: string };
+          displayValue: { en: string; he: string };
+          ref: string;
+          url: string;
+        }>)?.find(i => i.title?.en?.includes("Daf Yomi"));
+
+        if (!dafItem) throw new Error("Daf Yomi not found");
+
+        const [tractateStr, dafStr] = dafItem.displayValue.en.split(" ");
+        const dafNumber = parseInt(dafStr, 10);
+
+        if (!cancelled) {
+          setTractate(tractateStr);
+          setDafNum(isNaN(dafNumber) ? local.daf : dafNumber);
+          setHeDisplay(dafItem.displayValue.he);
+          setOfficialRef(dafItem.url);
+        }
+
+        // 2. Fetch the actual Talmud text
+        const textRes = await fetch(`${SEFARIA_BASE}/api/texts/${encodeURIComponent(dafItem.ref)}?context=0&pad=0`);
+        const textData = await textRes.json();
+
+        const enLines = flattenText(textData.text).slice(0, 4);
+        const heLines = flattenText(textData.he).slice(0, 4);
+
+        if (!cancelled) {
+          const pairs = enLines.slice(0, 3).map((en, i) => ({
+            en,
+            he: heLines[i] ?? "",
+          }));
+          setExcerpts(pairs);
+        }
+      } catch {
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchDaf();
+    return () => { cancelled = true; };
+  }, []);
+
+  const sefariaUrl = officialRef
+    ? `${SEFARIA_BASE}/${officialRef}`
+    : `${SEFARIA_BASE}/search#q=${encodeURIComponent(tractate)}%20${dafNum}`;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <div className="modal-handle" />
+
+        {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Daf Yomi</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Daily Talmud study — Cycle {daf.cycle}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              Daily Talmud Study · Cycle {cycle}
+              {!loading && !error && (
+                <span style={{ marginLeft: 6, color: "#4ade80", fontSize: 10, fontWeight: 700 }}>● LIVE</span>
+              )}
+            </div>
           </div>
           <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
 
+        {/* Today's Daf hero card */}
         <div style={{
           padding: 20, borderRadius: 16, marginBottom: 14, textAlign: "center",
           background: "linear-gradient(135deg, #0f1e38, #1a2a4a)",
@@ -82,27 +167,106 @@ export default function DafYomiModal({ onClose }: Props) {
           <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 14, color: "#d4a843", marginBottom: 6 }}>
             {hdate.renderGematriya()}
           </div>
-          <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14 }}>Today's Learning</div>
-          <div style={{ fontSize: 34, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>{daf.tractate}</div>
-          <div style={{ fontSize: 22, color: "#d4a843", fontWeight: 700 }}>Daf {daf.daf}</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 700, letterSpacing: "0.1em", marginBottom: 12 }}>
+            TODAY'S LEARNING
+          </div>
+
+          {loading ? (
+            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, padding: "16px 0" }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>📚</div>
+              Loading from Sefaria…
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: 36, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>{tractate}</div>
+              <div style={{ fontSize: 24, color: "#d4a843", fontWeight: 700, marginBottom: heDisplay ? 10 : 0 }}>Daf {dafNum}</div>
+              {heDisplay && (
+                <div style={{
+                  fontFamily: "'Noto Serif Hebrew', serif",
+                  fontSize: 20, color: "#f0c050", direction: "rtl", lineHeight: 1.2,
+                }}>
+                  {heDisplay}
+                </div>
+              )}
+            </>
+          )}
         </div>
 
+        {/* Stats row */}
         <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
           <div className="card" style={{ flex: 1, padding: 14, textAlign: "center" }}>
             <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>CYCLE</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)" }}>{daf.cycle}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)" }}>{cycle}</div>
           </div>
           <div className="card" style={{ flex: 1, padding: 14, textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>TOTAL PAGES</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>DAF</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#d4a843" }}>{dafNum}</div>
+          </div>
+          <div className="card" style={{ flex: 1, padding: 14, textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>TOTAL</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)" }}>{TOTAL_PAGES}</div>
           </div>
         </div>
 
-        <div style={{ padding: 14, background: "rgba(212,168,67,0.08)", borderRadius: 12, border: "1px solid rgba(212,168,67,0.2)", marginBottom: 14 }}>
-          <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
-            📚 The Daf Yomi (daily page) cycle covers all of Talmud Bavli in 7.5 years. Thousands of Jews worldwide study the same page each day.
+        {/* Talmud text excerpts */}
+        {!loading && excerpts.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,0.35)", marginBottom: 10 }}>
+              TODAY'S TEXT — {tractate.toUpperCase()} {dafNum}
+            </div>
+            {excerpts.map((p, i) => (
+              <div key={i} style={{
+                marginBottom: 10, padding: "12px 14px", borderRadius: 12,
+                background: "rgba(212,168,67,0.06)", border: "1px solid rgba(212,168,67,0.14)",
+              }}>
+                {p.he && (
+                  <div style={{
+                    fontFamily: "'Noto Serif Hebrew', serif",
+                    fontSize: 14, color: "#f0c050", direction: "rtl",
+                    lineHeight: 1.7, marginBottom: 8,
+                  }}>
+                    {p.he}
+                  </div>
+                )}
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
+                  {p.en}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
+
+        {/* Error fallback note */}
+        {error && (
+          <div style={{ padding: 14, background: "rgba(212,168,67,0.08)", borderRadius: 12, border: "1px solid rgba(212,168,67,0.2)", marginBottom: 14 }}>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
+              📚 Using local Daf Yomi calculation. Connect to the internet for live text from Sefaria.
+            </div>
+          </div>
+        )}
+
+        {/* Read on Sefaria button */}
+        {!loading && (
+          <a
+            href={sefariaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", padding: "14px 0", borderRadius: 12, marginBottom: 10,
+              background: "linear-gradient(90deg, #1a3a6b, #2451a8)",
+              border: "1px solid rgba(59,130,246,0.4)",
+              color: "white", fontSize: 14, fontWeight: 700,
+              textDecoration: "none", cursor: "pointer",
+            }}
+          >
+            <span>📖</span>
+            <span>Read on Sefaria</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5">
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
+        )}
 
         <button onClick={onClose} className="btn-close-full">Close</button>
       </div>
