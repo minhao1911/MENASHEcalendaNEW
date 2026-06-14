@@ -78,8 +78,16 @@ export default function HebrewDateModal({ onClose }: Props) {
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
 
   const gregorianDate = new Date(inputDate + "T12:00:00");
-  const hdate = new HDate(gregorianDate);
-  const events = getEvents(gregorianDate);
+  const validDate = !isNaN(gregorianDate.getTime());
+
+  let hdate: HDate | null = null;
+  let events: ReturnType<typeof getEvents> = [];
+  try {
+    if (validDate) {
+      hdate = new HDate(gregorianDate);
+      events = getEvents(gregorianDate);
+    }
+  } catch { /* ignore */ }
 
   const parasha = events.find(e => e.getFlags() & flags.PARASHA_HASHAVUA);
   const omerEvent = events.find(e => e.getFlags() & flags.OMER_COUNT);
@@ -97,7 +105,7 @@ export default function HebrewDateModal({ onClose }: Props) {
       `📅 Hebrew Date Conversion`,
       ``,
       `🗓 ${formatGregorianDate(gregorianDate)}`,
-      `✡ ${hebrewDateDisplay(hdate)} (${hdate.render("he")})`,
+      hdate ? `✡ ${hebrewDateDisplay(hdate)} (${hdate.render("he")})` : null,
       ``,
       parasha ? `📖 Parasha: ${parasha.render("en")}` : null,
       omerEvent ? `🌸 ${omerEvent.render("en")}` : null,
@@ -151,54 +159,60 @@ export default function HebrewDateModal({ onClose }: Props) {
         </div>
 
         {/* ── Result card ── */}
-        <div style={{
-          borderRadius: 18, overflow: "hidden", marginBottom: 14,
-          background: "linear-gradient(135deg, #1a1000, #0d0d00)",
-          border: "1px solid rgba(212,168,67,0.25)",
-        }}>
-          {/* Hebrew display bar */}
+        {hdate ? (
           <div style={{
-            padding: "18px 18px 14px",
-            borderBottom: "1px solid rgba(212,168,67,0.12)",
-            textAlign: "center",
+            borderRadius: 18, overflow: "hidden", marginBottom: 14,
+            background: "linear-gradient(135deg, #1a1000, #0d0d00)",
+            border: "1px solid rgba(212,168,67,0.25)",
           }}>
+            {/* Hebrew display bar */}
             <div style={{
-              fontFamily: "'Noto Serif Hebrew', serif",
-              fontSize: 28, fontWeight: 900,
-              color: "#d4a843", direction: "rtl", lineHeight: 1.3,
-              marginBottom: 6,
+              padding: "18px 18px 14px",
+              borderBottom: "1px solid rgba(212,168,67,0.12)",
+              textAlign: "center",
             }}>
-              {hdate.render("he")}
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.2px" }}>
-              {hebrewDateDisplay(hdate)}
-            </div>
-          </div>
-
-          {/* Gregorian ↔ Hebrew details grid */}
-          <div style={{ display: "flex", gap: 0 }}>
-            {[
-              { label: "WEEKDAY", val: weekday, sub: hebrewWeekday },
-              { label: "HEBREW MONTH", val: hebrewMonthName(hdate), sub: `${hdate.getDate()} of the month` },
-              { label: "HEBREW YEAR", val: hdate.getFullYear().toString(), sub: hdate.isLeapYear() ? "Leap year" : "Regular year" },
-            ].map((item, i) => (
-              <div key={i} style={{
-                flex: 1, padding: "12px 10px", textAlign: "center",
-                borderRight: i < 2 ? "1px solid rgba(212,168,67,0.1)" : "none",
+              <div style={{
+                fontFamily: "'Noto Serif Hebrew', serif",
+                fontSize: 28, fontWeight: 900,
+                color: "#d4a843", direction: "rtl", lineHeight: 1.3,
+                marginBottom: 6,
               }}>
-                <div style={{ fontSize: 8, fontWeight: 900, letterSpacing: "0.12em", color: "rgba(212,168,67,0.5)", marginBottom: 5 }}>
-                  {item.label}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.2 }}>
-                  {item.val}
-                </div>
-                <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 3, fontFamily: item.sub === hebrewWeekday ? "'Noto Serif Hebrew',serif" : undefined, direction: item.sub === hebrewWeekday ? "rtl" : undefined }}>
-                  {item.sub}
-                </div>
+                {hdate.render("he")}
               </div>
-            ))}
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.2px" }}>
+                {hebrewDateDisplay(hdate)}
+              </div>
+            </div>
+
+            {/* Gregorian ↔ Hebrew details grid */}
+            <div style={{ display: "flex", gap: 0 }}>
+              {[
+                { label: "WEEKDAY",      val: weekday,                       sub: hebrewWeekday },
+                { label: "HEBREW MONTH", val: hebrewMonthName(hdate),        sub: `${hdate.getDate()} of the month` },
+                { label: "HEBREW YEAR",  val: hdate.getFullYear().toString(), sub: hdate.isLeapYear() ? "Leap year" : "Regular year" },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  flex: 1, padding: "12px 10px", textAlign: "center",
+                  borderRight: i < 2 ? "1px solid rgba(212,168,67,0.1)" : "none",
+                }}>
+                  <div style={{ fontSize: 8, fontWeight: 900, letterSpacing: "0.12em", color: "rgba(212,168,67,0.5)", marginBottom: 5 }}>
+                    {item.label}
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.2 }}>
+                    {item.val}
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 3, fontFamily: item.sub === hebrewWeekday ? "'Noto Serif Hebrew',serif" : undefined, direction: item.sub === hebrewWeekday ? "rtl" : undefined }}>
+                    {item.sub}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: "20px 0 14px", color: "var(--text-muted)", fontSize: 13 }}>
+            Please select a valid date above.
+          </div>
+        )}
 
         {/* ── Shabbat banner ── */}
         {isShabbat && (
