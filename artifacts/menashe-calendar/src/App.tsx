@@ -15,6 +15,7 @@ import HolidaysModal from "./modals/HolidaysModal";
 import PremiumModal from "./modals/PremiumModal";
 import ParashahModal from "./modals/ParashahModal";
 import DafYomiModal from "./modals/DafYomiModal";
+import SefariaSearchModal from "./modals/SefariaSearchModal";
 import ZmanimInfoModal from "./modals/ZmanimInfoModal";
 import TorahNoteModal from "./modals/TorahNoteModal";
 import BirthdayModal from "./modals/BirthdayModal";
@@ -36,7 +37,7 @@ type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium";
 type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
-  | "more" | "admin" | "omer" | "prayers" | null;
+  | "more" | "admin" | "omer" | "prayers" | "sefaria" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -244,6 +245,7 @@ export default function App() {
             {modal === "premium" && <PremiumModal onClose={closeModal} onActivated={onPremiumActivated} />}
             {modal === "parashah" && <ParashahModal onClose={closeModal} />}
             {modal === "dafyomi" && <DafYomiModal onClose={closeModal} />}
+            {modal === "sefaria" && <SefariaSearchModal onClose={closeModal} />}
             {modal === "zmaniminfo" && <ZmanimInfoModal onClose={closeModal} />}
             {modal === "torahnote" && <TorahNoteModal onClose={closeModal} />}
             {modal === "birthday" && <BirthdayModal onClose={closeModal} />}
@@ -271,6 +273,7 @@ export default function App() {
                 onBirthday={() => setModal("birthday")}
                 onOmer={() => setModal("omer")}
                 onPrayers={() => setModal("prayers")}
+                onSefariaSearch={() => setModal("sefaria")}
                 isPremium={isPremium}
                 candleEnabled={candleEnabled}
                 onToggleCandle={onToggleCandle}

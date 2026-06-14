@@ -9,6 +9,7 @@ interface MoreToolsModalProps {
   onBirthday: () => void;
   onOmer: () => void;
   onPrayers: () => void;
+  onSefariaSearch: () => void;
   isPremium: boolean;
   candleEnabled: boolean;
   onToggleCandle: () => void;
@@ -16,7 +17,7 @@ interface MoreToolsModalProps {
 }
 
 export default function MoreToolsModal({
-  onClose, onTahara, onYartzeit, onCommunity, onCensus, onSettings, onDafYomi, onBirthday, onOmer, onPrayers,
+  onClose, onTahara, onYartzeit, onCommunity, onCensus, onSettings, onDafYomi, onBirthday, onOmer, onPrayers, onSefariaSearch,
   isPremium, candleEnabled, onToggleCandle, onShowPremium,
 }: MoreToolsModalProps) {
   const TOOLS = [
@@ -26,6 +27,7 @@ export default function MoreToolsModal({
     { emoji: "🕯", bg: "rgba(212,168,67,0.15)",  label: "Yahrzeit Calculator", sub: "Anniversary of passing",             action: onYartzeit },
     { emoji: "🎂", bg: "rgba(255,99,31,0.15)",   label: "Hebrew Birthday",     sub: "Find your Jewish birthday",          action: onBirthday },
     { emoji: "📚", bg: "rgba(139,92,246,0.15)",  label: "Daf Yomi",            sub: "Today's daily Talmud page",          action: onDafYomi },
+    { emoji: "🔍", bg: "rgba(212,168,67,0.15)",  label: "Torah Search",        sub: "Search Sefaria — Torah, Talmud & more", action: onSefariaSearch },
     { emoji: "🤝", bg: "rgba(255,99,31,0.15)",   label: "Community",           sub: "Connect with Bnei Menashe",          action: onCommunity },
     { emoji: "📊", bg: "rgba(22,163,74,0.15)",   label: "Community Census",    sub: "Demographics & statistics",          action: onCensus },
     { emoji: "⚙️", bg: "rgba(100,116,139,0.15)", label: "Settings",            sub: "App preferences & account",          action: onSettings },
