@@ -12,6 +12,7 @@ interface MoreToolsModalProps {
   onSefariaSearch: () => void;
   onHebrewDate: () => void;
   onLuach: () => void;
+  onMussar: () => void;
   isPremium: boolean;
   candleEnabled: boolean;
   onToggleCandle: () => void;
@@ -19,22 +20,23 @@ interface MoreToolsModalProps {
 }
 
 export default function MoreToolsModal({
-  onClose, onTahara, onYartzeit, onCommunity, onCensus, onSettings, onDafYomi, onBirthday, onOmer, onPrayers, onSefariaSearch, onHebrewDate, onLuach,
+  onClose, onTahara, onYartzeit, onCommunity, onCensus, onSettings, onDafYomi, onBirthday, onOmer, onPrayers, onSefariaSearch, onHebrewDate, onLuach, onMussar,
   isPremium, candleEnabled, onToggleCandle, onShowPremium,
 }: MoreToolsModalProps) {
   const TOOLS = [
-    { emoji: "🕍", bg: "rgba(99,102,241,0.15)",  label: "Prayer Times",         sub: "Shacharit, Mincha & Maariv windows", action: onPrayers },
-    { emoji: "🌾", bg: "rgba(212,168,67,0.15)",  label: "Sefirat HaOmer",      sub: "Daily Omer count & sefirot",         action: onOmer },
-    { emoji: "💧", bg: "rgba(59,130,246,0.15)",  label: "Tahara Calculator",   sub: "Purity & Mikveh timing",             action: onTahara },
-    { emoji: "🕯", bg: "rgba(212,168,67,0.15)",  label: "Yahrzeit Calculator", sub: "Anniversary of passing",             action: onYartzeit },
-    { emoji: "🎂", bg: "rgba(255,99,31,0.15)",   label: "Hebrew Birthday",     sub: "Find your Jewish birthday",          action: onBirthday },
-    { emoji: "📚", bg: "rgba(139,92,246,0.15)",  label: "Daf Yomi",            sub: "Today's daily Talmud page",          action: onDafYomi },
-    { emoji: "🔍", bg: "rgba(212,168,67,0.15)",  label: "Torah Search",        sub: "Search Sefaria — Torah, Talmud & more", action: onSefariaSearch },
+    { emoji: "🕍", bg: "rgba(99,102,241,0.15)",  label: "Prayer Times",         sub: "Shacharit, Mincha & Maariv windows",      action: onPrayers },
+    { emoji: "🌾", bg: "rgba(212,168,67,0.15)",  label: "Sefirat HaOmer",      sub: "Daily Omer count & sefirot",              action: onOmer },
+    { emoji: "📿", bg: "rgba(124,58,237,0.15)",  label: "Mussar — 48 Ways",    sub: "Daily character-refinement program",       action: onMussar },
+    { emoji: "💧", bg: "rgba(59,130,246,0.15)",  label: "Tahara Calculator",   sub: "Purity & Mikveh timing",                  action: onTahara },
+    { emoji: "🕯", bg: "rgba(212,168,67,0.15)",  label: "Yahrzeit Calculator", sub: "Anniversary of passing",                  action: onYartzeit },
+    { emoji: "🎂", bg: "rgba(255,99,31,0.15)",   label: "Hebrew Birthday",     sub: "Find your Jewish birthday",               action: onBirthday },
+    { emoji: "📚", bg: "rgba(139,92,246,0.15)",  label: "Daf Yomi",            sub: "Today's daily Talmud page",               action: onDafYomi },
+    { emoji: "🔍", bg: "rgba(212,168,67,0.15)",  label: "Torah Search",        sub: "Search Sefaria — Torah, Talmud & more",   action: onSefariaSearch },
     { emoji: "📅", bg: "rgba(99,102,241,0.15)",  label: "Hebrew Date",         sub: "Convert any date to the Jewish calendar", action: onHebrewDate },
     { emoji: "🗓", bg: "rgba(74,222,128,0.12)",  label: "Luach",               sub: "Full year Jewish calendar & holidays",    action: onLuach },
-    { emoji: "🤝", bg: "rgba(255,99,31,0.15)",   label: "Community",           sub: "Connect with Bnei Menashe",          action: onCommunity },
-    { emoji: "📊", bg: "rgba(22,163,74,0.15)",   label: "Community Census",    sub: "Demographics & statistics",          action: onCensus },
-    { emoji: "⚙️", bg: "rgba(100,116,139,0.15)", label: "Settings",            sub: "App preferences & account",          action: onSettings },
+    { emoji: "🤝", bg: "rgba(255,99,31,0.15)",   label: "Community",           sub: "Connect with Bnei Menashe",               action: onCommunity },
+    { emoji: "📊", bg: "rgba(22,163,74,0.15)",   label: "Community Census",    sub: "Demographics & statistics",               action: onCensus },
+    { emoji: "⚙️", bg: "rgba(100,116,139,0.15)", label: "Settings",            sub: "App preferences & account",               action: onSettings },
   ];
 
   return (
