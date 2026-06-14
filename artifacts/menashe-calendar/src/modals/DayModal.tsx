@@ -144,7 +144,7 @@ function HolidayInsightsSection({ holidayName }: { holidayName: string }) {
       {error && (
         <div>
           <p style={{ fontSize: 13, color: "#ef4444", margin: "0 0 6px" }}>{error}</p>
-          <button onClick={() => { setFetched(false); loadInsights(); }}
+          <button onClick={() => { loadInsights(); }}
             style={{ fontSize: 12, color: "#d4a843", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
             Retry
           </button>
