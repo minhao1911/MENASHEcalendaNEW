@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { Translations, en as enBase, tk as tkBase } from "../lib/translations";
 
@@ -54,11 +54,13 @@ const GROUPS: Group[] = [
   },
 ];
 
-const GROUP_LABELS: Record<string, { en: string; key: keyof Translations }> = {
-  landing: { en: "Landing Page", key: "txEditorGroupLanding" },
-  nav:     { en: "Navigation",   key: "txEditorGroupNav" },
-  settings:{ en: "Settings",     key: "txEditorGroupSettings" },
-  home:    { en: "Home Page",    key: "txEditorGroupHome" },
+const ALL_KEYS = new Set(GROUPS.flatMap(g => g.keys));
+
+const GROUP_LABELS: Record<string, string> = {
+  landing: "Landing Page",
+  nav:     "Navigation",
+  settings:"Settings",
+  home:    "Home Page",
 };
 
 interface Props { onClose: () => void }
@@ -77,6 +79,8 @@ export default function TranslationEditorModal({ onClose }: Props) {
   const [search, setSearch] = useState("");
   const [saved, setSaved] = useState(false);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const [importMsg, setImportMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredGroups = useMemo(() => {
     const q = search.toLowerCase();
@@ -87,8 +91,7 @@ export default function TranslationEditorModal({ onClose }: Props) {
         if (!q) return true;
         const enVal = enBase[k]?.toLowerCase() ?? "";
         const tkVal = (edits[k] as string | undefined)?.toLowerCase() ?? "";
-        const keyName = k.toLowerCase();
-        return enVal.includes(q) || tkVal.includes(q) || keyName.includes(q);
+        return enVal.includes(q) || tkVal.includes(q) || k.toLowerCase().includes(q);
       }),
     })).filter(g => g.keys.length > 0);
   }, [search, activeGroup, edits]);
@@ -101,7 +104,7 @@ export default function TranslationEditorModal({ onClose }: Props) {
   function handleSave() {
     saveTkOverrides(edits as Partial<Translations>);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => setSaved(false), 2200);
   }
 
   function handleReset() {
@@ -113,31 +116,96 @@ export default function TranslationEditorModal({ onClose }: Props) {
     setSaved(false);
   }
 
+  /* ── Export ── */
+  function handleExport() {
+    const payload: Record<string, string> = {};
+    (Object.keys(edits) as (keyof Translations)[]).forEach(k => {
+      payload[k] = (edits[k] as string) ?? "";
+    });
+    const blob = new Blob(
+      [JSON.stringify(payload, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "menashe-tk-translations.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  /* ── Import ── */
+  function handleImportClick() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const raw = JSON.parse(ev.target?.result as string);
+        if (typeof raw !== "object" || Array.isArray(raw)) throw new Error("Invalid format");
+        const incoming: Partial<Translations> = {};
+        let imported = 0;
+        let skipped = 0;
+        Object.entries(raw).forEach(([key, val]) => {
+          if (ALL_KEYS.has(key as keyof Translations) && typeof val === "string") {
+            (incoming as any)[key] = val;
+            imported++;
+          } else {
+            skipped++;
+          }
+        });
+        if (imported === 0) throw new Error("No valid keys found in file");
+        setEdits(prev => ({ ...prev, ...incoming }));
+        setSaved(false);
+        setImportMsg({
+          type: "ok",
+          text: `✓ Imported ${imported} label${imported !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} unknown keys skipped)` : ""}. Hit Save to apply.`,
+        });
+        setTimeout(() => setImportMsg(null), 6000);
+      } catch (err: any) {
+        setImportMsg({ type: "err", text: `Import failed: ${err.message}` });
+        setTimeout(() => setImportMsg(null), 5000);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
   const totalKeys = GROUPS.reduce((sum, g) => sum + g.keys.length, 0);
+  const overrideCount = Object.keys(tkOverrides).length;
 
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 9000,
       background: "var(--bg)", display: "flex", flexDirection: "column",
     }}>
-      {/* Header */}
+
+      {/* ── Header ── */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "14px 16px", borderBottom: "1px solid var(--border)",
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "13px 14px", borderBottom: "1px solid var(--border)",
         flexShrink: 0,
       }}>
         <button
           onClick={onClose}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 22, padding: "2px 6px", lineHeight: 1 }}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 22, padding: "2px 6px", lineHeight: 1, flexShrink: 0 }}
         >←</button>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)" }}>{t.txEditorTitle}</div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{totalKeys} labels</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>{t.txEditorTitle}</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            {totalKeys} labels{overrideCount > 0 ? ` · ${overrideCount} customised` : ""}
+          </div>
         </div>
         <button
           onClick={handleSave}
           style={{
-            padding: "9px 18px", borderRadius: 10,
+            padding: "8px 16px", borderRadius: 10, flexShrink: 0,
             background: saved ? "rgba(34,197,94,0.15)" : "rgba(212,168,67,0.15)",
             border: `1px solid ${saved ? "rgba(34,197,94,0.4)" : "rgba(212,168,67,0.4)"}`,
             color: saved ? "#22c55e" : "#d4a843", fontWeight: 700, fontSize: 13, cursor: "pointer",
@@ -148,43 +216,56 @@ export default function TranslationEditorModal({ onClose }: Props) {
         </button>
       </div>
 
-      {/* Note bar */}
+      {/* ── Note bar ── */}
       <div style={{
-        padding: "8px 16px", background: "rgba(212,168,67,0.06)",
+        padding: "7px 14px", background: "rgba(212,168,67,0.05)",
         borderBottom: "1px solid var(--border)", flexShrink: 0,
       }}>
         <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>{t.txEditorNote}</div>
       </div>
 
-      {/* Toolbar */}
+      {/* ── Import status bar ── */}
+      {importMsg && (
+        <div style={{
+          padding: "9px 14px", flexShrink: 0,
+          background: importMsg.type === "ok" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+          borderBottom: "1px solid var(--border)",
+          color: importMsg.type === "ok" ? "#22c55e" : "#ef4444",
+          fontSize: 12, fontWeight: 600,
+        }}>
+          {importMsg.text}
+        </div>
+      )}
+
+      {/* ── Toolbar: search + group filter + export/import ── */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 8, padding: "10px 16px",
+        display: "flex", alignItems: "center", gap: 7, padding: "9px 14px",
         borderBottom: "1px solid var(--border)", flexShrink: 0, flexWrap: "wrap",
       }}>
         {/* Search */}
-        <div style={{ flex: 1, minWidth: 160, position: "relative" }}>
-          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "var(--text-muted)" }}>🔍</span>
+        <div style={{ flex: 1, minWidth: 140, position: "relative" }}>
+          <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-muted)", pointerEvents: "none" }}>🔍</span>
           <input
             type="text"
             placeholder={t.txEditorSearch}
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{
-              width: "100%", padding: "8px 10px 8px 32px", borderRadius: 8,
+              width: "100%", padding: "7px 9px 7px 30px", borderRadius: 8,
               background: "var(--elevated)", border: "1px solid var(--border)",
-              color: "var(--text-primary)", fontSize: 13, outline: "none",
-              boxSizing: "border-box",
+              color: "var(--text-primary)", fontSize: 13, outline: "none", boxSizing: "border-box",
             }}
           />
         </div>
-        {/* Group filter */}
-        <div style={{ display: "flex", gap: 4 }}>
+
+        {/* Group pills */}
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {[null, ...GROUPS.map(g => g.label)].map(g => (
             <button
               key={g ?? "all"}
               onClick={() => setActiveGroup(g)}
               style={{
-                padding: "6px 10px", borderRadius: 7, fontSize: 11, fontWeight: 700,
+                padding: "5px 9px", borderRadius: 6, fontSize: 10, fontWeight: 700,
                 border: "1px solid",
                 borderColor: activeGroup === g ? "#d4a843" : "var(--border)",
                 background: activeGroup === g ? "rgba(212,168,67,0.12)" : "var(--elevated)",
@@ -192,35 +273,70 @@ export default function TranslationEditorModal({ onClose }: Props) {
                 cursor: "pointer", whiteSpace: "nowrap",
               }}
             >
-              {g === null ? "All" : (GROUP_LABELS[g]?.en ?? g)}
+              {g === null ? "All" : GROUP_LABELS[g]}
             </button>
           ))}
         </div>
+
+        {/* Export / Import buttons */}
+        <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+          <button
+            onClick={handleExport}
+            title="Export all current TK labels as a JSON file"
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+              background: "rgba(99,179,237,0.1)", border: "1px solid rgba(99,179,237,0.3)",
+              color: "#63b3ed", cursor: "pointer", whiteSpace: "nowrap",
+            }}
+          >
+            ↓ Export
+          </button>
+          <button
+            onClick={handleImportClick}
+            title="Import TK labels from a JSON file"
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+              background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)",
+              color: "#a78bfa", cursor: "pointer", whiteSpace: "nowrap",
+            }}
+          >
+            ↑ Import
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+          />
+        </div>
       </div>
 
-      {/* Table header */}
+      {/* ── Table header ── */}
       <div style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0,
-        padding: "6px 16px", background: "var(--elevated)",
+        display: "grid", gridTemplateColumns: "1fr 1fr",
+        padding: "5px 14px", background: "var(--elevated)",
         borderBottom: "1px solid var(--border)", flexShrink: 0,
       }}>
         <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "var(--text-muted)" }}>🇬🇧 {t.txEditorEnglish}</div>
         <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "#d4a843" }}>✏️ {t.txEditorThadou}</div>
       </div>
 
-      {/* Rows */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 0 80px" }}>
+      {/* ── Rows ── */}
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 84 }}>
         {filteredGroups.map(group => (
           <div key={group.label}>
             <div style={{
-              padding: "10px 16px 6px", fontSize: 10, fontWeight: 800,
+              padding: "8px 14px 5px", fontSize: 10, fontWeight: 800,
               letterSpacing: "0.12em", color: "#d4a843",
               background: "rgba(212,168,67,0.04)", borderBottom: "1px solid var(--border)",
               position: "sticky", top: 0, zIndex: 2,
             }}>
-              {GROUP_LABELS[group.label]?.en ?? group.label}
+              {GROUP_LABELS[group.label] ?? group.label}
             </div>
-            {group.keys.map((k, i) => {
+            {group.keys.map(k => {
               const enVal = enBase[k] as string;
               const tkVal = (edits[k] as string | undefined) ?? tkBase[k] as string;
               const isOverridden = tkOverrides[k] !== undefined;
@@ -230,30 +346,29 @@ export default function TranslationEditorModal({ onClose }: Props) {
                   style={{
                     display: "grid", gridTemplateColumns: "1fr 1fr",
                     borderBottom: "1px solid var(--border)",
-                    background: isOverridden ? "rgba(212,168,67,0.03)" : "transparent",
+                    background: isOverridden ? "rgba(212,168,67,0.025)" : "transparent",
                   }}
                 >
                   {/* English (read-only) */}
-                  <div style={{ padding: "10px 12px 10px 16px", borderRight: "1px solid var(--border)" }}>
-                    <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 3 }}>
+                  <div style={{ padding: "9px 12px 9px 14px", borderRight: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 2 }}>
                       {k}
+                      {isOverridden && <span style={{ marginLeft: 5, color: "#d4a843" }}>●</span>}
                     </div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.4 }}>
-                      {enVal}
-                    </div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.4 }}>{enVal}</div>
                   </div>
                   {/* TK (editable) */}
-                  <div style={{ padding: "8px 12px 8px 12px", display: "flex", alignItems: "stretch" }}>
+                  <div style={{ padding: "7px 11px", display: "flex", alignItems: "stretch" }}>
                     <textarea
                       value={tkVal}
                       onChange={e => handleChange(k, e.target.value)}
-                      rows={Math.min(4, Math.ceil(tkVal.length / 30) + 1)}
+                      rows={Math.max(1, Math.min(4, Math.ceil(tkVal.length / 28)))}
                       style={{
                         flex: 1, resize: "none", fontSize: 13, lineHeight: 1.4,
                         background: "var(--elevated)", color: "var(--text-primary)",
                         border: "1px solid",
-                        borderColor: isOverridden ? "rgba(212,168,67,0.35)" : "var(--border)",
-                        borderRadius: 7, padding: "6px 8px", outline: "none",
+                        borderColor: isOverridden ? "rgba(212,168,67,0.4)" : "var(--border)",
+                        borderRadius: 7, padding: "5px 8px", outline: "none",
                         fontFamily: "inherit",
                       }}
                     />
@@ -270,12 +385,32 @@ export default function TranslationEditorModal({ onClose }: Props) {
         )}
       </div>
 
-      {/* Bottom action bar */}
+      {/* ── Bottom bar ── */}
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0,
-        padding: "12px 16px", background: "var(--bg)",
-        borderTop: "1px solid var(--border)", display: "flex", gap: 10,
+        padding: "10px 14px", background: "var(--bg)",
+        borderTop: "1px solid var(--border)",
+        display: "flex", gap: 8, alignItems: "center",
       }}>
+        {/* Export / Import (mirrored at bottom for quick access) */}
+        <button
+          onClick={handleExport}
+          style={{
+            padding: "11px 14px", borderRadius: 12, fontSize: 13, fontWeight: 700,
+            background: "rgba(99,179,237,0.1)", border: "1px solid rgba(99,179,237,0.3)",
+            color: "#63b3ed", cursor: "pointer",
+          }}
+        >↓ Export</button>
+        <button
+          onClick={handleImportClick}
+          style={{
+            padding: "11px 14px", borderRadius: 12, fontSize: 13, fontWeight: 700,
+            background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)",
+            color: "#a78bfa", cursor: "pointer",
+          }}
+        >↑ Import</button>
+
+        {/* Save */}
         <button
           onClick={handleSave}
           style={{
@@ -287,11 +422,13 @@ export default function TranslationEditorModal({ onClose }: Props) {
         >
           {saved ? t.txEditorSaved : t.txEditorSave}
         </button>
+
+        {/* Reset */}
         <button
           onClick={handleReset}
           style={{
-            padding: "12px 16px", borderRadius: 12,
-            background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
+            padding: "11px 14px", borderRadius: 12,
+            background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.22)",
             color: "#ef4444", fontWeight: 600, fontSize: 13, cursor: "pointer",
           }}
         >
