@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { HDate } from "@hebcal/core";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import { Location } from "../lib/locations";
@@ -65,6 +66,7 @@ export default function PrayerTimesModal({ onClose, location, onSettings }: Prop
   const z = calculateZmanim(today, location.lat, location.lng);
   const tz = location.tz;
   const now = new Date();
+  const [shareState, setShareState] = useState<"idle" | "copied">("idle");
 
   const prayers: PrayerWindow[] = [
     {
@@ -116,6 +118,48 @@ export default function PrayerTimesModal({ onClose, location, onSettings }: Prop
 
   const isFriday = today.getDay() === 5;
   const isShabbat = today.getDay() === 6;
+
+  function handleShare() {
+    const dateStr = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    const hebrewDate = hdate.render("en");
+
+    const lines = [
+      `🕍 Prayer Times — ${dateStr}`,
+      `📅 ${hebrewDate}`,
+      `📍 ${location.name}`,
+      ``,
+      `🌅 Sunrise:   ${formatTime(z.sunrise, tz)}`,
+      `☀️  Chatzot:  ${formatTime(z.chatzot, tz)}`,
+      `🌇 Sunset:    ${formatTime(z.sunset, tz)}`,
+      `🌙 Nightfall: ${formatTime(z.tzais, tz)}`,
+      ``,
+      `🌅 Shacharit`,
+      `   Window: ${z.alotHaShachar && z.latestShacharit ? formatTime(z.alotHaShachar, tz) + " – " + formatTime(z.latestShacharit, tz) : "--"}`,
+      `   ✦ Ideal: ${z.sunrise && z.latestShema ? formatTime(z.sunrise, tz) + " – " + formatTime(z.latestShema, tz) : "--"}`,
+      ``,
+      `🌤 Mincha`,
+      `   Window: ${z.minchaGedolah && z.sunset ? formatTime(z.minchaGedolah, tz) + " – " + formatTime(z.sunset, tz) : "--"}`,
+      `   ✦ Ideal: ${z.minchaKetana && z.plagHamincha ? formatTime(z.minchaKetana, tz) + " – " + formatTime(z.plagHamincha, tz) : "--"}`,
+      ``,
+      `🌙 Maariv`,
+      `   From: ${z.tzais ? formatTime(z.tzais, tz) + " onwards" : "--"}`,
+      ...(isFriday ? [``, `🕯 Erev Shabbat — Maariv begins Shabbat tonight`] : []),
+      ...(isShabbat ? [``, `🕯 Shabbat ends at ${formatTime(z.tzais, tz)}`] : []),
+      ``,
+      `— Sacred Calendar of Bnei Menashe`,
+    ];
+
+    const text = lines.join("\n");
+
+    if (navigator.share) {
+      navigator.share({ title: `Prayer Times — ${location.name}`, text }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text).then(() => {
+        setShareState("copied");
+        setTimeout(() => setShareState("idle"), 2500);
+      }).catch(() => {});
+    }
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -290,7 +334,40 @@ export default function PrayerTimesModal({ onClose, location, onSettings }: Prop
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
 
-        <button onClick={onClose} className="btn-close-full" style={{ marginTop: 12 }}>Close</button>
+        {/* Share button */}
+        <button
+          onClick={handleShare}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            width: "100%", padding: "14px 0", borderRadius: 12, marginTop: 12, marginBottom: 10,
+            background: shareState === "copied"
+              ? "linear-gradient(90deg, #166534, #16a34a)"
+              : "linear-gradient(135deg, #1a3a6b, #2451a8)",
+            border: shareState === "copied"
+              ? "1px solid rgba(74,222,128,0.4)"
+              : "1px solid rgba(59,130,246,0.35)",
+            color: "white", fontSize: 14, fontWeight: 700,
+            cursor: "pointer",
+            transition: "background 0.3s, border 0.3s",
+          }}
+        >
+          {shareState === "copied" ? (
+            <>
+              <span>✅</span>
+              <span>Copied to clipboard!</span>
+            </>
+          ) : (
+            <>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              <span>Share Today's Prayer Times</span>
+            </>
+          )}
+        </button>
+
+        <button onClick={onClose} className="btn-close-full">Close</button>
       </div>
     </div>
   );
