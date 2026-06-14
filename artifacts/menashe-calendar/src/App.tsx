@@ -125,6 +125,50 @@ const clerkAppearance = {
   },
 };
 
+const signUpAppearance = {
+  cssLayerName: "clerk",
+  options: {
+    logoPlacement: "none" as const,
+  },
+  variables: {
+    colorPrimary: "#1d5c38",
+    colorForeground: "#1a2e1a",
+    colorMutedForeground: "#5a7a5a",
+    colorDanger: "#ef4444",
+    colorBackground: "#f5f0e2",
+    colorInput: "#ffffff",
+    colorInputForeground: "#1a2e1a",
+    colorNeutral: "#b5a880",
+    fontFamily: "'Inter', sans-serif",
+    borderRadius: "0.5rem",
+  },
+  elements: {
+    rootBox: "w-full",
+    cardBox: "w-full !shadow-none !rounded-none !bg-[#f5f0e2]",
+    card: "!shadow-none !border-0 !bg-[#f5f0e2] !rounded-none",
+    footer: "!shadow-none !border-0 !bg-[#f5f0e2] !rounded-none",
+    headerTitle: "!text-[#c8960c] font-bold text-2xl",
+    headerSubtitle: "!text-[#5a7a5a]",
+    socialButtonsBlockButton: "!border-gray-200 !bg-white !text-gray-700 hover:!bg-gray-50",
+    socialButtonsBlockButtonText: "!text-gray-700",
+    formFieldLabel: "!text-[#1d5c38] font-medium",
+    formFieldInput: "!bg-white !border-[#c5b89a] !text-gray-800",
+    formButtonPrimary: "!bg-[#c8960c] !text-white font-bold hover:!bg-[#b07d0a]",
+    footerActionLink: "!text-[#1d5c38] hover:!text-[#c8960c]",
+    footerActionText: "!text-[#5a7a5a]",
+    dividerText: "!text-[#5a7a5a]",
+    dividerLine: "!bg-[#c5b89a]",
+    alert: "!bg-[#fff8e8] border-[#c8960c]/30",
+    alertText: "!text-gray-800",
+    identityPreviewEditButton: "!text-[#1d5c38]",
+    formFieldSuccessText: "!text-green-600",
+    otpCodeFieldInput: "!bg-white !border-[#c5b89a]",
+    footerAction: "!bg-[#f5f0e2]",
+    main: "gap-4 !bg-[#f5f0e2]",
+    formFieldRow: "gap-2",
+  },
+};
+
 type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium";
 type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
@@ -143,9 +187,127 @@ function SignInPage() {
 }
 
 function SignUpPage() {
+  const saipikhupLight = `${basePath}/saipikhup-light.svg`;
+  const saipikhupDark = `${basePath}/saipikhup-dark.svg`;
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center px-4" style={{ background: "linear-gradient(135deg, #0a1020 0%, #0F1829 50%, #0a1525 100%)" }}>
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+    <div
+      className="flex min-h-[100dvh] items-center justify-center p-4"
+      style={{
+        background: "linear-gradient(160deg, #0a120a 0%, #0d1a0d 50%, #080e08 100%)",
+        position: "relative",
+      }}
+    >
+      {/* Page-level saipikhup overlay — very faint on dark bg */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `url(${saipikhupLight})`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "80px 80px",
+          opacity: 0.04,
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Board card */}
+      <div
+        className="relative w-full overflow-hidden"
+        style={{
+          maxWidth: 420,
+          borderRadius: "1.25rem",
+          border: "2px solid #8B6914",
+          boxShadow: "0 8px 48px rgba(0,0,0,0.7), 0 2px 12px rgba(139,105,20,0.3)",
+        }}
+      >
+        {/* ── SAIPIKHUP HEADER ── */}
+        <div
+          style={{
+            background: "linear-gradient(180deg, #143d24 0%, #1d5c38 55%, #143d24 100%)",
+            padding: "36px 24px 30px",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Saipikhup pattern over the header */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `url(${saipikhupLight})`,
+              backgroundRepeat: "repeat",
+              backgroundSize: "64px 64px",
+              opacity: 0.28,
+              pointerEvents: "none",
+            }}
+          />
+          {/* Gold border bottom line */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "2px",
+              background: "linear-gradient(90deg, transparent, #D4AF37, transparent)",
+            }}
+          />
+          {/* Logo + branding */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 10,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            {/* M + Star of David logo */}
+            <svg viewBox="0 0 80 80" width="68" height="68" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="40,6 58,38 22,38" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="none"/>
+              <polygon points="40,62 22,30 58,30" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="none"/>
+              <polyline points="14,74 14,30 40,56 66,30 66,74" stroke="#D4AF37" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            </svg>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ color: "#D4AF37", fontWeight: "bold", fontSize: "22px", letterSpacing: "0.05em", fontFamily: "Georgia, serif" }}>
+                Bnei Menashe
+              </div>
+              <div style={{ color: "#D4AF37", fontSize: "13px", letterSpacing: "0.12em", opacity: 0.85, marginTop: "2px" }}>
+                Sacred Calendar
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── CREAM FORM AREA with subtle saipikhup watermark ── */}
+        <div style={{ background: "#f5f0e2", position: "relative", overflow: "hidden" }}>
+          {/* Subtle dark saipikhup watermark on cream bg */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `url(${saipikhupDark})`,
+              backgroundRepeat: "repeat",
+              backgroundSize: "64px 64px",
+              opacity: 0.07,
+              pointerEvents: "none",
+            }}
+          />
+          <div style={{ position: "relative", zIndex: 10 }}>
+            <SignUp
+              routing="path"
+              path={`${basePath}/sign-up`}
+              signInUrl={`${basePath}/sign-in`}
+              appearance={signUpAppearance}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
