@@ -125,46 +125,46 @@ const clerkAppearance = {
   },
 };
 
-const signUpAppearance = {
+const darkCardAppearance = {
   cssLayerName: "clerk",
   options: {
     logoPlacement: "none" as const,
   },
   variables: {
-    colorPrimary: "#1d5c38",
-    colorForeground: "#1a2e1a",
-    colorMutedForeground: "#5a7a5a",
+    colorPrimary: "#D4AF37",
+    colorForeground: "#F0EDE4",
+    colorMutedForeground: "#8a8070",
     colorDanger: "#ef4444",
-    colorBackground: "#f5f0e2",
-    colorInput: "#ffffff",
-    colorInputForeground: "#1a2e1a",
-    colorNeutral: "#b5a880",
+    colorBackground: "#0e0e14",
+    colorInput: "#1c1c26",
+    colorInputForeground: "#F0EDE4",
+    colorNeutral: "#2e2e3a",
     fontFamily: "'Inter', sans-serif",
     borderRadius: "0.5rem",
   },
   elements: {
     rootBox: "w-full",
-    cardBox: "w-full !shadow-none !rounded-none !bg-[#f5f0e2]",
-    card: "!shadow-none !border-0 !bg-[#f5f0e2] !rounded-none",
-    footer: "!shadow-none !border-0 !bg-[#f5f0e2] !rounded-none",
-    headerTitle: "!text-[#c8960c] font-bold text-2xl",
-    headerSubtitle: "!text-[#5a7a5a]",
-    socialButtonsBlockButton: "!border-gray-200 !bg-white !text-gray-700 hover:!bg-gray-50",
-    socialButtonsBlockButtonText: "!text-gray-700",
-    formFieldLabel: "!text-[#1d5c38] font-medium",
-    formFieldInput: "!bg-white !border-[#c5b89a] !text-gray-800",
-    formButtonPrimary: "!bg-[#c8960c] !text-white font-bold hover:!bg-[#b07d0a]",
-    footerActionLink: "!text-[#1d5c38] hover:!text-[#c8960c]",
-    footerActionText: "!text-[#5a7a5a]",
-    dividerText: "!text-[#5a7a5a]",
-    dividerLine: "!bg-[#c5b89a]",
-    alert: "!bg-[#fff8e8] border-[#c8960c]/30",
-    alertText: "!text-gray-800",
-    identityPreviewEditButton: "!text-[#1d5c38]",
-    formFieldSuccessText: "!text-green-600",
-    otpCodeFieldInput: "!bg-white !border-[#c5b89a]",
-    footerAction: "!bg-[#f5f0e2]",
-    main: "gap-4 !bg-[#f5f0e2]",
+    cardBox: "w-full !shadow-none !rounded-none !bg-[#0e0e14]",
+    card: "!shadow-none !border-0 !bg-[#0e0e14] !rounded-none",
+    footer: "!shadow-none !border-0 !bg-[#0e0e14] !rounded-none",
+    headerTitle: "!text-[#D4AF37] font-bold text-xl",
+    headerSubtitle: "!text-[#8a8070]",
+    socialButtonsBlockButton: "!border-[#2e2e3a] !bg-[#1c1c26] !text-[#F0EDE4] hover:!bg-[#24242e]",
+    socialButtonsBlockButtonText: "!text-[#F0EDE4]",
+    formFieldLabel: "!text-[#a09080] font-medium text-sm",
+    formFieldInput: "!bg-[#1c1c26] !border-[#2e2e3a] !text-[#F0EDE4]",
+    formButtonPrimary: "!bg-[#D4AF37] !text-[#080808] font-bold hover:!bg-[#c49e30]",
+    footerActionLink: "!text-[#D4AF37] hover:!text-[#f0c94a]",
+    footerActionText: "!text-[#8a8070]",
+    dividerText: "!text-[#8a8070]",
+    dividerLine: "!bg-[#2e2e3a]",
+    alert: "!bg-[#1c1c26] border-[#D4AF37]/30",
+    alertText: "!text-[#F0EDE4]",
+    identityPreviewEditButton: "!text-[#D4AF37]",
+    formFieldSuccessText: "!text-green-400",
+    otpCodeFieldInput: "!bg-[#1c1c26] !border-[#2e2e3a]",
+    footerAction: "!bg-[#0e0e14]",
+    main: "gap-4 !bg-[#0e0e14]",
     formFieldRow: "gap-2",
   },
 };
@@ -178,255 +178,124 @@ type Modal =
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
-function SignInPage() {
-  const saipikhupLight = `${basePath}/saipikhup-light.svg`;
-  const saipikhupDark = `${basePath}/saipikhup-dark.svg`;
+/* ── Shared auth card wrapper ───────────────────────────────────── */
+function AuthCard({ children }: { children: React.ReactNode }) {
+  const photoUrl = `${basePath}/saipikhup-photo.jpg`;
   return (
     <div
-      className="flex min-h-[100dvh] items-center justify-center p-4"
       style={{
-        background: "linear-gradient(160deg, #0a120a 0%, #0d1a0d 50%, #080e08 100%)",
+        minHeight: "100dvh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px 16px",
         position: "relative",
+        backgroundImage: `url(${photoUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center top",
       }}
     >
-      {/* Page-level saipikhup overlay — very faint on dark bg */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: `url(${saipikhupLight})`,
-          backgroundRepeat: "repeat",
-          backgroundSize: "80px 80px",
-          opacity: 0.04,
-          pointerEvents: "none",
-        }}
-      />
+      {/* Dark veil over the photo */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(4,4,8,0.80)", pointerEvents: "none" }} />
 
-      {/* Board card */}
+      {/* Card */}
       <div
-        className="relative w-full overflow-hidden"
         style={{
-          maxWidth: 420,
-          borderRadius: "1.25rem",
-          border: "2px solid #8B6914",
-          boxShadow: "0 8px 48px rgba(0,0,0,0.7), 0 2px 12px rgba(139,105,20,0.3)",
+          position: "relative",
+          zIndex: 10,
+          width: "100%",
+          maxWidth: 440,
+          borderRadius: "14px",
+          overflow: "hidden",
+          border: "1px solid rgba(212,175,55,0.30)",
+          boxShadow: "0 32px 96px rgba(0,0,0,0.90), 0 0 0 1px rgba(212,175,55,0.08), 0 4px 24px rgba(212,175,55,0.10)",
         }}
       >
-        {/* ── SAIPIKHUP HEADER ── */}
+        {/* ── PHOTO HEADER — shows the embroidered band ── */}
         <div
           style={{
-            background: "linear-gradient(180deg, #143d24 0%, #1d5c38 55%, #143d24 100%)",
-            padding: "36px 24px 30px",
+            height: 170,
             position: "relative",
             overflow: "hidden",
+            backgroundImage: `url(${photoUrl})`,
+            backgroundSize: "280%",
+            backgroundPosition: "center 88%",
           }}
         >
-          {/* Saipikhup pattern over the header */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `url(${saipikhupLight})`,
-              backgroundRepeat: "repeat",
-              backgroundSize: "64px 64px",
-              opacity: 0.28,
-              pointerEvents: "none",
-            }}
-          />
-          {/* Gold border bottom line */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: "2px",
-              background: "linear-gradient(90deg, transparent, #D4AF37, transparent)",
-            }}
-          />
-          {/* Logo + branding */}
-          <div
-            style={{
-              position: "relative",
-              zIndex: 10,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
-            {/* M + Star of David logo */}
-            <svg viewBox="0 0 80 80" width="68" height="68" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="40,6 58,38 22,38" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="none"/>
-              <polygon points="40,62 22,30 58,30" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="none"/>
-              <polyline points="14,74 14,30 40,56 66,30 66,74" stroke="#D4AF37" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
+          {/* Gradient overlay: dark top + dark bottom, clear middle */}
+          <div aria-hidden style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.18) 45%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.70) 100%)",
+          }} />
+          {/* Top gold rule */}
+          <div aria-hidden style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.85) 50%, transparent 100%)" }} />
+
+          {/* Logo + name */}
+          <div style={{ position: "relative", zIndex: 10, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, paddingTop: 6 }}>
+            {/* Circular backing for logo */}
+            <div style={{
+              width: 56, height: 56,
+              borderRadius: "50%",
+              background: "rgba(0,0,0,0.55)",
+              border: "1.5px solid rgba(212,175,55,0.55)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(4px)",
+            }}>
+              <svg viewBox="0 0 80 80" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="40,6 58,38 22,38" stroke="#D4AF37" strokeWidth="3.2" strokeLinejoin="round" fill="none"/>
+                <polygon points="40,62 22,30 58,30" stroke="#D4AF37" strokeWidth="3.2" strokeLinejoin="round" fill="none"/>
+                <polyline points="14,74 14,30 40,56 66,30 66,74" stroke="#D4AF37" strokeWidth="5.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
+            </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ color: "#D4AF37", fontWeight: "bold", fontSize: "22px", letterSpacing: "0.05em", fontFamily: "Georgia, serif" }}>
+              <div style={{ color: "#F5D982", fontWeight: 700, fontSize: 17, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "Georgia, serif", textShadow: "0 1px 10px rgba(0,0,0,0.9)" }}>
                 Bnei Menashe
               </div>
-              <div style={{ color: "#D4AF37", fontSize: "13px", letterSpacing: "0.12em", opacity: 0.85, marginTop: "2px" }}>
+              <div style={{ color: "rgba(245,217,130,0.65)", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", marginTop: 3, textShadow: "0 1px 6px rgba(0,0,0,0.9)" }}>
                 Sacred Calendar
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── CREAM FORM AREA with subtle saipikhup watermark ── */}
-        <div style={{ background: "#f5f0e2", position: "relative", overflow: "hidden" }}>
-          {/* Subtle dark saipikhup watermark on cream bg */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `url(${saipikhupDark})`,
-              backgroundRepeat: "repeat",
-              backgroundSize: "64px 64px",
-              opacity: 0.07,
-              pointerEvents: "none",
-            }}
-          />
-          <div style={{ position: "relative", zIndex: 10 }}>
-            <SignIn
-              routing="path"
-              path={`${basePath}/sign-in`}
-              signUpUrl={`${basePath}/sign-up`}
-              appearance={signUpAppearance}
-            />
-          </div>
+        {/* Gold divider rule */}
+        <div aria-hidden style={{ height: 1, background: "linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.50) 50%, transparent 100%)" }} />
+
+        {/* ── DARK FORM BODY ── */}
+        <div style={{ background: "#0e0e14" }}>
+          {children}
         </div>
+
+        {/* Bottom gold rule */}
+        <div aria-hidden style={{ height: 1, background: "linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.25) 50%, transparent 100%)", background: "#0e0e14" }} />
       </div>
     </div>
   );
 }
 
-function SignUpPage() {
-  const saipikhupLight = `${basePath}/saipikhup-light.svg`;
-  const saipikhupDark = `${basePath}/saipikhup-dark.svg`;
+function SignInPage() {
   return (
-    <div
-      className="flex min-h-[100dvh] items-center justify-center p-4"
-      style={{
-        background: "linear-gradient(160deg, #0a120a 0%, #0d1a0d 50%, #080e08 100%)",
-        position: "relative",
-      }}
-    >
-      {/* Page-level saipikhup overlay — very faint on dark bg */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: `url(${saipikhupLight})`,
-          backgroundRepeat: "repeat",
-          backgroundSize: "80px 80px",
-          opacity: 0.04,
-          pointerEvents: "none",
-        }}
+    <AuthCard>
+      <SignIn
+        routing="path"
+        path={`${basePath}/sign-in`}
+        signUpUrl={`${basePath}/sign-up`}
+        appearance={darkCardAppearance}
       />
+    </AuthCard>
+  );
+}
 
-      {/* Board card */}
-      <div
-        className="relative w-full overflow-hidden"
-        style={{
-          maxWidth: 420,
-          borderRadius: "1.25rem",
-          border: "2px solid #8B6914",
-          boxShadow: "0 8px 48px rgba(0,0,0,0.7), 0 2px 12px rgba(139,105,20,0.3)",
-        }}
-      >
-        {/* ── SAIPIKHUP HEADER ── */}
-        <div
-          style={{
-            background: "linear-gradient(180deg, #143d24 0%, #1d5c38 55%, #143d24 100%)",
-            padding: "36px 24px 30px",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Saipikhup pattern over the header */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `url(${saipikhupLight})`,
-              backgroundRepeat: "repeat",
-              backgroundSize: "64px 64px",
-              opacity: 0.28,
-              pointerEvents: "none",
-            }}
-          />
-          {/* Gold border bottom line */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: "2px",
-              background: "linear-gradient(90deg, transparent, #D4AF37, transparent)",
-            }}
-          />
-          {/* Logo + branding */}
-          <div
-            style={{
-              position: "relative",
-              zIndex: 10,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
-            {/* M + Star of David logo */}
-            <svg viewBox="0 0 80 80" width="68" height="68" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="40,6 58,38 22,38" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="none"/>
-              <polygon points="40,62 22,30 58,30" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="none"/>
-              <polyline points="14,74 14,30 40,56 66,30 66,74" stroke="#D4AF37" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ color: "#D4AF37", fontWeight: "bold", fontSize: "22px", letterSpacing: "0.05em", fontFamily: "Georgia, serif" }}>
-                Bnei Menashe
-              </div>
-              <div style={{ color: "#D4AF37", fontSize: "13px", letterSpacing: "0.12em", opacity: 0.85, marginTop: "2px" }}>
-                Sacred Calendar
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── CREAM FORM AREA with subtle saipikhup watermark ── */}
-        <div style={{ background: "#f5f0e2", position: "relative", overflow: "hidden" }}>
-          {/* Subtle dark saipikhup watermark on cream bg */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `url(${saipikhupDark})`,
-              backgroundRepeat: "repeat",
-              backgroundSize: "64px 64px",
-              opacity: 0.07,
-              pointerEvents: "none",
-            }}
-          />
-          <div style={{ position: "relative", zIndex: 10 }}>
-            <SignUp
-              routing="path"
-              path={`${basePath}/sign-up`}
-              signInUrl={`${basePath}/sign-in`}
-              appearance={signUpAppearance}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+function SignUpPage() {
+  return (
+    <AuthCard>
+      <SignUp
+        routing="path"
+        path={`${basePath}/sign-up`}
+        signInUrl={`${basePath}/sign-in`}
+        appearance={darkCardAppearance}
+      />
+    </AuthCard>
   );
 }
 
