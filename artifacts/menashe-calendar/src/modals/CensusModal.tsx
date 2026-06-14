@@ -5,7 +5,7 @@ interface Props { onClose: () => void; }
 type Tab = "dashboard" | "admin" | "localadmin";
 
 const ADMIN_PIN = "1948";
-const LOCAL_ADMIN_PIN = "5780";
+const LOCAL_ADMIN_PIN = "1994";
 
 /* ══════════════════════════════════════════════════════════════
    DATA TYPES
