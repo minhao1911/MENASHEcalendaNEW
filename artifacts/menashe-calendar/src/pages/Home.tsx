@@ -6,6 +6,7 @@ import { calculateZmanim, formatTime } from "../lib/zmanim";
 import { getCurrentParasha, getUpcomingHolidays } from "../lib/parasha";
 import { Location } from "../lib/locations";
 import { sendNotification, isNotifSupported } from "../hooks/useNotifications";
+import { useLanguage } from "../context/LanguageContext";
 
 const API_BASE = "/api";
 
@@ -31,6 +32,7 @@ interface HolidayInsight {
 }
 
 function TodayHolidayCard({ name }: { name: string }) {
+  const { t } = useLanguage();
   const [insight, setInsight] = useState<HolidayInsight | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -91,12 +93,12 @@ function TodayHolidayCard({ name }: { name: string }) {
               fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "#4ade80",
               background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.2)",
               padding: "2px 7px", borderRadius: 5,
-            }}>TODAY'S HOLIDAY</span>
+            }}>{t.homeTodayHoliday}</span>
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, color: "white", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {name}
           </div>
-          <div style={{ fontSize: 11, color: "#86efac", marginTop: 1 }}>Chag Sameach! 🎉</div>
+          <div style={{ fontSize: 11, color: "#86efac", marginTop: 1 }}>{t.homeChagSameach}</div>
         </div>
       </div>
 
@@ -128,7 +130,7 @@ function TodayHolidayCard({ name }: { name: string }) {
                 onClick={() => setExpanded(true)}
                 style={{ fontSize: 12, color: "#4ade80", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 700, marginBottom: 10 }}
               >
-                Read more ↓
+                {t.homeReadMore}
               </button>
             )}
 
@@ -155,7 +157,7 @@ function TodayHolidayCard({ name }: { name: string }) {
                     borderRadius: 10, color: "#94a3b8", fontSize: 12, fontWeight: 700, cursor: "pointer",
                   }}
                 >
-                  Show less ↑
+                  {t.homeShowLess}
                 </button>
               )}
               <button
@@ -166,7 +168,7 @@ function TodayHolidayCard({ name }: { name: string }) {
                   borderRadius: 10, color: "#4ade80", fontSize: 12, fontWeight: 700, cursor: "pointer",
                 }}
               >
-                ↑ Share
+                {t.homeShare}
               </button>
             </div>
           </>
@@ -261,6 +263,7 @@ function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
   omerDay: number | null;
   onShowOmer: () => void;
 }) {
+  const { t } = useLanguage();
   const dayIndex = Math.abs(hdate.abs()) % TORAH_THOUGHTS.length;
   const thought = TORAH_THOUGHTS[dayIndex];
   const specialStatus = getTodaySpecialStatus(today);
@@ -334,7 +337,7 @@ function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
       {/* Torah thought */}
       <div style={{ padding: "12px 14px 14px" }}>
         <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "var(--text-muted)", marginBottom: 8 }}>
-          📖 DAILY TORAH THOUGHT
+          {t.homeDailyTorah}
         </div>
         <blockquote style={{
           margin: 0, padding: "10px 12px",
@@ -354,6 +357,7 @@ function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
 }
 
 function CandleLightingCountdown({ location, onNavigate }: { location: Location; onNavigate: (page: string) => void }) {
+  const { t } = useLanguage();
   const [now, setNow] = useState(() => new Date());
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("menashe-candle-collapsed") === "true"; } catch { return false; }
@@ -378,7 +382,7 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
   type Mode = "candle" | "shabbat_begun" | "havdalah" | "shavua_tov";
   let mode: Mode = "candle";
   let targetTime: Date | null = null;
-  let headerLabel = "CANDLE LIGHTING";
+  let headerLabel = t.homeCandleLighting;
   let subLabel = "";
   let timeStr = "";
 
@@ -387,9 +391,9 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
     if (z.havdalah && now < z.havdalah) {
       mode = "havdalah";
       targetTime = z.havdalah;
-      headerLabel = "HAVDALAH TONIGHT";
+      headerLabel = t.homeHavdalahTonight;
       timeStr = formatTime(z.havdalah, location.tz);
-      subLabel = "Shabbat Shalom";
+      subLabel = t.homeShabbatShalom;
     } else {
       mode = "shavua_tov";
     }
@@ -412,7 +416,7 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
     timeStr = formatTime(z.candleLighting, location.tz);
     subLabel = daysUntil === 1
       ? "Tomorrow"
-      : nextFri.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+      : nextFri.toLocaleDateString(t.homeToday === "NIZAN" ? "en-US" : "en-US", { weekday: "short", month: "short", day: "numeric" });
   }
 
   const diff = targetTime ? Math.max(0, targetTime.getTime() - now.getTime()) : 0;
@@ -482,8 +486,8 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
       }}>
         <div>
           <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 22, color: "#4ade80", direction: "rtl", lineHeight: 1.1, marginBottom: 4 }}>שַׁבָּת שָׁלוֹם</div>
-          <div style={{ fontSize: 13, color: "rgba(74,222,128,0.7)", fontWeight: 600 }}>Shabbat is in progress</div>
-          {timeStr && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>Havdalah at {timeStr}</div>}
+          <div style={{ fontSize: 13, color: "rgba(74,222,128,0.7)", fontWeight: 600 }}>{t.homeShabbatInProgress}</div>
+          {timeStr && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>{t.homeHavdalahAt} {timeStr}</div>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <div style={{ fontSize: 36 }}>✨</div>
@@ -505,7 +509,7 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
       }}>
         <div>
           <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 22, color: "#a78bfa", direction: "rtl", lineHeight: 1.1, marginBottom: 4 }}>שָׁבוּעַ טוֹב</div>
-          <div style={{ fontSize: 13, color: "rgba(167,139,250,0.7)", fontWeight: 600 }}>Shavua Tov — a wonderful week!</div>
+          <div style={{ fontSize: 13, color: "rgba(167,139,250,0.7)", fontWeight: 600 }}>{t.homeShavuaTov}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <div style={{ fontSize: 36 }}>🌟</div>
@@ -605,6 +609,7 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
 }
 
 function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () => void; onShowCensus: () => void }) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -703,9 +708,9 @@ function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () 
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
             }}>🏛</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Community</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>{t.homeCommunityTitle}</div>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.42)", lineHeight: 1.4 }}>
-                Shavei Israel, Torah classes, connect with members
+                {t.homeCommunityDesc}
               </div>
             </div>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(99,179,237,0.55)" strokeWidth="2.5" strokeLinecap="round">
@@ -728,9 +733,9 @@ function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () 
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
             }}>📊</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Census & Demographics</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>{t.homeCensusTitle}</div>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.42)", lineHeight: 1.4 }}>
-                Fill out the community census form and view statistics
+                {t.homeCensusDesc}
               </div>
             </div>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(212,168,67,0.55)" strokeWidth="2.5" strokeLinecap="round">
@@ -753,6 +758,7 @@ function DateZmanimCard({
   showCandleLighting: boolean;
   onNavigate: (page: string) => void;
 }) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
   const hebrewDay   = hebrewDayNumeral(hdate.getDate());
@@ -814,7 +820,7 @@ function DateZmanimCard({
         {/* Center text */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(212,168,67,0.6)", marginBottom: 3 }}>
-            {dayName.toUpperCase()} · TODAY
+            {dayName.toUpperCase()} · {t.homeToday}
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: "white", lineHeight: 1, letterSpacing: "-0.5px" }}>
             {today.getDate()} {monthStr}
@@ -853,7 +859,7 @@ function DateZmanimCard({
           }}>
             <div>
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,168,67,0.6)", marginBottom: 5 }}>
-                HEBREW DATE
+                {t.homeHebrewDate}
               </div>
               <div style={{
                 fontFamily: "'Noto Serif Hebrew', serif",
@@ -864,7 +870,7 @@ function DateZmanimCard({
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,0.3)", marginBottom: 5 }}>
-                GREGORIAN
+                {t.homeGregorian}
               </div>
               <div style={{ fontSize: 26, fontWeight: 900, color: "white", lineHeight: 1, letterSpacing: "-1px" }}>
                 {today.getDate()}
@@ -884,8 +890,8 @@ function DateZmanimCard({
               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, cursor: "pointer" }}
               onClick={() => onNavigate("zmanim")}
             >
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.1em" }}>ZMANIM</span>
-              <span style={{ fontSize: 10, color: "#d4a843", fontWeight: 700, letterSpacing: "0.06em" }}>VIEW ALL »</span>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.1em" }}>{t.homeZmanim}</span>
+              <span style={{ fontSize: 10, color: "#d4a843", fontWeight: 700, letterSpacing: "0.06em" }}>{t.homeViewAll}</span>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -895,7 +901,7 @@ function DateZmanimCard({
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
                   <span style={{ fontSize: 14 }}>🌅</span>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.1em" }}>SUNRISE</span>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.1em" }}>{t.homeSunrise}</span>
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: "white", letterSpacing: "-0.5px" }}>
                   {formatTime(zmanim.sunrise, location.tz)}
@@ -907,7 +913,7 @@ function DateZmanimCard({
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
                   <span style={{ fontSize: 14 }}>🌇</span>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.1em" }}>SUNSET</span>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.1em" }}>{t.homeSunset}</span>
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: "white", letterSpacing: "-0.5px" }}>
                   {formatTime(zmanim.sunset, location.tz)}
@@ -927,7 +933,7 @@ function DateZmanimCard({
               >
                 <span style={{ fontSize: 18 }}>🕯</span>
                 <div>
-                  <div style={{ fontSize: 9, color: "#d4a843", fontWeight: 800, letterSpacing: "0.1em" }}>CANDLE LIGHTING</div>
+                  <div style={{ fontSize: 9, color: "#d4a843", fontWeight: 800, letterSpacing: "0.1em" }}>{t.homeCandleLighting}</div>
                   <div style={{ fontSize: 20, fontWeight: 800, color: "#f0c050", letterSpacing: "-0.5px" }}>
                     {formatTime(zmanim.candleLighting, location.tz)}
                   </div>
@@ -1373,7 +1379,7 @@ export default function Home({
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <span className="tag tag-gold" style={{ fontSize: 10 }}>OMER</span>
+                <span className="tag tag-gold" style={{ fontSize: 10 }}>{t.homeOmer}</span>
                 <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Day {omerDay} of 49</span>
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 1 }}>Sefirat HaOmer</div>
@@ -1483,7 +1489,7 @@ export default function Home({
           </div>
           <div className="quick-action" onClick={onMoreTools}>
             <div className="quick-action-icon" style={{ background: "rgba(168,85,247,0.13)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 12 }}>🔧</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>More Tools</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>{t.homeMoreTools}</div>
           </div>
         </div>
 

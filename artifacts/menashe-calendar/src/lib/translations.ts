@@ -1,7 +1,7 @@
 export type Lang = "en" | "tk";
 
 export interface Translations {
-  /* Landing */
+  /* ── Landing ── */
   landingBadge: string;
   landingHero: string;
   landingSubtitle: string;
@@ -23,14 +23,14 @@ export interface Translations {
   ctaHeading: string;
   ctaSubtitle: string;
 
-  /* BottomNav */
+  /* ── BottomNav ── */
   navHome: string;
   navCalendar: string;
   navZmanim: string;
   navSiddur: string;
   navSettings: string;
 
-  /* Settings */
+  /* ── Settings ── */
   settingsTitle: string;
   settingsLocation: string;
   settingsCity: string;
@@ -43,6 +43,8 @@ export interface Translations {
   settingsShowHebrew: string;
   settingsLanguage: string;
   settingsLanguageHint: string;
+  settingsEditTranslations: string;
+  settingsEditTranslationsHint: string;
   settingsNotifications: string;
   settingsCandleLighting: string;
   settingsHavdalah: string;
@@ -84,8 +86,59 @@ export interface Translations {
   settingsNotifBlockedSub: string;
   settingsNotifUnsupported: string;
   settingsNotifActive: string;
+
+  /* ── Home ── */
+  homeToday: string;
+  homeHebrewDate: string;
+  homeGregorian: string;
+  homeHebrewYear: string;
+  homeZmanim: string;
+  homeViewAll: string;
+  homeSunrise: string;
+  homeSunset: string;
+  homeCandleLighting: string;
+  homeHavdalahTonight: string;
+  homeShabbatShalom: string;
+  homeShabbatInProgress: string;
+  homeHavdalahAt: string;
+  homeShavuaTov: string;
+  homeDailyTorah: string;
+  homeReadMore: string;
+  homeShowLess: string;
+  homeShare: string;
+  homeTodayHoliday: string;
+  homeChagSameach: string;
+  homeCommunityTitle: string;
+  homeCommunityDesc: string;
+  homeCensusTitle: string;
+  homeCensusDesc: string;
+  homeUpcomingHolidays: string;
+  homeNoHolidays: string;
+  homeParashah: string;
+  homeDafYomi: string;
+  homeMoreTools: string;
+  homeOmer: string;
+
+  /* ── Translation Editor ── */
+  txEditorTitle: string;
+  txEditorSubtitle: string;
+  txEditorSave: string;
+  txEditorSaved: string;
+  txEditorReset: string;
+  txEditorResetConfirm: string;
+  txEditorSearch: string;
+  txEditorEnglish: string;
+  txEditorThadou: string;
+  txEditorGroupLanding: string;
+  txEditorGroupNav: string;
+  txEditorGroupSettings: string;
+  txEditorGroupHome: string;
+  txEditorNote: string;
 }
 
+/* ──────────────────────────────────────────────────────────────
+   ENGLISH
+────────────────────────────────────────────────────────────── */
 export const en: Translations = {
   landingBadge: "BNEI MENASHE",
   landingHero: "The Sacred Calendar\nof Bnei Menashe",
@@ -126,6 +179,8 @@ export const en: Translations = {
   settingsShowHebrew: "Show Hebrew Dates",
   settingsLanguage: "Thadou Kuki Language",
   settingsLanguageHint: "Show labels in Thadou Kuki",
+  settingsEditTranslations: "✏️ Edit Thadou Kuki Labels",
+  settingsEditTranslationsHint: "Fix or improve any translation",
   settingsNotifications: "NOTIFICATIONS",
   settingsCandleLighting: "🕯 Candle Lighting",
   settingsHavdalah: "✨ Havdalah",
@@ -167,8 +222,57 @@ export const en: Translations = {
   settingsNotifBlockedSub: "Open your browser settings and allow notifications for this site",
   settingsNotifUnsupported: "Not supported in this browser",
   settingsNotifActive: "Active",
+
+  homeToday: "TODAY",
+  homeHebrewDate: "HEBREW DATE",
+  homeGregorian: "GREGORIAN",
+  homeHebrewYear: "Hebrew Year",
+  homeZmanim: "ZMANIM",
+  homeViewAll: "VIEW ALL »",
+  homeSunrise: "SUNRISE",
+  homeSunset: "SUNSET",
+  homeCandleLighting: "CANDLE LIGHTING",
+  homeHavdalahTonight: "HAVDALAH TONIGHT",
+  homeShabbatShalom: "Shabbat Shalom",
+  homeShabbatInProgress: "Shabbat is in progress",
+  homeHavdalahAt: "Havdalah at",
+  homeShavuaTov: "Shavua Tov — a wonderful week!",
+  homeDailyTorah: "📖 DAILY TORAH THOUGHT",
+  homeReadMore: "Read more ↓",
+  homeShowLess: "Show less ↑",
+  homeShare: "↑ Share",
+  homeTodayHoliday: "TODAY'S HOLIDAY",
+  homeChagSameach: "Chag Sameach! 🎉",
+  homeCommunityTitle: "Community",
+  homeCommunityDesc: "Shavei Israel, Torah classes, connect with members",
+  homeCensusTitle: "Census & Demographics",
+  homeCensusDesc: "Fill out the community census form and view statistics",
+  homeUpcomingHolidays: "UPCOMING HOLIDAYS",
+  homeNoHolidays: "No upcoming holidays",
+  homeParashah: "PARASHAH",
+  homeDafYomi: "DAF YOMI",
+  homeMoreTools: "More Tools",
+  homeOmer: "OMER",
+
+  txEditorTitle: "Edit Thadou Kuki Labels",
+  txEditorSubtitle: "Correct any translation below. Changes are saved on your device.",
+  txEditorSave: "Save Changes",
+  txEditorSaved: "✓ Saved!",
+  txEditorReset: "Reset to Default",
+  txEditorResetConfirm: "Reset all Thadou Kuki labels to the built-in defaults?",
+  txEditorSearch: "Search labels…",
+  txEditorEnglish: "English",
+  txEditorThadou: "Thadou Kuki",
+  txEditorGroupLanding: "Landing Page",
+  txEditorGroupNav: "Navigation",
+  txEditorGroupSettings: "Settings",
+  txEditorGroupHome: "Home Page",
+  txEditorNote: "Tip: Switch the app to Thadou Kuki mode (Settings → Appearance) to see your changes live.",
 };
 
+/* ──────────────────────────────────────────────────────────────
+   THADOU KUKI  (community can correct via the in-app editor)
+────────────────────────────────────────────────────────────── */
 export const tk: Translations = {
   landingBadge: "BNEI MENASHE",
   landingHero: "Bnei Menashe Gil\nNi Thu Leh Thla",
@@ -209,6 +313,8 @@ export const tk: Translations = {
   settingsShowHebrew: "Hebrew Ni Thu En",
   settingsLanguage: "Thadou Kuki Thu",
   settingsLanguageHint: "Thadou Kuki thuin sim",
+  settingsEditTranslations: "✏️ Thadou Kuki Label Siam",
+  settingsEditTranslationsHint: "Label dang tak siam theih",
   settingsNotifications: "THUPEK HLA",
   settingsCandleLighting: "🕯 Katni Mei",
   settingsHavdalah: "✨ Havdalah",
@@ -250,6 +356,52 @@ export const tk: Translations = {
   settingsNotifBlockedSub: "Browser siam dan chu thlak la, hlabu dawng theihna pe rawh",
   settingsNotifUnsupported: "Hei browser hian a support lo",
   settingsNotifActive: "A on mek",
+
+  homeToday: "NIZAN",
+  homeHebrewDate: "HEBREW NI",
+  homeGregorian: "GREGORIAN",
+  homeHebrewYear: "Hebrew Kum",
+  homeZmanim: "ZMANIM",
+  homeViewAll: "ZAWNG EN »",
+  homeSunrise: "NI CHHUAK",
+  homeSunset: "NI TLAI",
+  homeCandleLighting: "KATNI MEI",
+  homeHavdalahTonight: "ZAN HAVDALAH",
+  homeShabbatShalom: "Shabbat Shalom",
+  homeShabbatInProgress: "Shabbat a lo mek",
+  homeHavdalahAt: "Havdalah ni a",
+  homeShavuaTov: "Shavua Tov — Zarhnawk thar!",
+  homeDailyTorah: "📖 NIZAN TORAH THU",
+  homeReadMore: "Ziak zawk ↓",
+  homeShowLess: "Zawk lo ↑",
+  homeShare: "↑ Sawi Chhuak",
+  homeTodayHoliday: "NIZAN NI THIANGHLIM",
+  homeChagSameach: "Chag Sameach! 🎉",
+  homeCommunityTitle: "Mipil",
+  homeCommunityDesc: "Shavei Israel, Torah class, member te nen in inhmuh",
+  homeCensusTitle: "Mipil Chhiar",
+  homeCensusDesc: "Mipil census form thlak la statistics en",
+  homeUpcomingHolidays: "NI THIANGHLIM HLA",
+  homeNoHolidays: "Ni thianghlim hla awm lo",
+  homeParashah: "PARASHAH",
+  homeDafYomi: "DAF YOMI",
+  homeMoreTools: "Thil Pawimawh Zawk",
+  homeOmer: "OMER",
+
+  txEditorTitle: "Thadou Kuki Label Siam",
+  txEditorSubtitle: "Label dang tak chu hnuaiah siam rawh. Na device-ah chhuang a ni.",
+  txEditorSave: "Chhuang Ta",
+  txEditorSaved: "✓ Chhuangin zo!",
+  txEditorReset: "Default Ah Chhawn",
+  txEditorResetConfirm: "Thadou Kuki label zawng zawng default-ah chhawn ang em?",
+  txEditorSearch: "Label zawng…",
+  txEditorEnglish: "English",
+  txEditorThadou: "Thadou Kuki",
+  txEditorGroupLanding: "Landing Page",
+  txEditorGroupNav: "Lampi (Nav)",
+  txEditorGroupSettings: "Siam Dan",
+  txEditorGroupHome: "Inn Page",
+  txEditorNote: "Tip: Thadou Kuki mode on siam la (Siam Dan → SIM BUATSAIH) nakin na siam zawng en theih.",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

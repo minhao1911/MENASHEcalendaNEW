@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Location } from "../lib/locations";
 import { NotificationPrefs, LeadTime, LEAD_TIME_OPTIONS } from "../hooks/useNotifications";
 import { useLanguage } from "../context/LanguageContext";
+import TranslationEditorModal from "../modals/TranslationEditorModal";
 
 interface SettingsPageProps {
   theme: string;
@@ -37,6 +38,7 @@ export default function SettingsPage({
   const { lang, setLang, t } = useLanguage();
   const [showHebrew, setShowHebrew] = useState(true);
   const [pendingKey, setPendingKey] = useState<keyof NotificationPrefs | null>(null);
+  const [showTxEditor, setShowTxEditor] = useState(false);
   const [testSent, setTestSent] = useState(false);
   const isLight = theme === "light";
   const notifBlocked = notifPermission === "denied";
@@ -148,7 +150,24 @@ export default function SettingsPage({
               </div>
             }
           />
+          <div style={{ height: 1, background: "var(--border)" }} />
+          <button
+            onClick={() => setShowTxEditor(true)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 12,
+              background: "none", border: "none", cursor: "pointer", padding: "13px 16px",
+              textAlign: "left",
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{t.settingsEditTranslations}</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{t.settingsEditTranslationsHint}</div>
+            </div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
+
+        {showTxEditor && <TranslationEditorModal onClose={() => setShowTxEditor(false)} />}
 
         {/* Notifications */}
         <div className="section-header">{t.settingsNotifications}</div>
