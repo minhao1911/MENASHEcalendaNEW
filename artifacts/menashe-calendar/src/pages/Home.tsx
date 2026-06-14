@@ -1107,6 +1107,7 @@ export default function Home({
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
   onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus,
 }: HomeProps) {
+  const { t } = useLanguage();
   const today = new Date();
   const hdate = getHebrewDate(today);
   const zmanim = calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes);
