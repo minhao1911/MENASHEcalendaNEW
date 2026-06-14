@@ -8,6 +8,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PremiumPage from "./pages/PremiumPage";
 import BottomNav from "./components/BottomNav";
 import { useNotifications } from "./hooks/useNotifications";
+import { useAnnouncements } from "./hooks/useAnnouncements";
 
 import LocationModal from "./modals/LocationModal";
 import DayModal from "./modals/DayModal";
@@ -26,6 +27,7 @@ import TaharaModal from "./modals/TaharaModal";
 import YartzeitModal from "./modals/YartzeitModal";
 import CommunityModal from "./modals/CommunityModal";
 import CensusModal from "./modals/CensusModal";
+import AnnouncementsModal from "./modals/AnnouncementsModal";
 import SharePage from "./pages/SharePage";
 import BookReaderModal from "./modals/BookReaderModal";
 import AdminModal from "./modals/AdminModal";
@@ -40,7 +42,8 @@ type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium";
 type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
-  | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar" | null;
+  | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar"
+  | "announcements" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -83,6 +86,7 @@ export default function App() {
   }
 
   const { permission: notifPermission, prefs: notifPrefs, leadTime, updatePref: updateNotifPref, updateLeadTime } = useNotifications(location);
+  const { announcements, addAnnouncement, updateAnnouncement, deleteAnnouncement, sendNow } = useAnnouncements();
 
   const isLight = theme === "light";
 
@@ -260,6 +264,16 @@ export default function App() {
             {modal === "community" && <CommunityModal onClose={closeModal} />}
             {modal === "census" && <CensusModal onClose={closeModal} />}
             {modal === "omer" && <OmerModal onClose={closeModal} />}
+            {modal === "announcements" && (
+              <AnnouncementsModal
+                onClose={closeModal}
+                announcements={announcements}
+                onAdd={addAnnouncement}
+                onUpdate={updateAnnouncement}
+                onDelete={deleteAnnouncement}
+                onSendNow={sendNow}
+              />
+            )}
             {modal === "prayers" && (
               <PrayerTimesModal
                 onClose={closeModal}
@@ -283,6 +297,7 @@ export default function App() {
                 onHebrewDate={() => setModal("hebrewdate")}
                 onLuach={() => setModal("luach")}
                 onMussar={() => setModal("mussar")}
+                onAnnouncements={() => setModal("announcements")}
                 isPremium={isPremium}
                 candleEnabled={candleEnabled}
                 onToggleCandle={onToggleCandle}
