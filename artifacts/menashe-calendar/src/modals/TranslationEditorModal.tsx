@@ -80,6 +80,7 @@ export default function TranslationEditorModal({ onClose }: Props) {
   const [saved, setSaved] = useState(false);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [importMsg, setImportMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredGroups = useMemo(() => {
@@ -114,6 +115,22 @@ export default function TranslationEditorModal({ onClose }: Props) {
     (Object.keys(tkBase) as (keyof Translations)[]).forEach(k => { reset[k] = tkBase[k] as any; });
     setEdits(reset);
     setSaved(false);
+  }
+
+  /* ── Copy to Clipboard ── */
+  function handleCopy() {
+    const payload: Record<string, string> = {};
+    (Object.keys(edits) as (keyof Translations)[]).forEach(k => {
+      payload[k] = (edits[k] as string) ?? "";
+    });
+    const json = JSON.stringify(payload, null, 2);
+    navigator.clipboard?.writeText(json).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    }).catch(() => {
+      setImportMsg({ type: "err", text: "Clipboard not available in this browser." });
+      setTimeout(() => setImportMsg(null), 4000);
+    });
   }
 
   /* ── Export ── */
@@ -278,8 +295,22 @@ export default function TranslationEditorModal({ onClose }: Props) {
           ))}
         </div>
 
-        {/* Export / Import buttons */}
+        {/* Export / Import / Copy buttons */}
         <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+          <button
+            onClick={handleCopy}
+            title="Copy all current TK labels as JSON to clipboard"
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+              background: copied ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.06)",
+              border: `1px solid ${copied ? "rgba(34,197,94,0.4)" : "rgba(255,255,255,0.12)"}`,
+              color: copied ? "#22c55e" : "var(--text-secondary)",
+              cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s",
+            }}
+          >
+            {copied ? "✓ Copied!" : "⧉ Copy"}
+          </button>
           <button
             onClick={handleExport}
             title="Export all current TK labels as a JSON file"
@@ -392,7 +423,17 @@ export default function TranslationEditorModal({ onClose }: Props) {
         borderTop: "1px solid var(--border)",
         display: "flex", gap: 8, alignItems: "center",
       }}>
-        {/* Export / Import (mirrored at bottom for quick access) */}
+        {/* Copy / Export / Import (mirrored at bottom for quick access) */}
+        <button
+          onClick={handleCopy}
+          style={{
+            padding: "11px 14px", borderRadius: 12, fontSize: 13, fontWeight: 700,
+            background: copied ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.06)",
+            border: `1px solid ${copied ? "rgba(34,197,94,0.4)" : "rgba(255,255,255,0.12)"}`,
+            color: copied ? "#22c55e" : "var(--text-secondary)",
+            cursor: "pointer", transition: "all 0.2s",
+          }}
+        >{copied ? "✓ Copied!" : "⧉ Copy"}</button>
         <button
           onClick={handleExport}
           style={{
