@@ -52,7 +52,8 @@ A sacred Jewish calendar app for the Bnei Menashe community — featuring Hebrew
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The app is bilingual: **English (EN) + Thadou Kuki (TK)**. The Bnei Menashe community speaks Thadou Kuki; when a user turns on Thadou Kuki preference, the entire app UI should display in Thadou Kuki.
+- All new UI text added to the app must have both an English and Thadou Kuki translation added to `src/lib/translations.ts`, and be referenced via `useLanguage()` / `t.xxx` — never hardcode English-only strings in UI components.
 
 ## Gotchas
 

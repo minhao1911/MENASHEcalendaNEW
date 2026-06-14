@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 interface LandingProps {
   onSignIn: () => void;
@@ -204,6 +205,7 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
 
 /* ─── Main component ─────────────────────────────────────────────── */
 export default function Landing({ onSignIn }: LandingProps) {
+  const { t, lang, setLang } = useLanguage();
   return (
     <>
       <style>{`
@@ -424,11 +426,18 @@ export default function Landing({ onSignIn }: LandingProps) {
         <nav className="landing-nav">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 20 }}>✡</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#D4AF37", letterSpacing: ".08em" }}>BNEI MENASHE</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#D4AF37", letterSpacing: ".08em" }}>{t.landingBadge}</span>
           </div>
-          <button className="btn-gold" style={{ padding: "10px 28px", fontSize: 14 }} onClick={onSignIn}>
-            Sign In
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 99, padding: "5px 12px" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: lang === "en" ? "#D4AF37" : "rgba(212,175,55,0.4)", cursor: "pointer", transition: "color 0.2s" }} onClick={() => setLang("en")}>EN</span>
+              <span style={{ fontSize: 11, color: "rgba(212,175,55,0.3)" }}>|</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: lang === "tk" ? "#D4AF37" : "rgba(212,175,55,0.4)", cursor: "pointer", transition: "color 0.2s" }} onClick={() => setLang("tk")}>TK</span>
+            </div>
+            <button className="btn-gold" style={{ padding: "10px 28px", fontSize: 14 }} onClick={onSignIn}>
+              {t.landingSignIn}
+            </button>
+          </div>
         </nav>
 
         {/* ── HERO ── */}
@@ -440,7 +449,7 @@ export default function Landing({ onSignIn }: LandingProps) {
           {/* Badge */}
           <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 99, padding: "7px 20px", marginBottom: 36 }}>
             <span style={{ color: "#D4AF37", fontSize: 16 }}>✡</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#D4AF37", letterSpacing: ".12em" }}>BNEI MENASHE</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#D4AF37", letterSpacing: ".12em" }}>{t.landingBadge}</span>
           </div>
 
           {/* Hebrew */}
@@ -450,23 +459,23 @@ export default function Landing({ onSignIn }: LandingProps) {
 
           {/* H1 */}
           <h1 className="hero-h1" style={{ fontSize: "clamp(32px,6vw,56px)", fontWeight: 800, color: "#F8F6F0", lineHeight: 1.12, letterSpacing: "-.03em", marginBottom: 24, maxWidth: 680 }}>
-            The Sacred Calendar<br />of Bnei Menashe
+            {t.landingHero.split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}
           </h1>
 
           {/* Subtitle */}
           <p className="hero-sub" style={{ fontSize: "clamp(15px,2vw,18px)", color: "#8fa8c8", lineHeight: 1.7, maxWidth: 440, marginBottom: 44 }}>
-            Accurate Zmanim, Torah wisdom, Jewish holidays, and community resources — all in one spiritual home.
+            {t.landingSubtitle}
           </p>
 
           {/* CTA */}
           <div className="hero-btn" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-            <button className="btn-gold" onClick={onSignIn}>Sign In</button>
-            <span style={{ fontSize: 13, color: "#475569" }}>Free for the community · No account needed</span>
+            <button className="btn-gold" onClick={onSignIn}>{t.landingSignIn}</button>
+            <span style={{ fontSize: 13, color: "#475569" }}>{t.landingFree}</span>
           </div>
 
           {/* Scroll hint */}
           <div className="hero-scroll scroll-hint" style={{ marginTop: 56, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: .5 }}>
-            <span style={{ fontSize: 10, letterSpacing: ".15em", color: "#F8F6F0" }}>SCROLL</span>
+            <span style={{ fontSize: 10, letterSpacing: ".15em", color: "#F8F6F0" }}>{t.landingScroll}</span>
             <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
               <path d="M8 0 v12 M2 8 l6 6 6-6" stroke="#F8F6F0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -496,20 +505,20 @@ export default function Landing({ onSignIn }: LandingProps) {
             <div className="features-grid">
               <FeatureCard
                 emoji="🌙"
-                title="Accurate Zmanim"
-                description="Precise daily prayer times calculated for your exact location — Shacharit, Mincha, Maariv, Shabbat candles, and more."
+                title={t.featureZmanimTitle}
+                description={t.featureZmanimDesc}
                 delay=".1s"
               />
               <FeatureCard
                 emoji="📖"
-                title="Torah Insights"
-                description="Weekly Parashah, Daf Yomi, Siddur Library, and curated Torah wisdom for continuous Jewish learning."
+                title={t.featureTorahTitle}
+                description={t.featureTorahDesc}
                 delay=".2s"
               />
               <FeatureCard
                 emoji="🕍"
-                title="Community Hub"
-                description="Announcements, events, Yahrtzeit reminders, and resources tailored for the Bnei Menashe community worldwide."
+                title={t.featureCommunityTitle}
+                description={t.featureCommunityDesc}
                 delay=".3s"
               />
             </div>

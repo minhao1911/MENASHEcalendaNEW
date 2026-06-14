@@ -1,15 +1,9 @@
+import { useLanguage } from "../context/LanguageContext";
+
 interface BottomNavProps {
   active: string;
   onNavigate: (page: string) => void;
 }
-
-const NAV_ITEMS = [
-  { id: "home", label: "Home", icon: HomeIcon },
-  { id: "calendar", label: "Calendar", icon: CalendarIcon },
-  { id: "zmanim", label: "Zmanim", icon: ClockIcon },
-  { id: "siddur", label: "Siddur", icon: SiddurIcon },
-  { id: "settings", label: "Settings", icon: SettingsIcon },
-];
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -51,17 +45,6 @@ function SiddurIcon({ active }: { active: boolean }) {
   );
 }
 
-function CommunityIcon({ active }: { active: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill={active ? "rgba(212,168,67,0.15)" : "none"} />
-      <circle cx="9" cy="7" r="4" fill={active ? "rgba(212,168,67,0.15)" : "none"} />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
 function SettingsIcon({ active }: { active: boolean }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -72,6 +55,16 @@ function SettingsIcon({ active }: { active: boolean }) {
 }
 
 export default function BottomNav({ active, onNavigate }: BottomNavProps) {
+  const { t } = useLanguage();
+
+  const NAV_ITEMS = [
+    { id: "home", label: t.navHome, icon: HomeIcon },
+    { id: "calendar", label: t.navCalendar, icon: CalendarIcon },
+    { id: "zmanim", label: t.navZmanim, icon: ClockIcon },
+    { id: "siddur", label: t.navSiddur, icon: SiddurIcon },
+    { id: "settings", label: t.navSettings, icon: SettingsIcon },
+  ];
+
   return (
     <div className="bottom-nav" style={{ display: "flex" }}>
       {NAV_ITEMS.map(({ id, label, icon: Icon }) => {

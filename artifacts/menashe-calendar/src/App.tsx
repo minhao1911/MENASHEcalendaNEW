@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { LanguageProvider } from "./context/LanguageContext";
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
 import CalendarPage from "./pages/CalendarPage";
@@ -133,11 +134,13 @@ export default function App() {
 
   if (!signedIn) {
     return (
-      <div className={`app-container${isLight ? " light-theme" : ""}`}>
-        <div className="app-shell">
-          <Landing onSignIn={() => setSignedIn(true)} />
+      <LanguageProvider>
+        <div className={`app-container${isLight ? " light-theme" : ""}`}>
+          <div className="app-shell">
+            <Landing onSignIn={() => setSignedIn(true)} />
+          </div>
         </div>
-      </div>
+      </LanguageProvider>
     );
   }
 
@@ -228,6 +231,7 @@ export default function App() {
   }
 
   return (
+    <LanguageProvider>
     <div className={`app-container${isLight ? " light-theme" : ""}`}>
       <div className="app-shell">
         {/* Book Reader — full-screen, shown above everything except itself */}
@@ -329,5 +333,6 @@ export default function App() {
         )}
       </div>
     </div>
+    </LanguageProvider>
   );
 }

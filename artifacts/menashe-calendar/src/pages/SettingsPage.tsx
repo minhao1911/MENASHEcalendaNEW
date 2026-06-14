@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Location } from "../lib/locations";
 import { NotificationPrefs, LeadTime, LEAD_TIME_OPTIONS } from "../hooks/useNotifications";
+import { useLanguage } from "../context/LanguageContext";
 
 interface SettingsPageProps {
   theme: string;
@@ -33,6 +34,7 @@ export default function SettingsPage({
   notifPermission, notifPrefs, leadTime, onUpdateNotifPref, onUpdateLeadTime,
   pushSubscribed, pushSupported, pushLoading, pushError, onSubscribePush, onUnsubscribePush, onTestPush,
 }: SettingsPageProps) {
+  const { lang, setLang, t } = useLanguage();
   const [showHebrew, setShowHebrew] = useState(true);
   const [pendingKey, setPendingKey] = useState<keyof NotificationPrefs | null>(null);
   const [testSent, setTestSent] = useState(false);
@@ -106,38 +108,50 @@ export default function SettingsPage({
       </div>
 
       <div style={{ padding: "16px 16px 0" }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 20 }}>Settings</h1>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 20 }}>{t.settingsTitle}</h1>
 
         {/* Location */}
-        <div className="section-header">LOCATION</div>
+        <div className="section-header">{t.settingsLocation}</div>
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
           <Row
-            label="City"
-            sub="Used for Zmanim calculations"
+            label={t.settingsCity}
+            sub={t.settingsCityHint}
             right={<div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 14, color: "var(--text-secondary)" }}>{location.name}</span><span style={{ color: "var(--text-muted)" }}>›</span></div>}
             onClick={onLocationClick}
           />
           <div style={{ height: 1, background: "var(--border)" }} />
-          <Row label="Timezone" right={<span style={{ fontSize: 13, color: "var(--text-muted)" }}>{location.tz}</span>} />
+          <Row label={t.settingsTimezone} right={<span style={{ fontSize: 13, color: "var(--text-muted)" }}>{location.tz}</span>} />
         </div>
 
         {/* Appearance */}
-        <div className="section-header">APPEARANCE</div>
+        <div className="section-header">{t.settingsAppearance}</div>
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
           <Row
-            label="Dark Mode"
-            sub={isLight ? "Light mode active" : "Dark mode active"}
+            label={t.settingsDarkMode}
+            sub={isLight ? t.settingsDarkOff : t.settingsDarkOn}
             right={<Toggle on={!isLight} onToggle={onToggleTheme} />}
           />
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
-            label="Show Hebrew Dates"
+            label={t.settingsShowHebrew}
             right={<Toggle on={showHebrew} onToggle={() => setShowHebrew(v => !v)} />}
+          />
+          <div style={{ height: 1, background: "var(--border)" }} />
+          <Row
+            label={t.settingsLanguage}
+            sub={t.settingsLanguageHint}
+            right={
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>EN</span>
+                <Toggle on={lang === "tk"} onToggle={() => setLang(lang === "tk" ? "en" : "tk")} />
+                <span style={{ fontSize: 11, color: lang === "tk" ? "var(--gold)" : "var(--text-muted)", fontWeight: 600 }}>TK</span>
+              </div>
+            }
           />
         </div>
 
         {/* Notifications */}
-        <div className="section-header">NOTIFICATIONS</div>
+        <div className="section-header">{t.settingsNotifications}</div>
 
         {notifBlocked && (
           <div style={{
@@ -147,8 +161,8 @@ export default function SettingsPage({
           }}>
             <span style={{ fontSize: 16 }}>🔕</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#ef4444" }}>Notifications blocked</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Open your browser settings and allow notifications for this site</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#ef4444" }}>{t.settingsNotifBlocked}</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.settingsNotifBlockedSub}</div>
             </div>
           </div>
         )}
@@ -177,8 +191,8 @@ export default function SettingsPage({
         <div className="card" style={{ marginBottom: 12, padding: "14px 16px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>Reminder Lead Time</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>How many minutes before each Zman to alert</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{t.settingsLeadTime}</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.settingsLeadTimeHint}</div>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               {LEAD_TIME_OPTIONS.map((mins) => (
@@ -203,7 +217,7 @@ export default function SettingsPage({
 
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
           <Row
-            label="🕯 Candle Lighting"
+            label={t.settingsCandleLighting}
             sub={notifSubtitle("shabbat", `${18} min before Shabbat`)}
             right={
               <Toggle
@@ -215,7 +229,7 @@ export default function SettingsPage({
           />
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
-            label="✨ Havdalah"
+            label={t.settingsHavdalah}
             sub={notifSubtitle("havdalah", "When Shabbat ends")}
             right={
               <Toggle
@@ -227,7 +241,7 @@ export default function SettingsPage({
           />
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
-            label="📖 Latest Shema"
+            label={t.settingsShema}
             sub={notifSubtitle("shema", `${leadTime} min warning — daily deadline`)}
             right={
               <Toggle
@@ -239,7 +253,7 @@ export default function SettingsPage({
           />
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
-            label="🕍 Prayer Reminders"
+            label={t.settingsPrayers}
             sub={notifSubtitle("prayers", `Shacharit, Mincha & Maariv — ${leadTime} min warning`)}
             right={
               <Toggle
@@ -251,7 +265,7 @@ export default function SettingsPage({
           />
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
-            label="✡ Holiday Alerts"
+            label={t.settingsHolidays}
             sub={notifSubtitle("holiday", "Day before holidays")}
             right={
               <Toggle
@@ -263,7 +277,7 @@ export default function SettingsPage({
           />
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
-            label="📜 Weekly Parasha"
+            label={t.settingsParasha}
             sub={notifSubtitle("parasha", "Friday morning · this Shabbat's Torah portion")}
             right={
               <Toggle
@@ -275,7 +289,7 @@ export default function SettingsPage({
           />
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
-            label="🌾 Omer Counting"
+            label={t.settingsOmer}
             sub={notifSubtitle("omer", "At nightfall during the 49 days")}
             right={
               <Toggle
@@ -287,7 +301,7 @@ export default function SettingsPage({
           />
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
-            label="📋 Shabbat Digest"
+            label={t.settingsShabbatDigest}
             sub={notifSubtitle("shabbatDigest", "Friday 8 AM · Parasha, candle lighting & week's holidays")}
             right={
               <Toggle
@@ -299,7 +313,7 @@ export default function SettingsPage({
           />
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
-            label="🕯 Yahrtzeit Reminders"
+            label={t.settingsYahrtzeit}
             sub={notifSubtitle("yahrzeit", "7 AM on each Yahrtzeit day")}
             right={
               <Toggle
@@ -312,12 +326,10 @@ export default function SettingsPage({
         </div>
 
         {/* Background Push Notifications */}
-        <div className="section-header">BACKGROUND PUSH NOTIFICATIONS</div>
+        <div className="section-header">{t.settingsBgPush}</div>
         <div className="card" style={{ marginBottom: 16, padding: "16px" }}>
           <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.5 }}>
-            {pushSupported
-              ? "Receive notifications even when the app is closed or your device is locked. Your current notification preferences above will be sent in the background."
-              : "Background push notifications are not supported in this browser."}
+            {pushSupported ? t.settingsBgPushDesc : t.settingsBgPushDescUnsupported}
           </div>
           {pushError && (
             <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", fontSize: 12, color: "#ef4444" }}>
@@ -336,7 +348,7 @@ export default function SettingsPage({
                   opacity: pushSupported && !pushLoading ? 1 : 0.5, transition: "all 0.15s",
                 }}
               >
-                {pushLoading ? "Enabling…" : "🔔 Enable Background Push"}
+                {pushLoading ? t.settingsEnablingPush : t.settingsEnablePush}
               </button>
             ) : (
               <>
@@ -349,7 +361,7 @@ export default function SettingsPage({
                     cursor: "pointer", transition: "all 0.15s",
                   }}
                 >
-                  {testSent ? "✓ Test Sent!" : "🧪 Send Test Push"}
+                  {testSent ? t.settingsTestSent : t.settingsTestPush}
                 </button>
                 <button
                   onClick={onUnsubscribePush}
@@ -360,7 +372,7 @@ export default function SettingsPage({
                     cursor: "pointer", transition: "all 0.15s",
                   }}
                 >
-                  {pushLoading ? "…" : "Disable"}
+                  {pushLoading ? "…" : t.settingsDisablePush}
                 </button>
               </>
             )}
@@ -368,18 +380,18 @@ export default function SettingsPage({
           {pushSubscribed && (
             <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
-              <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Active — notifications scheduled for {location.name}</span>
+              <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{t.settingsPushActive} {location.name}</span>
             </div>
           )}
         </div>
 
         {/* Tools */}
-        <div className="section-header">TOOLS</div>
+        <div className="section-header">{t.settingsTools}</div>
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
           {[
-            { label: "Tahara Calculator", sub: "Mikveh & purity timing", action: onTahara },
-            { label: "Yahrzeit Calculator", sub: "Anniversary of passing", action: onYartzeit },
-            { label: "Hebrew Birthday", sub: "Your Jewish birthday", action: onBirthday },
+            { label: t.settingsTahara, sub: t.settingsTaharaSub, action: onTahara },
+            { label: t.settingsYartzeitCalc, sub: t.settingsYartzeitSub, action: onYartzeit },
+            { label: t.settingsBirthday, sub: t.settingsBirthdaySub, action: onBirthday },
           ].map((item, i, arr) => (
             <div key={i}>
               <Row label={item.label} sub={item.sub} right={<span style={{ color: "var(--text-muted)" }}>›</span>} onClick={item.action} />
@@ -391,9 +403,9 @@ export default function SettingsPage({
         {/* Community */}
         <div className="section-header">COMMUNITY</div>
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
-          <Row label="Community" sub="Bnei Menashe worldwide" right={<span style={{ color: "var(--text-muted)" }}>›</span>} onClick={onCommunity} />
+          <Row label={t.settingsCommunity} sub={t.settingsCommunitySub} right={<span style={{ color: "var(--text-muted)" }}>›</span>} onClick={onCommunity} />
           <div style={{ height: 1, background: "var(--border)" }} />
-          <Row label="Census & Demographics" sub="Community statistics" right={<span style={{ color: "var(--text-muted)" }}>›</span>} onClick={onCensus} />
+          <Row label={t.settingsCensus} sub={t.settingsCensusSub} right={<span style={{ color: "var(--text-muted)" }}>›</span>} onClick={onCensus} />
         </div>
 
         {/* Premium */}
@@ -403,23 +415,23 @@ export default function SettingsPage({
         >
           <span style={{ fontSize: 28 }}>⭐</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "white" }}>Upgrade to Premium</div>
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Unlock all features — 7 days free</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "white" }}>{t.settingsUpgrade}</div>
+            <div style={{ fontSize: 12, color: "#94a3b8" }}>{t.settingsUpgradeSub}</div>
           </div>
           <span style={{ color: "#d4a843", fontSize: 18 }}>›</span>
         </div>
 
         {/* Account */}
-        <div className="section-header">ACCOUNT</div>
+        <div className="section-header">{t.settingsAccount}</div>
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
           <div style={{ padding: "14px 16px" }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#ef4444", cursor: "pointer" }}>Sign Out</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#ef4444", cursor: "pointer" }}>{t.settingsSignOut}</div>
           </div>
         </div>
 
         {/* Version */}
         <div style={{ textAlign: "center", padding: "8px 0 16px", opacity: 0.4 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Menashe Calendar · v1.0.0</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.settingsVersion} · v1.0.0</div>
           <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 14, color: "var(--gold)", marginTop: 4 }}>ברוך הבא</div>
         </div>
       </div>

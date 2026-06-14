@@ -1,0 +1,1 @@
+- [Bilingual system (EN + TK)](bilingual-system.md) — all UI text must go through LanguageContext; never hardcode English-only strings
