@@ -504,12 +504,6 @@ function PinGate({ role, onUnlock }: { role: "admin" | "localadmin"; onUnlock: (
             ? "Enter your Admin PIN to manage global census data and all city records."
             : "Enter your Local Admin PIN to manage your congregation's branch registry."}
         </div>
-        {role === "localadmin" && (
-          <div style={{ marginTop: 10, padding: "8px 14px", borderRadius: 10, background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)", display: "inline-block" }}>
-            <span style={{ fontSize: 11, color: "#d4a843", fontWeight: 600 }}>🔑 Local Admin PIN: </span>
-            <span style={{ fontSize: 12, color: "#d4a843", fontWeight: 800, letterSpacing: "0.15em" }}>5780</span>
-          </div>
-        )}
       </div>
       <input
         type="password" inputMode="numeric" maxLength={8} placeholder="Enter PIN"
