@@ -1,8 +1,8 @@
 import { Router } from "express";
 import webpush from "web-push";
 import { requireAuth } from "../lib/requireAuth";
-import fs from "fs";
-import path from "path";
+import { pool } from "@workspace/db";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -14,8 +14,6 @@ if (VAPID_PUBLIC && VAPID_PRIVATE) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 }
 
-const SUBS_FILE = path.resolve("/tmp/menashe-push-subscriptions.json");
-
 export type ScheduleItem = {
   fireAt: number;
   title: string;
@@ -24,46 +22,72 @@ export type ScheduleItem = {
   icon?: string;
 };
 
-type StoredSub = {
-  id: string;
-  subscription: webpush.PushSubscription;
-  schedule: ScheduleItem[];
-  addedAt: number;
-};
-
-let store: Map<string, StoredSub> = new Map();
-
-function loadStore() {
-  try {
-    if (fs.existsSync(SUBS_FILE)) {
-      const raw = fs.readFileSync(SUBS_FILE, "utf-8");
-      const arr: StoredSub[] = JSON.parse(raw);
-      store = new Map(arr.map((s) => [s.id, s]));
-    }
-  } catch {}
+function subId(endpoint: string): string {
+  return Buffer.from(endpoint).toString("base64").slice(0, 40);
 }
 
-function saveStore() {
-  try {
-    fs.writeFileSync(SUBS_FILE, JSON.stringify([...store.values()]), "utf-8");
-  } catch {}
+async function dbUpsert(
+  id: string,
+  subscription: webpush.PushSubscription,
+  schedule: ScheduleItem[]
+): Promise<void> {
+  const keys = subscription.keys as { p256dh: string; auth: string };
+  await pool.query(
+    `INSERT INTO push_subscriptions (id, endpoint, p256dh, auth, schedule, updated_at)
+     VALUES ($1, $2, $3, $4, $5::jsonb, NOW())
+     ON CONFLICT (id) DO UPDATE
+       SET endpoint   = EXCLUDED.endpoint,
+           p256dh     = EXCLUDED.p256dh,
+           auth       = EXCLUDED.auth,
+           schedule   = EXCLUDED.schedule,
+           updated_at = NOW()`,
+    [id, subscription.endpoint, keys.p256dh, keys.auth, JSON.stringify(schedule)]
+  );
 }
 
-loadStore();
+async function dbRemove(id: string): Promise<void> {
+  await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [id]);
+}
+
+async function dbPruneFired(id: string, remainingSchedule: ScheduleItem[]): Promise<void> {
+  await pool.query(
+    "UPDATE push_subscriptions SET schedule = $2::jsonb, updated_at = NOW() WHERE id = $1",
+    [id, JSON.stringify(remainingSchedule)]
+  );
+}
 
 export function startPushScheduler() {
   setInterval(async () => {
+    if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
     const now = Date.now();
-    for (const [id, sub] of store) {
-      const due = sub.schedule.filter((s) => s.fireAt <= now);
+    let rows: Array<{ id: string; endpoint: string; p256dh: string; auth: string; schedule: ScheduleItem[] }>;
+    try {
+      const result = await pool.query<{ id: string; endpoint: string; p256dh: string; auth: string; schedule: ScheduleItem[] }>(
+        "SELECT id, endpoint, p256dh, auth, schedule FROM push_subscriptions"
+      );
+      rows = result.rows;
+    } catch (err) {
+      logger.error({ err }, "push-scheduler: failed to load subscriptions");
+      return;
+    }
+
+    for (const row of rows) {
+      const schedule: ScheduleItem[] = Array.isArray(row.schedule) ? row.schedule : [];
+      const due = schedule.filter((s) => s.fireAt <= now);
       if (due.length === 0) continue;
-      sub.schedule = sub.schedule.filter((s) => s.fireAt > now);
-      store.set(id, sub);
-      saveStore();
+
+      const remaining = schedule.filter((s) => s.fireAt > now);
+      await dbPruneFired(row.id, remaining);
+
+      const subscription: webpush.PushSubscription = {
+        endpoint: row.endpoint,
+        keys: { p256dh: row.p256dh, auth: row.auth },
+      };
+
       for (const item of due) {
         try {
           await webpush.sendNotification(
-            sub.subscription,
+            subscription,
             JSON.stringify({
               title: item.title,
               body: item.body,
@@ -73,10 +97,11 @@ export function startPushScheduler() {
           );
         } catch (err: any) {
           if (err?.statusCode === 410 || err?.statusCode === 404) {
-            store.delete(id);
-            saveStore();
+            await dbRemove(row.id);
+            logger.info({ id: row.id }, "push-scheduler: removed expired subscription");
             break;
           }
+          logger.warn({ err, id: row.id }, "push-scheduler: send failed");
         }
       }
     }
@@ -91,7 +116,7 @@ router.get("/push/vapid-public-key", (_req, res) => {
   res.json({ publicKey: VAPID_PUBLIC });
 });
 
-router.post("/push/subscribe", (req, res) => {
+router.post("/push/subscribe", async (req, res) => {
   const { subscription, schedule } = req.body as {
     subscription: webpush.PushSubscription;
     schedule: ScheduleItem[];
@@ -100,19 +125,27 @@ router.post("/push/subscribe", (req, res) => {
     res.status(400).json({ error: "Missing subscription" });
     return;
   }
-  const id = Buffer.from(subscription.endpoint).toString("base64").slice(0, 40);
-  store.set(id, { id, subscription, schedule: schedule ?? [], addedAt: Date.now() });
-  saveStore();
-  res.json({ ok: true, id });
+  const id = subId(subscription.endpoint);
+  try {
+    await dbUpsert(id, subscription, schedule ?? []);
+    res.json({ ok: true, id });
+  } catch (err) {
+    logger.error({ err }, "push/subscribe: db error");
+    res.status(500).json({ error: "Failed to save subscription" });
+  }
 });
 
-router.delete("/push/unsubscribe", (req, res) => {
+router.delete("/push/unsubscribe", async (req, res) => {
   const { endpoint } = req.body as { endpoint: string };
   if (!endpoint) { res.status(400).json({ error: "Missing endpoint" }); return; }
-  const id = Buffer.from(endpoint).toString("base64").slice(0, 40);
-  store.delete(id);
-  saveStore();
-  res.json({ ok: true });
+  const id = subId(endpoint);
+  try {
+    await dbRemove(id);
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "push/unsubscribe: db error");
+    res.status(500).json({ error: "Failed to remove subscription" });
+  }
 });
 
 router.post("/push/send-test", requireAuth, async (req, res) => {
