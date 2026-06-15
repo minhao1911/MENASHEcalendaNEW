@@ -688,11 +688,6 @@ function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () 
           padding: "12px 14px 16px",
           animation: "communitySlideDown 0.22s cubic-bezier(0.4,0,0.2,1)",
         }}>
-          {/* Sub-heading */}
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", marginBottom: 12, lineHeight: 1.6, paddingLeft: 2 }}>
-            Connect with the worldwide Bnei Menashe community and access official records.
-          </div>
-
           {/* Community Button */}
           <button
             onClick={(e) => { e.stopPropagation(); onShowCommunity(); }}
