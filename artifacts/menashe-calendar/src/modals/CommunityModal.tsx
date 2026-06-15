@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-interface Props { onClose: () => void; }
+interface Props { onClose: () => void; onYahrzeitBoard?: () => void; }
 
 interface CommunityLink {
   id: string;
@@ -62,7 +62,7 @@ function groupByCategory(links: CommunityLink[]): Record<string, CommunityLink[]
   }, {});
 }
 
-export default function CommunityModal({ onClose }: Props) {
+export default function CommunityModal({ onClose, onYahrzeitBoard }: Props) {
   const [links, setLinks] = useState<CommunityLink[]>(loadLinks);
   const [view, setView] = useState<"main" | "pin" | "admin" | "form">("main");
   const [pin, setPin] = useState("");
@@ -420,6 +420,51 @@ export default function CommunityModal({ onClose }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Yahrzeit Board entry */}
+        {onYahrzeitBoard && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".08em", marginBottom: 8, paddingLeft: 2 }}>
+              MEMORIAL
+            </div>
+            <div
+              onClick={onYahrzeitBoard}
+              style={{
+                borderRadius: 16, border: "1px solid rgba(212,168,67,0.3)",
+                background: "linear-gradient(135deg, rgba(212,168,67,0.08), rgba(212,168,67,0.03))",
+                overflow: "hidden", cursor: "pointer",
+                transition: "border-color 0.15s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,168,67,0.55)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,168,67,0.3)"; }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 13, flexShrink: 0,
+                  background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
+                }}>
+                  🕯
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>Community Yahrzeit Board</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                    Light memorial candles — the community prays &amp; learns together
+                  </div>
+                </div>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4 2 L9 6 L4 10" stroke="#d4a843" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Links grouped by category */}
         {Object.keys(grouped).length === 0 ? (

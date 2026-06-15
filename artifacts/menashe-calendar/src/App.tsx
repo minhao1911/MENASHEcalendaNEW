@@ -615,7 +615,7 @@ function AppShell() {
               {modal === "community-yahrzeit" && (
                 <CommunityYahrzeitModal onClose={closeModal} userName={publicProfile?.displayName} />
               )}
-              {modal === "community" && <CommunityModal onClose={closeModal} />}
+              {modal === "community" && <CommunityModal onClose={closeModal} onYahrzeitBoard={() => setModal("community-yahrzeit")} />}
               {modal === "census" && <CensusModal onClose={closeModal} />}
               {modal === "omer" && <OmerModal onClose={closeModal} />}
               {modal === "events" && <EventsModal onClose={closeModal} />}
