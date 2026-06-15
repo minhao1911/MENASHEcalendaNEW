@@ -1,5 +1,6 @@
 import { Router } from "express";
 import OpenAI from "openai";
+import { requireAuth } from "../lib/requireAuth";
 
 const router = Router();
 
@@ -27,7 +28,7 @@ export interface ParshaInsight {
 
 const cache = new Map<string, ParshaInsight>();
 
-router.post("/parsha-insights", async (req, res) => {
+router.post("/parsha-insights", requireAuth, async (req, res) => {
   const { parshaName, hebrewName, bookName, chaptersRange } = req.body as {
     parshaName: string;
     hebrewName?: string;

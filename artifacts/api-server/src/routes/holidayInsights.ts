@@ -1,5 +1,6 @@
 import { Router } from "express";
 import OpenAI from "openai";
+import { requireAuth } from "../lib/requireAuth";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ interface HolidayInsight {
 
 const cache = new Map<string, HolidayInsight>();
 
-router.post("/holiday-insights", async (req, res) => {
+router.post("/holiday-insights", requireAuth, async (req, res) => {
   const { holidayName, hebrewName, timing } = req.body as {
     holidayName: string;
     hebrewName?: string;

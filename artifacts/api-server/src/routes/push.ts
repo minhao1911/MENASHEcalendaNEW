@@ -1,5 +1,6 @@
 import { Router } from "express";
 import webpush from "web-push";
+import { requireAuth } from "../lib/requireAuth";
 import fs from "fs";
 import path from "path";
 
@@ -114,7 +115,7 @@ router.delete("/push/unsubscribe", (req, res) => {
   res.json({ ok: true });
 });
 
-router.post("/push/send-test", async (req, res) => {
+router.post("/push/send-test", requireAuth, async (req, res) => {
   const { subscription } = req.body as { subscription: webpush.PushSubscription };
   if (!subscription?.endpoint) { res.status(400).json({ error: "Missing subscription" }); return; }
   try {
