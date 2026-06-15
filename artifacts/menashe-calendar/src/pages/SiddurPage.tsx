@@ -29,15 +29,19 @@ const CATEGORIES = [
 ];
 
 const API_BASE = "/api";
+const GOLD = "#d4a843";
+const GOLD_GRAD = "linear-gradient(135deg, #b8860b 0%, #d4a843 50%, #f0c96a 100%)";
 
 interface SiddurPageProps {
   onReadBook: (book: Book) => void;
   onAdmin: () => void;
   adminPin: string;
   refreshKey: number;
+  isPremium: boolean;
+  onShowPremium: () => void;
 }
 
-export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey }: SiddurPageProps) {
+export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey, isPremium, onShowPremium }: SiddurPageProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -77,8 +81,17 @@ export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey }
     return null;
   })();
 
+  const premiumBookCount = books.filter(b => b.isPremium).length;
+
   return (
     <div style={{ padding: "0 0 4px" }}>
+      <style>{`
+        @keyframes siddurLockPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(212,168,67,0); }
+          50% { box-shadow: 0 0 0 6px rgba(212,168,67,0.12); }
+        }
+      `}</style>
+
       {/* Header */}
       <div className="app-header">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -100,15 +113,51 @@ export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey }
       <div style={{ padding: "16px 16px 0" }}>
         {/* Hero */}
         <div style={{ background: "linear-gradient(135deg, #0f1e38, #1a2a4a)", borderRadius: 16, padding: 18, marginBottom: 14, border: "1px solid rgba(212,168,67,0.2)" }}>
-          <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 22, color: "#d4a843", marginBottom: 4 }}>סִפְרִיַּת הַסִּדּוּר</div>
+          <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 22, color: GOLD, marginBottom: 4 }}>סִפְרִיַּת הַסִּדּוּר</div>
           <div style={{ fontSize: 18, fontWeight: 800, color: "white", marginBottom: 6 }}>Siddur Library</div>
           <div style={{ fontSize: 13, color: "#94a3b8" }}>Sacred texts, prayers & community publications for Bnei Menashe</div>
         </div>
 
+        {/* Premium upsell banner — shown only to non-premium users when premium books exist */}
+        {!isPremium && premiumBookCount > 0 && (
+          <button
+            onClick={onShowPremium}
+            style={{
+              width: "100%", marginBottom: 14,
+              padding: "13px 16px",
+              background: "linear-gradient(135deg, rgba(212,168,67,0.11) 0%, rgba(212,168,67,0.04) 100%)",
+              border: "1px solid rgba(212,168,67,0.38)",
+              borderRadius: 14, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 12, textAlign: "left",
+            }}
+          >
+            <div style={{
+              width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+              background: GOLD_GRAD,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 19, boxShadow: "0 2px 10px rgba(212,168,67,0.3)",
+            }}>👑</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: GOLD }}>
+                {premiumBookCount} Premium {premiumBookCount === 1 ? "Book" : "Books"} Available
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginTop: 1 }}>
+                Unlock exclusive texts with Premium — 7-day free trial
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.5">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        )}
+
         {/* Continue reading */}
         {progressBook && (
           <div
-            onClick={() => onReadBook(progressBook.book)}
+            onClick={() => {
+              if (progressBook.book.isPremium && !isPremium) { onShowPremium(); return; }
+              onReadBook(progressBook.book);
+            }}
             className="card"
             style={{ padding: 14, marginBottom: 12, display: "flex", alignItems: "center", gap: 12, cursor: "pointer", border: "1px solid rgba(212,168,67,0.2)" }}
           >
@@ -151,7 +200,7 @@ export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey }
               style={{
                 padding: "6px 14px", borderRadius: 99, border: "none", cursor: "pointer",
                 whiteSpace: "nowrap", fontSize: 12, fontWeight: 600,
-                background: activeCategory === cat ? "#d4a843" : "var(--elevated)",
+                background: activeCategory === cat ? GOLD : "var(--elevated)",
                 color: activeCategory === cat ? "#1a0f00" : "var(--text-muted)",
                 flexShrink: 0,
               }}
@@ -175,7 +224,13 @@ export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey }
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {filteredBooks.map(book => (
-              <BookCard key={book.id} book={book} onRead={() => onReadBook(book)} />
+              <BookCard
+                key={book.id}
+                book={book}
+                userIsPremium={isPremium}
+                onRead={() => onReadBook(book)}
+                onShowPremium={onShowPremium}
+              />
             ))}
           </div>
         )}
@@ -186,48 +241,133 @@ export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey }
   );
 }
 
-function BookCard({ book, onRead }: { book: Book; onRead: () => void }) {
+function BookCard({
+  book, userIsPremium, onRead, onShowPremium,
+}: {
+  book: Book;
+  userIsPremium: boolean;
+  onRead: () => void;
+  onShowPremium: () => void;
+}) {
+  const locked = book.isPremium && !userIsPremium;
+
   return (
-    <div className="card" style={{ padding: 16, display: "flex", gap: 14, alignItems: "flex-start" }}>
+    <div
+      className="card"
+      style={{
+        padding: 16, display: "flex", gap: 14, alignItems: "flex-start",
+        border: locked ? "1px solid rgba(212,168,67,0.22)" : undefined,
+        background: locked ? "rgba(212,168,67,0.03)" : undefined,
+      }}
+    >
       {/* Cover */}
       <div style={{
         width: 60, height: 80, borderRadius: 8, flexShrink: 0,
-        background: `linear-gradient(135deg, ${book.coverColor}, ${book.coverColor}aa)`,
+        background: locked
+          ? `linear-gradient(135deg, rgba(30,20,5,0.9), rgba(20,13,3,0.95))`
+          : `linear-gradient(135deg, ${book.coverColor}, ${book.coverColor}aa)`,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 28, border: "1px solid rgba(255,255,255,0.1)",
-        boxShadow: "2px 3px 12px rgba(0,0,0,0.3)",
-        position: "relative",
+        fontSize: 28, border: locked ? "1px solid rgba(212,168,67,0.3)" : "1px solid rgba(255,255,255,0.1)",
+        boxShadow: locked ? "0 2px 12px rgba(212,168,67,0.15)" : "2px 3px 12px rgba(0,0,0,0.3)",
+        position: "relative", overflow: "hidden",
+        animation: locked ? "siddurLockPulse 3s ease-in-out infinite" : undefined,
       }}>
-        {book.coverEmoji}
+        {/* Blurred emoji behind lock */}
+        <span style={{ filter: locked ? "blur(3px)" : "none", opacity: locked ? 0.35 : 1, transition: "filter 0.2s" }}>
+          {book.coverEmoji}
+        </span>
+
+        {/* Lock overlay for premium books */}
+        {locked && (
+          <div style={{
+            position: "absolute", inset: 0,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 3,
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span style={{ fontSize: 7, fontWeight: 900, color: GOLD, letterSpacing: "0.06em" }}>PRO</span>
+          </div>
+        )}
+
+        {/* Gold PRO badge (top-right) for premium books */}
         {book.isPremium && (
-          <div style={{ position: "absolute", top: -4, right: -4, background: "#d4a843", color: "#1a0f00", fontSize: 8, fontWeight: 800, padding: "2px 4px", borderRadius: 4 }}>PRO</div>
+          <div style={{
+            position: "absolute", top: -5, right: -5,
+            background: "linear-gradient(135deg, #b8860b, #d4a843)",
+            color: "#1a0f00", fontSize: 8, fontWeight: 900,
+            padding: "2px 5px", borderRadius: 5,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+            letterSpacing: "0.04em",
+          }}>👑</div>
         )}
       </div>
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.3 }}>{book.title}</div>
+          <div style={{
+            fontSize: 15, fontWeight: 700, lineHeight: 1.3,
+            color: locked ? GOLD : "var(--text-primary)",
+          }}>
+            {book.title}
+          </div>
         </div>
+
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
           <span className="tag tag-blue" style={{ fontSize: 10 }}>{book.category}</span>
           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{book.language}</span>
+          {book.isPremium && (
+            <span style={{
+              fontSize: 9, fontWeight: 900, color: "#b8860b", letterSpacing: "0.08em",
+              background: "rgba(212,168,67,0.13)", border: "1px solid rgba(212,168,67,0.28)",
+              borderRadius: 4, padding: "2px 5px",
+            }}>👑 PREMIUM</span>
+          )}
         </div>
-        <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 10, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+
+        <div style={{
+          fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 10,
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+          filter: locked ? "blur(2.5px)" : "none",
+          userSelect: locked ? "none" : undefined,
+        }}>
           {book.description}
         </div>
-        <button
-          onClick={onRead}
-          style={{
-            padding: "7px 18px", borderRadius: 8, cursor: "pointer",
-            background: book.isPremium ? "linear-gradient(135deg, #b8860b, #d4a843)" : "var(--elevated)",
-            color: book.isPremium ? "#1a0f00" : "var(--text-primary)",
-            fontSize: 12, fontWeight: 700,
-            border: book.isPremium ? "none" : "1px solid var(--border)",
-          }}
-        >
-          {book.isPremium ? "⭐ Read (Premium)" : "📖 Read"}
-        </button>
+
+        {locked ? (
+          <button
+            onClick={onShowPremium}
+            style={{
+              padding: "7px 18px", borderRadius: 8, cursor: "pointer",
+              background: "linear-gradient(90deg, #6b4800, #b8860b, #d4a843, #b8860b, #6b4800)",
+              backgroundSize: "200% auto",
+              color: "#1a0f00", fontSize: 12, fontWeight: 800,
+              border: "none", display: "flex", alignItems: "center", gap: 6,
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1a0f00" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Unlock with Premium
+          </button>
+        ) : (
+          <button
+            onClick={onRead}
+            style={{
+              padding: "7px 18px", borderRadius: 8, cursor: "pointer",
+              background: book.isPremium ? "linear-gradient(135deg, #b8860b, #d4a843)" : "var(--elevated)",
+              color: book.isPremium ? "#1a0f00" : "var(--text-primary)",
+              fontSize: 12, fontWeight: 700,
+              border: book.isPremium ? "none" : "1px solid var(--border)",
+            }}
+          >
+            {book.isPremium ? "⭐ Read (Premium)" : "📖 Read"}
+          </button>
+        )}
       </div>
     </div>
   );

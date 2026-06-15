@@ -524,6 +524,8 @@ function AppShell() {
             onAdmin={() => setModal("admin")}
             adminPin="1948"
             refreshKey={siddurRefreshKey}
+            isPremium={isPremium}
+            onShowPremium={() => setActivePage("premium")}
           />
         );
       case "settings":
