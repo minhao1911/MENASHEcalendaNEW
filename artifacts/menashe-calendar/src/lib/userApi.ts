@@ -1,10 +1,12 @@
 const API_BASE = "/api";
 
 async function apiFetch(path: string, options: RequestInit = {}) {
+  const token: string | null = await (window as any).Clerk?.session?.getToken() ?? null;
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers ?? {}),
     },
     credentials: "include",
