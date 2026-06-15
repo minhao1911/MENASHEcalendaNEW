@@ -7,7 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth, useUser } from "@clerk/expo";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
 import { LOCATIONS } from "@/lib/locations";
@@ -19,12 +19,13 @@ import {
 } from "@/lib/notifications";
 import * as Notifications from "expo-notifications";
 
-const SIGNED_IN_KEY = "menashe-mobile-signed-in";
 const LEAD_OPTIONS = [5, 10, 15, 30];
 
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { signOut } = useAuth();
+  const { user } = useUser();
   const {
     location, setLocation,
     notifPrefs, setNotifPrefs,
@@ -96,7 +97,7 @@ export default function SettingsScreen() {
           text: "Sign Out",
           style: "destructive",
           onPress: async () => {
-            await AsyncStorage.removeItem(SIGNED_IN_KEY);
+            await signOut();
             router.replace("/sign-in");
           },
         },
@@ -238,6 +239,23 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>ACCOUNT</Text>
         </View>
 
+        {/* User info card */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16, marginBottom: 12 }]}>
+          <View style={styles.rowStart}>
+            <View style={[styles.avatarCircle, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+              <Feather name="user" size={18} color={colors.primary} />
+            </View>
+            <View style={{ marginLeft: 12, flex: 1 }}>
+              {user?.fullName ? (
+                <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>{user.fullName}</Text>
+              ) : null}
+              <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                {user?.primaryEmailAddress?.emailAddress ?? "Signed in"}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         <TouchableOpacity
           style={[styles.signOutBtn, { borderColor: "#c0392b", marginHorizontal: 16 }]}
           onPress={handleSignOut}
@@ -318,6 +336,7 @@ const styles = StyleSheet.create({
   locationRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   locName: { fontSize: 15, fontWeight: "600" as const },
   locCountry: { fontSize: 13, marginTop: 2 },
+  avatarCircle: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
   signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 12, borderWidth: 1.5, paddingVertical: 14 },
   signOutText: { fontSize: 15, fontWeight: "700" as const },
 });
