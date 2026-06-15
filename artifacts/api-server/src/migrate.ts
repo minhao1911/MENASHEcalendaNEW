@@ -149,6 +149,52 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // Census — local admin's branch (one per authenticated user)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS census_branches (
+        id              TEXT PRIMARY KEY,
+        owner_user_id   TEXT NOT NULL UNIQUE,
+        name            TEXT NOT NULL,
+        city_id         TEXT NOT NULL DEFAULT '',
+        city_name       TEXT NOT NULL DEFAULT '',
+        admin_name      TEXT,
+        established     TEXT,
+        families        JSONB NOT NULL DEFAULT '[]',
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Census — branch submissions for global admin review
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS census_submissions (
+        id              TEXT PRIMARY KEY,
+        owner_user_id   TEXT NOT NULL,
+        branch_data     JSONB NOT NULL,
+        status          TEXT NOT NULL DEFAULT 'pending',
+        submitted_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        reviewed_at     TIMESTAMPTZ,
+        review_note     TEXT
+      )
+    `);
+
+    // Census — community member submissions to a branch
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS census_member_submissions (
+        id              TEXT PRIMARY KEY,
+        branch_id       TEXT NOT NULL,
+        branch_name     TEXT NOT NULL,
+        submitter_name  TEXT NOT NULL,
+        submitter_note  TEXT,
+        head_census     JSONB NOT NULL DEFAULT '{}',
+        members         JSONB NOT NULL DEFAULT '[]',
+        status          TEXT NOT NULL DEFAULT 'pending',
+        submitted_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        reviewed_at     TIMESTAMPTZ,
+        review_note     TEXT
+      )
+    `);
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");

@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  fetchCensusBranch, saveCensusBranch,
+  fetchCensusSubmissions, submitCensusBranchForReview, reviewCensusSubmission,
+  fetchCensusMemberSubmissions, submitCensusMemberEntry, reviewCensusMemberSubmission,
+} from "../lib/userApi";
 
 interface Props { onClose: () => void; }
 
@@ -1770,6 +1775,15 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
   const [newHeadName, setNewHeadName] = useState("");
   const [newHeadAliyah, setNewHeadAliyah] = useState<AliyahStatus>("unknown");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  /* Load branch from DB on first open (if user is signed in) */
+  useEffect(() => {
+    if (initialBranch) return;
+    fetchCensusBranch().then(b => {
+      if (b) setBranch(b as any);
+    });
+  }, []);
 
   /* When a member submission is approved, also add the family into the local branch registry */
   function handleMemberReview(id: string, status: "approved" | "rejected", note?: string) {
@@ -1792,7 +1806,9 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
   function createBranch() {
     if (!setupName.trim()) return;
     const city = cities.find(c => c.id === setupCity);
-    setBranch({ id: `br${Date.now()}`, name: setupName.trim(), cityId: setupCity, cityName: city?.name || "", established: setupDate, adminName: setupAdmin.trim(), families: [] });
+    const newBranch: Branch = { id: `br${Date.now()}`, name: setupName.trim(), cityId: setupCity, cityName: city?.name || "", established: setupDate, adminName: setupAdmin.trim(), families: [] };
+    setBranch(newBranch);
+    saveCensusBranch(newBranch as any);
   }
 
   function addFamily() {
@@ -1976,8 +1992,15 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
 
       {branch.families.length > 0 && (
         <>
-          <button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2500); }} style={{ padding: "13px", borderRadius: 12, fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", background: saved ? "#4ade80" : "#4f8ef7", color: "#fff", transition: "background 0.3s" }}>
-            {saved ? "✓ Registry Saved" : "Save Branch Registry"}
+          <button onClick={async () => {
+            if (!branch || saving) return;
+            setSaving(true);
+            await saveCensusBranch(branch as any);
+            setSaving(false);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+          }} style={{ padding: "13px", borderRadius: 12, fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", background: saved ? "#4ade80" : "#4f8ef7", color: "#fff", transition: "background 0.3s" }}>
+            {saving ? "Saving…" : saved ? "✓ Registry Saved" : "Save Branch Registry"}
           </button>
 
           <div style={{ borderRadius: 14, background: "var(--card)", border: "1px solid rgba(212,168,67,0.3)", overflow: "hidden" }}>
@@ -2104,6 +2127,16 @@ export default function CensusModal({ onClose }: Props) {
     }
   }, []);
 
+  /* ── Load persisted census data from DB on mount ── */
+  useEffect(() => {
+    fetchCensusSubmissions().then(subs => {
+      if (subs.length > 0) setSubmissions(subs as any);
+    });
+    fetchCensusMemberSubmissions().then(msubs => {
+      if (msubs.length > 0) setMemberSubmissions(msubs as any);
+    });
+  }, []);
+
   const pendingCount = submissions.filter(s => s.status === "pending").length;
   const pendingMemberCount = memberSubmissions.filter(ms => ms.status === "pending").length;
   const localSubmission = submissions.find(s => s.id === localSubmissionId);
@@ -2111,43 +2144,62 @@ export default function CensusModal({ onClose }: Props) {
   /* all submitted branches (any status) — community members pick from these */
   const allSubmittedBranches = submissions.map(s => ({ id: s.branch.id, name: s.branch.name, cityName: s.branch.cityName }));
 
-  function handleSubmit(branch: Branch) {
-    const existing = submissions.find(s => s.id === localSubmissionId);
-    if (existing) {
-      setSubmissions(prev => prev.map(s => s.id === existing.id
-        ? { ...s, branch, status: "pending", submittedAt: new Date().toISOString(), reviewNote: undefined, reviewedAt: undefined }
-        : s));
-    } else {
-      const sub: Submission = { id: `sub${Date.now()}`, branch, submittedAt: new Date().toISOString(), status: "pending" };
-      setSubmissions(prev => [...prev, sub]);
+  async function handleSubmit(branch: Branch) {
+    try {
+      const sub = await submitCensusBranchForReview(branch as any) as any;
+      setSubmissions(prev => {
+        const filtered = prev.filter(s => s.id !== sub.id);
+        return [...filtered, sub];
+      });
       setLocalSubmissionId(sub.id);
+    } catch {
+      /* Optimistic fallback if not signed in or network error */
+      const existing = submissions.find(s => s.id === localSubmissionId);
+      if (existing) {
+        setSubmissions(prev => prev.map(s => s.id === existing.id
+          ? { ...s, branch, status: "pending", submittedAt: new Date().toISOString(), reviewNote: undefined, reviewedAt: undefined }
+          : s));
+      } else {
+        const sub: Submission = { id: `sub${Date.now()}`, branch, submittedAt: new Date().toISOString(), status: "pending" };
+        setSubmissions(prev => [...prev, sub]);
+        setLocalSubmissionId(sub.id);
+      }
     }
   }
 
   function handleReview(id: string, status: "approved" | "rejected", note?: string) {
+    reviewCensusSubmission(id, status, note);
     setSubmissions(prev => prev.map(s => s.id === id
       ? { ...s, status, reviewNote: note || undefined, reviewedAt: new Date().toISOString() }
       : s));
   }
 
-  function handleMemberSubmit(entry: Omit<MemberSubmissionEntry, "id" | "submittedAt" | "status">, replaceId?: string) {
+  async function handleMemberSubmit(entry: Omit<MemberSubmissionEntry, "id" | "submittedAt" | "status">, replaceId?: string) {
     if (replaceId) {
-      /* Resubmission — update the existing rejected entry back to pending with corrected data */
+      /* Resubmission — update back to pending */
+      reviewCensusMemberSubmission(replaceId, "pending");
       setMemberSubmissions(prev => prev.map(ms => ms.id === replaceId
         ? { ...ms, ...entry, status: "pending", submittedAt: new Date().toISOString(), reviewNote: undefined, reviewedAt: undefined }
         : ms));
     } else {
-      const newEntry: MemberSubmissionEntry = {
-        ...entry,
-        id: `msub${Date.now()}`,
-        submittedAt: new Date().toISOString(),
-        status: "pending",
-      };
-      setMemberSubmissions(prev => [...prev, newEntry]);
+      try {
+        const newEntry = await submitCensusMemberEntry(entry as any) as any;
+        setMemberSubmissions(prev => [...prev, newEntry]);
+      } catch {
+        /* Optimistic fallback */
+        const newEntry: MemberSubmissionEntry = {
+          ...entry,
+          id: `msub${Date.now()}`,
+          submittedAt: new Date().toISOString(),
+          status: "pending",
+        };
+        setMemberSubmissions(prev => [...prev, newEntry]);
+      }
     }
   }
 
   function handleMemberReview(id: string, status: "approved" | "rejected", note?: string) {
+    reviewCensusMemberSubmission(id, status, note);
     setMemberSubmissions(prev => prev.map(ms => ms.id === id
       ? { ...ms, status, reviewNote: note || undefined, reviewedAt: new Date().toISOString() }
       : ms));

@@ -185,3 +185,88 @@ export async function dedicateLearning(entryId: string, learnerName: string, stu
     body: JSON.stringify({ learnerName, studySubject }),
   });
 }
+
+// ── Census ─────────────────────────────────────────────────────────────────
+
+export interface CensusBranchApi {
+  id: string;
+  name: string;
+  cityId: string;
+  cityName: string;
+  adminName?: string;
+  established?: string;
+  families: any[];
+}
+
+export interface CensusSubmissionApi {
+  id: string;
+  branch: CensusBranchApi;
+  submittedAt: string;
+  status: "pending" | "approved" | "rejected";
+  reviewNote?: string;
+  reviewedAt?: string;
+}
+
+export interface CensusMemberSubmissionApi {
+  id: string;
+  branchId: string;
+  branchName: string;
+  submitterName: string;
+  submitterNote?: string;
+  headCensus: any;
+  members: any[];
+  status: "pending" | "approved" | "rejected";
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+}
+
+export async function fetchCensusBranch(): Promise<CensusBranchApi | null> {
+  try {
+    return await apiFetch("/census/branch");
+  } catch {
+    return null;
+  }
+}
+
+export async function saveCensusBranch(branch: CensusBranchApi): Promise<void> {
+  try {
+    await apiFetch("/census/branch", { method: "PUT", body: JSON.stringify(branch) });
+  } catch {}
+}
+
+export async function fetchCensusSubmissions(): Promise<CensusSubmissionApi[]> {
+  try {
+    return await apiFetch("/census/submissions");
+  } catch {
+    return [];
+  }
+}
+
+export async function submitCensusBranchForReview(branch: CensusBranchApi): Promise<CensusSubmissionApi> {
+  return await apiFetch("/census/submissions", { method: "POST", body: JSON.stringify({ branch }) });
+}
+
+export async function reviewCensusSubmission(id: string, status: "approved" | "rejected", reviewNote?: string): Promise<void> {
+  try {
+    await apiFetch(`/census/submissions/${id}`, { method: "PATCH", body: JSON.stringify({ status, reviewNote }) });
+  } catch {}
+}
+
+export async function fetchCensusMemberSubmissions(): Promise<CensusMemberSubmissionApi[]> {
+  try {
+    return await apiFetch("/census/member-submissions");
+  } catch {
+    return [];
+  }
+}
+
+export async function submitCensusMemberEntry(entry: Omit<CensusMemberSubmissionApi, "id" | "submittedAt" | "status">): Promise<CensusMemberSubmissionApi> {
+  return await apiFetch("/census/member-submissions", { method: "POST", body: JSON.stringify(entry) });
+}
+
+export async function reviewCensusMemberSubmission(id: string, status: "approved" | "rejected" | "pending", reviewNote?: string): Promise<void> {
+  try {
+    await apiFetch(`/census/member-submissions/${id}`, { method: "PATCH", body: JSON.stringify({ status, reviewNote }) });
+  } catch {}
+}

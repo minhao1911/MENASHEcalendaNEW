@@ -7,6 +7,7 @@ import parshaInsightsRouter from "./parshaInsights";
 import pushRouter from "./push";
 import userRouter from "./user";
 import communityYahrzeitRouter from "./communityYahrzeit";
+import censusRouter from "./census";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(parshaInsightsRouter);
 router.use(pushRouter);
 router.use(userRouter);
 router.use("/community", communityYahrzeitRouter);
+router.use(censusRouter);
 
 export default router;
