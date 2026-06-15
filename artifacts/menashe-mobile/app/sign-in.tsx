@@ -248,6 +248,14 @@ export default function SignInScreen() {
                 selectionColor={GOLD}
               />
 
+              <TouchableOpacity
+                style={styles.forgotRow}
+                onPress={() => router.push("/forgot-password")}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.forgotText}>Forgot password?</Text>
+              </TouchableOpacity>
+
               {!!fieldError && (
                 <Text style={styles.errorText}>{fieldError}</Text>
               )}
@@ -360,6 +368,8 @@ const styles = StyleSheet.create({
     height: 48, backgroundColor: DARK_INPUT, borderWidth: 1, borderColor: BORDER_DARK,
     borderRadius: 10, paddingHorizontal: 14, color: "#F0EDE4", fontSize: 15, marginBottom: 16,
   },
+  forgotRow: { alignItems: "flex-end", marginTop: -8, marginBottom: 12 },
+  forgotText: { color: GOLD, fontSize: 13, fontWeight: "600" },
   errorText: { color: "#ff6b6b", fontSize: 13, marginBottom: 12, lineHeight: 18 },
   continueBtn: {
     borderRadius: 10, marginBottom: 8,

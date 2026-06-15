@@ -52,6 +52,7 @@ export default function RootLayout() {
                   <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
                     <Stack.Screen name="sign-in" options={{ headerShown: false }} />
                     <Stack.Screen name="sign-up" options={{ headerShown: false }} />
+                    <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                   </Stack>
                 </AppProvider>
