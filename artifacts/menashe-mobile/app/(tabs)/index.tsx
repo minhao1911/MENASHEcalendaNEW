@@ -1,16 +1,15 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import {
   ScrollView,
   StyleSheet,
   Text,
   View,
   Platform,
-  TouchableOpacity,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColors } from "@/hooks/useColors";
-import { useApp } from "@/context/AppContext";
+import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
 import {
   getHebrewDate,
@@ -18,6 +17,10 @@ import {
   getCurrentParasha,
   getUpcomingHolidays,
 } from "@/lib/hebrewCalendar";
+import { useColors } from "@/hooks/useColors";
+import { useApp } from "@/context/AppContext";
+
+const SIGNED_IN_KEY = "menashe-mobile-signed-in";
 
 function getNextWeekday(targetDay: number): Date {
   const d = new Date();
@@ -32,6 +35,14 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { location } = useApp();
+
+  useEffect(() => {
+    AsyncStorage.getItem(SIGNED_IN_KEY).then((val) => {
+      if (val !== "1") {
+        router.replace("/sign-in");
+      }
+    });
+  }, []);
 
   const today = new Date();
   const hdate = getHebrewDate(today);
