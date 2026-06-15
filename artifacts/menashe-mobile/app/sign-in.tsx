@@ -19,6 +19,7 @@ import Svg, { Polygon, Polyline } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const PHOTO = require("@/assets/images/saipikhup-photo.jpg");
 const SIGNED_IN_KEY = "menashe-mobile-signed-in";
 
@@ -233,7 +234,7 @@ export default function SignInScreen() {
 
             {/* Footer */}
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
+              <Text style={styles.footerText}>{"Don't have an account? "}</Text>
               <TouchableOpacity onPress={handleGoogle}>
                 <Text style={styles.footerLink}>Sign up</Text>
               </TouchableOpacity>

@@ -62,11 +62,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       let loc = DEFAULT_LOCATION;
       if (locRaw) {
-        try { loc = JSON.parse(locRaw); } catch {}
+        try { loc = JSON.parse(locRaw); } catch (_e) { /* use default */ }
       }
       let prefs = DEFAULT_PREFS;
       if (prefsRaw) {
-        try { prefs = { ...DEFAULT_PREFS, ...JSON.parse(prefsRaw) }; } catch {}
+        try { prefs = { ...DEFAULT_PREFS, ...JSON.parse(prefsRaw) }; } catch (_e) { /* use default */ }
       }
       const lead = leadRaw ? Number(leadRaw) || 15 : 15;
 

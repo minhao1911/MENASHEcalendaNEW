@@ -94,7 +94,7 @@ export async function scheduleAllNotifications(
         },
       });
       count++;
-    } catch {}
+    } catch (_e) { /* skip past notifications */ }
   }
 
   // ── Shabbat & Havdalah (4 weeks) ──────────────────────────────
