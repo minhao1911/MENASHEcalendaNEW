@@ -17,6 +17,6 @@ router.use(holidayInsightsRouter);
 router.use(parshaInsightsRouter);
 router.use(pushRouter);
 router.use(userRouter);
-router.use(communityYahrzeitRouter);
+router.use("/community", communityYahrzeitRouter);
 
 export default router;

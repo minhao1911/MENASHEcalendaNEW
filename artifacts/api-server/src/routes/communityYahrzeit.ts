@@ -4,8 +4,8 @@ import { requireAuth } from "../lib/requireAuth";
 
 const router = Router();
 
-/* ── GET /community/yahrzeit — public, returns all lit candles with active learners ── */
-router.get("/community/yahrzeit", async (req, res) => {
+/* ── GET /yahrzeit — public, returns all lit candles with active learners ── */
+router.get("/yahrzeit", async (req, res) => {
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
@@ -53,10 +53,10 @@ router.get("/community/yahrzeit", async (req, res) => {
   }
 });
 
-/* ── POST /community/yahrzeit — create + immediately light a candle (auth) ── */
-router.post("/community/yahrzeit", requireAuth, async (req, res) => {
+/* ── POST /yahrzeit — create + immediately light a candle (auth) ── */
+router.post("/yahrzeit", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { id, deceasedName, hebrewDay, hebrewMonth, displayDate, passingYear, message, donorDisplayName, donationAmount } = req.body;
+  const { id, deceasedName, hebrewDay, hebrewMonth, displayDate, passingYear, message, donorDisplayName } = req.body;
 
   if (!id || !deceasedName || hebrewDay == null || hebrewMonth == null) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -77,11 +77,11 @@ router.post("/community/yahrzeit", requireAuth, async (req, res) => {
   }
 });
 
-/* ── POST /community/yahrzeit/:id/light — light a candle (auth) ── */
-router.post("/community/yahrzeit/:id/light", requireAuth, async (req, res) => {
+/* ── POST /yahrzeit/:id/light — light a candle (auth) ── */
+router.post("/yahrzeit/:id/light", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
   const { id } = req.params;
-  const { donorDisplayName, donationAmount } = req.body;
+  const { donorDisplayName } = req.body;
 
   const client = await pool.connect();
   try {
@@ -97,8 +97,8 @@ router.post("/community/yahrzeit/:id/light", requireAuth, async (req, res) => {
   }
 });
 
-/* ── DELETE /community/yahrzeit/:id — delete own entry (auth) ── */
-router.delete("/community/yahrzeit/:id", requireAuth, async (req, res) => {
+/* ── DELETE /yahrzeit/:id — delete own entry (auth) ── */
+router.delete("/yahrzeit/:id", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
   const { id } = req.params;
 
@@ -114,8 +114,8 @@ router.delete("/community/yahrzeit/:id", requireAuth, async (req, res) => {
   }
 });
 
-/* ── POST /community/yahrzeit/:id/dedicate — dedicate current learning to a candle (auth) ── */
-router.post("/community/yahrzeit/:id/dedicate", requireAuth, async (req, res) => {
+/* ── POST /yahrzeit/:id/dedicate — dedicate current learning to a candle (auth) ── */
+router.post("/yahrzeit/:id/dedicate", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
   const { id } = req.params;
   const { learnerName, studySubject } = req.body;
@@ -127,7 +127,6 @@ router.post("/community/yahrzeit/:id/dedicate", requireAuth, async (req, res) =>
 
   const client = await pool.connect();
   try {
-    // Remove old dedications by same user for same entry
     await client.query(
       "DELETE FROM community_yahrzeit_learners WHERE entry_id = $1 AND user_id = $2",
       [id, userId]
