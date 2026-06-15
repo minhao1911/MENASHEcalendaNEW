@@ -6,9 +6,11 @@ import {
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
-import { LOCATIONS, type Location } from "@/lib/locations";
+import { LOCATIONS } from "@/lib/locations";
 import {
   requestPermission,
   getPermissionStatus,
@@ -17,6 +19,7 @@ import {
 } from "@/lib/notifications";
 import * as Notifications from "expo-notifications";
 
+const SIGNED_IN_KEY = "menashe-mobile-signed-in";
 const LEAD_OPTIONS = [5, 10, 15, 30];
 
 export default function SettingsScreen() {
@@ -78,6 +81,27 @@ export default function SettingsScreen() {
     } else {
       Alert.alert("Permission Denied", "Could not enable notifications. Check your device settings.");
     }
+  }
+
+  function handleSignOut() {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            await AsyncStorage.removeItem(SIGNED_IN_KEY);
+            router.replace("/sign-in");
+          },
+        },
+      ],
+    );
   }
 
   const notifRows: { key: keyof NotificationPrefs; label: string; sub: string; icon: keyof typeof Feather.glyphMap }[] = [
@@ -199,15 +223,36 @@ export default function SettingsScreen() {
         >
           <Feather name="refresh-cw" size={16} color={colors.primary} />
           <Text style={[styles.rescheduleBtnText, { color: colors.primary }]}>
-            {rescheduling ? "Rescheduling…" : "Reschedule Now"}
+            {rescheduling ? "Rescheduling..." : "Reschedule Now"}
           </Text>
         </TouchableOpacity>
 
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
           <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
-            Notifications appear in your device's notification bar even when the app is closed. They are scheduled locally on your device — no internet required.
+            {"Notifications appear in your device's notification bar even when the app is closed. They are scheduled locally on your device - no internet required."}
           </Text>
         </View>
+
+        {/* ── ACCOUNT ── */}
+        <View style={{ paddingTop: 32, paddingHorizontal: 16 }}>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>ACCOUNT</Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.signOutBtn, { borderColor: "#c0392b", marginHorizontal: 16 }]}
+          onPress={handleSignOut}
+          activeOpacity={0.8}
+        >
+          <Feather name="log-out" size={16} color="#c0392b" />
+          <Text style={[styles.signOutText, { color: "#c0392b" }]}>Sign Out</Text>
+        </TouchableOpacity>
+
+        <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 }}>
+          <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
+            You will be returned to the sign-in screen.
+          </Text>
+        </View>
+
       </ScrollView>
 
       {/* Location Picker Modal */}
@@ -273,4 +318,6 @@ const styles = StyleSheet.create({
   locationRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   locName: { fontSize: 15, fontWeight: "600" as const },
   locCountry: { fontSize: 13, marginTop: 2 },
+  signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 12, borderWidth: 1.5, paddingVertical: 14 },
+  signOutText: { fontSize: 15, fontWeight: "700" as const },
 });
