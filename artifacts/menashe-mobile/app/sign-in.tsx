@@ -223,7 +223,7 @@ export default function SignInScreen() {
                   {loading ? (
                     <ActivityIndicator color="#0a0800" />
                   ) : (
-                    <Text style={styles.continueBtnText}>Continue ›</Text>
+                    <Text style={styles.continueBtnText}>Continue</Text>
                   )}
                 </LinearGradient>
                 {/* 3D bottom shadow bar */}
@@ -241,7 +241,7 @@ export default function SignInScreen() {
           </View>
 
           {/* App tagline below card */}
-          <Text style={styles.tagline}>✡ Serving the Bnei Menashe community worldwide</Text>
+          <Text style={styles.tagline}>Serving the Bnei Menashe community worldwide</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

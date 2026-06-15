@@ -80,7 +80,7 @@ export default function HomeScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerLogo}>✡</Text>
+        <Text style={styles.headerLogo}>*</Text>
         <Text style={styles.headerTitle}>BNEI MENASHE</Text>
         <View style={styles.locationBadge}>
           <Feather name="map-pin" size={12} color={colors.mutedForeground} />
