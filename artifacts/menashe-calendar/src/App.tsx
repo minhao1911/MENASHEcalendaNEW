@@ -52,6 +52,7 @@ import BookReaderModal from "./modals/BookReaderModal";
 import AdminModal from "./modals/AdminModal";
 import OmerModal from "./modals/OmerModal";
 import PrayerTimesModal from "./modals/PrayerTimesModal";
+import CommunityYahrzeitModal from "./modals/CommunityYahrzeitModal";
 import MoreToolsModal from "./pages/MoreToolsModal";
 
 import { LOCATIONS, Location } from "./lib/locations";
@@ -188,7 +189,8 @@ type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
   | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar"
-  | "announcements" | "events" | "members" | "prayers-board" | "torah-tracker" | "profile" | null;
+  | "announcements" | "events" | "members" | "prayers-board" | "torah-tracker" | "profile"
+  | "community-yahrzeit" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -609,7 +611,10 @@ function AppShell() {
               {modal === "torahnote" && <TorahNoteModal onClose={closeModal} />}
               {modal === "birthday" && <BirthdayModal onClose={closeModal} />}
               {modal === "tahara" && <TaharaModal onClose={closeModal} />}
-              {modal === "yartzeit" && <YartzeitModal onClose={closeModal} location={location} />}
+              {modal === "yartzeit" && <YartzeitModal onClose={closeModal} location={location} onCommunityBoard={() => setModal("community-yahrzeit")} />}
+              {modal === "community-yahrzeit" && (
+                <CommunityYahrzeitModal onClose={closeModal} userName={publicProfile?.displayName} />
+              )}
               {modal === "community" && <CommunityModal onClose={closeModal} />}
               {modal === "census" && <CensusModal onClose={closeModal} />}
               {modal === "omer" && <OmerModal onClose={closeModal} />}

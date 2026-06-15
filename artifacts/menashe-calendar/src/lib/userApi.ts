@@ -129,3 +129,57 @@ export async function fetchPublicProfile(): Promise<PublicProfile | null> {
 export async function savePublicProfile(profile: PublicProfile): Promise<void> {
   await apiFetch("/user/public-profile", { method: "PUT", body: JSON.stringify(profile) });
 }
+
+// ── Community Yahrzeit Board ───────────────────────────────────────────────────
+
+export interface CommunityYahrzeitEntry {
+  id: string;
+  userId: string;
+  deceasedName: string;
+  hebrewDay: number;
+  hebrewMonth: number;
+  displayDate: string;
+  passingYear: number | null;
+  message: string;
+  candleLit: boolean;
+  candleLitAt: string | null;
+  donorDisplayName: string;
+  createdAt: string;
+  learners: Array<{ id: string; learnerName: string; studySubject: string }>;
+}
+
+export async function fetchCommunityYahrzeit(): Promise<CommunityYahrzeitEntry[]> {
+  try {
+    return await apiFetch("/community/yahrzeit");
+  } catch {
+    return [];
+  }
+}
+
+export async function createCommunityYahrzeit(entry: {
+  id: string;
+  deceasedName: string;
+  hebrewDay: number;
+  hebrewMonth: number;
+  displayDate: string;
+  passingYear?: number | null;
+  message?: string;
+  donorDisplayName?: string;
+}): Promise<void> {
+  await apiFetch("/community/yahrzeit", { method: "POST", body: JSON.stringify(entry) });
+}
+
+export async function lightCommunityCandle(id: string, donorDisplayName: string): Promise<void> {
+  await apiFetch(`/community/yahrzeit/${id}/light`, { method: "POST", body: JSON.stringify({ donorDisplayName }) });
+}
+
+export async function deleteCommunityYahrzeit(id: string): Promise<void> {
+  await apiFetch(`/community/yahrzeit/${id}`, { method: "DELETE" });
+}
+
+export async function dedicateLearning(entryId: string, learnerName: string, studySubject: string): Promise<void> {
+  await apiFetch(`/community/yahrzeit/${entryId}/dedicate`, {
+    method: "POST",
+    body: JSON.stringify({ learnerName, studySubject }),
+  });
+}

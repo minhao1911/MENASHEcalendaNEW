@@ -104,6 +104,38 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // Community Yahrzeit Board
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS community_yahrzeit (
+        id                  TEXT PRIMARY KEY,
+        user_id             TEXT NOT NULL,
+        deceased_name       TEXT NOT NULL,
+        hebrew_day          INTEGER NOT NULL,
+        hebrew_month        INTEGER NOT NULL,
+        display_date        TEXT NOT NULL DEFAULT '',
+        passing_year        INTEGER,
+        message             TEXT NOT NULL DEFAULT '',
+        candle_lit          BOOLEAN NOT NULL DEFAULT false,
+        candle_lit_by       TEXT,
+        candle_lit_at       TIMESTAMPTZ,
+        donor_display_name  TEXT NOT NULL DEFAULT '',
+        created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Active learning dedications (text floats in candle flame for 5 min)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS community_yahrzeit_learners (
+        id            TEXT PRIMARY KEY,
+        entry_id      TEXT NOT NULL,
+        user_id       TEXT NOT NULL,
+        learner_name  TEXT NOT NULL DEFAULT '',
+        study_subject TEXT NOT NULL DEFAULT '',
+        active_until  TIMESTAMPTZ NOT NULL,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");

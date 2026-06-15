@@ -29,9 +29,10 @@ interface CalculationResult {
 interface Props {
   onClose: () => void;
   location: Location;
+  onCommunityBoard?: () => void;
 }
 
-export default function YartzeitModal({ onClose, location }: Props) {
+export default function YartzeitModal({ onClose, location, onCommunityBoard }: Props) {
   const [entries, setEntries] = useState<YartzeitEntry[]>(() => getYahrzeitEntries());
   const [showForm, setShowForm] = useState(false);
 
@@ -165,6 +166,23 @@ export default function YartzeitModal({ onClose, location }: Props) {
           </div>
           <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
+
+        {onCommunityBoard && (
+          <button
+            onClick={onCommunityBoard}
+            style={{
+              width: "100%", marginBottom: 16, padding: "11px 14px",
+              background: "linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.05))",
+              border: "1px solid rgba(212,175,55,0.3)", borderRadius: 12,
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+              color: "#D4AF37", fontSize: 13, fontWeight: 700,
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🕯</span>
+            <span style={{ flex: 1, textAlign: "left" }}>Community Memorial Board — light candles together</span>
+            <span style={{ opacity: 0.6, fontSize: 12 }}>→</span>
+          </button>
+        )}
 
         {/* Saved entries */}
         {entries.length > 0 && (

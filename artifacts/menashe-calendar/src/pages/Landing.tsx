@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../context/LanguageContext";
+import BurningCandle from "../components/BurningCandle";
+import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "../lib/userApi";
 
 interface LandingProps {
   onSignIn: () => void;
@@ -204,8 +206,20 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
 }
 
 /* ─── Main component ─────────────────────────────────────────────── */
+const CURRENT_YEAR = new Date().getFullYear();
+function candleYahrzeitNum(passingYear: number | null): number | undefined {
+  if (!passingYear || passingYear >= CURRENT_YEAR) return undefined;
+  return CURRENT_YEAR - passingYear;
+}
+
 export default function Landing({ onSignIn }: LandingProps) {
   const { t, lang, setLang } = useLanguage();
+  const [candleEntries, setCandleEntries] = useState<CommunityYahrzeitEntry[]>([]);
+
+  useEffect(() => {
+    fetchCommunityYahrzeit().then(setCandleEntries).catch(() => {});
+  }, []);
+
   return (
     <>
       <style>{`
@@ -607,6 +621,80 @@ export default function Landing({ onSignIn }: LandingProps) {
             </div>
           </section>
         </RevealSection>
+
+        {/* ── COMMUNITY MEMORIAL CANDLES ── */}
+        {candleEntries.length > 0 && (
+          <RevealSection>
+            <section style={{ padding: "80px 0 60px", overflow: "hidden" }}>
+              <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 28px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
+                  <div>
+                    <div className="gold-line" style={{ marginBottom: 16 }} />
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "#D4AF37", letterSpacing: ".14em", marginBottom: 8 }}>COMMUNITY MEMORIAL</p>
+                    <h2 style={{ fontSize: "clamp(22px,3vw,34px)", fontWeight: 800, color: "#F8F6F0", letterSpacing: "-.02em", lineHeight: 1.2, marginBottom: 12 }}>
+                      Eternal Flames<br />Burning Together
+                    </h2>
+                    <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.7, maxWidth: 380 }}>
+                      Community members light memorial candles in honour of their loved ones.
+                      Torah learners dedicate their study — their names rise in the flame.
+                    </p>
+                  </div>
+                  <button
+                    className="btn-gold"
+                    style={{ fontSize: 14, padding: "11px 28px", whiteSpace: "nowrap" }}
+                    onClick={onSignIn}
+                  >
+                    🕯 Light a Candle
+                  </button>
+                </div>
+              </div>
+
+              {/* Horizontal scrollable candle row */}
+              <div style={{ overflowX: "auto", paddingBottom: 12, WebkitOverflowScrolling: "touch" as any, scrollbarWidth: "none" }}>
+                <div style={{ display: "flex", gap: 14, padding: "0 24px 4px", width: "max-content" }}>
+                  {candleEntries.slice(0, 8).map(entry => (
+                    <div
+                      key={entry.id}
+                      style={{
+                        background: "rgba(255,255,255,0.02)",
+                        borderRadius: 20,
+                        border: "1px solid rgba(212,175,55,0.12)",
+                        padding: "12px 8px 8px",
+                      }}
+                    >
+                      <BurningCandle
+                        deceasedName={entry.deceasedName}
+                        yahrzeitNumber={candleYahrzeitNum(entry.passingYear)}
+                        donorName={entry.donorDisplayName || undefined}
+                        learners={entry.learners}
+                        isLit={entry.candleLit}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Add candle CTA card */}
+                  <div
+                    onClick={onSignIn}
+                    style={{
+                      width: 140, minHeight: 260,
+                      borderRadius: 20,
+                      border: "1.5px dashed rgba(212,175,55,0.3)",
+                      background: "rgba(212,175,55,0.025)",
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                      gap: 12, cursor: "pointer", padding: "16px",
+                    }}
+                  >
+                    <div style={{ fontSize: 36 }}>🕯</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#D4AF37", textAlign: "center", lineHeight: 1.5 }}>
+                      Light a Memorial Candle
+                    </div>
+                    <div style={{ fontSize: 10, color: "#475569", textAlign: "center" }}>Sign in to join</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </RevealSection>
+        )}
 
         {/* ── SIDDUR LIBRARY HIGHLIGHT ── */}
         <RevealSection>

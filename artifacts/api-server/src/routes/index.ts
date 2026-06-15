@@ -6,6 +6,7 @@ import holidayInsightsRouter from "./holidayInsights";
 import parshaInsightsRouter from "./parshaInsights";
 import pushRouter from "./push";
 import userRouter from "./user";
+import communityYahrzeitRouter from "./communityYahrzeit";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(holidayInsightsRouter);
 router.use(parshaInsightsRouter);
 router.use(pushRouter);
 router.use(userRouter);
+router.use(communityYahrzeitRouter);
 
 export default router;
