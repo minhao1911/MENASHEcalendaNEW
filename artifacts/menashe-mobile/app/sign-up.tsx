@@ -16,7 +16,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Polygon, Polyline } from "react-native-svg";
-import { useSignIn, useSSO, useAuth } from "@clerk/expo";
+import { useSignUp, useSSO, useAuth } from "@clerk/expo";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { router, Link } from "expo-router";
@@ -72,42 +72,58 @@ function LogoBadge() {
   );
 }
 
-export default function SignInScreen() {
+export default function SignUpScreen() {
   const insets = useSafeAreaInsets();
   const { isSignedIn } = useAuth();
-  const { signIn, errors: signInErrors, fetchStatus } = useSignIn();
+  const { signUp, errors: signUpErrors, fetchStatus } = useSignUp();
   const { startSSOFlow } = useSSO();
   useWarmUpBrowser();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (isSignedIn) router.replace("/(tabs)");
   }, [isSignedIn]);
 
-  async function handleContinue() {
+  async function handleSignUp() {
     if (!email.trim() || !password.trim()) return;
     setErrorMsg("");
     setLoading(true);
     try {
-      const { error } = await signIn.password({ emailAddress: email.trim(), password });
+      const { error } = await signUp.password({ emailAddress: email.trim(), password });
       if (error) {
-        setErrorMsg(error.message ?? "Sign-in failed");
-        setLoading(false);
+        setErrorMsg(error.message ?? "Sign-up failed");
         return;
       }
-      if (signIn.status === "complete") {
-        await signIn.finalize({
+      await signUp.verifications.sendEmailCode();
+      setVerifying(true);
+    } catch (e: unknown) {
+      setErrorMsg(e instanceof Error ? e.message : "Sign-up failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerify() {
+    if (!code.trim()) return;
+    setErrorMsg("");
+    setLoading(true);
+    try {
+      await signUp.verifications.verifyEmailCode({ code });
+      if (signUp.status === "complete") {
+        await signUp.finalize({
           navigate: ({ decorateUrl }) => {
             router.replace(decorateUrl("/") as "/(tabs)");
           },
         });
       }
     } catch (e: unknown) {
-      setErrorMsg(e instanceof Error ? e.message : "Sign-in failed");
+      setErrorMsg(e instanceof Error ? e.message : "Verification failed");
     } finally {
       setLoading(false);
     }
@@ -130,35 +146,78 @@ export default function SignInScreen() {
         });
       }
     } catch (e: unknown) {
-      setErrorMsg(e instanceof Error ? e.message : "Google sign-in failed");
+      setErrorMsg(e instanceof Error ? e.message : "Google sign-up failed");
     } finally {
       setLoading(false);
     }
   }, [startSSOFlow]);
 
   const fieldError =
-    signInErrors?.fields?.identifier?.message ||
-    signInErrors?.fields?.password?.message ||
+    signUpErrors?.fields?.emailAddress?.message ||
+    signUpErrors?.fields?.password?.message ||
+    signUpErrors?.fields?.code?.message ||
     errorMsg;
+
+  if (verifying) {
+    return (
+      <View style={styles.root}>
+        <ImageBackground source={PHOTO} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <LinearGradient colors={["rgba(3,3,8,0.92)", "rgba(3,3,8,0.88)"]} style={StyleSheet.absoluteFill} />
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <ScrollView
+            contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.card}>
+              <LinearGradient colors={["#111118", "#0f0f16"]} style={[styles.formBody, { paddingTop: 32, paddingBottom: 24 }]}>
+                <Text style={styles.welcomeTitle}>Check your email</Text>
+                <Text style={styles.welcomeSub}>We sent a verification code to {email}</Text>
+
+                <Text style={styles.fieldLabel}>VERIFICATION CODE</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter 6-digit code"
+                  placeholderTextColor="#4a4a5a"
+                  value={code}
+                  onChangeText={setCode}
+                  keyboardType="numeric"
+                  returnKeyType="go"
+                  onSubmitEditing={handleVerify}
+                  selectionColor={GOLD}
+                />
+
+                {!!fieldError && <Text style={styles.errorText}>{fieldError}</Text>}
+
+                <TouchableOpacity
+                  style={[styles.continueBtn, (loading || !code) && styles.continueBtnDisabled]}
+                  onPress={handleVerify}
+                  activeOpacity={0.82}
+                  disabled={loading || !code}
+                >
+                  <LinearGradient colors={["#F0C840", "#C49A20"]} style={styles.continueBtnGradient}>
+                    {loading ? <ActivityIndicator color="#0a0800" /> : <Text style={styles.continueBtnText}>Verify Email</Text>}
+                  </LinearGradient>
+                  <View style={styles.continueBtnShadowBar} />
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => signUp.verifications.sendEmailCode()} style={{ marginTop: 16, alignItems: "center" }}>
+                  <Text style={styles.footerLink}>Resend code</Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
-      <ImageBackground
-        source={PHOTO}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-        imageStyle={{ top: 0 }}
-      />
-      <LinearGradient
-        colors={["rgba(3,3,8,0.90)", "rgba(3,3,8,0.84)"]}
-        style={StyleSheet.absoluteFill}
-      />
+      <ImageBackground source={PHOTO} style={StyleSheet.absoluteFill} resizeMode="cover" imageStyle={{ top: 0 }} />
+      <LinearGradient colors={["rgba(3,3,8,0.90)", "rgba(3,3,8,0.84)"]} style={StyleSheet.absoluteFill} />
       <View style={styles.centerGlow} pointerEvents="none" />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
@@ -175,15 +234,13 @@ export default function SignInScreen() {
               <LinearGradient
                 colors={["rgba(0,0,0,0.45)", "transparent", "rgba(0,0,0,0.45)"]}
                 locations={[0, 0.5, 1]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                 style={StyleSheet.absoluteFill}
               />
               <LinearGradient
                 colors={["transparent", GOLD, "#FFE878", GOLD, "transparent"]}
                 locations={[0, 0.25, 0.5, 0.75, 1]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                 style={styles.topGoldBar}
               />
               <View style={styles.headerContent}>
@@ -196,14 +253,13 @@ export default function SignInScreen() {
             <LinearGradient
               colors={["transparent", GOLD, "#FFE878", GOLD, "transparent"]}
               locations={[0, 0.2, 0.5, 0.8, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.goldSep}
             />
 
             <LinearGradient colors={["#111118", "#0f0f16"]} style={styles.formBody}>
-              <Text style={styles.welcomeTitle}>Welcome back</Text>
-              <Text style={styles.welcomeSub}>Sign in to access the sacred calendar</Text>
+              <Text style={styles.welcomeTitle}>Create account</Text>
+              <Text style={styles.welcomeSub}>Join the Bnei Menashe community</Text>
 
               <TouchableOpacity
                 style={styles.googleBtn}
@@ -238,42 +294,38 @@ export default function SignInScreen() {
               <Text style={styles.fieldLabel}>PASSWORD</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter your password"
+                placeholder="Create a password"
                 placeholderTextColor="#4a4a5a"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 returnKeyType="go"
-                onSubmitEditing={handleContinue}
+                onSubmitEditing={handleSignUp}
                 selectionColor={GOLD}
               />
 
-              {!!fieldError && (
-                <Text style={styles.errorText}>{fieldError}</Text>
-              )}
+              {!!fieldError && <Text style={styles.errorText}>{fieldError}</Text>}
 
               <TouchableOpacity
                 style={[styles.continueBtn, (loading || !email || !password) && styles.continueBtnDisabled]}
-                onPress={handleContinue}
+                onPress={handleSignUp}
                 activeOpacity={0.82}
                 disabled={loading || !email || !password}
               >
                 <LinearGradient colors={["#F0C840", "#C49A20"]} style={styles.continueBtnGradient}>
-                  {loading ? (
-                    <ActivityIndicator color="#0a0800" />
-                  ) : (
-                    <Text style={styles.continueBtnText}>Sign In</Text>
-                  )}
+                  {loading ? <ActivityIndicator color="#0a0800" /> : <Text style={styles.continueBtnText}>Create Account</Text>}
                 </LinearGradient>
                 <View style={styles.continueBtnShadowBar} />
               </TouchableOpacity>
+
+              <View nativeID="clerk-captcha" />
             </LinearGradient>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>{"Don't have an account? "}</Text>
-              <Link href="/sign-up" asChild>
+              <Text style={styles.footerText}>Already have an account? </Text>
+              <Link href="/sign-in" asChild>
                 <TouchableOpacity>
-                  <Text style={styles.footerLink}>Sign up</Text>
+                  <Text style={styles.footerLink}>Sign in</Text>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -291,17 +343,14 @@ const CARD_W = Math.min(SW - 32, 420);
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#030308" },
   centerGlow: {
-    position: "absolute",
-    width: 400, height: 400, borderRadius: 200,
+    position: "absolute", width: 400, height: 400, borderRadius: 200,
     backgroundColor: "rgba(212,175,55,0.04)",
     top: "25%", left: "50%",
     transform: [{ translateX: -200 }, { translateY: -200 }],
   },
   scroll: { alignItems: "center", justifyContent: "center", flexGrow: 1, paddingHorizontal: 16 },
   card: {
-    width: CARD_W,
-    borderRadius: 20,
-    overflow: "hidden",
+    width: CARD_W, borderRadius: 20, overflow: "hidden",
     borderTopWidth: 1.5, borderLeftWidth: 1, borderRightWidth: 1, borderBottomWidth: 1,
     borderTopColor: "rgba(212,175,55,0.65)",
     borderLeftColor: "rgba(212,175,55,0.28)",
