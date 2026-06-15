@@ -317,7 +317,10 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     position: "absolute",
-    inset: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
@@ -468,7 +471,6 @@ const styles = StyleSheet.create({
   /* Continue button — 3D */
   continueBtn: {
     borderRadius: 10,
-    overflow: "visible",
     marginBottom: 8,
     ...Platform.select({
       ios: {
