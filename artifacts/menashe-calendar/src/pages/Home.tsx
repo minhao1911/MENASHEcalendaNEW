@@ -692,7 +692,7 @@ function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () 
           <button
             onClick={(e) => { e.stopPropagation(); onShowCommunity(); }}
             style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 14, marginBottom: 10,
+              width: "100%", display: "flex", alignItems: "center", gap: 14,
               background: "rgba(99,179,237,0.07)", border: "1px solid rgba(99,179,237,0.2)",
               borderRadius: 13, padding: "13px 15px", cursor: "pointer", textAlign: "left",
             }}
@@ -705,35 +705,10 @@ function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () 
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>{t.homeCommunityTitle}</div>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.42)", lineHeight: 1.4 }}>
-                {t.homeCommunityDesc}
+                KULMUT
               </div>
             </div>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(99,179,237,0.55)" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
-
-          {/* Census & Demographics Button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onShowCensus(); }}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 14,
-              background: "rgba(212,168,67,0.07)", border: "1px solid rgba(212,168,67,0.2)",
-              borderRadius: 13, padding: "13px 15px", cursor: "pointer", textAlign: "left",
-            }}
-          >
-            <div style={{
-              width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-              background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.22)",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-            }}>📊</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>{t.homeCensusTitle}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.42)", lineHeight: 1.4 }}>
-                {t.homeCensusDesc}
-              </div>
-            </div>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(212,168,67,0.55)" strokeWidth="2.5" strokeLinecap="round">
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </button>
