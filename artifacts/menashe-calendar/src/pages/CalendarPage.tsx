@@ -5,6 +5,7 @@ import { Location } from "../lib/locations";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import { getUpcomingParashiyot } from "../lib/parasha";
 import { getOmerDay } from "../modals/OmerModal";
+import { getYahrzeitEntries, getYahrzeitDatesForMonth } from "../lib/yahrzeit";
 
 interface CalendarPageProps {
   location: Location;
@@ -91,6 +92,11 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
     }
     return map;
   }, [days]);
+
+  const yahrzeitMap = useMemo(() => {
+    const entries = getYahrzeitEntries();
+    return getYahrzeitDatesForMonth(year, month, entries);
+  }, [year, month]);
 
   function prevMonth() {
     if (month === 0) { setMonth(11); setYear(y => y - 1); }
@@ -254,6 +260,7 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
               const isLastInRow = colIndex === 6;
               const isSelected = selectedDay === day.gregorianDay;
               const isFast = fastMap.has(day.gregorianDay);
+              const dayYahrtzeits = yahrzeitMap[day.gregorianDay] ?? [];
 
               const nonRoshEvents = day.events.filter(e => !e.toLowerCase().includes("rosh chodesh"));
               const rawEvent = nonRoshEvents[0];
@@ -384,6 +391,26 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
                       FAST
                     </div>
                   )}
+
+                  {/* Yahrzeit dot */}
+                  {dayYahrtzeits.length > 0 && (
+                    <div style={{
+                      position: "absolute", bottom: 3, left: 3,
+                      display: "flex", alignItems: "center", gap: 1,
+                    }}>
+                      <div style={{
+                        width: 5, height: 5, borderRadius: "50%",
+                        background: "#7c3aed",
+                        boxShadow: "0 0 3px rgba(124,58,237,0.6)",
+                      }} />
+                      {dayYahrtzeits.length > 1 && (
+                        <div style={{
+                          width: 5, height: 5, borderRadius: "50%",
+                          background: "#7c3aed", opacity: 0.6,
+                        }} />
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -410,6 +437,15 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
                   <span style={{ fontSize: 9, color: "#64748b", fontWeight: 600 }}>{label}</span>
                 </div>
               ))}
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{
+                  width: 7, height: 7, borderRadius: "50%",
+                  background: "#7c3aed",
+                  boxShadow: "0 0 3px rgba(124,58,237,0.5)",
+                  flexShrink: 0,
+                }} />
+                <span style={{ fontSize: 9, color: "#64748b", fontWeight: 600 }}>Yahrzeit</span>
+              </div>
             </div>
             <button
               onClick={() => { setMonth(today.getMonth()); setYear(today.getFullYear()); setSelectedDay(null); }}
@@ -440,6 +476,18 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
                 }}>
                   {hebrewDayNumeral(selectedDayData.hebrewDay)}{" "}{selectedDayData.hebrewMonth}{" "}{selectedDayData.hebrewYear}
                 </div>
+                {(yahrzeitMap[selectedDayData.gregorianDay] ?? []).map(e => (
+                  <div key={e.id} style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    marginTop: 4, padding: "2px 8px", borderRadius: 99,
+                    background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)",
+                  }}>
+                    <span style={{ fontSize: 11 }}>🕯</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed" }}>
+                      Yahrzeit · {e.name}
+                    </span>
+                  </div>
+                ))}
               </div>
               <button
                 onClick={() => onDayClick(selectedDayData.gregorianDay, month, year)}

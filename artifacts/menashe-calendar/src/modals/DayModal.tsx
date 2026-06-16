@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { HDate, HebrewCalendar, flags } from "@hebcal/core";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import { Location } from "../lib/locations";
 import { hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { getOmerDay } from "./OmerModal";
 import { getCurrentParasha } from "../lib/parasha";
+import { getYahrzeitEntries, getYahrzeitDatesForMonth } from "../lib/yahrzeit";
 
 const API_BASE = "/api";
 
@@ -218,6 +219,12 @@ export default function DayModal({ day, month, year, location, onClose }: Props)
 
   const holidayEvents = events.filter(isHoliday);
 
+  const yahrzeitNames = useMemo(() => {
+    const entries = getYahrzeitEntries();
+    const map = getYahrzeitDatesForMonth(year, month, entries);
+    return (map[day] ?? []).map(e => e.name);
+  }, [day, month, year]);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "90vh", overflowY: "auto" }}>
@@ -240,6 +247,49 @@ export default function DayModal({ day, month, year, location, onClose }: Props)
                 <span style={{ fontSize: 14, color: "var(--text-primary)" }}>{ev}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {yahrzeitNames.length > 0 && (
+          <div className="card" style={{
+            padding: 14, marginBottom: 12,
+            background: "linear-gradient(135deg, rgba(124,58,237,0.07), rgba(124,58,237,0.03))",
+            border: "1.5px solid rgba(124,58,237,0.25)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.25)",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+              }}>🕯</div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "rgba(124,58,237,0.8)", marginBottom: 2 }}>YAHRZEIT</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                  {yahrzeitNames.length === 1 ? yahrzeitNames[0] : `${yahrzeitNames.length} memorials today`}
+                </div>
+              </div>
+            </div>
+
+            {yahrzeitNames.map((name, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "7px 10px", borderRadius: 9, marginBottom: i < yahrzeitNames.length - 1 ? 5 : 0,
+                background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.12)",
+              }}>
+                <span style={{ color: "#7c3aed", fontSize: 12 }}>✦</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{name}</span>
+              </div>
+            ))}
+
+            <div style={{
+              marginTop: 10, padding: "9px 11px", borderRadius: 9,
+              background: "rgba(124,58,237,0.05)", border: "1px solid rgba(124,58,237,0.1)",
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", marginBottom: 4 }}>Today's observances</div>
+              <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.7 }}>
+                🕯 Light a memorial candle · 🙏 Recite Kaddish · 📖 Study Torah in their memory
+              </div>
+            </div>
           </div>
         )}
 

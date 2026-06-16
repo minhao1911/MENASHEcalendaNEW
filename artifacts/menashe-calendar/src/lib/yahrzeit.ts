@@ -58,3 +58,35 @@ export function hebrewDayLabel(day: number, month: number, year?: number): strin
   const hYear = year ?? new HDate(new Date()).getFullYear();
   return `${hebrewDayNumeral(day)} ${HDate.getMonthName(month, hYear)}`;
 }
+
+/**
+ * Returns a map of { gregorianDay: YartzeitEntry[] } for entries whose
+ * Hebrew anniversary falls within the given Gregorian year+month.
+ */
+export function getYahrzeitDatesForMonth(
+  gregYear: number,
+  gregMonth: number,
+  entries: YartzeitEntry[],
+): Record<number, YartzeitEntry[]> {
+  const map: Record<number, YartzeitEntry[]> = {};
+  const firstDay = new Date(gregYear, gregMonth, 1);
+  const lastDay  = new Date(gregYear, gregMonth + 1, 0);
+  const hYearStart = new HDate(firstDay).getFullYear();
+
+  for (const entry of entries) {
+    for (let offset = 0; offset <= 1; offset++) {
+      try {
+        const yhDate = new HDate(entry.hebrewDay, entry.hebrewMonth, hYearStart + offset);
+        const greg = yhDate.greg();
+        greg.setHours(0, 0, 0, 0);
+        if (greg >= firstDay && greg <= lastDay) {
+          const d = greg.getDate();
+          if (!map[d]) map[d] = [];
+          map[d].push(entry);
+          break;
+        }
+      } catch {}
+    }
+  }
+  return map;
+}
