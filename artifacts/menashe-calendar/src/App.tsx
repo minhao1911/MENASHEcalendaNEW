@@ -21,6 +21,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PremiumPage from "./pages/PremiumPage";
 import BottomNav from "./components/BottomNav";
 import { useNotifications } from "./hooks/useNotifications";
+import { useUnreadAnnouncements } from "./hooks/useUnreadAnnouncements";
 import { usePushSubscription } from "./hooks/usePushSubscription";
 import { useAnnouncements } from "./hooks/useAnnouncements";
 
@@ -438,6 +439,7 @@ function AppShell() {
   const { permission: notifPermission, prefs: notifPrefs, leadTime, updatePref: updateNotifPref, updateLeadTime } = useNotifications(location);
   const { isSubscribed: pushSubscribed, isSupported: pushSupported, isLoading: pushLoading, error: pushError, subscribe: subscribePush, unsubscribe: unsubscribePush, sendTest: sendTestPush } = usePushSubscription(location, notifPrefs, leadTime, user?.id);
   const { announcements, addAnnouncement, updateAnnouncement, deleteAnnouncement, sendNow } = useAnnouncements();
+  const { unreadCount: announcementCount, markAllRead: markAnnouncementsRead } = useUnreadAnnouncements();
 
   const isLight = theme === "light";
 
@@ -499,6 +501,7 @@ function AppShell() {
             onShowCensus={() => setModal("census")}
             onNotifBell={() => setModal("notifications")}
             notifActive={Object.values(notifPrefs).some(Boolean)}
+            announcementCount={announcementCount}
           />
         );
       case "calendar":
@@ -715,7 +718,7 @@ function AppShell() {
               )}
               {modal === "announcements" && (
                 <AnnouncementsModal
-                  onClose={closeModal}
+                  onClose={() => { markAnnouncementsRead(); closeModal(); }}
                   announcements={announcements}
                   onAdd={addAnnouncement}
                   onUpdate={updateAnnouncement}
