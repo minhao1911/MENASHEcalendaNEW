@@ -1706,38 +1706,56 @@ function CommunityFAB({
             )}
           </button>
         ))}
-        <div style={{ position: "relative", width: 72, height: 44 }}>
+        <div style={{ position: "relative", width: 68, height: 90 }}>
           <button
             onClick={() => setOpen(v => !v)}
             title={t.fabTitle}
+            className="shawl-sway"
             style={{
-              width: 72, height: 44,
-              borderRadius: 4,
+              width: 68,
               border: "none",
               padding: 0,
-              overflow: "hidden",
-              boxShadow: open
-                ? "0 4px 18px rgba(0,0,0,0.7), 0 1px 6px rgba(212,175,55,0.4)"
-                : "0 6px 24px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.5)",
+              background: "transparent",
               cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "box-shadow 0.3s ease, transform 0.3s ease",
-              transform: open ? "scale(0.93) translateY(2px)" : "scale(1)",
-              background: "#060606",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              transformOrigin: "top center",
             }}
           >
-            <img
-              src="/saipikhup.jpg"
-              alt="Community Hub"
-              className="shawl-weave"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                objectPosition: "center 78%",
-                display: "block",
-              }}
-            />
+            {/* Fabric body — objectFit:cover crops white sides; black fabric blends with dark app bg */}
+            <div style={{ width: 68, height: 72, overflow: "hidden", borderRadius: 0 }}>
+              <img
+                src="/saipikhup.jpg"
+                alt="Community Hub"
+                className="shawl-weave"
+                style={{
+                  width: "140%",
+                  height: "100%",
+                  marginLeft: "-20%",
+                  objectFit: "cover",
+                  objectPosition: "center 80%",
+                  display: "block",
+                }}
+              />
+            </div>
+            {/* Fringe */}
+            <div style={{ display: "flex", gap: 3, paddingTop: 1 }}>
+              {Array.from({ length: 14 }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`fringe-${i % 3}`}
+                  style={{
+                    display: "block",
+                    width: 1.5,
+                    height: i % 2 === 0 ? 12 : 9,
+                    background: i % 3 === 0 ? "#1a1a1a" : i % 3 === 1 ? "#2a1a0a" : "#1a0808",
+                    borderRadius: 1,
+                    transformOrigin: "top center",
+                  }}
+                />
+              ))}
+            </div>
           </button>
           {announcementCount > 0 && !open && (
             <span style={{
@@ -1765,15 +1783,40 @@ function CommunityFAB({
           to   { opacity: 1; transform: translateY(0)   scale(1);    }
         }
         @keyframes shawlWeave {
-          0%   { object-position: 10% 78%; }
-          25%  { object-position: 40% 79%; }
-          50%  { object-position: 70% 78%; }
-          75%  { object-position: 40% 77%; }
-          100% { object-position: 10% 78%; }
+          0%   { object-position: center 76%; }
+          30%  { object-position: center 80%; }
+          60%  { object-position: center 77%; }
+          100% { object-position: center 76%; }
         }
         .shawl-weave {
-          animation: shawlWeave 9s ease-in-out infinite;
+          animation: shawlWeave 8s ease-in-out infinite;
         }
+        @keyframes shawlSway {
+          0%   { transform: rotate(-1.8deg); }
+          25%  { transform: rotate(0deg);    }
+          50%  { transform: rotate(1.8deg);  }
+          75%  { transform: rotate(0deg);    }
+          100% { transform: rotate(-1.8deg); }
+        }
+        .shawl-sway {
+          animation: shawlSway 5s ease-in-out infinite;
+          transform-origin: top center;
+        }
+        @keyframes fringeSway0 {
+          0%,100% { transform: rotate(-3deg) scaleY(1);   }
+          50%      { transform: rotate(3deg)  scaleY(0.96); }
+        }
+        @keyframes fringeSway1 {
+          0%,100% { transform: rotate(2deg)  scaleY(0.97); }
+          50%      { transform: rotate(-2deg) scaleY(1);    }
+        }
+        @keyframes fringeSway2 {
+          0%,100% { transform: rotate(-1deg) scaleY(1);   }
+          50%      { transform: rotate(2.5deg) scaleY(0.95); }
+        }
+        .fringe-0 { animation: fringeSway0 5s ease-in-out infinite; }
+        .fringe-1 { animation: fringeSway1 5s ease-in-out infinite 0.4s; }
+        .fringe-2 { animation: fringeSway2 5s ease-in-out infinite 0.8s; }
       `}</style>
     </>
   );
