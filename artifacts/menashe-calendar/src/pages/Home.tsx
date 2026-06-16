@@ -1594,7 +1594,7 @@ function CommunityFAB({
   const { t } = useLanguage();
 
   const items = [
-    { label: t.fabAnnouncements, icon: "📢", action: onShowAnnouncements },
+    { label: t.fabAnnouncements, icon: "📢", action: onShowAnnouncements, count: announcementCount },
     { label: t.fabCommunityEvents, icon: "📅", action: onShowEvents },
     { label: t.fabCommunityMemorial, icon: "🕯", action: onShowCommunityYahrzeit },
     { label: t.fabTorahWisdom, icon: "📖", action: onShowMussar },
@@ -1640,7 +1640,22 @@ function CommunityFAB({
             }}
           >
             <span style={{ fontSize: 18, lineHeight: 1 }}>{item.icon}</span>
-            {item.label}
+            <span style={{ flex: 1 }}>{item.label}</span>
+            {"count" in item && (item as { count: number }).count > 0 && (
+              <span style={{
+                background: "#e53e3e",
+                color: "#fff",
+                borderRadius: 10,
+                minWidth: 20, height: 20,
+                fontSize: 11, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "0 5px",
+                lineHeight: 1,
+                flexShrink: 0,
+              }}>
+                {(item as { count: number }).count > 99 ? "99+" : (item as { count: number }).count}
+              </span>
+            )}
           </button>
         ))}
         <div style={{ position: "relative", width: 54, height: 54 }}>
