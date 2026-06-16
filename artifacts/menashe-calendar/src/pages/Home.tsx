@@ -1706,56 +1706,35 @@ function CommunityFAB({
             )}
           </button>
         ))}
-        <div style={{ position: "relative", width: 68, height: 90 }}>
+        <div style={{ position: "relative", width: 72, height: 100 }}>
           <button
             onClick={() => setOpen(v => !v)}
             title={t.fabTitle}
             className="shawl-sway"
             style={{
-              width: 68,
+              width: 72, height: 100,
               border: "none",
               padding: 0,
               background: "transparent",
               cursor: "pointer",
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
+              justifyContent: "center",
               transformOrigin: "top center",
             }}
           >
-            {/* Fabric body — objectFit:cover crops white sides; black fabric blends with dark app bg */}
-            <div style={{ width: 68, height: 72, overflow: "hidden", borderRadius: 0 }}>
-              <img
-                src="/saipikhup.jpg"
-                alt="Community Hub"
-                className="shawl-weave"
-                style={{
-                  width: "140%",
-                  height: "100%",
-                  marginLeft: "-20%",
-                  objectFit: "cover",
-                  objectPosition: "center 80%",
-                  display: "block",
-                }}
-              />
-            </div>
-            {/* Fringe */}
-            <div style={{ display: "flex", gap: 3, paddingTop: 1 }}>
-              {Array.from({ length: 14 }).map((_, i) => (
-                <span
-                  key={i}
-                  className={`fringe-${i % 3}`}
-                  style={{
-                    display: "block",
-                    width: 1.5,
-                    height: i % 2 === 0 ? 12 : 9,
-                    background: i % 3 === 0 ? "#1a1a1a" : i % 3 === 1 ? "#2a1a0a" : "#1a0808",
-                    borderRadius: 1,
-                    transformOrigin: "top center",
-                  }}
-                />
-              ))}
-            </div>
+            <img
+              src="/saipikhup-sticker.png"
+              alt="Community Hub"
+              className="shawl-weave"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+                filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.7))",
+              }}
+            />
           </button>
           {announcementCount > 0 && !open && (
             <span style={{
@@ -1783,40 +1762,27 @@ function CommunityFAB({
           to   { opacity: 1; transform: translateY(0)   scale(1);    }
         }
         @keyframes shawlWeave {
-          0%   { object-position: center 76%; }
-          30%  { object-position: center 80%; }
-          60%  { object-position: center 77%; }
-          100% { object-position: center 76%; }
+          0%   { transform: scaleX(1)    scaleY(1);    }
+          20%  { transform: scaleX(1.02) scaleY(0.99); }
+          50%  { transform: scaleX(0.99) scaleY(1.01); }
+          80%  { transform: scaleX(1.02) scaleY(0.99); }
+          100% { transform: scaleX(1)    scaleY(1);    }
         }
         .shawl-weave {
-          animation: shawlWeave 8s ease-in-out infinite;
+          animation: shawlWeave 7s ease-in-out infinite;
+          transform-origin: center top;
         }
         @keyframes shawlSway {
-          0%   { transform: rotate(-1.8deg); }
+          0%   { transform: rotate(-2.2deg); }
           25%  { transform: rotate(0deg);    }
-          50%  { transform: rotate(1.8deg);  }
+          50%  { transform: rotate(2.2deg);  }
           75%  { transform: rotate(0deg);    }
-          100% { transform: rotate(-1.8deg); }
+          100% { transform: rotate(-2.2deg); }
         }
         .shawl-sway {
           animation: shawlSway 5s ease-in-out infinite;
           transform-origin: top center;
         }
-        @keyframes fringeSway0 {
-          0%,100% { transform: rotate(-3deg) scaleY(1);   }
-          50%      { transform: rotate(3deg)  scaleY(0.96); }
-        }
-        @keyframes fringeSway1 {
-          0%,100% { transform: rotate(2deg)  scaleY(0.97); }
-          50%      { transform: rotate(-2deg) scaleY(1);    }
-        }
-        @keyframes fringeSway2 {
-          0%,100% { transform: rotate(-1deg) scaleY(1);   }
-          50%      { transform: rotate(2.5deg) scaleY(0.95); }
-        }
-        .fringe-0 { animation: fringeSway0 5s ease-in-out infinite; }
-        .fringe-1 { animation: fringeSway1 5s ease-in-out infinite 0.4s; }
-        .fringe-2 { animation: fringeSway2 5s ease-in-out infinite 0.8s; }
       `}</style>
     </>
   );
