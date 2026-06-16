@@ -204,6 +204,22 @@ export async function runMigrations(): Promise<void> {
         ON push_subscriptions (user_id) WHERE user_id IS NOT NULL
     `);
 
+    // Community announcements (server-backed, broadcastable)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS community_announcements (
+        id           TEXT PRIMARY KEY,
+        emoji        TEXT NOT NULL DEFAULT '📢',
+        title        TEXT NOT NULL,
+        body         TEXT NOT NULL DEFAULT '',
+        status       TEXT NOT NULL DEFAULT 'sent',
+        pinned       BOOLEAN NOT NULL DEFAULT false,
+        scheduled_at TIMESTAMPTZ,
+        sent_at      TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
     // Expo push tokens (mobile)
     await client.query(`
       CREATE TABLE IF NOT EXISTS expo_push_tokens (

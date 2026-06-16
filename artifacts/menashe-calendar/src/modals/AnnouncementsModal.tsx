@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import type { Announcement, AnnouncementStatus } from "../hooks/useAnnouncements";
+import { storeAdminPin } from "../hooks/useAnnouncements";
 import { isNotifSupported } from "../hooks/useNotifications";
 
 interface Props {
@@ -99,8 +100,10 @@ export default function AnnouncementsModal({ onClose, announcements, onAdd, onUp
   }, [announcements]);
 
   function submitPin() {
-    if (pin === ADMIN_PIN) { setView("admin"); setPin(""); setPinError(""); }
-    else { setPinError("Incorrect PIN"); setPin(""); }
+    if (pin === ADMIN_PIN) {
+      storeAdminPin(pin);
+      setView("admin"); setPin(""); setPinError("");
+    } else { setPinError("Incorrect PIN"); setPin(""); }
   }
 
   function openForm(ann?: Announcement) {

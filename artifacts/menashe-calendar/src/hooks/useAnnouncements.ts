@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { sendNotification, isNotifSupported } from "./useNotifications";
+import { broadcastAnnouncement, deleteAnnouncementServer, patchAnnouncement } from "../lib/announcementsApi";
 
 export type AnnouncementStatus = "draft" | "scheduled" | "sent";
 
@@ -8,13 +9,14 @@ export interface Announcement {
   emoji: string;
   title: string;
   body: string;
-  scheduledAt: string | null; // ISO string — null means "immediate"
-  sentAt: string | null;      // ISO string — set when delivered
+  scheduledAt: string | null;
+  sentAt: string | null;
   status: AnnouncementStatus;
   pinned: boolean;
 }
 
 const STORAGE_KEY = "menashe-announcements";
+const ADMIN_PIN_KEY = "menashe-admin-pin";
 
 export function loadAnnouncements(): Announcement[] {
   try {
@@ -28,6 +30,15 @@ export function saveAnnouncements(list: Announcement[]) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch {}
 }
 
+/** Store the admin PIN locally so broadcast calls can include it automatically */
+export function storeAdminPin(pin: string) {
+  try { sessionStorage.setItem(ADMIN_PIN_KEY, pin); } catch {}
+}
+
+function getStoredPin(): string {
+  try { return sessionStorage.getItem(ADMIN_PIN_KEY) ?? ""; } catch { return ""; }
+}
+
 export function useAnnouncements() {
   const [announcements, setAnnouncements] = useState<Announcement[]>(loadAnnouncements);
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -37,25 +48,19 @@ export function useAnnouncements() {
     saveAnnouncements(list);
   }, []);
 
-  // Schedule browser notification for a pending announcement
   const scheduleOne = useCallback((ann: Announcement) => {
     if (ann.status !== "scheduled" || !ann.scheduledAt) return;
     const ms = new Date(ann.scheduledAt).getTime() - Date.now();
     if (ms <= 0) return;
 
-    // Clear any previous timer for this id
     const existing = timersRef.current.get(ann.id);
     if (existing) clearTimeout(existing);
 
     const timer = setTimeout(() => {
       if (isNotifSupported() && Notification.permission === "granted") {
-        sendNotification(
-          `${ann.emoji} ${ann.title}`,
-          ann.body,
-          `announcement-${ann.id}`
-        );
+        sendNotification(`${ann.emoji} ${ann.title}`, ann.body, `announcement-${ann.id}`);
       }
-      // Mark as sent
+      // Mark as sent locally
       setAnnouncements(prev => {
         const updated = prev.map(a =>
           a.id === ann.id
@@ -65,13 +70,15 @@ export function useAnnouncements() {
         saveAnnouncements(updated);
         return updated;
       });
+      // Update server status
+      const pin = getStoredPin();
+      if (pin) patchAnnouncement(ann.id, pin, { sendNow: true }).catch(() => {});
       timersRef.current.delete(ann.id);
     }, ms);
 
     timersRef.current.set(ann.id, timer);
   }, []);
 
-  // On mount and whenever list changes, reschedule all pending
   useEffect(() => {
     const current = loadAnnouncements();
     setAnnouncements(current);
@@ -80,9 +87,8 @@ export function useAnnouncements() {
       timersRef.current.forEach(t => clearTimeout(t));
       timersRef.current.clear();
     };
-  }, []); // run once on mount
+  }, []);
 
-  // Send immediately
   const sendNow = useCallback((ann: Announcement) => {
     if (isNotifSupported() && Notification.permission === "granted") {
       sendNotification(`${ann.emoji} ${ann.title}`, ann.body, `announcement-${ann.id}`);
@@ -96,9 +102,15 @@ export function useAnnouncements() {
       saveAnnouncements(updated);
       return updated;
     });
+    // Broadcast to all devices via server
+    const pin = getStoredPin();
+    if (pin) {
+      broadcastAnnouncement(pin, {
+        emoji: ann.emoji, title: ann.title, body: ann.body, pinned: ann.pinned,
+      }).catch(() => {});
+    }
   }, []);
 
-  // Add new announcement
   const addAnnouncement = useCallback((data: Omit<Announcement, "id" | "sentAt">) => {
     const ann: Announcement = { ...data, id: `ann-${Date.now()}`, sentAt: null };
     setAnnouncements(prev => {
@@ -107,10 +119,10 @@ export function useAnnouncements() {
       return updated;
     });
     if (ann.status === "scheduled") scheduleOne(ann);
+    // If status is "sent", broadcast will be handled by sendNow caller
     return ann;
   }, [scheduleOne]);
 
-  // Update existing
   const updateAnnouncement = useCallback((id: string, patch: Partial<Announcement>) => {
     setAnnouncements(prev => {
       const updated = prev.map(a => a.id === id ? { ...a, ...patch } : a);
@@ -125,7 +137,6 @@ export function useAnnouncements() {
     });
   }, [scheduleOne]);
 
-  // Delete
   const deleteAnnouncement = useCallback((id: string) => {
     const t = timersRef.current.get(id);
     if (t) { clearTimeout(t); timersRef.current.delete(id); }
@@ -134,6 +145,9 @@ export function useAnnouncements() {
       saveAnnouncements(updated);
       return updated;
     });
+    // Delete from server too
+    const pin = getStoredPin();
+    if (pin) deleteAnnouncementServer(id, pin).catch(() => {});
   }, []);
 
   const unreadCount = announcements.filter(a => a.status === "sent").length;

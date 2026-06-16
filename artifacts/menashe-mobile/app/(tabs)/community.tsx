@@ -15,6 +15,7 @@ import {
   dedicateLearning,
   type CommunityYahrzeitEntry,
 } from "@/lib/communityApi";
+import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
 
 const DONATION_TIERS = [
   { label: "Free / Donate later", amount: 0 },
@@ -47,6 +48,9 @@ export default function CommunityScreen() {
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState<Screen>("board");
 
+  const [announcements, setAnnouncements] = useState<MobileAnnouncement[]>([]);
+  const [announcementsExpanded, setAnnouncementsExpanded] = useState(true);
+
   // Form state
   const [deceasedName, setDeceasedName] = useState("");
   const [passYear, setPassYear] = useState("");
@@ -73,11 +77,18 @@ export default function CommunityScreen() {
     setLoading(false);
   }, []);
 
+  const loadAnnouncements = useCallback(async () => {
+    const data = await fetchAnnouncements();
+    setAnnouncements(data);
+  }, []);
+
   useEffect(() => {
     load();
+    loadAnnouncements();
     const iv = setInterval(load, 20000);
-    return () => clearInterval(iv);
-  }, [load]);
+    const ivA = setInterval(loadAnnouncements, 60000);
+    return () => { clearInterval(iv); clearInterval(ivA); };
+  }, [load, loadAnnouncements]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -207,6 +218,67 @@ export default function CommunityScreen() {
           {/* ── BOARD ── */}
           {screen === "board" && (
             <>
+              {/* ── Announcements section ── */}
+              {announcements.length > 0 && (
+                <View style={{ marginBottom: 18 }}>
+                  <TouchableOpacity
+                    onPress={() => setAnnouncementsExpanded(e => !e)}
+                    activeOpacity={0.75}
+                    style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: "800", color: "#D4AF37", letterSpacing: 0.6 }}>
+                      📢 ANNOUNCEMENTS
+                    </Text>
+                    <Feather name={announcementsExpanded ? "chevron-up" : "chevron-down"} size={16} color="#D4AF37" />
+                  </TouchableOpacity>
+                  {announcementsExpanded && announcements.map(ann => (
+                    <View key={ann.id} style={{
+                      borderRadius: 14, marginBottom: 10, overflow: "hidden",
+                      borderWidth: ann.pinned ? 1 : 1,
+                      borderColor: ann.pinned ? "rgba(212,175,55,0.4)" : colors.border,
+                      backgroundColor: ann.pinned ? "rgba(212,175,55,0.06)" : colors.card,
+                    }}>
+                      <View style={{ padding: 14, flexDirection: "row", gap: 12 }}>
+                        <View style={{
+                          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                          backgroundColor: ann.pinned ? "rgba(212,175,55,0.12)" : "rgba(255,255,255,0.06)",
+                          borderWidth: 1, borderColor: ann.pinned ? "rgba(212,175,55,0.25)" : colors.border,
+                          alignItems: "center", justifyContent: "center",
+                        }}>
+                          <Text style={{ fontSize: 22 }}>{ann.emoji}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          {ann.pinned && (
+                            <Text style={{ fontSize: 10, color: "#D4AF37", fontWeight: "700", marginBottom: 2 }}>📌 Pinned</Text>
+                          )}
+                          <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground, marginBottom: 3 }}>
+                            {ann.title}
+                          </Text>
+                          {!!ann.body && (
+                            <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 18 }}>
+                              {ann.body}
+                            </Text>
+                          )}
+                          {ann.sentAt && (
+                            <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 5 }}>
+                              {(() => {
+                                const diff = Date.now() - new Date(ann.sentAt).getTime();
+                                const mins = Math.floor(diff / 60000);
+                                if (mins < 60) return `${mins}m ago`;
+                                const hrs = Math.floor(diff / 3600000);
+                                if (hrs < 24) return `${hrs}h ago`;
+                                const days = Math.floor(diff / 86400000);
+                                return `${days}d ago`;
+                              })()}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
               {/* Light a candle CTA */}
               <TouchableOpacity
                 style={[styles.ctaBtn, { borderColor: "rgba(212,175,55,0.4)" }]}
