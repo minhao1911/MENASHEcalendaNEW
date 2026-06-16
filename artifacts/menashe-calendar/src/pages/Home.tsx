@@ -1571,6 +1571,7 @@ export default function Home({
         onShowMussar={onShowMussar}
         onShowPrayerBoard={onShowPrayerBoard}
         onShowTorahTracker={onShowTorahTracker}
+        announcementCount={announcementCount}
       />
 
     </div>
@@ -1579,7 +1580,7 @@ export default function Home({
 
 function CommunityFAB({
   onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit,
-  onShowMussar, onShowPrayerBoard, onShowTorahTracker,
+  onShowMussar, onShowPrayerBoard, onShowTorahTracker, announcementCount,
 }: {
   onShowAnnouncements: () => void;
   onShowEvents: () => void;
@@ -1587,6 +1588,7 @@ function CommunityFAB({
   onShowMussar: () => void;
   onShowPrayerBoard: () => void;
   onShowTorahTracker: () => void;
+  announcementCount: number;
 }) {
   const [open, setOpen] = useState(false);
   const { t } = useLanguage();
@@ -1641,26 +1643,46 @@ function CommunityFAB({
             {item.label}
           </button>
         ))}
-        <button
-          onClick={() => setOpen(v => !v)}
-          title={t.fabTitle}
-          style={{
-            width: 54, height: 54,
-            borderRadius: "50%",
-            background: open
-              ? "linear-gradient(135deg, #b8960c 0%, #d4af37 100%)"
-              : "linear-gradient(135deg, #d4af37 0%, #b8960c 100%)",
-            border: "none",
-            boxShadow: "0 4px 20px rgba(212,175,55,0.45), 0 2px 8px rgba(0,0,0,0.5)",
-            cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 26,
-            transition: "transform 0.2s ease, background 0.2s ease",
-            transform: open ? "rotate(45deg)" : "rotate(0deg)",
-          }}
-        >
-          ✦
-        </button>
+        <div style={{ position: "relative", width: 54, height: 54 }}>
+          <button
+            onClick={() => setOpen(v => !v)}
+            title={t.fabTitle}
+            style={{
+              width: 54, height: 54,
+              borderRadius: "50%",
+              background: open
+                ? "linear-gradient(135deg, #b8960c 0%, #d4af37 100%)"
+                : "linear-gradient(135deg, #d4af37 0%, #b8960c 100%)",
+              border: "none",
+              boxShadow: "0 4px 20px rgba(212,175,55,0.45), 0 2px 8px rgba(0,0,0,0.5)",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 26,
+              transition: "transform 0.2s ease, background 0.2s ease",
+              transform: open ? "rotate(45deg)" : "rotate(0deg)",
+            }}
+          >
+            ✦
+          </button>
+          {announcementCount > 0 && !open && (
+            <span style={{
+              position: "absolute", top: -3, right: -3,
+              background: "#e53e3e",
+              color: "#fff",
+              borderRadius: "50%",
+              minWidth: 20, height: 20,
+              fontSize: 11, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "0 4px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+              border: "2px solid #0d1117",
+              lineHeight: 1,
+              pointerEvents: "none",
+            }}>
+              {announcementCount > 99 ? "99+" : announcementCount}
+            </span>
+          )}
+        </div>
       </div>
       <style>{`
         @keyframes fabItemIn {
