@@ -20,6 +20,18 @@ const COVER_COLORS = ["#1a3050","#2a1a40","#1a2a20","#30200a","#1a1a30","#0a2030
 
 type FormMode = "list" | "add" | "edit";
 type FileMode = "url" | "upload";
+type PanelTab = "books" | "users";
+
+interface UserRow {
+  userId: string;
+  isPremium: boolean;
+  updatedAt: string;
+  displayName: string | null;
+  congregation: string | null;
+  city: string | null;
+  country: string | null;
+  avatarEmoji: string;
+}
 
 const defaultForm = {
   title: "",
@@ -38,6 +50,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [step, setStep] = useState<"pin" | "panel">("pin");
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
+  const [panelTab, setPanelTab] = useState<PanelTab>("books");
   const [mode, setMode] = useState<FormMode>("list");
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,6 +62,11 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [togglingUser, setTogglingUser] = useState<string | null>(null);
+
   const { uploadFile, isUploading, progress } = useUpload({
     onSuccess: (response) => {
       const servingUrl = `/api/storage${response.objectPath}`;
@@ -58,7 +76,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   });
 
   function submitPin() {
-    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); }
+    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); }
     else { setPinError("Incorrect PIN"); setPin(""); }
   }
 
@@ -68,6 +86,26 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       const res = await fetch(`${API_BASE}/books`, { headers: { "x-admin-pin": ADMIN_PIN } });
       if (res.ok) setBooks(await res.json());
     } finally { setLoading(false); }
+  }
+
+  async function fetchUsers() {
+    setUsersLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/users`, { headers: { "x-admin-pin": ADMIN_PIN } });
+      if (res.ok) setUsers(await res.json());
+    } finally { setUsersLoading(false); }
+  }
+
+  async function toggleUserPremium(user: UserRow) {
+    setTogglingUser(user.userId);
+    try {
+      await fetch(`${API_BASE}/admin/users/${encodeURIComponent(user.userId)}/premium`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN },
+        body: JSON.stringify({ isPremium: !user.isPremium }),
+      });
+      await fetchUsers();
+    } finally { setTogglingUser(null); }
   }
 
   async function seed() {
@@ -199,9 +237,11 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
           </button>
         )}
         <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>
-          {mode === "list" ? "📚 Library Admin" : mode === "add" ? "➕ Add Book" : "✏️ Edit Book"}
+          {panelTab === "books"
+            ? (mode === "list" ? "📚 Library Admin" : mode === "add" ? "➕ Add Book" : "✏️ Edit Book")
+            : "👥 Premium Users"}
         </div>
-        {mode === "list" ? (
+        {panelTab === "books" && mode === "list" && (
           <button
             className="btn-gold"
             style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700, borderRadius: 10, display: "flex", alignItems: "center", gap: 5 }}
@@ -209,7 +249,8 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
           >
             + Add Book
           </button>
-        ) : (
+        )}
+        {panelTab === "books" && mode !== "list" && (
           <button
             className="btn-gold"
             style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700, borderRadius: 10, opacity: saving ? 0.6 : 1 }}
@@ -219,11 +260,156 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             {saving ? "Saving…" : "Save"}
           </button>
         )}
+        {panelTab === "users" && (
+          <button
+            onClick={fetchUsers}
+            style={{ padding: "7px 14px", borderRadius: 8, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+          >
+            {usersLoading ? "…" : "↻ Refresh"}
+          </button>
+        )}
       </div>
 
+      {/* ── Tab switcher ── */}
+      {mode === "list" && (
+        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+          {(["books", "users"] as PanelTab[]).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setPanelTab(tab)}
+              style={{
+                flex: 1, padding: "10px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
+                background: panelTab === tab ? "rgba(212,168,67,0.1)" : "transparent",
+                color: panelTab === tab ? "#d4a843" : "var(--text-muted)",
+                borderBottom: panelTab === tab ? "2px solid #d4a843" : "2px solid transparent",
+                transition: "all 0.15s",
+              }}
+            >
+              {tab === "books" ? "📚 Books" : "👥 Users"}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+        {/* USERS PANEL */}
+        {panelTab === "users" && mode === "list" && (
+          <>
+            {/* Search */}
+            <div style={{ position: "relative", marginBottom: 12 }}>
+              <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-muted)" }}>🔍</span>
+              <input
+                value={userSearch}
+                onChange={e => setUserSearch(e.target.value)}
+                placeholder="Search by name, city…"
+                style={{
+                  width: "100%", padding: "9px 12px 9px 32px", borderRadius: 9,
+                  background: "var(--elevated)", border: "1px solid var(--border)",
+                  color: "var(--text-primary)", fontSize: 13, outline: "none", boxSizing: "border-box" as const,
+                }}
+              />
+            </div>
+
+            {/* Stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+              {[
+                { label: "Total Users", value: users.length, color: "#60a5fa" },
+                { label: "Premium", value: users.filter(u => u.isPremium).length, color: "#d4a843" },
+              ].map(stat => (
+                <div key={stat.label} style={{ padding: "10px 12px", borderRadius: 10, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: stat.color }}>{stat.value}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.06em", marginTop: 2 }}>{stat.label.toUpperCase()}</div>
+                </div>
+              ))}
+            </div>
+
+            {usersLoading ? (
+              <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>Loading users…</div>
+            ) : users.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>👤</div>
+                <div style={{ fontSize: 13 }}>No users registered yet</div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {users
+                  .filter(u => {
+                    if (!userSearch.trim()) return true;
+                    const q = userSearch.toLowerCase();
+                    return (
+                      (u.displayName ?? "").toLowerCase().includes(q) ||
+                      (u.city ?? "").toLowerCase().includes(q) ||
+                      (u.congregation ?? "").toLowerCase().includes(q) ||
+                      u.userId.toLowerCase().includes(q)
+                    );
+                  })
+                  .map(user => {
+                    const toggling = togglingUser === user.userId;
+                    return (
+                      <div key={user.userId} style={{
+                        display: "flex", alignItems: "center", gap: 12,
+                        background: user.isPremium ? "rgba(212,168,67,0.06)" : "var(--card)",
+                        border: `1px solid ${user.isPremium ? "rgba(212,168,67,0.25)" : "var(--border)"}`,
+                        borderRadius: 12, padding: "12px 14px",
+                      }}>
+                        {/* Avatar */}
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                          background: user.isPremium ? "rgba(212,168,67,0.15)" : "var(--elevated)",
+                          border: user.isPremium ? "1px solid rgba(212,168,67,0.3)" : "1px solid var(--border)",
+                          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+                        }}>
+                          {user.avatarEmoji}
+                        </div>
+
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: user.isPremium ? "#d4a843" : "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {user.displayName ?? "Unknown User"}
+                            </span>
+                            {user.isPremium && (
+                              <span style={{ fontSize: 8, fontWeight: 900, color: "#b8860b", background: "rgba(212,168,67,0.15)", border: "1px solid rgba(212,168,67,0.3)", borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>
+                                👑 PRO
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                            {[user.congregation, user.city, user.country].filter(Boolean).join(" · ") || user.userId.slice(0, 20) + "…"}
+                          </div>
+                        </div>
+
+                        {/* Premium toggle */}
+                        <button
+                          onClick={() => toggleUserPremium(user)}
+                          disabled={toggling}
+                          style={{
+                            width: 44, height: 24, borderRadius: 12, border: "none", cursor: toggling ? "default" : "pointer",
+                            background: user.isPremium ? "linear-gradient(90deg, #b8860b, #d4a843)" : "rgba(255,255,255,0.1)",
+                            position: "relative", flexShrink: 0, transition: "background 0.25s",
+                            opacity: toggling ? 0.5 : 1,
+                          }}
+                          aria-label={user.isPremium ? "Revoke premium" : "Grant premium"}
+                          title={user.isPremium ? "Click to revoke Premium" : "Click to grant Premium"}
+                        >
+                          <span style={{
+                            position: "absolute", top: 2,
+                            left: user.isPremium ? 22 : 2,
+                            width: 20, height: 20, borderRadius: "50%",
+                            background: "white", transition: "left 0.2s",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+                          }} />
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </>
+        )}
+
         {/* LIST MODE */}
-        {mode === "list" && (
+        {panelTab === "books" && mode === "list" && (
           <>
             {books.length === 0 && !loading && (
               <div style={{ padding: 18, background: "rgba(212,168,67,0.08)", borderRadius: 14, border: "1px solid rgba(212,168,67,0.2)", marginBottom: 16, textAlign: "center" }}>

@@ -736,26 +736,124 @@ export default function PremiumPage({ onUpgrade, onBack, isPremium = false }: Pr
           <div style={{ fontSize: 13, color: "var(--muted-foreground)", marginBottom: 18, lineHeight: 1.55 }}>
             Join thousands of Bnei Menashe families who use Premium to live a fuller, more connected Jewish life.
           </div>
-          <button
-            className="upgrade-btn"
-            onClick={onUpgrade}
-            style={{
-              width: "100%", padding: "16px 24px",
-              background: GOLD_GRAD, color: "#1a0f00",
-              border: "none", borderRadius: 14, cursor: "pointer",
-              fontWeight: 900, fontSize: 16,
-              boxShadow: "0 6px 24px rgba(212,168,67,0.4), 0 2px 0 rgba(100,70,5,0.6)",
-              transition: "transform 0.1s", marginBottom: 10,
-            }}
-          >
-            ✦ Start My 7-Day Free Trial
-          </button>
-          <div style={{ fontSize: 11, color: "var(--muted-foreground)", display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-            <span>🇮🇳 UPI (GPay · PhonePe · Paytm)</span>
-            <span>💳 Visa · Mastercard · RuPay · Amex</span>
-          </div>
+
+          <RequestAccessButton />
         </div>
       </div>
     </div>
+  );
+}
+
+function RequestAccessButton() {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const userId: string = (window as any).Clerk?.user?.id ?? "";
+
+  function copyId() {
+    if (userId) {
+      navigator.clipboard.writeText(userId).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  }
+
+  const whatsappMsg = encodeURIComponent(
+    `Hi! I'd like to request Premium access for the Bnei Menashe Calendar app.\n\nMy User ID: ${userId || "(sign in first to get your ID)"}\n\nThank you!`
+  );
+  const emailSubject = encodeURIComponent("Premium Access Request — Bnei Menashe Calendar");
+  const emailBody = encodeURIComponent(
+    `Hi,\n\nI would like to request Premium access for the Bnei Menashe Calendar app.\n\nMy User ID: ${userId || "(sign in first to get your ID)"}\n\nThank you!`
+  );
+
+  return (
+    <>
+      <button
+        className="upgrade-btn"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%", padding: "16px 24px",
+          background: GOLD_GRAD, color: "#1a0f00",
+          border: "none", borderRadius: 14, cursor: "pointer",
+          fontWeight: 900, fontSize: 16,
+          boxShadow: "0 6px 24px rgba(212,168,67,0.4), 0 2px 0 rgba(100,70,5,0.6)",
+          transition: "transform 0.1s", marginBottom: 10,
+        }}
+      >
+        {open ? "✕ Close" : "✦ Request Premium Access"}
+      </button>
+
+      {open && (
+        <div style={{
+          marginTop: 4, marginBottom: 8, borderRadius: 14,
+          background: "rgba(0,0,0,0.25)", border: "1px solid rgba(212,168,67,0.2)",
+          padding: "16px 14px", textAlign: "left",
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#d4a843", letterSpacing: "0.06em", marginBottom: 10 }}>
+            HOW TO REQUEST ACCESS
+          </div>
+          <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 12, lineHeight: 1.6 }}>
+            Send us a message with your User ID and a community leader will approve your access manually — usually within 24 hours.
+          </div>
+
+          {/* User ID copy row */}
+          {userId && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8, marginBottom: 12,
+              background: "rgba(212,168,67,0.08)", borderRadius: 8, padding: "8px 10px",
+              border: "1px solid rgba(212,168,67,0.2)",
+            }}>
+              <span style={{ fontSize: 11, color: "var(--muted-foreground)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                🪪 {userId}
+              </span>
+              <button
+                onClick={copyId}
+                style={{
+                  padding: "4px 10px", borderRadius: 6, border: "none", cursor: "pointer",
+                  background: copied ? "rgba(74,222,128,0.2)" : "rgba(212,168,67,0.2)",
+                  color: copied ? "#4ade80" : "#d4a843", fontSize: 11, fontWeight: 700, flexShrink: 0,
+                }}
+              >
+                {copied ? "✓ Copied!" : "Copy ID"}
+              </button>
+            </div>
+          )}
+
+          {/* Contact buttons */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <a
+              href={`https://wa.me/?text=${whatsappMsg}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                padding: "13px", borderRadius: 12, fontWeight: 800, fontSize: 14, textDecoration: "none",
+                background: "rgba(37,211,102,0.15)", border: "1px solid rgba(37,211,102,0.3)",
+                color: "#25d366",
+              }}
+            >
+              <span>💬</span> WhatsApp Us
+            </a>
+            <a
+              href={`mailto:admin@bneimenshe.app?subject=${emailSubject}&body=${emailBody}`}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                padding: "13px", borderRadius: 12, fontWeight: 800, fontSize: 14, textDecoration: "none",
+                background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.25)",
+                color: "#60a5fa",
+              }}
+            >
+              <span>📧</span> Email Us
+            </a>
+          </div>
+        </div>
+      )}
+
+      <div style={{ fontSize: 11, color: "var(--muted-foreground)", display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
+        <span>✓ Manually reviewed</span>
+        <span>✓ Approved within 24hrs</span>
+        <span>✓ Community managed</span>
+      </div>
+    </>
   );
 }

@@ -288,4 +288,62 @@ router.put("/user/public-profile", requireAuth, async (req, res) => {
   }
 });
 
+// ── Admin: list all users ─────────────────────────────────────────────────────
+
+router.get("/admin/users", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT
+        up.user_id,
+        up.is_premium,
+        up.updated_at,
+        pp.display_name,
+        pp.congregation,
+        pp.city,
+        pp.country,
+        pp.avatar_emoji
+      FROM user_profiles up
+      LEFT JOIN user_public_profiles pp ON pp.user_id = up.user_id
+      ORDER BY up.updated_at DESC
+    `);
+    return res.json(rows.map(r => ({
+      userId: r.user_id,
+      isPremium: r.is_premium,
+      updatedAt: r.updated_at,
+      displayName: r.display_name ?? null,
+      congregation: r.congregation ?? null,
+      city: r.city ?? null,
+      country: r.country ?? null,
+      avatarEmoji: r.avatar_emoji ?? "👤",
+    })));
+  } finally {
+    client.release();
+  }
+});
+
+// ── Admin: set premium for a user ─────────────────────────────────────────────
+
+router.put("/admin/users/:userId/premium", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+  const { userId } = req.params;
+  const { isPremium } = req.body;
+  if (typeof isPremium !== "boolean") return res.status(400).json({ error: "isPremium must be boolean" });
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO user_profiles (user_id, is_premium, theme, candle_enabled, language, updated_at)
+       VALUES ($1, $2, 'dark', true, 'en', NOW())
+       ON CONFLICT (user_id) DO UPDATE SET is_premium = EXCLUDED.is_premium, updated_at = NOW()`,
+      [userId, isPremium],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;
