@@ -29,20 +29,49 @@ function subId(endpoint: string): string {
 async function dbUpsert(
   id: string,
   subscription: webpush.PushSubscription,
-  schedule: ScheduleItem[]
+  schedule: ScheduleItem[],
+  userId?: string | null,
 ): Promise<void> {
   const keys = subscription.keys as { p256dh: string; auth: string };
   await pool.query(
-    `INSERT INTO push_subscriptions (id, endpoint, p256dh, auth, schedule, updated_at)
-     VALUES ($1, $2, $3, $4, $5::jsonb, NOW())
+    `INSERT INTO push_subscriptions (id, endpoint, p256dh, auth, schedule, user_id, updated_at)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, NOW())
      ON CONFLICT (id) DO UPDATE
        SET endpoint   = EXCLUDED.endpoint,
            p256dh     = EXCLUDED.p256dh,
            auth       = EXCLUDED.auth,
            schedule   = EXCLUDED.schedule,
+           user_id    = COALESCE(EXCLUDED.user_id, push_subscriptions.user_id),
            updated_at = NOW()`,
-    [id, subscription.endpoint, keys.p256dh, keys.auth, JSON.stringify(schedule)]
+    [id, subscription.endpoint, keys.p256dh, keys.auth, JSON.stringify(schedule), userId ?? null]
   );
+}
+
+export async function sendPushToUser(
+  userId: string,
+  payload: { title: string; body: string; tag: string; icon?: string },
+): Promise<void> {
+  if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
+  let rows: Array<{ endpoint: string; p256dh: string; auth: string }>;
+  try {
+    const result = await pool.query(
+      "SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1",
+      [userId],
+    );
+    rows = result.rows;
+  } catch { return; }
+  for (const row of rows) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+        JSON.stringify({ ...payload, icon: payload.icon ?? "/favicon.svg" }),
+      );
+    } catch (err: any) {
+      if (err?.statusCode === 410 || err?.statusCode === 404) {
+        await pool.query("DELETE FROM push_subscriptions WHERE endpoint = $1", [row.endpoint]).catch(() => {});
+      }
+    }
+  }
 }
 
 async function dbRemove(id: string): Promise<void> {
@@ -117,9 +146,10 @@ router.get("/push/vapid-public-key", (_req, res) => {
 });
 
 router.post("/push/subscribe", async (req, res) => {
-  const { subscription, schedule } = req.body as {
+  const { subscription, schedule, userId } = req.body as {
     subscription: webpush.PushSubscription;
     schedule: ScheduleItem[];
+    userId?: string;
   };
   if (!subscription?.endpoint) {
     res.status(400).json({ error: "Missing subscription" });
@@ -127,7 +157,7 @@ router.post("/push/subscribe", async (req, res) => {
   }
   const id = subId(subscription.endpoint);
   try {
-    await dbUpsert(id, subscription, schedule ?? []);
+    await dbUpsert(id, subscription, schedule ?? [], userId ?? null);
     res.json({ ok: true, id });
   } catch (err) {
     logger.error({ err }, "push/subscribe: db error");

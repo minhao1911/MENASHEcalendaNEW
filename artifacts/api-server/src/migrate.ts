@@ -195,6 +195,15 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // Add user_id to push_subscriptions (idempotent)
+    await client.query(`
+      ALTER TABLE push_subscriptions ADD COLUMN IF NOT EXISTS user_id TEXT
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS push_subs_user_id_idx
+        ON push_subscriptions (user_id) WHERE user_id IS NOT NULL
+    `);
+
     // Premium access requests
     await client.query(`
       CREATE TABLE IF NOT EXISTS premium_requests (

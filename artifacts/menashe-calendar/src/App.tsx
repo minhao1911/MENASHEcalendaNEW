@@ -381,6 +381,7 @@ function AppShell() {
   const [isPremium, setIsPremium] = useState(() => {
     try { return localStorage.getItem("menashe-is-premium") === "true"; } catch { return false; }
   });
+  const [premiumJustApproved, setPremiumJustApproved] = useState(false);
   const [candleEnabled, setCandleEnabled] = useState(() => {
     try { return localStorage.getItem("menashe-candle-enabled") !== "false"; } catch { return true; }
   });
@@ -407,8 +408,10 @@ function AppShell() {
         try { localStorage.setItem("menashe-location", JSON.stringify(profile.location)); } catch {}
       }
       if (profile.isPremium) {
-        setIsPremium(profile.isPremium);
+        const wasNotPremium = localStorage.getItem("menashe-is-premium") !== "true";
+        setIsPremium(true);
         try { localStorage.setItem("menashe-is-premium", "true"); } catch {}
+        if (wasNotPremium) setPremiumJustApproved(true);
       }
       if (profile.candleEnabled !== undefined) {
         setCandleEnabled(profile.candleEnabled);
@@ -437,7 +440,7 @@ function AppShell() {
   }
 
   const { permission: notifPermission, prefs: notifPrefs, leadTime, updatePref: updateNotifPref, updateLeadTime } = useNotifications(location);
-  const { isSubscribed: pushSubscribed, isSupported: pushSupported, isLoading: pushLoading, error: pushError, subscribe: subscribePush, unsubscribe: unsubscribePush, sendTest: sendTestPush } = usePushSubscription(location, notifPrefs, leadTime);
+  const { isSubscribed: pushSubscribed, isSupported: pushSupported, isLoading: pushLoading, error: pushError, subscribe: subscribePush, unsubscribe: unsubscribePush, sendTest: sendTestPush } = usePushSubscription(location, notifPrefs, leadTime, user?.id);
   const { announcements, addAnnouncement, updateAnnouncement, deleteAnnouncement, sendNow } = useAnnouncements();
 
   const isLight = theme === "light";
@@ -593,6 +596,64 @@ function AppShell() {
               <BottomNav active={activePage} onNavigate={(p) => setActivePage(p as Page)} />
 
               {toast && <div className="toast">{toast}</div>}
+
+              {premiumJustApproved && (
+                <div
+                  style={{
+                    position: "fixed", inset: 0, zIndex: 9000,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)",
+                    padding: "20px",
+                  }}
+                  onClick={() => setPremiumJustApproved(false)}
+                >
+                  <div
+                    style={{
+                      maxWidth: 340, width: "100%", borderRadius: 22, textAlign: "center",
+                      background: "linear-gradient(145deg, #0f1e12, #1a2a10)",
+                      border: "1.5px solid rgba(212,168,67,0.5)",
+                      boxShadow: "0 0 60px rgba(212,168,67,0.25), 0 20px 60px rgba(0,0,0,0.6)",
+                      padding: "32px 24px 28px",
+                      animation: "fadeIn 0.35s ease",
+                    }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div style={{ fontSize: 52, marginBottom: 14, lineHeight: 1 }}>👑</div>
+                    <div style={{
+                      fontSize: 22, fontWeight: 900, marginBottom: 8,
+                      background: "linear-gradient(135deg, #b8860b, #d4a843, #f0c96a)",
+                      WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                    }}>
+                      Premium Approved!
+                    </div>
+                    <div style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", lineHeight: 1.65, marginBottom: 22 }}>
+                      Welcome to Premium. You now have full access to all Zmanim, Torah study tracks, AI insights, and the complete Siddur library.
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <button
+                        onClick={() => { setPremiumJustApproved(false); setActivePage("home" as any); }}
+                        style={{
+                          padding: "14px", borderRadius: 13, border: "none", cursor: "pointer",
+                          background: "linear-gradient(135deg, #b8860b, #d4a843, #f0c96a)",
+                          color: "#1a0f00", fontSize: 15, fontWeight: 900,
+                          boxShadow: "0 4px 20px rgba(212,168,67,0.4)",
+                        }}
+                      >
+                        ✦ Explore Premium Features
+                      </button>
+                      <button
+                        onClick={() => setPremiumJustApproved(false)}
+                        style={{
+                          padding: "11px", borderRadius: 13, border: "1px solid rgba(212,168,67,0.25)",
+                          background: "transparent", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer",
+                        }}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {dayModal && (
                 <DayModal {...dayModal} location={location} onClose={() => setDayModal(null)} />

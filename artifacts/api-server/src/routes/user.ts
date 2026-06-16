@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
 import { requireAuth } from "../lib/requireAuth";
+import { sendPushToUser } from "./push";
 
 const router = Router();
 
@@ -376,6 +377,12 @@ router.put("/admin/premium-requests/:userId/approve", async (req, res) => {
       `UPDATE premium_requests SET status = 'approved', reviewed_at = NOW() WHERE user_id = $1`,
       [userId],
     );
+    // Fire push notification (best-effort, non-blocking)
+    sendPushToUser(userId, {
+      title: "👑 Premium Approved!",
+      body: "Your Premium access has been approved. Open the app to unlock all features!",
+      tag: "premium-approved",
+    }).catch(() => {});
     return res.json({ ok: true });
   } finally {
     client.release();

@@ -169,12 +169,12 @@ async function getVapidPublicKey(): Promise<string | null> {
   } catch { return null; }
 }
 
-async function postSubscription(subscription: PushSubscription, schedule: ScheduleItem[]): Promise<boolean> {
+async function postSubscription(subscription: PushSubscription, schedule: ScheduleItem[], userId?: string | null): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}/push/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscription: subscription.toJSON(), schedule }),
+      body: JSON.stringify({ subscription: subscription.toJSON(), schedule, userId: userId ?? undefined }),
     });
     return res.ok;
   } catch { return false; }
@@ -190,7 +190,7 @@ async function deleteSubscription(endpoint: string): Promise<void> {
   } catch {}
 }
 
-export function usePushSubscription(location: Location, prefs: NotificationPrefs, leadTime: LeadTime) {
+export function usePushSubscription(location: Location, prefs: NotificationPrefs, leadTime: LeadTime, userId?: string | null) {
   const [isSubscribed, setIsSubscribed] = useState<boolean>(() => {
     try { return localStorage.getItem(SW_KEY) === "true"; } catch { return false; }
   });
@@ -212,11 +212,11 @@ export function usePushSubscription(location: Location, prefs: NotificationPrefs
       if (!cancelled && existing) {
         subRef.current = existing;
         const schedule = buildSchedule(prefs, location, leadTime);
-        await postSubscription(existing, schedule);
+        await postSubscription(existing, schedule, userId);
       }
     })();
     return () => { cancelled = true; };
-  }, [isSupported, isSubscribed, location, prefs, leadTime]);
+  }, [isSupported, isSubscribed, location, prefs, leadTime, userId]);
 
   const subscribe = useCallback(async (): Promise<boolean> => {
     if (!isSupported) { setError("Push notifications are not supported in this browser."); return false; }
@@ -238,7 +238,7 @@ export function usePushSubscription(location: Location, prefs: NotificationPrefs
       }
       subRef.current = sub;
       const schedule = buildSchedule(prefs, location, leadTime);
-      const ok = await postSubscription(sub, schedule);
+      const ok = await postSubscription(sub, schedule, userId);
       if (!ok) { setError("Failed to register with server."); return false; }
       setIsSubscribed(true);
       try { localStorage.setItem(SW_KEY, "true"); } catch {}
@@ -249,7 +249,7 @@ export function usePushSubscription(location: Location, prefs: NotificationPrefs
     } finally {
       setIsLoading(false);
     }
-  }, [isSupported, prefs, location, leadTime]);
+  }, [isSupported, prefs, location, leadTime, userId]);
 
   const unsubscribe = useCallback(async () => {
     setIsLoading(true);
