@@ -1095,12 +1095,15 @@ interface HomeProps {
   onOpenSiddur: () => void;
   onShowCommunity: () => void;
   onShowCensus: () => void;
+  onNotifBell: () => void;
+  notifActive: boolean;
 }
 
 export default function Home({
   location, theme, isPremium, candleEnabled,
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
   onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus,
+  onNotifBell, notifActive,
 }: HomeProps) {
   const { t } = useLanguage();
   const today = new Date();
@@ -1319,6 +1322,34 @@ export default function Home({
               </span>
             ) : (
               <span style={{ fontSize: 10, fontWeight: 900, color: "#1a0900", letterSpacing: "0.07em" }}>PREMIUM</span>
+            )}
+          </button>
+
+          {/* Notification Bell */}
+          <button
+            onClick={onNotifBell}
+            style={{
+              position: "relative",
+              width: 34, height: 34, borderRadius: "50%",
+              background: notifActive ? "rgba(212,168,67,0.13)" : "var(--elevated)",
+              border: `1px solid ${notifActive ? "rgba(212,168,67,0.4)" : "var(--border)"}`,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0, transition: "all 0.2s",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke={notifActive ? "#d4a843" : "var(--text-muted)"} strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {notifActive && (
+              <div style={{
+                position: "absolute", top: 5, right: 5,
+                width: 7, height: 7, borderRadius: "50%",
+                background: "#d4a843",
+                border: "1.5px solid var(--surface)",
+              }} />
             )}
           </button>
 

@@ -54,6 +54,7 @@ import OmerModal from "./modals/OmerModal";
 import PrayerTimesModal from "./modals/PrayerTimesModal";
 import CommunityYahrzeitModal from "./modals/CommunityYahrzeitModal";
 import MoreToolsModal from "./pages/MoreToolsModal";
+import NotificationDrawer from "./components/NotificationDrawer";
 
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
@@ -190,7 +191,7 @@ type Modal =
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
   | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar"
   | "announcements" | "events" | "members" | "prayers-board" | "torah-tracker" | "profile"
-  | "community-yahrzeit" | null;
+  | "community-yahrzeit" | "notifications" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -496,6 +497,8 @@ function AppShell() {
             onOpenSiddur={() => setActivePage("siddur")}
             onShowCommunity={() => setModal("community")}
             onShowCensus={() => setModal("census")}
+            onNotifBell={() => setModal("notifications")}
+            notifActive={Object.values(notifPrefs).some(Boolean)}
           />
         );
       case "calendar":
@@ -652,6 +655,17 @@ function AppShell() {
 
               {dayModal && (
                 <DayModal {...dayModal} location={location} onClose={() => setDayModal(null)} />
+              )}
+
+              {modal === "notifications" && (
+                <NotificationDrawer
+                  onClose={closeModal}
+                  notifPermission={notifPermission}
+                  notifPrefs={notifPrefs}
+                  leadTime={leadTime}
+                  onUpdateNotifPref={updateNotifPref}
+                  onUpdateLeadTime={updateLeadTime}
+                />
               )}
 
               {modal === "location" && (
