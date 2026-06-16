@@ -1670,21 +1670,23 @@ function CommunityFAB({
           <button
             key={item.label}
             onClick={() => handleItem(item.action)}
+            className="fab-item-active"
             style={{
               display: "flex", alignItems: "center", gap: 10,
-              background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
-              border: "1px solid rgba(212,175,55,0.35)",
+              background: "linear-gradient(135deg, #1e2040 0%, #191d38 100%)",
+              border: "1px solid rgba(255,255,255,0.18)",
               borderRadius: 14,
               padding: "10px 16px",
-              color: "#e8d5a3",
+              color: "#f0ece0",
               fontWeight: 600,
               fontSize: 13.5,
               cursor: "pointer",
-              boxShadow: "0 4px 18px rgba(0,0,0,0.55)",
               whiteSpace: "nowrap",
-              animation: `fabItemIn 0.18s ease both`,
-              animationDelay: `${i * 0.04}s`,
+              animation: `fabItemIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both, fabItemShimmer 2.8s ease-in-out infinite`,
+              animationDelay: `${i * 0.05}s, ${i * 0.18}s`,
               minWidth: 210,
+              transform: "scale(1)",
+              transformOrigin: "right center",
             }}
           >
             <span style={{ fontSize: 18, lineHeight: 1 }}>{item.icon}</span>
@@ -1763,8 +1765,24 @@ function CommunityFAB({
       </div>
       <style>{`
         @keyframes fabItemIn {
-          from { opacity: 0; transform: translateY(8px) scale(0.95); }
-          to   { opacity: 1; transform: translateY(0)   scale(1);    }
+          from { opacity: 0; transform: translateY(10px) scale(0.88); }
+          to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        }
+        @keyframes fabItemShimmer {
+          0%   { box-shadow: 0 4px 18px rgba(0,0,0,0.5),  0 0 0px  rgba(255,255,255,0);    border-color: rgba(255,255,255,0.14); }
+          40%  { box-shadow: 0 6px 24px rgba(0,0,0,0.55), 0 0 14px rgba(255,255,255,0.12), 0 0 32px rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.32); }
+          60%  { box-shadow: 0 8px 28px rgba(0,0,0,0.6),  0 0 20px rgba(255,255,255,0.18), 0 0 44px rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.42); transform: scale(1.025); }
+          80%  { box-shadow: 0 6px 24px rgba(0,0,0,0.55), 0 0 14px rgba(255,255,255,0.12), 0 0 32px rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.28); transform: scale(1.012); }
+          100% { box-shadow: 0 4px 18px rgba(0,0,0,0.5),  0 0 0px  rgba(255,255,255,0);    border-color: rgba(255,255,255,0.14); transform: scale(1); }
+        }
+        .fab-item-active {
+          transform-origin: right center;
+        }
+        .fab-item-active:hover {
+          background: linear-gradient(135deg, #252848 0%, #1e2240 100%) !important;
+          border-color: rgba(255,255,255,0.5) !important;
+          transform: scale(1.03);
+          transition: background 0.15s ease, transform 0.15s ease;
         }
         @keyframes shawlWeave {
           0%   { transform: scaleX(1)    scaleY(1);    }
