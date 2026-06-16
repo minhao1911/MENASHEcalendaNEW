@@ -254,6 +254,20 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // Razorpay payment records
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS payment_records (
+        id         SERIAL PRIMARY KEY,
+        user_id    TEXT NOT NULL,
+        order_id   TEXT NOT NULL,
+        payment_id TEXT NOT NULL UNIQUE,
+        plan       TEXT NOT NULL,
+        amount     INTEGER NOT NULL,
+        status     TEXT NOT NULL DEFAULT 'captured',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");

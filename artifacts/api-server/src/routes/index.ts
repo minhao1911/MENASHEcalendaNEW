@@ -9,6 +9,7 @@ import userRouter from "./user";
 import communityYahrzeitRouter from "./communityYahrzeit";
 import censusRouter from "./census";
 import announcementsRouter from "./announcements";
+import paymentsRouter from "./payments";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(userRouter);
 router.use("/community", communityYahrzeitRouter);
 router.use(censusRouter);
 router.use(announcementsRouter);
+router.use(paymentsRouter);
 
 export default router;

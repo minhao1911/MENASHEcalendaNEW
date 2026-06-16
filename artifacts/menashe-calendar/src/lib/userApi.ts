@@ -186,6 +186,32 @@ export async function dedicateLearning(entryId: string, learnerName: string, stu
   });
 }
 
+// ── Razorpay Payments ─────────────────────────────────────────────────────────
+
+export async function createRazorpayOrder(plan: "monthly" | "annual"): Promise<{
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+}> {
+  return await apiFetch("/payment/razorpay/order", {
+    method: "POST",
+    body: JSON.stringify({ plan }),
+  });
+}
+
+export async function verifyRazorpayPayment(params: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  plan: string;
+}): Promise<{ verified: boolean; isPremium: boolean }> {
+  return await apiFetch("/payment/razorpay/verify", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
 // ── Census ─────────────────────────────────────────────────────────────────
 
 export interface CensusBranchApi {
