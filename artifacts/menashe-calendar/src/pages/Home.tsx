@@ -1589,14 +1589,15 @@ function CommunityFAB({
   onShowTorahTracker: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useLanguage();
 
   const items = [
-    { label: "Announcements", icon: "📢", action: onShowAnnouncements },
-    { label: "Community Events", icon: "📅", action: onShowEvents },
-    { label: "Community Memorial", icon: "🕯", action: onShowCommunityYahrzeit },
-    { label: "48 Ways to Torah Wisdom", icon: "📖", action: onShowMussar },
-    { label: "Prayer Board", icon: "🙏", action: onShowPrayerBoard },
-    { label: "Torah Tracker", icon: "✡", action: onShowTorahTracker },
+    { label: t.fabAnnouncements, icon: "📢", action: onShowAnnouncements },
+    { label: t.fabCommunityEvents, icon: "📅", action: onShowEvents },
+    { label: t.fabCommunityMemorial, icon: "🕯", action: onShowCommunityYahrzeit },
+    { label: t.fabTorahWisdom, icon: "📖", action: onShowMussar },
+    { label: t.fabPrayerBoard, icon: "🙏", action: onShowPrayerBoard },
+    { label: t.fabTorahTracker, icon: "✡", action: onShowTorahTracker },
   ];
 
   function handleItem(action: () => void) {
@@ -1642,7 +1643,7 @@ function CommunityFAB({
         ))}
         <button
           onClick={() => setOpen(v => !v)}
-          title="Community Hub"
+          title={t.fabTitle}
           style={{
             width: 54, height: 54,
             borderRadius: "50%",

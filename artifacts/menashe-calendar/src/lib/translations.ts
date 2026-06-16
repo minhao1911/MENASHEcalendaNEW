@@ -119,6 +119,15 @@ export interface Translations {
   homeMoreTools: string;
   homeOmer: string;
 
+  /* ── Community FAB ── */
+  fabTitle: string;
+  fabAnnouncements: string;
+  fabCommunityEvents: string;
+  fabCommunityMemorial: string;
+  fabTorahWisdom: string;
+  fabPrayerBoard: string;
+  fabTorahTracker: string;
+
   /* ── Translation Editor ── */
   txEditorTitle: string;
   txEditorSubtitle: string;
@@ -254,6 +263,14 @@ export const en: Translations = {
   homeMoreTools: "More Tools",
   homeOmer: "OMER",
 
+  fabTitle: "Community Hub",
+  fabAnnouncements: "Announcements",
+  fabCommunityEvents: "Community Events",
+  fabCommunityMemorial: "Community Memorial",
+  fabTorahWisdom: "48 Ways to Torah Wisdom",
+  fabPrayerBoard: "Prayer Board",
+  fabTorahTracker: "Torah Tracker",
+
   txEditorTitle: "Edit Thadou Kuki Labels",
   txEditorSubtitle: "Correct any translation below. Changes are saved on your device.",
   txEditorSave: "Save Changes",
@@ -387,6 +404,14 @@ export const tk: Translations = {
   homeDafYomi: "DAF YOMI",
   homeMoreTools: "Thil Pawimawh Zawk",
   homeOmer: "OMER",
+
+  fabTitle: "Mipil Inn",
+  fabAnnouncements: "Thupek",
+  fabCommunityEvents: "Mipil Lawmman",
+  fabCommunityMemorial: "Mipil Thi Ni",
+  fabTorahWisdom: "Torah Thu 48 Dan",
+  fabPrayerBoard: "Thu Dawt Hmang",
+  fabTorahTracker: "Torah Chhiar",
 
   txEditorTitle: "Thadou Kuki Label Siam",
   txEditorSubtitle: "Label dang tak chu hnuaiah siam rawh. Na device-ah chhuang a ni.",
