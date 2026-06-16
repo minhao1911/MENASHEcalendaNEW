@@ -1098,6 +1098,12 @@ interface HomeProps {
   onNotifBell: () => void;
   notifActive: boolean;
   announcementCount: number;
+  onShowAnnouncements: () => void;
+  onShowEvents: () => void;
+  onShowCommunityYahrzeit: () => void;
+  onShowMussar: () => void;
+  onShowPrayerBoard: () => void;
+  onShowTorahTracker: () => void;
 }
 
 export default function Home({
@@ -1105,6 +1111,7 @@ export default function Home({
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
   onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus,
   onNotifBell, notifActive, announcementCount,
+  onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
 }: HomeProps) {
   const { t } = useLanguage();
   const today = new Date();
@@ -1556,6 +1563,110 @@ export default function Home({
 
       </div>
 
+      {/* ── Community Hub Floating Button ── */}
+      <CommunityFAB
+        onShowAnnouncements={onShowAnnouncements}
+        onShowEvents={onShowEvents}
+        onShowCommunityYahrzeit={onShowCommunityYahrzeit}
+        onShowMussar={onShowMussar}
+        onShowPrayerBoard={onShowPrayerBoard}
+        onShowTorahTracker={onShowTorahTracker}
+      />
+
     </div>
+  );
+}
+
+function CommunityFAB({
+  onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit,
+  onShowMussar, onShowPrayerBoard, onShowTorahTracker,
+}: {
+  onShowAnnouncements: () => void;
+  onShowEvents: () => void;
+  onShowCommunityYahrzeit: () => void;
+  onShowMussar: () => void;
+  onShowPrayerBoard: () => void;
+  onShowTorahTracker: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const items = [
+    { label: "Announcements", icon: "📢", action: onShowAnnouncements },
+    { label: "Community Events", icon: "📅", action: onShowEvents },
+    { label: "Community Memorial", icon: "🕯", action: onShowCommunityYahrzeit },
+    { label: "48 Ways to Torah Wisdom", icon: "📖", action: onShowMussar },
+    { label: "Prayer Board", icon: "🙏", action: onShowPrayerBoard },
+    { label: "Torah Tracker", icon: "✡", action: onShowTorahTracker },
+  ];
+
+  function handleItem(action: () => void) {
+    setOpen(false);
+    action();
+  }
+
+  return (
+    <>
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 998,
+          }}
+        />
+      )}
+      <div style={{ position: "fixed", bottom: 88, right: 20, zIndex: 999, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
+        {open && items.map((item, i) => (
+          <button
+            key={item.label}
+            onClick={() => handleItem(item.action)}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+              border: "1px solid rgba(212,175,55,0.35)",
+              borderRadius: 14,
+              padding: "10px 16px",
+              color: "#e8d5a3",
+              fontWeight: 600,
+              fontSize: 13.5,
+              cursor: "pointer",
+              boxShadow: "0 4px 18px rgba(0,0,0,0.55)",
+              whiteSpace: "nowrap",
+              animation: `fabItemIn 0.18s ease both`,
+              animationDelay: `${i * 0.04}s`,
+              minWidth: 210,
+            }}
+          >
+            <span style={{ fontSize: 18, lineHeight: 1 }}>{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+        <button
+          onClick={() => setOpen(v => !v)}
+          title="Community Hub"
+          style={{
+            width: 54, height: 54,
+            borderRadius: "50%",
+            background: open
+              ? "linear-gradient(135deg, #b8960c 0%, #d4af37 100%)"
+              : "linear-gradient(135deg, #d4af37 0%, #b8960c 100%)",
+            border: "none",
+            boxShadow: "0 4px 20px rgba(212,175,55,0.45), 0 2px 8px rgba(0,0,0,0.5)",
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 26,
+            transition: "transform 0.2s ease, background 0.2s ease",
+            transform: open ? "rotate(45deg)" : "rotate(0deg)",
+          }}
+        >
+          ✦
+        </button>
+      </div>
+      <style>{`
+        @keyframes fabItemIn {
+          from { opacity: 0; transform: translateY(8px) scale(0.95); }
+          to   { opacity: 1; transform: translateY(0)   scale(1);    }
+        }
+      `}</style>
+    </>
   );
 }

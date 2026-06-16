@@ -502,6 +502,12 @@ function AppShell() {
             onNotifBell={() => setModal("notifications")}
             notifActive={Object.values(notifPrefs).some(Boolean)}
             announcementCount={announcementCount}
+            onShowAnnouncements={() => setModal("announcements")}
+            onShowEvents={() => setModal("events")}
+            onShowCommunityYahrzeit={() => setModal("community-yahrzeit")}
+            onShowMussar={() => setModal("mussar")}
+            onShowPrayerBoard={() => setModal("prayers-board")}
+            onShowTorahTracker={() => setModal("torah-tracker")}
           />
         );
       case "calendar":
