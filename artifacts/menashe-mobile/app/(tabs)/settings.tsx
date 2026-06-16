@@ -17,6 +17,7 @@ import {
   scheduleAllNotifications,
   type NotificationPrefs,
 } from "@/lib/notifications";
+import { sendTestExpoPush } from "@/lib/expoPush";
 import * as Notifications from "expo-notifications";
 
 const LEAD_OPTIONS = [5, 10, 15, 30];
@@ -24,18 +25,20 @@ const LEAD_OPTIONS = [5, 10, 15, 30];
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { signOut } = useAuth();
+  const { signOut, getToken } = useAuth();
   const { user } = useUser();
   const {
     location, setLocation,
     notifPrefs, setNotifPrefs,
     leadMinutes, setLeadMinutes,
     scheduledCount, reschedule,
+    serverPushRegistered, registerServerPush, unregisterServerPush,
   } = useApp();
-
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [permStatus, setPermStatus] = useState<Notifications.PermissionStatus | null>(null);
   const [rescheduling, setRescheduling] = useState(false);
+  const [serverPushLoading, setServerPushLoading] = useState(false);
+  const [testPushLoading, setTestPushLoading] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -81,6 +84,36 @@ export default function SettingsScreen() {
       await setNotifPrefs({ shabbat: true, havdalah: true, prayers: false, parasha: true, holiday: true });
     } else {
       Alert.alert("Permission Denied", "Could not enable notifications. Check your device settings.");
+    }
+  }
+
+  async function handleToggleServerPush(enable: boolean) {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setServerPushLoading(true);
+    try {
+      if (enable) {
+        await registerServerPush(getToken);
+        Alert.alert("Server Push Enabled", "You'll receive Shabbat and holiday reminders from the server even when the app is closed.");
+      } else {
+        await unregisterServerPush(getToken);
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err?.message ?? "Failed to update server push settings.");
+    } finally {
+      setServerPushLoading(false);
+    }
+  }
+
+  async function handleTestServerPush() {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTestPushLoading(true);
+    try {
+      await sendTestExpoPush(getToken);
+      Alert.alert("Test Sent", "A test push notification was sent from the server. It should arrive shortly.");
+    } catch (err: any) {
+      Alert.alert("Error", err?.message ?? "Failed to send test push.");
+    } finally {
+      setTestPushLoading(false);
     }
   }
 
@@ -230,9 +263,61 @@ export default function SettingsScreen() {
 
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
           <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
-            {"Notifications appear in your device's notification bar even when the app is closed. They are scheduled locally on your device - no internet required."}
+            {"Notifications appear in your device's notification bar even when the app is closed. They are scheduled locally on your device — no internet required."}
           </Text>
         </View>
+
+        {/* ── SERVER PUSH ── */}
+        {Platform.OS !== "web" && (
+          <>
+            <View style={{ paddingTop: 24, paddingHorizontal: 16 }}>
+              <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>SERVER PUSH NOTIFICATIONS</Text>
+            </View>
+
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16 }]}>
+              <View style={styles.toggleRow}>
+                <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
+                  <Feather name="cloud" size={15} color={colors.primary} />
+                </View>
+                <View style={styles.toggleText}>
+                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>Server Push</Text>
+                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                    {serverPushRegistered
+                      ? "Shabbat & holiday alerts delivered by server"
+                      : "Enable to receive server-sent reminders"}
+                  </Text>
+                </View>
+                <Switch
+                  value={serverPushRegistered}
+                  onValueChange={handleToggleServerPush}
+                  disabled={serverPushLoading}
+                  trackColor={{ false: colors.border, true: colors.primary + "88" }}
+                  thumbColor={serverPushRegistered ? colors.primary : colors.mutedForeground}
+                />
+              </View>
+            </View>
+
+            {serverPushRegistered && (
+              <TouchableOpacity
+                style={[styles.rescheduleBtn, { borderColor: colors.primary, marginHorizontal: 16, marginTop: 8 }]}
+                onPress={handleTestServerPush}
+                disabled={testPushLoading}
+                activeOpacity={0.8}
+              >
+                <Feather name="send" size={16} color={colors.primary} />
+                <Text style={[styles.rescheduleBtnText, { color: colors.primary }]}>
+                  {testPushLoading ? "Sending..." : "Send Test Notification"}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
+              <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
+                Server push delivers Shabbat candle lighting, Havdalah, Parasha, and holiday reminders directly from the Bnei Menashe servers — even if you haven't opened the app in days.
+              </Text>
+            </View>
+          </>
+        )}
 
         {/* ── ACCOUNT ── */}
         <View style={{ paddingTop: 32, paddingHorizontal: 16 }}>

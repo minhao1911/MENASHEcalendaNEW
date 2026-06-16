@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { runMigrations } from "./migrate";
-import { startPushScheduler } from "./routes/push";
+import { startPushScheduler, startExpoScheduler } from "./routes/push";
 
 const rawPort = process.env["PORT"];
 
@@ -26,6 +26,7 @@ async function start() {
   }
 
   startPushScheduler();
+  startExpoScheduler();
 
   app.listen(port, (err) => {
     if (err) {

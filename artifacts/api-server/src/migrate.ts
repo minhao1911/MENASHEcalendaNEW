@@ -204,6 +204,23 @@ export async function runMigrations(): Promise<void> {
         ON push_subscriptions (user_id) WHERE user_id IS NOT NULL
     `);
 
+    // Expo push tokens (mobile)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS expo_push_tokens (
+        id          TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL,
+        token       TEXT NOT NULL UNIQUE,
+        location    JSONB,
+        notif_prefs JSONB,
+        lead_mins   INTEGER NOT NULL DEFAULT 15,
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS expo_tokens_user_id_idx ON expo_push_tokens (user_id)
+    `);
+
     // Premium access requests
     await client.query(`
       CREATE TABLE IF NOT EXISTS premium_requests (

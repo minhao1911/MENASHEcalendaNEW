@@ -1,8 +1,12 @@
 import { Router } from "express";
 import webpush from "web-push";
+import { Expo, type ExpoPushMessage } from "expo-server-sdk";
 import { requireAuth } from "../lib/requireAuth";
 import { pool } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { HebrewCalendar, flags } from "@hebcal/core";
+
+const expo = new Expo();
 
 const router = Router();
 
@@ -196,5 +200,212 @@ router.post("/push/send-test", requireAuth, async (req, res) => {
     res.status(500).json({ error: err?.message ?? "Send failed" });
   }
 });
+
+
+// ── Expo Push Token endpoints ────────────────────────────────────────────────
+
+router.post("/push/expo-token", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const { token, location, notifPrefs, leadMins } = req.body as {
+    token: string;
+    location?: object;
+    notifPrefs?: object;
+    leadMins?: number;
+  };
+  if (!token || !Expo.isExpoPushToken(token)) {
+    res.status(400).json({ error: "Invalid Expo push token" });
+    return;
+  }
+  const id = Buffer.from(token).toString("base64").slice(0, 64);
+  try {
+    await pool.query(
+      `INSERT INTO expo_push_tokens (id, user_id, token, location, notif_prefs, lead_mins, updated_at)
+       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, NOW())
+       ON CONFLICT (token) DO UPDATE
+         SET user_id     = EXCLUDED.user_id,
+             location    = COALESCE(EXCLUDED.location, expo_push_tokens.location),
+             notif_prefs = COALESCE(EXCLUDED.notif_prefs, expo_push_tokens.notif_prefs),
+             lead_mins   = EXCLUDED.lead_mins,
+             updated_at  = NOW()`,
+      [id, userId, token, location ? JSON.stringify(location) : null,
+       notifPrefs ? JSON.stringify(notifPrefs) : null, leadMins ?? 15],
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "expo-token: db error");
+    res.status(500).json({ error: "Failed to save token" });
+  }
+});
+
+router.delete("/push/expo-token", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const { token } = req.body as { token: string };
+  if (!token) { res.status(400).json({ error: "Missing token" }); return; }
+  try {
+    await pool.query(
+      "DELETE FROM expo_push_tokens WHERE token = $1 AND user_id = $2",
+      [token, userId],
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "expo-token delete: db error");
+    res.status(500).json({ error: "Failed to remove token" });
+  }
+});
+
+router.post("/push/expo-send-test", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
+  let rows: { token: string }[];
+  try {
+    const r = await pool.query<{ token: string }>(
+      "SELECT token FROM expo_push_tokens WHERE user_id = $1",
+      [userId],
+    );
+    rows = r.rows;
+  } catch (err) {
+    logger.error({ err }, "expo-send-test: db error");
+    res.status(500).json({ error: "Failed to load tokens" });
+    return;
+  }
+  if (rows.length === 0) {
+    res.status(404).json({ error: "No registered Expo push tokens for this user" });
+    return;
+  }
+  const messages: ExpoPushMessage[] = rows
+    .filter((r) => Expo.isExpoPushToken(r.token))
+    .map((r) => ({
+      to: r.token,
+      title: "✡ Menashe Calendar",
+      body: "Server push notifications are working! Shabbat Shalom.",
+      sound: "default" as const,
+      data: { tag: "push-test" },
+    }));
+  try {
+    const chunks = expo.chunkPushNotifications(messages);
+    for (const chunk of chunks) await expo.sendPushNotificationsAsync(chunk);
+    res.json({ ok: true, sent: messages.length });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message ?? "Send failed" });
+  }
+});
+
+// ── Expo Push Scheduler ──────────────────────────────────────────────────────
+
+function nextShabbatCandles(from: Date = new Date()): Date {
+  const d = new Date(from);
+  const daysUntilFriday = (5 - d.getDay() + 7) % 7 || 7;
+  d.setDate(d.getDate() + daysUntilFriday);
+  d.setHours(18, 0, 0, 0);
+  return d;
+}
+
+export function startExpoScheduler() {
+  async function tick() {
+    let rows: { user_id: string; token: string; notif_prefs: any; location: any; lead_mins: number }[];
+    try {
+      const r = await pool.query<{ user_id: string; token: string; notif_prefs: any; location: any; lead_mins: number }>(
+        "SELECT user_id, token, notif_prefs, location, lead_mins FROM expo_push_tokens",
+      );
+      rows = r.rows;
+    } catch (err) {
+      logger.error({ err }, "expo-scheduler: failed to load tokens");
+      return;
+    }
+
+    const now = new Date();
+    const messages: ExpoPushMessage[] = [];
+
+    for (const row of rows) {
+      if (!Expo.isExpoPushToken(row.token)) continue;
+      const prefs = row.notif_prefs ?? {};
+
+      // Shabbat candle lighting reminder — fire at 18:00 on Fridays
+      if (prefs.shabbat !== false) {
+        const friday = nextShabbatCandles(now);
+        const reminderHour = friday.getHours() - 1;
+        if (now.getDay() === 5 && now.getHours() === reminderHour && now.getMinutes() < 5) {
+          const tz = row.location?.tz ?? "UTC";
+          const localTime = friday.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz });
+          messages.push({
+            to: row.token,
+            title: "🕯️ Shabbat Candle Lighting",
+            body: `Candle lighting is in about 1 hour at ${localTime}. Shabbat Shalom!`,
+            sound: "default",
+            data: { tag: "shabbat" },
+          });
+        }
+      }
+
+      // Holiday alerts — fire at 09:00 the day before
+      if (prefs.holiday !== false) {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        if (now.getHours() === 9 && now.getMinutes() < 5) {
+          const events = HebrewCalendar.calendar({
+            start: tomorrow, end: tomorrow, il: true, isHebrewYear: false,
+            mask: flags.CHAG | flags.MODERN_HOLIDAY,
+          });
+          for (const ev of events) {
+            const name = ev.render("en");
+            const dateStr = tomorrow.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+            messages.push({
+              to: row.token,
+              title: `✡ ${name} Begins Tomorrow`,
+              body: `${name} starts tomorrow, ${dateStr}. Chag Sameach from Bnei Menashe!`,
+              sound: "default",
+              data: { tag: `holiday-${name.replace(/\s+/g, "-").toLowerCase()}` },
+            });
+          }
+        }
+      }
+
+      // Parasha reminder — Friday morning at 08:00
+      if (prefs.parasha !== false) {
+        if (now.getDay() === 5 && now.getHours() === 8 && now.getMinutes() < 5) {
+          const events = HebrewCalendar.calendar({
+            start: now, end: now, il: true, isHebrewYear: false,
+            mask: flags.PARASHA_HASHAVUA,
+          });
+          if (events.length > 0) {
+            const name = events[0].render("en");
+            messages.push({
+              to: row.token,
+              title: `📖 Parashat ${name}`,
+              body: `This Shabbat's Torah portion is Parashat ${name}. Shabbat Shalom from Bnei Menashe!`,
+              sound: "default",
+              data: { tag: "parasha" },
+            });
+          }
+        }
+      }
+    }
+
+    if (messages.length === 0) return;
+    try {
+      const chunks = expo.chunkPushNotifications(messages);
+      for (const chunk of chunks) {
+        const receipts = await expo.sendPushNotificationsAsync(chunk);
+        for (const receipt of receipts) {
+          if (receipt.status === "error") {
+            if (receipt.details?.error === "DeviceNotRegistered") {
+              const badToken = messages.find((m) =>
+                chunk.some((c) => c.to === m.to),
+              )?.to;
+              if (badToken) {
+                await pool.query("DELETE FROM expo_push_tokens WHERE token = $1", [badToken]).catch(() => {});
+              }
+            }
+          }
+        }
+      }
+      logger.info({ count: messages.length }, "expo-scheduler: sent push notifications");
+    } catch (err) {
+      logger.error({ err }, "expo-scheduler: send failed");
+    }
+  }
+
+  setInterval(tick, 5 * 60 * 1000);
+}
 
 export default router;

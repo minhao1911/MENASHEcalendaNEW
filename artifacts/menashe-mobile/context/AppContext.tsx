@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { DEFAULT_LOCATION, type Location } from "@/lib/locations";
@@ -7,6 +7,7 @@ import type { NotificationPrefs } from "@/lib/notifications";
 const LOCATION_KEY = "menashe-location";
 const PREFS_KEY = "menashe-notif-prefs";
 const LEAD_KEY = "menashe-lead-time";
+const EXPO_TOKEN_KEY = "menashe-expo-push-token";
 
 export const DEFAULT_PREFS: NotificationPrefs = {
   shabbat: true,
@@ -26,6 +27,11 @@ interface AppContextValue {
   scheduledCount: number;
   reschedule: () => Promise<void>;
   permissionGranted: boolean;
+  expoPushToken: string | null;
+  serverPushRegistered: boolean;
+  registerServerPush: (getToken: () => Promise<string | null>) => Promise<void>;
+  unregisterServerPush: (getToken: () => Promise<string | null>) => Promise<void>;
+  syncServerPushPrefs: (getToken: () => Promise<string | null>) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -46,6 +52,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [leadMinutes, setLeadMinutesState] = useState<number>(15);
   const [scheduledCount, setScheduledCount] = useState(0);
   const [permissionGranted, setPermissionGranted] = useState(false);
+  const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
+  const [serverPushRegistered, setServerPushRegistered] = useState(false);
+  const initDoneRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -54,10 +63,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         await setupNotificationChannel();
       }
 
-      const [locRaw, prefsRaw, leadRaw] = await Promise.all([
+      const [locRaw, prefsRaw, leadRaw, tokenRaw] = await Promise.all([
         AsyncStorage.getItem(LOCATION_KEY),
         AsyncStorage.getItem(PREFS_KEY),
         AsyncStorage.getItem(LEAD_KEY),
+        AsyncStorage.getItem(EXPO_TOKEN_KEY),
       ]);
 
       let loc = DEFAULT_LOCATION;
@@ -73,6 +83,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setLocationState(loc);
       setNotifPrefsState(prefs);
       setLeadMinutesState(lead);
+      if (tokenRaw) {
+        setExpoPushToken(tokenRaw);
+        setServerPushRegistered(true);
+      }
 
       if (Platform.OS !== "web") {
         const Notifications = await import("expo-notifications");
@@ -84,6 +98,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setScheduledCount(n);
         }
       }
+
+      initDoneRef.current = true;
     })();
   }, []);
 
@@ -113,6 +129,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setScheduledCount(n);
   };
 
+  const registerServerPush = async (getToken: () => Promise<string | null>) => {
+    const { getExpoPushToken, registerExpoPushToken } = await import("@/lib/expoPush");
+    const token = await getExpoPushToken();
+    if (!token) throw new Error("Could not obtain Expo push token. Make sure notifications are enabled.");
+    await registerExpoPushToken(token, getToken, location, notifPrefs, leadMinutes);
+    setExpoPushToken(token);
+    setServerPushRegistered(true);
+    setPermissionGranted(true);
+    await AsyncStorage.setItem(EXPO_TOKEN_KEY, token);
+  };
+
+  const unregisterServerPush = async (getToken: () => Promise<string | null>) => {
+    if (!expoPushToken) return;
+    const { unregisterExpoPushToken } = await import("@/lib/expoPush");
+    await unregisterExpoPushToken(expoPushToken, getToken);
+    setExpoPushToken(null);
+    setServerPushRegistered(false);
+    await AsyncStorage.removeItem(EXPO_TOKEN_KEY);
+  };
+
+  const syncServerPushPrefs = async (getToken: () => Promise<string | null>) => {
+    if (!expoPushToken || !serverPushRegistered) return;
+    const { registerExpoPushToken } = await import("@/lib/expoPush");
+    await registerExpoPushToken(expoPushToken, getToken, location, notifPrefs, leadMinutes);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -121,6 +163,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         leadMinutes, setLeadMinutes,
         scheduledCount, reschedule,
         permissionGranted,
+        expoPushToken,
+        serverPushRegistered,
+        registerServerPush,
+        unregisterServerPush,
+        syncServerPushPrefs,
       }}
     >
       {children}
