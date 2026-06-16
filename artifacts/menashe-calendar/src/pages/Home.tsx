@@ -1682,8 +1682,8 @@ function CommunityFAB({
               fontSize: 13.5,
               cursor: "pointer",
               whiteSpace: "nowrap",
-              animation: `fabItemIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both, fabItemShimmer 2.8s ease-in-out infinite`,
-              animationDelay: `${i * 0.05}s, ${i * 0.18}s`,
+              animation: `fabItemIn 0.5s ease-out both, fabItemShimmer 2.8s ease-in-out infinite`,
+              animationDelay: `${i * 0.07}s, ${i * 0.18}s`,
               minWidth: 210,
               transform: "scale(1)",
               transformOrigin: "right center",
@@ -1765,8 +1765,11 @@ function CommunityFAB({
       </div>
       <style>{`
         @keyframes fabItemIn {
-          from { opacity: 0; transform: translateY(10px) scale(0.88); }
-          to   { opacity: 1; transform: translateY(0)    scale(1);    }
+          0%   { clip-path: inset(0 0 0 100%); opacity: 0.6; }
+          55%  { clip-path: inset(0 0 0 0%);   opacity: 1;   }
+          72%  { clip-path: inset(0 -3% 0 0%); }
+          86%  { clip-path: inset(0 1% 0 0%);  }
+          100% { clip-path: inset(0 0 0 0);    opacity: 1;   }
         }
         @keyframes fabItemShimmer {
           0%   { box-shadow: 0 4px 18px rgba(0,0,0,0.5),  0 0 0px  rgba(255,255,255,0);    border-color: rgba(255,255,255,0.14); }
