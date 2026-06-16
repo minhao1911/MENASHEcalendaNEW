@@ -195,6 +195,23 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // Premium access requests
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS premium_requests (
+        id           TEXT PRIMARY KEY,
+        user_id      TEXT NOT NULL UNIQUE,
+        status       TEXT NOT NULL DEFAULT 'pending',
+        note         TEXT NOT NULL DEFAULT '',
+        display_name TEXT,
+        avatar_emoji TEXT NOT NULL DEFAULT '👤',
+        congregation TEXT,
+        city         TEXT,
+        country      TEXT,
+        requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        reviewed_at  TIMESTAMPTZ
+      )
+    `);
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");

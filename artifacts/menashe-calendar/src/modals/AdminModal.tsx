@@ -33,6 +33,19 @@ interface UserRow {
   avatarEmoji: string;
 }
 
+interface PremiumRequest {
+  id: string;
+  userId: string;
+  status: string;
+  note: string;
+  displayName: string | null;
+  avatarEmoji: string;
+  congregation: string | null;
+  city: string | null;
+  country: string | null;
+  requestedAt: string;
+}
+
 const defaultForm = {
   title: "",
   language: "English",
@@ -67,6 +80,9 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [userSearch, setUserSearch] = useState("");
   const [togglingUser, setTogglingUser] = useState<string | null>(null);
 
+  const [requests, setRequests] = useState<PremiumRequest[]>([]);
+  const [actingRequest, setActingRequest] = useState<string | null>(null);
+
   const { uploadFile, isUploading, progress } = useUpload({
     onSuccess: (response) => {
       const servingUrl = `/api/storage${response.objectPath}`;
@@ -76,7 +92,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   });
 
   function submitPin() {
-    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); }
+    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); }
     else { setPinError("Incorrect PIN"); setPin(""); }
   }
 
@@ -94,6 +110,24 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       const res = await fetch(`${API_BASE}/admin/users`, { headers: { "x-admin-pin": ADMIN_PIN } });
       if (res.ok) setUsers(await res.json());
     } finally { setUsersLoading(false); }
+  }
+
+  async function fetchRequests() {
+    try {
+      const res = await fetch(`${API_BASE}/admin/premium-requests`, { headers: { "x-admin-pin": ADMIN_PIN } });
+      if (res.ok) setRequests(await res.json());
+    } catch { /* silent */ }
+  }
+
+  async function actOnRequest(userId: string, action: "approve" | "deny") {
+    setActingRequest(userId);
+    try {
+      await fetch(`${API_BASE}/admin/premium-requests/${encodeURIComponent(userId)}/${action}`, {
+        method: "PUT",
+        headers: { "x-admin-pin": ADMIN_PIN },
+      });
+      await Promise.all([fetchRequests(), fetchUsers()]);
+    } finally { setActingRequest(null); }
   }
 
   async function toggleUserPremium(user: UserRow) {
@@ -285,7 +319,19 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
                 transition: "all 0.15s",
               }}
             >
-              {tab === "books" ? "📚 Books" : "👥 Users"}
+              {tab === "books" ? "📚 Books" : (
+                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  👥 Users
+                  {requests.length > 0 && (
+                    <span style={{
+                      background: "#ef4444", color: "#fff", borderRadius: 8,
+                      fontSize: 9, fontWeight: 900, padding: "1px 5px", lineHeight: 1.4,
+                    }}>
+                      {requests.length}
+                    </span>
+                  )}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -295,6 +341,89 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
         {/* USERS PANEL */}
         {panelTab === "users" && mode === "list" && (
           <>
+            {/* Pending Requests */}
+            {requests.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", letterSpacing: "0.06em", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ef4444", display: "inline-block", animation: "pulse 2s infinite" }} />
+                  PENDING REQUESTS ({requests.length})
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {requests.map(req => {
+                    const acting = actingRequest === req.userId;
+                    return (
+                      <div key={req.id} style={{
+                        borderRadius: 12, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.25)",
+                        padding: "12px 14px",
+                      }}>
+                        {/* Header row */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: req.note ? 8 : 10 }}>
+                          <div style={{
+                            width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                            background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
+                            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17,
+                          }}>
+                            {req.avatarEmoji}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {req.displayName ?? "Unknown User"}
+                            </div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                              {[req.congregation, req.city, req.country].filter(Boolean).join(" · ") || "No profile set"}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>
+                            {new Date(req.requestedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+
+                        {/* Note */}
+                        {req.note && (
+                          <div style={{
+                            fontSize: 12, color: "var(--text-muted)", fontStyle: "italic",
+                            marginBottom: 10, padding: "6px 10px", borderRadius: 7,
+                            background: "rgba(255,255,255,0.04)", lineHeight: 1.5,
+                          }}>
+                            "{req.note}"
+                          </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            onClick={() => actOnRequest(req.userId, "deny")}
+                            disabled={acting}
+                            style={{
+                              flex: 1, padding: "9px", borderRadius: 9, border: "1px solid rgba(239,68,68,0.35)",
+                              background: "rgba(239,68,68,0.08)", color: "#ef4444",
+                              fontSize: 12, fontWeight: 700, cursor: acting ? "default" : "pointer",
+                              opacity: acting ? 0.5 : 1,
+                            }}
+                          >
+                            ✗ Deny
+                          </button>
+                          <button
+                            onClick={() => actOnRequest(req.userId, "approve")}
+                            disabled={acting}
+                            style={{
+                              flex: 2, padding: "9px", borderRadius: 9, border: "none",
+                              background: acting ? "rgba(212,168,67,0.3)" : "linear-gradient(90deg, #b8860b, #d4a843)",
+                              color: "#1a0f00", fontSize: 12, fontWeight: 800,
+                              cursor: acting ? "default" : "pointer",
+                            }}
+                          >
+                            {acting ? "Processing…" : "👑 Approve Premium"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ height: 1, background: "var(--border)", margin: "14px 0" }} />
+              </div>
+            )}
+
             {/* Search */}
             <div style={{ position: "relative", marginBottom: 12 }}>
               <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-muted)" }}>🔍</span>

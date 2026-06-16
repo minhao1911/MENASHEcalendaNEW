@@ -745,32 +745,132 @@ export default function PremiumPage({ onUpgrade, onBack, isPremium = false }: Pr
 }
 
 function RequestAccessButton() {
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<"idle" | "form" | "submitting" | "done" | "pending" | "approved" | "denied">("idle");
+  const [note, setNote] = useState("");
   const userId: string = (window as any).Clerk?.user?.id ?? "";
 
-  function copyId() {
-    if (userId) {
-      navigator.clipboard.writeText(userId).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+  // Check if a request already exists on mount
+  useState(() => {
+    if (!userId) return;
+    (async () => {
+      try {
+        const token = await (window as any).Clerk?.session?.getToken();
+        const res = await fetch("/api/premium/my-request", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.status === "pending") setStatus("pending");
+          else if (data?.status === "approved") setStatus("approved");
+          else if (data?.status === "denied") setStatus("denied");
+        }
+      } catch { /* silent */ }
+    })();
+  });
+
+  async function submit() {
+    if (!userId) return;
+    setStatus("submitting");
+    try {
+      const token = await (window as any).Clerk?.session?.getToken();
+      const res = await fetch("/api/premium/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ note }),
       });
+      if (res.ok) setStatus("done");
+      else setStatus("form");
+    } catch {
+      setStatus("form");
     }
   }
 
-  const whatsappMsg = encodeURIComponent(
-    `Hi! I'd like to request Premium access for the Bnei Menashe Calendar app.\n\nMy User ID: ${userId || "(sign in first to get your ID)"}\n\nThank you!`
-  );
-  const emailSubject = encodeURIComponent("Premium Access Request — Bnei Menashe Calendar");
-  const emailBody = encodeURIComponent(
-    `Hi,\n\nI would like to request Premium access for the Bnei Menashe Calendar app.\n\nMy User ID: ${userId || "(sign in first to get your ID)"}\n\nThank you!`
-  );
+  if (status === "approved") {
+    return (
+      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)", marginBottom: 10 }}>
+        <div style={{ fontSize: 22, marginBottom: 6 }}>✅</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#4ade80", marginBottom: 4 }}>You have been approved!</div>
+        <div style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Reload the app to access your Premium features.</div>
+      </div>
+    );
+  }
+
+  if (status === "denied") {
+    return (
+      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", marginBottom: 10 }}>
+        <div style={{ fontSize: 22, marginBottom: 6 }}>📬</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#ef4444", marginBottom: 4 }}>Request not approved</div>
+        <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 10 }}>Please contact a community leader for more information.</div>
+        <button
+          onClick={() => setStatus("form")}
+          style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+        >
+          Re-submit Request
+        </button>
+      </div>
+    );
+  }
+
+  if (status === "pending" || status === "done") {
+    return (
+      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)", marginBottom: 10 }}>
+        <div style={{ fontSize: 22, marginBottom: 6 }}>⏳</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#d4a843", marginBottom: 4 }}>Request submitted!</div>
+        <div style={{ fontSize: 12, color: "var(--muted-foreground)" }}>A community leader will review and approve your access — usually within 24 hours. You'll see your Premium unlock next time you open the app.</div>
+      </div>
+    );
+  }
+
+  if (status === "form" || status === "submitting") {
+    return (
+      <div style={{ borderRadius: 14, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(212,168,67,0.2)", padding: "14px", marginBottom: 10, textAlign: "left" }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#d4a843", letterSpacing: "0.06em", marginBottom: 8 }}>REQUEST PREMIUM ACCESS</div>
+        <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 12, lineHeight: 1.6 }}>
+          A community leader will review and approve your access, usually within 24 hours.
+        </div>
+        <label style={{ fontSize: 11, fontWeight: 700, color: "var(--muted-foreground)", letterSpacing: "0.04em", display: "block", marginBottom: 6 }}>
+          NOTE (optional) — your congregation, city, or reason
+        </label>
+        <textarea
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="e.g. Member of Churachandpur community, Manipur…"
+          rows={3}
+          style={{
+            width: "100%", padding: "10px 12px", borderRadius: 9, resize: "none",
+            background: "rgba(255,255,255,0.05)", border: "1px solid rgba(212,168,67,0.25)",
+            color: "var(--foreground)", fontSize: 13, outline: "none", boxSizing: "border-box" as const,
+            lineHeight: 1.5,
+          }}
+        />
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          <button
+            onClick={() => setStatus("idle")}
+            style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--muted-foreground)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={submit}
+            disabled={status === "submitting"}
+            style={{
+              flex: 2, padding: "11px", borderRadius: 10, border: "none", cursor: status === "submitting" ? "default" : "pointer",
+              background: GOLD_GRAD, color: "#1a0f00", fontSize: 13, fontWeight: 800,
+              opacity: status === "submitting" ? 0.7 : 1,
+            }}
+          >
+            {status === "submitting" ? "Submitting…" : "✦ Submit Request"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       <button
         className="upgrade-btn"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setStatus("form")}
         style={{
           width: "100%", padding: "16px 24px",
           background: GOLD_GRAD, color: "#1a0f00",
@@ -780,79 +880,12 @@ function RequestAccessButton() {
           transition: "transform 0.1s", marginBottom: 10,
         }}
       >
-        {open ? "✕ Close" : "✦ Request Premium Access"}
+        ✦ Request Premium Access
       </button>
-
-      {open && (
-        <div style={{
-          marginTop: 4, marginBottom: 8, borderRadius: 14,
-          background: "rgba(0,0,0,0.25)", border: "1px solid rgba(212,168,67,0.2)",
-          padding: "16px 14px", textAlign: "left",
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#d4a843", letterSpacing: "0.06em", marginBottom: 10 }}>
-            HOW TO REQUEST ACCESS
-          </div>
-          <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 12, lineHeight: 1.6 }}>
-            Send us a message with your User ID and a community leader will approve your access manually — usually within 24 hours.
-          </div>
-
-          {/* User ID copy row */}
-          {userId && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8, marginBottom: 12,
-              background: "rgba(212,168,67,0.08)", borderRadius: 8, padding: "8px 10px",
-              border: "1px solid rgba(212,168,67,0.2)",
-            }}>
-              <span style={{ fontSize: 11, color: "var(--muted-foreground)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                🪪 {userId}
-              </span>
-              <button
-                onClick={copyId}
-                style={{
-                  padding: "4px 10px", borderRadius: 6, border: "none", cursor: "pointer",
-                  background: copied ? "rgba(74,222,128,0.2)" : "rgba(212,168,67,0.2)",
-                  color: copied ? "#4ade80" : "#d4a843", fontSize: 11, fontWeight: 700, flexShrink: 0,
-                }}
-              >
-                {copied ? "✓ Copied!" : "Copy ID"}
-              </button>
-            </div>
-          )}
-
-          {/* Contact buttons */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <a
-              href={`https://wa.me/?text=${whatsappMsg}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                padding: "13px", borderRadius: 12, fontWeight: 800, fontSize: 14, textDecoration: "none",
-                background: "rgba(37,211,102,0.15)", border: "1px solid rgba(37,211,102,0.3)",
-                color: "#25d366",
-              }}
-            >
-              <span>💬</span> WhatsApp Us
-            </a>
-            <a
-              href={`mailto:admin@bneimenshe.app?subject=${emailSubject}&body=${emailBody}`}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                padding: "13px", borderRadius: 12, fontWeight: 800, fontSize: 14, textDecoration: "none",
-                background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.25)",
-                color: "#60a5fa",
-              }}
-            >
-              <span>📧</span> Email Us
-            </a>
-          </div>
-        </div>
-      )}
-
       <div style={{ fontSize: 11, color: "var(--muted-foreground)", display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
-        <span>✓ Manually reviewed</span>
+        <span>✓ Community reviewed</span>
         <span>✓ Approved within 24hrs</span>
-        <span>✓ Community managed</span>
+        <span>✓ No payment required</span>
       </div>
     </>
   );

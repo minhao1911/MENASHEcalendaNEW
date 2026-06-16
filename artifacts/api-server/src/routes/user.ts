@@ -288,6 +288,116 @@ router.put("/user/public-profile", requireAuth, async (req, res) => {
   }
 });
 
+// ── Premium access requests ───────────────────────────────────────────────────
+
+router.post("/premium/request", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const { note } = req.body;
+  const client = await pool.connect();
+  try {
+    const { rows: pp } = await client.query(
+      "SELECT display_name, avatar_emoji, congregation, city, country FROM user_public_profiles WHERE user_id = $1",
+      [userId],
+    );
+    const profile = pp[0] ?? {};
+    await client.query(
+      `INSERT INTO premium_requests
+         (id, user_id, status, note, display_name, avatar_emoji, congregation, city, country, requested_at)
+       VALUES (gen_random_uuid()::text, $1, 'pending', $2, $3, $4, $5, $6, $7, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         status = 'pending', note = EXCLUDED.note,
+         display_name = EXCLUDED.display_name, avatar_emoji = EXCLUDED.avatar_emoji,
+         congregation = EXCLUDED.congregation, city = EXCLUDED.city,
+         country = EXCLUDED.country, requested_at = NOW()`,
+      [userId, note ?? "", profile.display_name ?? null, profile.avatar_emoji ?? "👤",
+       profile.congregation ?? null, profile.city ?? null, profile.country ?? null],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
+router.get("/premium/my-request", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(
+      "SELECT status, requested_at FROM premium_requests WHERE user_id = $1",
+      [userId],
+    );
+    if (rows.length === 0) return res.json(null);
+    return res.json({ status: rows[0].status, requestedAt: rows[0].requested_at });
+  } finally {
+    client.release();
+  }
+});
+
+// ── Admin: list pending premium requests ─────────────────────────────────────
+
+router.get("/admin/premium-requests", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(
+      `SELECT * FROM premium_requests WHERE status = 'pending' ORDER BY requested_at ASC`,
+    );
+    return res.json(rows.map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      status: r.status,
+      note: r.note,
+      displayName: r.display_name,
+      avatarEmoji: r.avatar_emoji,
+      congregation: r.congregation,
+      city: r.city,
+      country: r.country,
+      requestedAt: r.requested_at,
+    })));
+  } finally {
+    client.release();
+  }
+});
+
+router.put("/admin/premium-requests/:userId/approve", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+  const { userId } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO user_profiles (user_id, is_premium, theme, candle_enabled, language, updated_at)
+       VALUES ($1, true, 'dark', true, 'en', NOW())
+       ON CONFLICT (user_id) DO UPDATE SET is_premium = true, updated_at = NOW()`,
+      [userId],
+    );
+    await client.query(
+      `UPDATE premium_requests SET status = 'approved', reviewed_at = NOW() WHERE user_id = $1`,
+      [userId],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
+router.put("/admin/premium-requests/:userId/deny", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+  const { userId } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE premium_requests SET status = 'denied', reviewed_at = NOW() WHERE user_id = $1`,
+      [userId],
+    );
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
 // ── Admin: list all users ─────────────────────────────────────────────────────
 
 router.get("/admin/users", async (req, res) => {
