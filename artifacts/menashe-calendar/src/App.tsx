@@ -266,26 +266,21 @@ function AuthCard({ children }: { children: React.ReactNode }) {
           {/* Logo badge + branding */}
           <div style={{ position: "relative", zIndex: 10, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
             {/* 3D logo badge */}
-            <div style={{
-              width: 80, height: 80,
-              borderRadius: "50%",
-              background: "radial-gradient(circle at 38% 32%, rgba(50,34,4,0.98) 0%, rgba(8,8,14,0.98) 65%)",
-              border: "2px solid rgba(212,175,55,0.75)",
-              boxShadow: [
-                "inset 0 1.5px 0 rgba(255,230,100,0.35)",
-                "inset 0 -1px 0 rgba(0,0,0,0.6)",
-                "0 4px 20px rgba(0,0,0,0.9)",
-                "0 10px 40px rgba(0,0,0,0.7)",
-                "0 0 24px rgba(212,175,55,0.15)",
-              ].join(", "),
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <svg viewBox="0 0 80 80" width="48" height="48" fill="none">
-                <polygon points="40,6 58,38 22,38" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="rgba(212,175,55,0.06)"/>
-                <polygon points="40,62 22,30 58,30" stroke="#D4AF37" strokeWidth="2.8" strokeLinejoin="round" fill="rgba(212,175,55,0.06)"/>
-                <polyline points="14,74 14,30 40,56 66,30 66,74" stroke="#D4AF37" strokeWidth="4.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+            <img
+              src="/logo.jpeg"
+              alt="Bnei Menashe Calendar"
+              style={{
+                width: 80, height: 80,
+                borderRadius: "20px",
+                objectFit: "cover",
+                boxShadow: [
+                  "0 4px 20px rgba(0,0,0,0.9)",
+                  "0 10px 40px rgba(0,0,0,0.7)",
+                  "0 0 24px rgba(212,175,55,0.25)",
+                ].join(", "),
+                border: "2px solid rgba(212,175,55,0.6)",
+              }}
+            />
 
             <div style={{ textAlign: "center" }}>
               <div style={{

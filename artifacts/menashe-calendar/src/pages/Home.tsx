@@ -1277,7 +1277,7 @@ export default function Home({
       )}
       <div className="app-header">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div className="app-icon">✡</div>
+          <img src="/logo.jpeg" alt="Bnei Menashe" style={{ width: 38, height: 38, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(212,175,55,0.35)", display: "block" }} />
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1 }}>Menashe</div>
             <div style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.1em", fontWeight: 600 }}>CALENDAR</div>

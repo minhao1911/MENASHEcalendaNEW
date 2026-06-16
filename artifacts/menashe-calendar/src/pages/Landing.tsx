@@ -495,12 +495,8 @@ export default function Landing({ onSignIn }: LandingProps) {
         {/* Sticky nav */}
         <nav className="landing-nav">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* M + Star of David nav logo */}
-            <svg viewBox="0 0 80 80" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="40,6 58,38 22,38" stroke="#D4AF37" strokeWidth="3.2" strokeLinejoin="round" fill="none"/>
-              <polygon points="40,62 22,30 58,30" stroke="#D4AF37" strokeWidth="3.2" strokeLinejoin="round" fill="none"/>
-              <polyline points="14,74 14,30 40,56 66,30 66,74" stroke="#D4AF37" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
+            {/* Logo */}
+            <img src="/logo.jpeg" alt="Bnei Menashe Calendar" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(212,175,55,0.4)" }} />
             <span style={{ fontSize: 14, fontWeight: 700, color: "#D4AF37", letterSpacing: ".08em" }}>{t.landingBadge}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
