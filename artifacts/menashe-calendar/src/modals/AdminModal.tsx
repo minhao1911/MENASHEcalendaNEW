@@ -20,7 +20,7 @@ const COVER_COLORS = ["#1a3050","#2a1a40","#1a2a20","#30200a","#1a1a30","#0a2030
 
 type FormMode = "list" | "add" | "edit";
 type FileMode = "url" | "upload";
-type PanelTab = "books" | "users";
+type PanelTab = "books" | "users" | "payments";
 
 interface UserRow {
   userId: string;
@@ -44,6 +44,22 @@ interface PremiumRequest {
   city: string | null;
   country: string | null;
   requestedAt: string;
+}
+
+interface PaymentRecord {
+  id: number;
+  userId: string;
+  orderId: string;
+  paymentId: string;
+  plan: string;
+  amount: number;
+  status: string;
+  createdAt: string;
+  displayName: string | null;
+  avatarEmoji: string;
+  congregation: string | null;
+  city: string | null;
+  country: string | null;
 }
 
 const defaultForm = {
@@ -86,6 +102,10 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [requests, setRequests] = useState<PremiumRequest[]>([]);
   const [actingRequest, setActingRequest] = useState<string | null>(null);
 
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentSearch, setPaymentSearch] = useState("");
+
   const { uploadFile, isUploading, progress } = useUpload({
     onSuccess: (response) => {
       const servingUrl = `/api/storage${response.objectPath}`;
@@ -103,7 +123,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   });
 
   function submitPin() {
-    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); }
+    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); }
     else { setPinError("Incorrect PIN"); setPin(""); }
   }
 
@@ -128,6 +148,14 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       const res = await fetch(`${API_BASE}/admin/premium-requests`, { headers: { "x-admin-pin": ADMIN_PIN } });
       if (res.ok) setRequests(await res.json());
     } catch { /* silent */ }
+  }
+
+  async function fetchPayments() {
+    setPaymentsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/payments`, { headers: { "x-admin-pin": ADMIN_PIN } });
+      if (res.ok) setPayments(await res.json());
+    } finally { setPaymentsLoading(false); }
   }
 
   async function actOnRequest(userId: string, action: "approve" | "deny") {
@@ -297,7 +325,8 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
         <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>
           {panelTab === "books"
             ? (mode === "list" ? "📚 Library Admin" : mode === "add" ? "➕ Add Book" : "✏️ Edit Book")
-            : "👥 Premium Users"}
+            : panelTab === "users" ? "👥 Premium Users"
+            : "💳 Payments"}
         </div>
         {panelTab === "books" && mode === "list" && (
           <button
@@ -326,25 +355,35 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             {usersLoading ? "…" : "↻ Refresh"}
           </button>
         )}
+        {panelTab === "payments" && (
+          <button
+            onClick={fetchPayments}
+            style={{ padding: "7px 14px", borderRadius: 8, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+          >
+            {paymentsLoading ? "…" : "↻ Refresh"}
+          </button>
+        )}
       </div>
 
       {/* ── Tab switcher ── */}
       {mode === "list" && (
         <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-          {(["books", "users"] as PanelTab[]).map(tab => (
+          {(["books", "users", "payments"] as PanelTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setPanelTab(tab)}
               style={{
-                flex: 1, padding: "10px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
+                flex: 1, padding: "10px", fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer",
                 background: panelTab === tab ? "rgba(212,168,67,0.1)" : "transparent",
                 color: panelTab === tab ? "#d4a843" : "var(--text-muted)",
                 borderBottom: panelTab === tab ? "2px solid #d4a843" : "2px solid transparent",
                 transition: "all 0.15s",
               }}
             >
-              {tab === "books" ? "📚 Books" : (
-                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              {tab === "books" ? "📚 Books"
+                : tab === "payments" ? "💳 Payments"
+                : (
+                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                   👥 Users
                   {requests.length > 0 && (
                     <span style={{
@@ -560,6 +599,140 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             )}
           </>
         )}
+
+        {/* PAYMENTS PANEL */}
+        {panelTab === "payments" && mode === "list" && (() => {
+          const filtered = payments.filter(p => {
+            if (!paymentSearch.trim()) return true;
+            const q = paymentSearch.toLowerCase();
+            return (
+              (p.displayName ?? "").toLowerCase().includes(q) ||
+              (p.city ?? "").toLowerCase().includes(q) ||
+              (p.plan ?? "").toLowerCase().includes(q) ||
+              p.paymentId.toLowerCase().includes(q) ||
+              p.orderId.toLowerCase().includes(q)
+            );
+          });
+
+          const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+          const monthlyCount = payments.filter(p => p.plan === "monthly").length;
+          const annualCount = payments.filter(p => p.plan === "annual").length;
+
+          function formatAmount(paise: number) {
+            return "₹" + (paise / 100).toLocaleString("en-IN");
+          }
+
+          function timeAgo(dateStr: string) {
+            const diff = Date.now() - new Date(dateStr).getTime();
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return "just now";
+            if (mins < 60) return `${mins}m ago`;
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return `${hrs}h ago`;
+            const days = Math.floor(hrs / 24);
+            if (days < 7) return `${days}d ago`;
+            return new Date(dateStr).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+          }
+
+          return (
+            <>
+              {/* Revenue stats */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+                {[
+                  { label: "Total Revenue", value: formatAmount(totalRevenue), color: "#d4a843", icon: "₹" },
+                  { label: "Monthly Plans", value: monthlyCount, color: "#60a5fa", icon: "📅" },
+                  { label: "Annual Plans", value: annualCount, color: "#4ade80", icon: "🗓" },
+                ].map(stat => (
+                  <div key={stat.label} style={{ padding: "10px 8px", borderRadius: 10, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: stat.color }}>{stat.value}</div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.05em", marginTop: 2 }}>{stat.label.toUpperCase()}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Search */}
+              <div style={{ position: "relative", marginBottom: 12 }}>
+                <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-muted)" }}>🔍</span>
+                <input
+                  value={paymentSearch}
+                  onChange={e => setPaymentSearch(e.target.value)}
+                  placeholder="Search by name, payment ID, plan…"
+                  style={{ width: "100%", padding: "9px 12px 9px 32px", borderRadius: 9, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 13, outline: "none", boxSizing: "border-box" as const }}
+                />
+              </div>
+
+              {paymentsLoading ? (
+                <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>Loading transactions…</div>
+              ) : payments.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>💳</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>No payments yet</div>
+                  <div style={{ fontSize: 12 }}>Razorpay transactions will appear here</div>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 30, color: "var(--text-muted)", fontSize: 13 }}>No results for "{paymentSearch}"</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {filtered.map(payment => (
+                    <div key={payment.id} style={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 14, padding: "12px 14px",
+                    }}>
+                      {/* Top row: avatar + name + plan badge + amount */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                          {payment.avatarEmoji}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {payment.displayName ?? "Unknown User"}
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                            {[payment.congregation, payment.city, payment.country].filter(Boolean).join(" · ") || payment.userId.slice(0, 20) + "…"}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontSize: 16, fontWeight: 900, color: "#d4a843" }}>{formatAmount(payment.amount)}</div>
+                          <div style={{ fontSize: 9, marginTop: 2 }}>
+                            <span style={{
+                              padding: "2px 7px", borderRadius: 99, fontWeight: 800,
+                              fontSize: 9, letterSpacing: "0.04em",
+                              background: payment.plan === "annual" ? "rgba(74,222,128,0.15)" : "rgba(96,165,250,0.15)",
+                              color: payment.plan === "annual" ? "#4ade80" : "#60a5fa",
+                              border: `1px solid ${payment.plan === "annual" ? "rgba(74,222,128,0.3)" : "rgba(96,165,250,0.3)"}`,
+                            }}>
+                              {payment.plan === "annual" ? "ANNUAL" : "MONTHLY"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bottom row: payment IDs + status + time */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+                          <span style={{ fontSize: 9, color: "var(--text-muted)", flexShrink: 0 }}>ID</span>
+                          <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>{payment.paymentId}</span>
+                        </div>
+                        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                          <span style={{
+                            fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 99,
+                            background: payment.status === "captured" ? "rgba(74,222,128,0.15)" : "rgba(239,68,68,0.15)",
+                            color: payment.status === "captured" ? "#4ade80" : "#ef4444",
+                            border: `1px solid ${payment.status === "captured" ? "rgba(74,222,128,0.3)" : "rgba(239,68,68,0.3)"}`,
+                          }}>
+                            {payment.status.toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{timeAgo(payment.createdAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* LIST MODE */}
         {panelTab === "books" && mode === "list" && (

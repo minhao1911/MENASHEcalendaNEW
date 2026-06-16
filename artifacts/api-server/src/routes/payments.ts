@@ -116,4 +116,51 @@ router.post("/payment/razorpay/verify", requireAuth, async (req, res) => {
   }
 });
 
+/* ── GET /api/admin/payments ─────────────────────────────────────────────────
+   Returns all Razorpay payment records with user display names. Admin only. */
+router.get("/admin/payments", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT
+        pr.id,
+        pr.user_id,
+        pr.order_id,
+        pr.payment_id,
+        pr.plan,
+        pr.amount,
+        pr.status,
+        pr.created_at,
+        pp.display_name,
+        pp.avatar_emoji,
+        pp.congregation,
+        pp.city,
+        pp.country
+      FROM payment_records pr
+      LEFT JOIN user_public_profiles pp ON pp.user_id = pr.user_id
+      ORDER BY pr.created_at DESC
+    `);
+    return res.json(rows.map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      orderId: r.order_id,
+      paymentId: r.payment_id,
+      plan: r.plan,
+      amount: r.amount,
+      status: r.status,
+      createdAt: r.created_at,
+      displayName: r.display_name ?? null,
+      avatarEmoji: r.avatar_emoji ?? "👤",
+      congregation: r.congregation ?? null,
+      city: r.city ?? null,
+      country: r.country ?? null,
+    })));
+  } finally {
+    client.release();
+  }
+});
+
 export default router;
