@@ -1593,9 +1593,32 @@ function CommunityFAB({
   const [open, setOpen] = useState(false);
   const { t } = useLanguage();
 
+  const [upcomingEventCount, setUpcomingEventCount] = useState(0);
+
+  useEffect(() => {
+    function countUpcoming() {
+      try {
+        const raw = localStorage.getItem("menashe-community-events");
+        const events: Array<{ date: string }> = raw ? JSON.parse(raw) : [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const count = events.filter(e => {
+          const d = new Date(e.date + "T00:00:00");
+          return d >= today;
+        }).length;
+        setUpcomingEventCount(count);
+      } catch {
+        setUpcomingEventCount(0);
+      }
+    }
+    countUpcoming();
+    window.addEventListener("storage", countUpcoming);
+    return () => window.removeEventListener("storage", countUpcoming);
+  }, []);
+
   const items = [
     { label: t.fabAnnouncements, icon: "📢", action: onShowAnnouncements, count: announcementCount },
-    { label: t.fabCommunityEvents, icon: "📅", action: onShowEvents },
+    { label: t.fabCommunityEvents, icon: "📅", action: onShowEvents, count: upcomingEventCount },
     { label: t.fabCommunityMemorial, icon: "🕯", action: onShowCommunityYahrzeit },
     { label: t.fabTorahWisdom, icon: "📖", action: onShowMussar },
     { label: t.fabPrayerBoard, icon: "🙏", action: onShowPrayerBoard },
