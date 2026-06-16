@@ -1706,26 +1706,38 @@ function CommunityFAB({
             )}
           </button>
         ))}
-        <div style={{ position: "relative", width: 54, height: 54 }}>
+        <div style={{ position: "relative", width: 58, height: 58 }}>
           <button
             onClick={() => setOpen(v => !v)}
             title={t.fabTitle}
             style={{
-              width: 54, height: 54,
+              width: 58, height: 58,
               borderRadius: "50%",
-              background: open
-                ? "linear-gradient(135deg, #b8960c 0%, #d4af37 100%)"
-                : "linear-gradient(135deg, #d4af37 0%, #b8960c 100%)",
               border: "none",
-              boxShadow: "0 4px 20px rgba(212,175,55,0.45), 0 2px 8px rgba(0,0,0,0.5)",
+              padding: 0,
+              overflow: "hidden",
+              boxShadow: open
+                ? "0 2px 12px rgba(212,175,55,0.5), 0 0 0 3px #d4af37"
+                : "0 4px 20px rgba(0,0,0,0.55), 0 0 0 2.5px rgba(212,175,55,0.7)",
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 26,
-              transition: "transform 0.2s ease, background 0.2s ease",
-              transform: open ? "rotate(45deg)" : "rotate(0deg)",
+              transition: "box-shadow 0.2s ease, transform 0.2s ease",
+              transform: open ? "scale(0.92)" : "scale(1)",
+              background: "#0a0a0a",
             }}
           >
-            ✦
+            <img
+              src="/saipikhup.jpg"
+              alt="Community Hub"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center 78%",
+                borderRadius: "50%",
+                display: "block",
+              }}
+            />
           </button>
           {announcementCount > 0 && !open && (
             <span style={{
