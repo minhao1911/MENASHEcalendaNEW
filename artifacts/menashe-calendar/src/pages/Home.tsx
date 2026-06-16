@@ -1706,35 +1706,35 @@ function CommunityFAB({
             )}
           </button>
         ))}
-        <div style={{ position: "relative", width: 58, height: 58 }}>
+        <div style={{ position: "relative", width: 72, height: 44 }}>
           <button
             onClick={() => setOpen(v => !v)}
             title={t.fabTitle}
             style={{
-              width: 58, height: 58,
-              borderRadius: "50%",
+              width: 72, height: 44,
+              borderRadius: 4,
               border: "none",
               padding: 0,
               overflow: "hidden",
               boxShadow: open
-                ? "0 2px 12px rgba(212,175,55,0.5), 0 0 0 3px #d4af37"
-                : "0 4px 20px rgba(0,0,0,0.55), 0 0 0 2.5px rgba(212,175,55,0.7)",
+                ? "0 4px 18px rgba(0,0,0,0.7), 0 1px 6px rgba(212,175,55,0.4)"
+                : "0 6px 24px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.5)",
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "box-shadow 0.2s ease, transform 0.2s ease",
-              transform: open ? "scale(0.92)" : "scale(1)",
-              background: "#0a0a0a",
+              transition: "box-shadow 0.3s ease, transform 0.3s ease",
+              transform: open ? "scale(0.93) translateY(2px)" : "scale(1)",
+              background: "#060606",
             }}
           >
             <img
               src="/saipikhup.jpg"
               alt="Community Hub"
+              className="shawl-weave"
               style={{
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
                 objectPosition: "center 78%",
-                borderRadius: "50%",
                 display: "block",
               }}
             />
@@ -1763,6 +1763,16 @@ function CommunityFAB({
         @keyframes fabItemIn {
           from { opacity: 0; transform: translateY(8px) scale(0.95); }
           to   { opacity: 1; transform: translateY(0)   scale(1);    }
+        }
+        @keyframes shawlWeave {
+          0%   { object-position: 10% 78%; }
+          25%  { object-position: 40% 79%; }
+          50%  { object-position: 70% 78%; }
+          75%  { object-position: 40% 77%; }
+          100% { object-position: 10% 78%; }
+        }
+        .shawl-weave {
+          animation: shawlWeave 9s ease-in-out infinite;
         }
       `}</style>
     </>
