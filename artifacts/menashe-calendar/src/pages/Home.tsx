@@ -7,6 +7,7 @@ import { getCurrentParasha, getUpcomingHolidays } from "../lib/parasha";
 import { Location } from "../lib/locations";
 import { sendNotification, isNotifSupported } from "../hooks/useNotifications";
 import { useLanguage } from "../context/LanguageContext";
+import { fetchCommunityYahrzeit } from "../lib/userApi";
 
 const API_BASE = "/api";
 
@@ -1594,6 +1595,30 @@ function CommunityFAB({
   const { t } = useLanguage();
 
   const [upcomingEventCount, setUpcomingEventCount] = useState(0);
+  const [upcomingYahrzeitCount, setUpcomingYahrzeitCount] = useState(0);
+
+  useEffect(() => {
+    fetchCommunityYahrzeit().then(entries => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const in30 = new Date(today);
+      in30.setDate(in30.getDate() + 30);
+      const curHYear = new HDate(today).getFullYear();
+
+      let count = 0;
+      for (const e of entries) {
+        for (const yr of [curHYear, curHYear + 1]) {
+          try {
+            const greg = new HDate(e.hebrewDay, e.hebrewMonth, yr).greg();
+            greg.setHours(0, 0, 0, 0);
+            if (greg >= today && greg <= in30) { count++; break; }
+            if (greg > in30) break;
+          } catch { /* skip invalid hebrew dates */ }
+        }
+      }
+      setUpcomingYahrzeitCount(count);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     function countUpcoming() {
@@ -1619,7 +1644,7 @@ function CommunityFAB({
   const items = [
     { label: t.fabAnnouncements, icon: "📢", action: onShowAnnouncements, count: announcementCount },
     { label: t.fabCommunityEvents, icon: "📅", action: onShowEvents, count: upcomingEventCount },
-    { label: t.fabCommunityMemorial, icon: "🕯", action: onShowCommunityYahrzeit },
+    { label: t.fabCommunityMemorial, icon: "🕯", action: onShowCommunityYahrzeit, count: upcomingYahrzeitCount },
     { label: t.fabTorahWisdom, icon: "📖", action: onShowMussar },
     { label: t.fabPrayerBoard, icon: "🙏", action: onShowPrayerBoard },
     { label: t.fabTorahTracker, icon: "✡", action: onShowTorahTracker },
