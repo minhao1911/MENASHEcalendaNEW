@@ -1710,7 +1710,7 @@ function CommunityFAB({
           <button
             onClick={() => setOpen(v => !v)}
             title={t.fabTitle}
-            className="shawl-sway"
+            className={`shawl-sway${open ? " shawl-open" : ""}`}
             style={{
               width: 72, height: 100,
               border: "none",
@@ -1721,18 +1721,23 @@ function CommunityFAB({
               alignItems: "center",
               justifyContent: "center",
               transformOrigin: "top center",
+              transform: open ? "scale(1.18) translateY(-4px)" : undefined,
+              transition: "transform 0.4s cubic-bezier(0.34,1.56,0.64,1)",
             }}
           >
             <img
               src="/saipikhup-sticker.png"
               alt="Community Hub"
-              className="shawl-weave"
+              className={open ? "shawl-active" : "shawl-weave"}
               style={{
                 width: "100%",
                 height: "100%",
                 objectFit: "contain",
                 display: "block",
-                filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.7))",
+                filter: open
+                  ? "drop-shadow(0 0 6px rgba(212,175,55,0.9)) drop-shadow(0 0 18px rgba(212,175,55,0.55)) drop-shadow(0 0 32px rgba(212,175,55,0.25)) brightness(1.15) saturate(1.4)"
+                  : "drop-shadow(0 4px 12px rgba(0,0,0,0.7))",
+                transition: "filter 0.4s ease",
               }}
             />
           </button>
@@ -1782,6 +1787,17 @@ function CommunityFAB({
         .shawl-sway {
           animation: shawlSway 5s ease-in-out infinite;
           transform-origin: top center;
+        }
+        .shawl-open {
+          animation: none;
+        }
+        @keyframes shawlGoldPulse {
+          0%   { filter: drop-shadow(0 0 6px rgba(212,175,55,0.9)) drop-shadow(0 0 18px rgba(212,175,55,0.55)) drop-shadow(0 0 32px rgba(212,175,55,0.25)) brightness(1.15) saturate(1.4); }
+          50%  { filter: drop-shadow(0 0 10px rgba(212,175,55,1))  drop-shadow(0 0 28px rgba(212,175,55,0.75)) drop-shadow(0 0 48px rgba(212,175,55,0.4))  brightness(1.25) saturate(1.6); }
+          100% { filter: drop-shadow(0 0 6px rgba(212,175,55,0.9)) drop-shadow(0 0 18px rgba(212,175,55,0.55)) drop-shadow(0 0 32px rgba(212,175,55,0.25)) brightness(1.15) saturate(1.4); }
+        }
+        .shawl-active {
+          animation: shawlGoldPulse 2s ease-in-out infinite;
         }
       `}</style>
     </>
