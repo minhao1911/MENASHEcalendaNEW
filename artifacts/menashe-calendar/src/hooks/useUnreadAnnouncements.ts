@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { fetchAnnouncements } from "../lib/announcementsApi";
+import { fetchAnnouncements, type ServerAnnouncement } from "../lib/announcementsApi";
 
 const SEEN_KEY = "menashe-seen-announcements";
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
@@ -17,15 +17,14 @@ function saveSeenIds(ids: Set<string>) {
 }
 
 export function useUnreadAnnouncements() {
-  const [sentIds, setSentIds] = useState<string[]>([]);
+  const [sentAnnouncements, setSentAnnouncements] = useState<ServerAnnouncement[]>([]);
   const [seenIds, setSeenIds] = useState<Set<string>>(loadSeenIds);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const poll = useCallback(async () => {
     try {
       const list = await fetchAnnouncements();
-      const sent = list.filter(a => a.status === "sent").map(a => a.id);
-      setSentIds(sent);
+      setSentAnnouncements(list.filter(a => a.status === "sent"));
     } catch {}
   }, []);
 
@@ -37,15 +36,16 @@ export function useUnreadAnnouncements() {
     };
   }, [poll]);
 
-  const unreadCount = sentIds.filter(id => !seenIds.has(id)).length;
+  const unreadAnnouncements = sentAnnouncements.filter(a => !seenIds.has(a.id));
+  const unreadCount = unreadAnnouncements.length;
 
   const markAllRead = useCallback(() => {
     setSeenIds(prev => {
-      const next = new Set([...prev, ...sentIds]);
+      const next = new Set([...prev, ...sentAnnouncements.map(a => a.id)]);
       saveSeenIds(next);
       return next;
     });
-  }, [sentIds]);
+  }, [sentAnnouncements]);
 
-  return { unreadCount, markAllRead };
+  return { unreadCount, unreadAnnouncements, markAllRead };
 }

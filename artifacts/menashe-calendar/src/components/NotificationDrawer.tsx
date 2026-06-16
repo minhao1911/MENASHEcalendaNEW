@@ -1,5 +1,20 @@
 import { useState } from "react";
 import { NotificationPrefs, LeadTime, LEAD_TIME_OPTIONS } from "../hooks/useNotifications";
+import type { ServerAnnouncement } from "../lib/announcementsApi";
+
+function formatRelative(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(diff / 3_600_000);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(diff / 86_400_000);
+  if (days < 7) return `${days}d ago`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 interface NotificationDrawerProps {
   onClose: () => void;
@@ -8,6 +23,8 @@ interface NotificationDrawerProps {
   leadTime: LeadTime;
   onUpdateNotifPref: (key: keyof NotificationPrefs, value: boolean) => Promise<boolean>;
   onUpdateLeadTime: (mins: LeadTime) => void;
+  unreadAnnouncements: ServerAnnouncement[];
+  onViewAllAnnouncements: () => void;
 }
 
 export default function NotificationDrawer({
@@ -17,12 +34,16 @@ export default function NotificationDrawer({
   leadTime,
   onUpdateNotifPref,
   onUpdateLeadTime,
+  unreadAnnouncements,
+  onViewAllAnnouncements,
 }: NotificationDrawerProps) {
   const [pendingKey, setPendingKey] = useState<keyof NotificationPrefs | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const notifBlocked = notifPermission === "denied";
   const notifUnsupported = typeof Notification === "undefined";
   const anyActive = Object.values(notifPrefs).some(Boolean);
+  const preview = unreadAnnouncements.slice(0, 3);
 
   async function handleToggle(key: keyof NotificationPrefs, value: boolean) {
     if (notifBlocked || notifUnsupported) return;
@@ -110,6 +131,10 @@ export default function NotificationDrawer({
             from { transform: translateY(100%); opacity: 0; }
             to   { transform: translateY(0);    opacity: 1; }
           }
+          @keyframes annPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+            50%       { box-shadow: 0 0 0 4px rgba(239,68,68,0.12); }
+          }
         `}</style>
 
         {/* Handle + header */}
@@ -119,12 +144,12 @@ export default function NotificationDrawer({
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10,
-                background: anyActive ? "rgba(212,168,67,0.15)" : "var(--elevated)",
-                border: `1px solid ${anyActive ? "rgba(212,168,67,0.4)" : "var(--border)"}`,
+                background: (anyActive || preview.length > 0) ? "rgba(212,168,67,0.15)" : "var(--elevated)",
+                border: `1px solid ${(anyActive || preview.length > 0) ? "rgba(212,168,67,0.4)" : "var(--border)"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                  stroke={anyActive ? "#d4a843" : "var(--text-muted)"} strokeWidth="2"
+                  stroke={(anyActive || preview.length > 0) ? "#d4a843" : "var(--text-muted)"} strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                   <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -133,7 +158,9 @@ export default function NotificationDrawer({
               <div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>Notifications</div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  {anyActive ? "Reminders are active" : "All reminders off"}
+                  {preview.length > 0
+                    ? `${preview.length} unread announcement${preview.length > 1 ? "s" : ""}`
+                    : anyActive ? "Reminders are active" : "All reminders off"}
                 </div>
               </div>
             </div>
@@ -165,8 +192,140 @@ export default function NotificationDrawer({
 
         {/* Scrollable content */}
         <div style={{ overflowY: "auto", flex: 1, paddingBottom: 32 }}>
+
+          {/* ── What's New ── */}
+          {preview.length > 0 && (
+            <div style={{ padding: "4px 16px 12px" }}>
+              {/* Section label */}
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                marginBottom: 8,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    background: "#ef4444",
+                    animation: "annPulse 2s ease-in-out infinite",
+                  }} />
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", color: "var(--text-muted)" }}>
+                    WHAT'S NEW
+                  </span>
+                </div>
+                <button
+                  onClick={onViewAllAnnouncements}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer", padding: "2px 4px",
+                    fontSize: 11, fontWeight: 700, color: "#d4a843",
+                    display: "flex", alignItems: "center", gap: 3,
+                  }}
+                >
+                  View all
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#d4a843" strokeWidth="2.5" strokeLinecap="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Announcement cards */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {preview.map((ann) => {
+                  const isExpanded = expandedId === ann.id;
+                  return (
+                    <div
+                      key={ann.id}
+                      onClick={() => setExpandedId(isExpanded ? null : ann.id)}
+                      style={{
+                        borderRadius: 14, overflow: "hidden", cursor: "pointer",
+                        background: "var(--elevated)",
+                        border: "1px solid var(--border)",
+                        transition: "border-color 0.15s",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "11px 13px" }}>
+                        {/* Emoji badge */}
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                          background: "rgba(212,168,67,0.1)",
+                          border: "1px solid rgba(212,168,67,0.2)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 18,
+                        }}>
+                          {ann.emoji}
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {/* Unread dot + title row */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                            <div style={{
+                              width: 6, height: 6, borderRadius: "50%",
+                              background: "#ef4444", flexShrink: 0,
+                            }} />
+                            <span style={{
+                              fontSize: 13, fontWeight: 700,
+                              color: "var(--text-primary)",
+                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            }}>
+                              {ann.title}
+                            </span>
+                          </div>
+
+                          {/* Body — clipped unless expanded */}
+                          <div style={{
+                            fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5,
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitLineClamp: isExpanded ? undefined : 2,
+                            WebkitBoxOrient: "vertical" as const,
+                            whiteSpace: isExpanded ? "pre-wrap" : undefined,
+                          }}>
+                            {ann.body}
+                          </div>
+                        </div>
+
+                        {/* Time + chevron */}
+                        <div style={{
+                          display: "flex", flexDirection: "column", alignItems: "flex-end",
+                          gap: 4, flexShrink: 0,
+                        }}>
+                          <span style={{ fontSize: 10, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                            {formatRelative(ann.sentAt)}
+                          </span>
+                          <svg
+                            width="12" height="12" viewBox="0 0 24 24" fill="none"
+                            stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"
+                            style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                          >
+                            <polyline points="6 9 12 15 18 9"/>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {unreadAnnouncements.length > 3 && (
+                  <button
+                    onClick={onViewAllAnnouncements}
+                    style={{
+                      width: "100%", padding: "9px", borderRadius: 12,
+                      background: "rgba(212,168,67,0.07)",
+                      border: "1px dashed rgba(212,168,67,0.3)",
+                      cursor: "pointer",
+                      fontSize: 12, fontWeight: 700, color: "#d4a843",
+                    }}
+                  >
+                    +{unreadAnnouncements.length - 3} more announcements →
+                  </button>
+                )}
+              </div>
+
+              {/* Divider before reminders section */}
+              <div style={{ height: 1, background: "var(--border)", margin: "14px 0 2px" }} />
+            </div>
+          )}
+
           {/* Lead time picker */}
-          <div style={{ padding: "4px 16px 10px" }}>
+          <div style={{ padding: preview.length > 0 ? "0 16px 10px" : "4px 16px 10px" }}>
             <div style={{
               borderRadius: 14, border: "1px solid var(--border)",
               background: "var(--elevated)", padding: "12px 16px",
@@ -196,6 +355,13 @@ export default function NotificationDrawer({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Reminders section label */}
+          <div style={{ padding: "0 16px 8px" }}>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", color: "var(--text-muted)" }}>
+              REMINDERS
+            </span>
           </div>
 
           {/* Toggle rows */}

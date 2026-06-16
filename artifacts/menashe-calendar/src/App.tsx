@@ -439,7 +439,7 @@ function AppShell() {
   const { permission: notifPermission, prefs: notifPrefs, leadTime, updatePref: updateNotifPref, updateLeadTime } = useNotifications(location);
   const { isSubscribed: pushSubscribed, isSupported: pushSupported, isLoading: pushLoading, error: pushError, subscribe: subscribePush, unsubscribe: unsubscribePush, sendTest: sendTestPush } = usePushSubscription(location, notifPrefs, leadTime, user?.id);
   const { announcements, addAnnouncement, updateAnnouncement, deleteAnnouncement, sendNow } = useAnnouncements();
-  const { unreadCount: announcementCount, markAllRead: markAnnouncementsRead } = useUnreadAnnouncements();
+  const { unreadCount: announcementCount, unreadAnnouncements, markAllRead: markAnnouncementsRead } = useUnreadAnnouncements();
 
   const isLight = theme === "light";
 
@@ -668,6 +668,8 @@ function AppShell() {
                   leadTime={leadTime}
                   onUpdateNotifPref={updateNotifPref}
                   onUpdateLeadTime={updateLeadTime}
+                  unreadAnnouncements={unreadAnnouncements}
+                  onViewAllAnnouncements={() => { closeModal(); setTimeout(() => setModal("announcements"), 50); }}
                 />
               )}
 
