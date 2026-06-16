@@ -1592,7 +1592,19 @@ function CommunityFAB({
   announcementCount: number;
 }) {
   const [open, setOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useLanguage();
+
+  function triggerClose() {
+    setIsClosing(true);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    // 6 items × 70ms stagger + 400ms animation = 820ms; wait 850ms
+    closeTimer.current = setTimeout(() => {
+      setOpen(false);
+      setIsClosing(false);
+    }, 850);
+  }
 
   const [upcomingEventCount, setUpcomingEventCount] = useState(0);
   const [upcomingYahrzeitCount, setUpcomingYahrzeitCount] = useState(0);
@@ -1651,25 +1663,25 @@ function CommunityFAB({
   ];
 
   function handleItem(action: () => void) {
-    setOpen(false);
+    triggerClose();
     action();
   }
 
   return (
     <>
-      {open && (
+      {(open || isClosing) && (
         <div
-          onClick={() => setOpen(false)}
+          onClick={() => { if (!isClosing) triggerClose(); }}
           style={{
             position: "fixed", inset: 0, zIndex: 998,
           }}
         />
       )}
       <div style={{ position: "fixed", bottom: 88, right: 20, zIndex: 999, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
-        {open && items.map((item, i) => (
+        {(open || isClosing) && items.map((item, i) => (
           <button
             key={item.label}
-            onClick={() => handleItem(item.action)}
+            onClick={() => { if (!isClosing) handleItem(item.action); }}
             className="fab-item-active"
             style={{
               display: "flex", alignItems: "center", gap: 10,
@@ -1682,8 +1694,12 @@ function CommunityFAB({
               fontSize: 13.5,
               cursor: "pointer",
               whiteSpace: "nowrap",
-              animation: `fabItemIn 0.5s ease-out both, fabItemShimmer 2.8s ease-in-out infinite`,
-              animationDelay: `${i * 0.07}s, ${i * 0.18}s`,
+              animation: isClosing
+                ? `fabItemOut 0.4s ease-in both, fabItemShimmer 2.8s ease-in-out infinite`
+                : `fabItemIn 0.5s ease-out both, fabItemShimmer 2.8s ease-in-out infinite`,
+              animationDelay: isClosing
+                ? `${(items.length - 1 - i) * 0.07}s, ${i * 0.18}s`
+                : `${i * 0.07}s, ${i * 0.18}s`,
               minWidth: 210,
               transform: "scale(1)",
               transformOrigin: "right center",
@@ -1710,7 +1726,7 @@ function CommunityFAB({
         ))}
         <div style={{ position: "relative", width: 72, height: 100 }}>
           <button
-            onClick={() => setOpen(v => !v)}
+            onClick={() => { if (open && !isClosing) triggerClose(); else if (!isClosing) setOpen(true); }}
             title={t.fabTitle}
             className={`shawl-sway${open ? " shawl-open" : ""}`}
             style={{
@@ -1770,6 +1786,11 @@ function CommunityFAB({
           72%  { clip-path: inset(0 -3% 0 0%); }
           86%  { clip-path: inset(0 1% 0 0%);  }
           100% { clip-path: inset(0 0 0 0);    opacity: 1;   }
+        }
+        @keyframes fabItemOut {
+          0%   { clip-path: inset(0 0 0 0);     opacity: 1;   }
+          30%  { clip-path: inset(0 -2% 0 0%);  opacity: 1;   }
+          100% { clip-path: inset(0 0 0 100%);  opacity: 0.4; }
         }
         @keyframes fabItemShimmer {
           0%   { box-shadow: 0 4px 18px rgba(0,0,0,0.5),  0 0 0px  rgba(255,255,255,0);    border-color: rgba(255,255,255,0.14); }
