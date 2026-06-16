@@ -53,6 +53,7 @@ const defaultForm = {
   description: "",
   coverEmoji: "📖",
   coverColor: "#1a3050",
+  coverImageUrl: "",
   fileUrl: "",
   isPremium: false,
   published: true,
@@ -74,6 +75,8 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [fileMode, setFileMode] = useState<FileMode>("url");
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+  const [coverImageUploaded, setCoverImageUploaded] = useState<string | null>(null);
 
   const [users, setUsers] = useState<UserRow[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -88,6 +91,14 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       const servingUrl = `/api/storage${response.objectPath}`;
       setF({ fileUrl: servingUrl });
       setUploadedFileName(response.metadata.name);
+    },
+  });
+
+  const { uploadFile: uploadCoverImage, isUploading: isCoverUploading, progress: coverProgress } = useUpload({
+    onSuccess: (response) => {
+      const servingUrl = `/api/storage${response.objectPath}`;
+      setF({ coverImageUrl: servingUrl });
+      setCoverImageUploaded(response.metadata.name);
     },
   });
 
@@ -155,7 +166,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     if (!form.title.trim()) return;
     setSaving(true);
     try {
-      const body = { ...form, fileUrl: form.fileUrl || null };
+      const body = { ...form, fileUrl: form.fileUrl || null, coverImageUrl: form.coverImageUrl || null };
       if (editId !== null) {
         await fetch(`${API_BASE}/books/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN }, body: JSON.stringify(body) });
       } else {
@@ -167,6 +178,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       setForm(defaultForm);
       setEditId(null);
       setUploadedFileName(null);
+      setCoverImageUploaded(null);
       setFileMode("url");
     } finally { setSaving(false); }
   }
@@ -189,9 +201,10 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   }
 
   function editBook(book: Book) {
-    setForm({ title: book.title, language: book.language, category: book.category, description: book.description, coverEmoji: book.coverEmoji, coverColor: book.coverColor, fileUrl: book.fileUrl || "", isPremium: book.isPremium, published: book.published, sortOrder: book.sortOrder });
+    setForm({ title: book.title, language: book.language, category: book.category, description: book.description, coverEmoji: book.coverEmoji, coverColor: book.coverColor, coverImageUrl: book.coverImageUrl || "", fileUrl: book.fileUrl || "", isPremium: book.isPremium, published: book.published, sortOrder: book.sortOrder });
     setEditId(book.id);
     setUploadedFileName(null);
+    setCoverImageUploaded(null);
     setFileMode(book.fileUrl ? "url" : "url");
     setMode("edit");
   }
@@ -204,6 +217,17 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       return;
     }
     await uploadFile(file);
+  }
+
+  async function handleCoverImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      alert("Please select a JPG, PNG, or WebP image.");
+      return;
+    }
+    await uploadCoverImage(file);
   }
 
   const F = form;
@@ -260,7 +284,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       <div className="app-header" style={{ borderBottom: "1px solid var(--border)" }}>
         {mode !== "list" ? (
           <button
-            onClick={() => { setMode("list"); setForm(defaultForm); setEditId(null); setUploadedFileName(null); setFileMode("url"); }}
+            onClick={() => { setMode("list"); setForm(defaultForm); setEditId(null); setUploadedFileName(null); setCoverImageUploaded(null); setFileMode("url"); }}
             style={{ fontSize: 14, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
           >
             ← Back
@@ -289,7 +313,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             className="btn-gold"
             style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700, borderRadius: 10, opacity: saving ? 0.6 : 1 }}
             onClick={save}
-            disabled={saving || isUploading}
+            disabled={saving || isUploading || isCoverUploading}
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -555,8 +579,10 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {books.map(book => (
                   <div key={book.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: 14, display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 44, height: 58, borderRadius: 8, background: `linear-gradient(135deg, ${book.coverColor}, ${book.coverColor}aa)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, boxShadow: "2px 3px 10px rgba(0,0,0,0.3)" }}>
-                      {book.coverEmoji}
+                    <div style={{ width: 44, height: 58, borderRadius: 8, overflow: "hidden", background: book.coverImageUrl ? "transparent" : `linear-gradient(135deg, ${book.coverColor}, ${book.coverColor}aa)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, boxShadow: "2px 3px 10px rgba(0,0,0,0.3)" }}>
+                      {book.coverImageUrl ? (
+                        <img src={book.coverImageUrl} alt={book.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      ) : book.coverEmoji}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{book.title}</div>
@@ -600,28 +626,94 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
 
             {/* Cover Preview */}
             <div style={{ background: "var(--card)", borderRadius: 14, border: "1px solid var(--border)", padding: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 12 }}>COVER PREVIEW</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ width: 64, height: 84, borderRadius: 10, background: `linear-gradient(135deg, ${F.coverColor}, ${F.coverColor}88)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, flexShrink: 0, boxShadow: "3px 4px 16px rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  {F.coverEmoji}
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 12 }}>COVER</div>
+
+              {/* Preview thumbnail + upload zone side by side */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 }}>
+                {/* Thumbnail */}
+                <div style={{
+                  width: 64, height: 84, borderRadius: 10, flexShrink: 0, overflow: "hidden",
+                  background: F.coverImageUrl ? "transparent" : `linear-gradient(135deg, ${F.coverColor}, ${F.coverColor}88)`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 30, boxShadow: "3px 4px 16px rgba(0,0,0,0.4)",
+                  border: F.coverImageUrl ? "2px solid #d4a843" : "1px solid rgba(255,255,255,0.1)",
+                }}>
+                  {F.coverImageUrl ? (
+                    <img src={F.coverImageUrl} alt="cover" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  ) : F.coverEmoji}
                 </div>
+
+                {/* Cover image upload */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>Emoji</div>
-                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6 }}>COVER IMAGE (optional)</div>
+                  <div
+                    onClick={() => !isCoverUploading && coverImageInputRef.current?.click()}
+                    style={{
+                      border: `2px dashed ${isCoverUploading ? "#d4a843" : F.coverImageUrl ? "rgba(212,168,67,0.5)" : "var(--border)"}`,
+                      borderRadius: 10, padding: "14px 10px", textAlign: "center",
+                      cursor: isCoverUploading ? "default" : "pointer",
+                      background: F.coverImageUrl ? "rgba(212,168,67,0.05)" : "var(--elevated)",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    {isCoverUploading ? (
+                      <>
+                        <div style={{ fontSize: 18, marginBottom: 4 }}>⏳</div>
+                        <div style={{ fontSize: 11, color: "#d4a843", fontWeight: 700, marginBottom: 6 }}>{coverProgress}%</div>
+                        <div style={{ height: 3, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${coverProgress}%`, background: "#d4a843", borderRadius: 2, transition: "width 0.3s" }} />
+                        </div>
+                      </>
+                    ) : F.coverImageUrl ? (
+                      <>
+                        <div style={{ fontSize: 18, marginBottom: 3 }}>🖼️</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#4ade80" }}>Image set</div>
+                        <div style={{ fontSize: 10, color: "#d4a843", marginTop: 4 }}>Tap to replace</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 22, marginBottom: 4 }}>🖼️</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Upload cover</div>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>JPG · PNG · WebP</div>
+                      </>
+                    )}
+                  </div>
+                  {F.coverImageUrl && (
+                    <button
+                      onClick={() => { setF({ coverImageUrl: "" }); setCoverImageUploaded(null); }}
+                      style={{ marginTop: 6, fontSize: 11, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      ✕ Remove image
+                    </button>
+                  )}
+                  <input
+                    ref={coverImageInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    style={{ display: "none" }}
+                    onChange={handleCoverImageChange}
+                  />
+                </div>
+              </div>
+
+              {/* Emoji + Color pickers (shown when no cover image) */}
+              {!F.coverImageUrl && (
+                <>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>Or choose emoji + color</div>
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 10 }}>
                     {COVER_EMOJIS.map(e => (
                       <button key={e} onClick={() => setF({ coverEmoji: e })} style={{ width: 32, height: 32, borderRadius: 7, background: F.coverEmoji === e ? "rgba(212,168,67,0.25)" : "var(--elevated)", border: F.coverEmoji === e ? "2px solid #d4a843" : "1px solid var(--border)", cursor: "pointer", fontSize: 17, transition: "all 0.15s" }}>
                         {e}
                       </button>
                     ))}
                   </div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 10, marginBottom: 6 }}>Color</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {COVER_COLORS.map(c => (
                       <button key={c} onClick={() => setF({ coverColor: c })} style={{ width: 26, height: 26, borderRadius: 6, background: c, border: F.coverColor === c ? "2px solid #d4a843" : "2px solid transparent", cursor: "pointer", transition: "border 0.15s" }} />
                     ))}
                   </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
 
             {/* Title */}
@@ -776,11 +868,11 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             {/* Save button (bottom) */}
             <button
               className="btn-gold"
-              style={{ padding: "14px", fontSize: 15, fontWeight: 800, borderRadius: 12, opacity: saving || isUploading ? 0.6 : 1, marginTop: 4 }}
+              style={{ padding: "14px", fontSize: 15, fontWeight: 800, borderRadius: 12, opacity: saving || isUploading || isCoverUploading ? 0.6 : 1, marginTop: 4 }}
               onClick={save}
-              disabled={saving || isUploading || !form.title.trim()}
+              disabled={saving || isUploading || isCoverUploading || !form.title.trim()}
             >
-              {saving ? "Saving…" : isUploading ? "Uploading PDF…" : mode === "add" ? "➕ Add Book" : "✅ Save Changes"}
+              {saving ? "Saving…" : isUploading ? "Uploading PDF…" : isCoverUploading ? "Uploading Cover…" : mode === "add" ? "➕ Add Book" : "✅ Save Changes"}
             </button>
 
             <div style={{ height: 16 }} />

@@ -111,8 +111,12 @@ export default function BookReaderModal({ book, onClose }: Props) {
             {/* Cover page */}
             {currentPage === 1 && (
               <div style={{ textAlign: "center", padding: "40px 20px" }}>
-                <div style={{ width: 100, height: 140, borderRadius: 12, background: `linear-gradient(135deg, ${book.coverColor}, ${book.coverColor}bb)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 50, margin: "0 auto 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  {book.coverEmoji}
+                <div style={{ width: 100, height: 140, borderRadius: 12, background: book.coverImageUrl ? "transparent" : `linear-gradient(135deg, ${book.coverColor}, ${book.coverColor}bb)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 50, margin: "0 auto 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                  {book.coverImageUrl ? (
+                    <img src={book.coverImageUrl} alt={book.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  ) : (
+                    book.coverEmoji
+                  )}
                 </div>
                 <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 28, color: "#d4a843", marginBottom: 12 }}>{book.title}</div>
                 <div style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 8 }}>{book.language}</div>

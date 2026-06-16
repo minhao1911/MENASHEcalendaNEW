@@ -9,6 +9,7 @@ export interface Book {
   coverEmoji: string;
   coverColor: string;
   fileUrl: string | null;
+  coverImageUrl: string | null;
   isPremium: boolean;
   published: boolean;
   sortOrder: number;
@@ -265,17 +266,25 @@ function BookCard({
         width: 60, height: 80, borderRadius: 8, flexShrink: 0,
         background: locked
           ? `linear-gradient(135deg, rgba(30,20,5,0.9), rgba(20,13,3,0.95))`
-          : `linear-gradient(135deg, ${book.coverColor}, ${book.coverColor}aa)`,
+          : book.coverImageUrl ? "transparent" : `linear-gradient(135deg, ${book.coverColor}, ${book.coverColor}aa)`,
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 28, border: locked ? "1px solid rgba(212,168,67,0.3)" : "1px solid rgba(255,255,255,0.1)",
         boxShadow: locked ? "0 2px 12px rgba(212,168,67,0.15)" : "2px 3px 12px rgba(0,0,0,0.3)",
         position: "relative", overflow: "hidden",
         animation: locked ? "siddurLockPulse 3s ease-in-out infinite" : undefined,
       }}>
-        {/* Blurred emoji behind lock */}
-        <span style={{ filter: locked ? "blur(3px)" : "none", opacity: locked ? 0.35 : 1, transition: "filter 0.2s" }}>
-          {book.coverEmoji}
-        </span>
+        {/* Cover image or emoji */}
+        {book.coverImageUrl && !locked ? (
+          <img
+            src={book.coverImageUrl}
+            alt={book.title}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: locked ? "blur(3px)" : "none" }}
+          />
+        ) : (
+          <span style={{ filter: locked ? "blur(3px)" : "none", opacity: locked ? 0.35 : 1, transition: "filter 0.2s" }}>
+            {book.coverEmoji}
+          </span>
+        )}
 
         {/* Lock overlay for premium books */}
         {locked && (

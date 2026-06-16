@@ -11,6 +11,7 @@ export const booksTable = pgTable("books", {
   coverEmoji: text("cover_emoji").notNull().default("📖"),
   coverColor: text("cover_color").notNull().default("#1a2540"),
   fileUrl: text("file_url"),
+  coverImageUrl: text("cover_image_url"),
   isPremium: boolean("is_premium").notNull().default(false),
   published: boolean("published").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
