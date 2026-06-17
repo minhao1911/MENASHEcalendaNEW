@@ -40,9 +40,10 @@ interface SiddurPageProps {
   refreshKey: number;
   isPremium: boolean;
   onShowPremium: () => void;
+  isAdmin?: boolean;
 }
 
-export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey, isPremium, onShowPremium }: SiddurPageProps) {
+export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey, isPremium, onShowPremium, isAdmin = false }: SiddurPageProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -102,13 +103,15 @@ export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey, 
             <div style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.1em", fontWeight: 600 }}>LIBRARY</div>
           </div>
         </div>
-        <button
-          onClick={onAdmin}
-          style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--elevated)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}
-        >
-          <span style={{ fontSize: 13 }}>⚙️</span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Admin</span>
-        </button>
+        {isAdmin && (
+          <button
+            onClick={onAdmin}
+            style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--elevated)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}
+          >
+            <span style={{ fontSize: 13 }}>⚙️</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Admin</span>
+          </button>
+        )}
       </div>
 
       <div style={{ padding: "16px 16px 0" }}>

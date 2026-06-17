@@ -10,6 +10,7 @@ interface Props {
   onUpdate: (id: string, patch: Partial<Announcement>) => void;
   onDelete: (id: string) => void;
   onSendNow: (ann: Announcement) => void;
+  isAdmin?: boolean;
 }
 
 const ADMIN_PIN = "1948";
@@ -72,7 +73,7 @@ function statusBadge(status: AnnouncementStatus) {
   );
 }
 
-export default function AnnouncementsModal({ onClose, announcements, onAdd, onUpdate, onDelete, onSendNow }: Props) {
+export default function AnnouncementsModal({ onClose, announcements, onAdd, onUpdate, onDelete, onSendNow, isAdmin = false }: Props) {
   const [view, setView] = useState<"feed" | "pin" | "admin" | "form">("feed");
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
@@ -411,13 +412,24 @@ export default function AnnouncementsModal({ onClose, announcements, onAdd, onUp
           <div>
             <div
               style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", cursor: "default" }}
-              onClick={() => { const n = adminTap + 1; setAdminTap(n); if (n >= 5) { setAdminTap(0); setView("pin"); } }}
+              onClick={() => { if (isAdmin) return; const n = adminTap + 1; setAdminTap(n); if (n >= 5) { setAdminTap(0); setView("pin"); } }}
             >
               📢 Announcements
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Community notices & updates</div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {isAdmin && view === "feed" && (
+              <button
+                onClick={() => setView("admin")}
+                style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--elevated)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px", cursor: "pointer" }}
+              >
+                <span style={{ fontSize: 12 }}>⚙️</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>Admin</span>
+              </button>
+            )}
+            <button className="modal-close-btn" onClick={onClose}>✕</button>
+          </div>
         </div>
 
         {/* Upcoming scheduled banner */}

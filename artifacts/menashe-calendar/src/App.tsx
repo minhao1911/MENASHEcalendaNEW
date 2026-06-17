@@ -442,6 +442,7 @@ function AppShell() {
   const { unreadCount: announcementCount, unreadAnnouncements, markAllRead: markAnnouncementsRead } = useUnreadAnnouncements();
 
   const isLight = theme === "light";
+  const isAdmin = publicProfile?.role === "Admin";
 
   function showToast(msg: string) {
     setToast(msg);
@@ -531,11 +532,12 @@ function AppShell() {
         return (
           <SiddurPage
             onReadBook={(book) => setReadingBook(book)}
-            onAdmin={() => setModal("admin")}
+            onAdmin={() => { if (isAdmin) setModal("admin"); }}
             adminPin="1948"
             refreshKey={siddurRefreshKey}
             isPremium={isPremium}
             onShowPremium={() => setActivePage("premium")}
+            isAdmin={isAdmin}
           />
         );
       case "settings":
@@ -698,10 +700,10 @@ function AppShell() {
               {modal === "community-yahrzeit" && (
                 <CommunityYahrzeitModal onClose={closeModal} userName={publicProfile?.displayName} />
               )}
-              {modal === "community" && <CommunityModal onClose={closeModal} onYahrzeitBoard={() => setModal("community-yahrzeit")} />}
+              {modal === "community" && <CommunityModal onClose={closeModal} onYahrzeitBoard={() => setModal("community-yahrzeit")} isAdmin={isAdmin} />}
               {modal === "census" && <CensusModal onClose={closeModal} />}
               {modal === "omer" && <OmerModal onClose={closeModal} />}
-              {modal === "events" && <EventsModal onClose={closeModal} />}
+              {modal === "events" && <EventsModal onClose={closeModal} isAdmin={isAdmin} />}
               {modal === "members" && (
                 <MemberDirectoryModal
                   onClose={closeModal}
@@ -732,6 +734,7 @@ function AppShell() {
                   onUpdate={updateAnnouncement}
                   onDelete={deleteAnnouncement}
                   onSendNow={sendNow}
+                  isAdmin={isAdmin}
                 />
               )}
               {modal === "prayers" && (

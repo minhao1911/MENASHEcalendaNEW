@@ -117,7 +117,7 @@ function emptyForm(): Omit<CommunityEvent, "id"> {
   return { emoji: "🕍", title: "", description: "", date: today, time: "", location: "", category: "Shabbat", pinned: false };
 }
 
-export default function EventsModal({ onClose }: Props) {
+export default function EventsModal({ onClose, isAdmin = false }: Props & { isAdmin?: boolean }) {
   const [events, setEvents] = useState<CommunityEvent[]>(loadEvents);
   const [view, setView] = useState<"feed" | "pin" | "admin" | "form">("feed");
   const [pin, setPin] = useState(""); const [pinError, setPinError] = useState("");
@@ -373,12 +373,23 @@ export default function EventsModal({ onClose }: Props) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", cursor: "default" }}
-              onClick={() => { const n = adminTap + 1; setAdminTap(n); if (n >= 5) { setAdminTap(0); setView("pin"); } }}>
+              onClick={() => { if (isAdmin) return; const n = adminTap + 1; setAdminTap(n); if (n >= 5) { setAdminTap(0); setView("pin"); } }}>
               🗓 Community Events
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Upcoming events & gatherings</div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {isAdmin && view === "feed" && (
+              <button
+                onClick={() => setView("admin")}
+                style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--elevated)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px", cursor: "pointer" }}
+              >
+                <span style={{ fontSize: 12 }}>⚙️</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>Admin</span>
+              </button>
+            )}
+            <button className="modal-close-btn" onClick={onClose}>✕</button>
+          </div>
         </div>
 
         {/* Next upcoming event hero */}

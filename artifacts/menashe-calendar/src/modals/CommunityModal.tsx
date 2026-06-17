@@ -62,7 +62,7 @@ function groupByCategory(links: CommunityLink[]): Record<string, CommunityLink[]
   }, {});
 }
 
-export default function CommunityModal({ onClose, onYahrzeitBoard }: Props) {
+export default function CommunityModal({ onClose, onYahrzeitBoard, isAdmin = false }: Props & { isAdmin?: boolean }) {
   const [links, setLinks] = useState<CommunityLink[]>(loadLinks);
   const [view, setView] = useState<"main" | "pin" | "admin" | "form">("main");
   const [pin, setPin] = useState("");
@@ -75,8 +75,9 @@ export default function CommunityModal({ onClose, onYahrzeitBoard }: Props) {
 
   useEffect(() => { saveLinks(links); }, [links]);
 
-  // Secret tap on the header logo to open admin PIN
+  // Secret tap on the header logo to open admin PIN (only for non-role admins)
   function handleHeaderTap() {
+    if (isAdmin) return;
     const next = adminTapCount + 1;
     setAdminTapCount(next);
     if (next >= 5) { setAdminTapCount(0); setView("pin"); }

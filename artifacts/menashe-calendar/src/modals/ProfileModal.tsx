@@ -11,7 +11,7 @@ interface Props {
   onSaved?: (profile: PublicProfile) => void;
 }
 
-const ROLES = ["Member", "Community Leader", "Rabbi", "Cantor", "Youth Leader", "Women's Group", "Student", "Elder"];
+const ROLES = ["Member", "Community Leader", "Rabbi", "Cantor", "Youth Leader", "Women's Group", "Student", "Elder", "Admin"];
 const COUNTRIES = ["India", "Israel", "United States", "United Kingdom", "Australia", "Canada", "Other"];
 const AVATAR_EMOJIS = ["👤","🧑","👨","👩","🧔","👴","👵","🧕","👳","🎓","✡","🌟","🙏","📖","🕍","🌿"];
 
