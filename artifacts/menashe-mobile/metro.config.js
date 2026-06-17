@@ -1,9 +1,22 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const path = require("path");
 
 const config = getDefaultConfig(__dirname);
 
-// Enable proper resolution of packages that use the `exports` field in package.json
-// Required for @hebcal/core and similar pure-ESM packages
 config.resolver.unstable_enablePackageExports = true;
+
+// @hebcal/noaa@0.11.0 ships only pure ESM (export class + top-level await import).
+// Metro does not Babel-transform node_modules by default, so the raw ESM goes
+// directly to Terser during production builds and fails with "Unexpected token".
+// The fix: intercept @hebcal/noaa resolution and point it at a pre-compiled
+// CJS shim (generated once via Babel — see shims/hebcal-noaa-cjs.js).
+const noaaShim = path.resolve(__dirname, "shims/hebcal-noaa-cjs.js");
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === "@hebcal/noaa") {
+    return { filePath: noaaShim, type: "sourceFile" };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
 
 module.exports = config;
