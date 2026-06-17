@@ -20,7 +20,7 @@ const COVER_COLORS = ["#1a3050","#2a1a40","#1a2a20","#30200a","#1a1a30","#0a2030
 
 type FormMode = "list" | "add" | "edit";
 type FileMode = "url" | "upload";
-type PanelTab = "books" | "users" | "payments";
+type PanelTab = "books" | "users" | "payments" | "broadcast";
 
 interface UserRow {
   userId: string;
@@ -106,6 +106,11 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [paymentSearch, setPaymentSearch] = useState("");
 
+  const [subCount, setSubCount] = useState<{ web: number; expo: number } | null>(null);
+  const [broadcastForm, setBroadcastForm] = useState({ emoji: "📢", title: "", body: "" });
+  const [broadcasting, setBroadcasting] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<{ webSent: number; expoSent: number; webFailed: number; expoFailed: number } | null>(null);
+
   const { uploadFile, isUploading, progress } = useUpload({
     onSuccess: (response) => {
       const servingUrl = `/api/storage${response.objectPath}`;
@@ -122,8 +127,35 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     },
   });
 
+  async function fetchSubCount() {
+    try {
+      const res = await fetch(`${API_BASE}/push/subscriber-count`, { headers: { "x-admin-pin": ADMIN_PIN } });
+      if (res.ok) setSubCount(await res.json());
+    } catch {}
+  }
+
+  async function sendBroadcast() {
+    if (!broadcastForm.title.trim() || !broadcastForm.body.trim()) return;
+    setBroadcasting(true);
+    setBroadcastResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/push/broadcast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN },
+        body: JSON.stringify(broadcastForm),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBroadcastResult(data);
+        setBroadcastForm(f => ({ ...f, title: "", body: "" }));
+        fetchSubCount();
+      }
+    } catch {}
+    finally { setBroadcasting(false); }
+  }
+
   function submitPin() {
-    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); }
+    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); fetchSubCount(); }
     else { setPinError("Incorrect PIN"); setPin(""); }
   }
 
@@ -326,6 +358,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
           {panelTab === "books"
             ? (mode === "list" ? "📚 Library Admin" : mode === "add" ? "➕ Add Book" : "✏️ Edit Book")
             : panelTab === "users" ? "👥 Premium Users"
+            : panelTab === "broadcast" ? "📣 Broadcast Notification"
             : "💳 Payments"}
         </div>
         {panelTab === "books" && mode === "list" && (
@@ -368,12 +401,12 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       {/* ── Tab switcher ── */}
       {mode === "list" && (
         <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-          {(["books", "users", "payments"] as PanelTab[]).map(tab => (
+          {(["books", "users", "payments", "broadcast"] as PanelTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setPanelTab(tab)}
               style={{
-                flex: 1, padding: "10px", fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer",
+                flex: 1, padding: "10px", fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer",
                 background: panelTab === tab ? "rgba(212,168,67,0.1)" : "transparent",
                 color: panelTab === tab ? "#d4a843" : "var(--text-muted)",
                 borderBottom: panelTab === tab ? "2px solid #d4a843" : "2px solid transparent",
@@ -382,6 +415,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             >
               {tab === "books" ? "📚 Books"
                 : tab === "payments" ? "💳 Payments"
+                : tab === "broadcast" ? "📣 Broadcast"
                 : (
                 <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                   👥 Users
@@ -733,6 +767,116 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             </>
           );
         })()}
+
+        {/* BROADCAST PANEL */}
+        {panelTab === "broadcast" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Subscriber count */}
+            <div style={{ display: "flex", gap: 10 }}>
+              {[
+                { label: "Web Subscribers", value: subCount?.web ?? "—", icon: "🌐" },
+                { label: "Mobile Subscribers", value: subCount?.expo ?? "—", icon: "📱" },
+              ].map(({ label, value, icon }) => (
+                <div key={label} style={{ flex: 1, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px", textAlign: "center" }}>
+                  <div style={{ fontSize: 24, marginBottom: 4 }}>{icon}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "#d4a843" }}>{value}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.06em", marginTop: 2 }}>{label.toUpperCase()}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Result banner */}
+            {broadcastResult && (
+              <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 22 }}>✅</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#22c55e" }}>Broadcast sent!</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                    Web: {broadcastResult.webSent} sent{broadcastResult.webFailed > 0 ? `, ${broadcastResult.webFailed} failed` : ""}
+                    {" · "}
+                    Mobile: {broadcastResult.expoSent} sent{broadcastResult.expoFailed > 0 ? `, ${broadcastResult.expoFailed} failed` : ""}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Emoji picker */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 8 }}>EMOJI</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {["📢","📣","🔔","✡","🕍","🌟","📜","🙏","🎯","🫂","⚡","💬","📌","🗓","🌐","🎉","🕎","🌿","💎","🏛","📚","🕯","✨","🇮🇱","📖","🌾","⭐","🔥"].map(e => (
+                  <button
+                    key={e}
+                    onClick={() => setBroadcastForm(f => ({ ...f, emoji: e }))}
+                    style={{
+                      width: 36, height: 36, borderRadius: 8, fontSize: 18, cursor: "pointer", border: "none",
+                      background: broadcastForm.emoji === e ? "rgba(212,168,67,0.2)" : "var(--elevated)",
+                      outline: broadcastForm.emoji === e ? "2px solid #d4a843" : "none",
+                    }}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Title */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 6 }}>TITLE</div>
+              <input
+                value={broadcastForm.title}
+                onChange={e => setBroadcastForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="e.g. Shabbat Shalom"
+                maxLength={80}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+
+            {/* Body */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 6 }}>MESSAGE</div>
+              <textarea
+                value={broadcastForm.body}
+                onChange={e => setBroadcastForm(f => ({ ...f, body: e.target.value }))}
+                placeholder="Write your message to all subscribers…"
+                maxLength={300}
+                rows={3}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 14, outline: "none", boxSizing: "border-box", resize: "vertical" }}
+              />
+              <div style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "right", marginTop: 4 }}>{broadcastForm.body.length}/300</div>
+            </div>
+
+            {/* Preview */}
+            {(broadcastForm.title || broadcastForm.body) && (
+              <div style={{ padding: "12px 16px", borderRadius: 12, background: "var(--card)", border: "1px solid var(--border)" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 8 }}>PREVIEW</div>
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: "#0f1829", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+                    {broadcastForm.emoji}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                      {broadcastForm.emoji} {broadcastForm.title || "Title…"}
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                      {broadcastForm.body || "Message…"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Send button */}
+            <button
+              className="btn-gold"
+              onClick={sendBroadcast}
+              disabled={broadcasting || !broadcastForm.title.trim() || !broadcastForm.body.trim()}
+              style={{ padding: "14px", fontSize: 14, fontWeight: 800, borderRadius: 14, opacity: (broadcasting || !broadcastForm.title.trim() || !broadcastForm.body.trim()) ? 0.5 : 1, width: "100%" }}
+            >
+              {broadcasting ? "Sending…" : `📣 Send to All ${subCount ? `(${(subCount.web + subCount.expo)} subscribers)` : "Subscribers"}`}
+            </button>
+          </div>
+        )}
 
         {/* LIST MODE */}
         {panelTab === "books" && mode === "list" && (

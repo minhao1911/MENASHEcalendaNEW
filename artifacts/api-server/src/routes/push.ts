@@ -182,6 +182,101 @@ router.delete("/push/unsubscribe", async (req, res) => {
   }
 });
 
+router.get("/push/subscriber-count", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  try {
+    const webResult = await pool.query("SELECT COUNT(*) FROM push_subscriptions");
+    const expoResult = await pool.query("SELECT COUNT(*) FROM expo_push_tokens");
+    res.json({
+      web: parseInt(webResult.rows[0].count, 10),
+      expo: parseInt(expoResult.rows[0].count, 10),
+    });
+  } catch (err) {
+    logger.error({ err }, "subscriber-count: db error");
+    res.status(500).json({ error: "Failed to get count" });
+  }
+});
+
+router.post("/push/broadcast", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  const { title, body, emoji } = req.body as { title: string; body: string; emoji?: string };
+  if (!title?.trim() || !body?.trim()) {
+    res.status(400).json({ error: "title and body are required" });
+    return;
+  }
+
+  const icon = "/favicon.svg";
+  const tag = `broadcast-${Date.now()}`;
+  const fullTitle = emoji ? `${emoji} ${title}` : title;
+
+  let webSent = 0, webFailed = 0, expoSent = 0, expoFailed = 0;
+
+  // — Web push —
+  if (VAPID_PUBLIC && VAPID_PRIVATE) {
+    let webRows: Array<{ id: string; endpoint: string; p256dh: string; auth: string }> = [];
+    try {
+      const r = await pool.query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
+        "SELECT id, endpoint, p256dh, auth FROM push_subscriptions"
+      );
+      webRows = r.rows;
+    } catch (err) {
+      logger.error({ err }, "broadcast: failed to load web subscriptions");
+    }
+    for (const row of webRows) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+          JSON.stringify({ title: fullTitle, body, tag, icon })
+        );
+        webSent++;
+      } catch (err: any) {
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
+          await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [row.id]).catch(() => {});
+        }
+        webFailed++;
+      }
+    }
+  }
+
+  // — Expo push —
+  let expoRows: Array<{ token: string }> = [];
+  try {
+    const r = await pool.query<{ token: string }>("SELECT token FROM expo_push_tokens");
+    expoRows = r.rows;
+  } catch (err) {
+    logger.error({ err }, "broadcast: failed to load expo tokens");
+  }
+  const expoMessages: import("expo-server-sdk").ExpoPushMessage[] = expoRows
+    .filter((r) => Expo.isExpoPushToken(r.token))
+    .map((r) => ({ to: r.token, title: fullTitle, body, sound: "default" as const, data: { tag } }));
+  if (expoMessages.length > 0) {
+    try {
+      const chunks = expo.chunkPushNotifications(expoMessages);
+      for (const chunk of chunks) {
+        const receipts = await expo.sendPushNotificationsAsync(chunk);
+        for (const receipt of receipts) {
+          if (receipt.status === "ok") expoSent++;
+          else expoFailed++;
+        }
+      }
+    } catch (err) {
+      logger.error({ err }, "broadcast: expo send failed");
+      expoFailed += expoMessages.length;
+    }
+  }
+
+  logger.info({ webSent, webFailed, expoSent, expoFailed }, "broadcast: complete");
+  res.json({ ok: true, webSent, webFailed, expoSent, expoFailed });
+});
+
 router.post("/push/send-test", requireAuth, async (req, res) => {
   const { subscription } = req.body as { subscription: webpush.PushSubscription };
   if (!subscription?.endpoint) { res.status(400).json({ error: "Missing subscription" }); return; }
