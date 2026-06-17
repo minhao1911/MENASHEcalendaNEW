@@ -189,7 +189,8 @@ html, body, #root {
 
 .nav-item.active {
   opacity: 1;
-  color: var(--gold);
+  color: var(--accent);
+  transition: color 0.4s ease;
 }
 
 .nav-item svg {
@@ -385,9 +386,10 @@ html, body, #root {
 }
 
 .cal-day-num.today {
-  background: var(--primary);
+  background: var(--accent);
   color: white;
   font-weight: 700;
+  transition: background 0.4s ease;
 }
 
 .cal-day-num.shabbat {
@@ -487,6 +489,7 @@ html, body, #root {
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --elevated: #1a2540;
+  --accent: #d4a843;
 }
 
 .light-theme {
@@ -504,6 +507,7 @@ html, body, #root {
   --text-secondary: #5c4e3e;
   --text-muted: #7a6a58;
   --elevated: #EDE4D3;
+  --accent: #8B6914;
 }
 
 .light-theme .bottom-nav {
@@ -548,6 +552,7 @@ html, body, #root {
   --text-secondary: #8aaeff;
   --text-muted: #4a6090;
   --elevated: #111f3c;
+  --accent: #6382FF;
 }
 
 .sapphire-theme .bottom-nav {
@@ -569,9 +574,6 @@ html, body, #root {
   background: #030810;
 }
 
-.sapphire-theme .nav-item.active {
-  color: #6382FF;
-}
 
 .sapphire-theme .card-interactive:hover {
   border-color: rgba(99,130,255,0.3);
