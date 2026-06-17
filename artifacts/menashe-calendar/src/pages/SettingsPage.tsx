@@ -8,6 +8,7 @@ interface SettingsPageProps {
   theme: string;
   location: Location;
   onToggleTheme: () => void;
+  onSetTheme: (theme: "dark" | "light" | "sapphire") => void;
   onLocationClick: () => void;
   onPremium: () => void;
   onTahara: () => void;
@@ -35,7 +36,7 @@ interface SettingsPageProps {
 
 export default function SettingsPage({
   theme, location,
-  onToggleTheme, onLocationClick, onPremium, onTahara, onYartzeit, onBirthday, onCommunity, onCensus,
+  onToggleTheme, onSetTheme, onLocationClick, onPremium, onTahara, onYartzeit, onBirthday, onCommunity, onCensus,
   onProfile, onSignOut, profileName, profileRole,
   notifPermission, notifPrefs, leadTime, onUpdateNotifPref, onUpdateLeadTime,
   pushSubscribed, pushSupported, pushLoading, pushError, onSubscribePush, onUnsubscribePush, onTestPush,
@@ -163,11 +164,102 @@ export default function SettingsPage({
         {/* Appearance */}
         <div className="section-header">{t.settingsAppearance}</div>
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
-          <Row
-            label={t.settingsDarkMode}
-            sub={isLight ? t.settingsDarkOff : t.settingsDarkOn}
-            right={<Toggle on={!isLight} onToggle={onToggleTheme} />}
-          />
+          {/* Theme Picker */}
+          <div style={{ padding: "14px 16px 10px" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>Theme</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              {/* Royal Midnight */}
+              <button
+                onClick={() => onSetTheme("dark")}
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "center" }}
+              >
+                <div style={{
+                  borderRadius: 14, overflow: "hidden", border: `2px solid ${theme === "dark" ? "#d4a843" : "transparent"}`,
+                  boxShadow: theme === "dark" ? "0 0 0 1px rgba(212,168,67,0.4), 0 4px 16px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
+                  transition: "all 0.2s",
+                }}>
+                  {/* Mini preview */}
+                  <div style={{ background: "#080e1a", padding: "8px 8px 6px", height: 72, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ height: 8, borderRadius: 4, background: "linear-gradient(90deg, #d4a843, #b8860b)", width: "60%" }} />
+                    <div style={{ height: 5, borderRadius: 3, background: "#1a2540", width: "90%" }} />
+                    <div style={{ height: 5, borderRadius: 3, background: "#1a2540", width: "75%" }} />
+                    <div style={{ flex: 1 }} />
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[1,2,3].map(i => <div key={i} style={{ flex: 1, height: 14, borderRadius: 4, background: "#111827" }} />)}
+                    </div>
+                  </div>
+                  <div style={{ background: "#0d1627", padding: "5px 4px", display: "flex", justifyContent: "space-around" }}>
+                    {["🏠","📅","⏰","📖","⚙️"].map((ic, i) => (
+                      <span key={i} style={{ fontSize: 9 }}>{ic}</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "dark" ? 700 : 500, color: theme === "dark" ? "var(--gold)" : "var(--text-muted)" }}>
+                  {theme === "dark" && "✓ "}Midnight
+                </div>
+              </button>
+
+              {/* Parchment Light */}
+              <button
+                onClick={() => onSetTheme("light")}
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "center" }}
+              >
+                <div style={{
+                  borderRadius: 14, overflow: "hidden", border: `2px solid ${theme === "light" ? "#8B6914" : "transparent"}`,
+                  boxShadow: theme === "light" ? "0 0 0 1px rgba(139,105,20,0.4), 0 4px 16px rgba(0,0,0,0.2)" : "0 2px 8px rgba(0,0,0,0.15)",
+                  transition: "all 0.2s",
+                }}>
+                  <div style={{ background: "#F5EFE0", padding: "8px 8px 6px", height: 72, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ height: 8, borderRadius: 4, background: "linear-gradient(90deg, #8B6914, #6B4F10)", width: "60%" }} />
+                    <div style={{ height: 5, borderRadius: 3, background: "#EDE4D3", width: "90%", border: "1px solid #D4C9B0" }} />
+                    <div style={{ height: 5, borderRadius: 3, background: "#EDE4D3", width: "75%", border: "1px solid #D4C9B0" }} />
+                    <div style={{ flex: 1 }} />
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[1,2,3].map(i => <div key={i} style={{ flex: 1, height: 14, borderRadius: 4, background: "#EDE4D3", border: "1px solid #D4C9B0" }} />)}
+                    </div>
+                  </div>
+                  <div style={{ background: "#EDE4D3", padding: "5px 4px", borderTop: "1px solid #D4C9B0", display: "flex", justifyContent: "space-around" }}>
+                    {["🏠","📅","⏰","📖","⚙️"].map((ic, i) => (
+                      <span key={i} style={{ fontSize: 9 }}>{ic}</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "light" ? 700 : 500, color: theme === "light" ? "#8B6914" : "var(--text-muted)" }}>
+                  {theme === "light" && "✓ "}Parchment
+                </div>
+              </button>
+
+              {/* Deep Sapphire */}
+              <button
+                onClick={() => onSetTheme("sapphire")}
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "center" }}
+              >
+                <div style={{
+                  borderRadius: 14, overflow: "hidden", border: `2px solid ${theme === "sapphire" ? "#6382FF" : "transparent"}`,
+                  boxShadow: theme === "sapphire" ? "0 0 0 1px rgba(99,130,255,0.4), 0 4px 16px rgba(99,130,255,0.15)" : "0 2px 8px rgba(0,0,0,0.3)",
+                  transition: "all 0.2s",
+                }}>
+                  <div style={{ background: "#060e1e", padding: "8px 8px 6px", height: 72, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ height: 8, borderRadius: 4, background: "linear-gradient(90deg, #6382FF, #4060E0)", width: "60%" }} />
+                    <div style={{ height: 5, borderRadius: 3, background: "#0c1830", width: "90%", border: "1px solid #1a2e58" }} />
+                    <div style={{ height: 5, borderRadius: 3, background: "#0c1830", width: "75%", border: "1px solid #1a2e58" }} />
+                    <div style={{ flex: 1 }} />
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[1,2,3].map(i => <div key={i} style={{ flex: 1, height: 14, borderRadius: 4, background: "#0c1830", border: "1px solid #1a2e58" }} />)}
+                    </div>
+                  </div>
+                  <div style={{ background: "#060e1e", padding: "5px 4px", borderTop: "1px solid #1a2e58", display: "flex", justifyContent: "space-around" }}>
+                    {["🏠","📅","⏰","📖","⚙️"].map((ic, i) => (
+                      <span key={i} style={{ fontSize: 9 }}>{ic}</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "sapphire" ? 700 : 500, color: theme === "sapphire" ? "#6382FF" : "var(--text-muted)" }}>
+                  {theme === "sapphire" && "✓ "}Sapphire
+                </div>
+              </button>
+            </div>
+          </div>
           <div style={{ height: 1, background: "var(--border)" }} />
           <Row
             label={t.settingsShowHebrew}

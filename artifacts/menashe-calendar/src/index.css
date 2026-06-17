@@ -523,6 +523,59 @@ html, body, #root {
   color-scheme: light;
 }
 
+/* ── Deep Sapphire theme ── */
+.sapphire-theme {
+  --background: #060e1e;
+  --foreground: #e8f0ff;
+  --card: #0c1830;
+  --card-secondary: #111f3c;
+  --card-foreground: #e8f0ff;
+  --border: #1a2e58;
+  --muted: #1a2e58;
+  --muted-foreground: #4a6090;
+  --primary: #6382FF;
+  --primary-foreground: #ffffff;
+  --gold: #d4a843;
+  --gold-light: #f0c96a;
+  --text-primary: #e8f0ff;
+  --text-secondary: #8aaeff;
+  --text-muted: #4a6090;
+  --elevated: #111f3c;
+}
+
+.sapphire-theme .bottom-nav {
+  background: #060e1e;
+  border-top: 1px solid #1a2e58;
+}
+
+.sapphire-theme .app-header {
+  background: #060e1e;
+  border-bottom: 1px solid #1a2e58;
+}
+
+.sapphire-theme .modal-sheet {
+  background: #0c1830;
+  border-color: #1a2e58;
+}
+
+.sapphire-theme .app-container {
+  background: #030810;
+}
+
+.sapphire-theme .nav-item.active {
+  color: #6382FF;
+}
+
+.sapphire-theme .card-interactive:hover {
+  border-color: rgba(99,130,255,0.3);
+  box-shadow: 0 4px 16px rgba(99,130,255,0.1);
+}
+
+.sapphire-theme .app-icon {
+  background: linear-gradient(135deg, #1a2e58, #253d70);
+  border-color: #1a2e58;
+}
+
 /* ── Shared modal helpers ── */
 .modal-close-btn {
   width: 32px;

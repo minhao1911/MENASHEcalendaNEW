@@ -18,7 +18,7 @@ async function apiFetch(path: string, options: RequestInit = {}) {
 // ── User profile ──────────────────────────────────────────────────────────────
 
 export interface UserProfile {
-  theme: "dark" | "light";
+  theme: "dark" | "light" | "sapphire";
   location: any | null;
   isPremium: boolean;
   candleEnabled: boolean;

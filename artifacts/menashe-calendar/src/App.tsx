@@ -364,8 +364,8 @@ function AppShell() {
   const [readingBook, setReadingBook] = useState<Book | null>(null);
   const [siddurRefreshKey, setSiddurRefreshKey] = useState(0);
   const [toast, setToast] = useState("");
-  const [theme, setThemeState] = useState<"dark" | "light">(() => {
-    try { return (localStorage.getItem("menashe-theme") as "dark" | "light") || "dark"; } catch { return "dark"; }
+  const [theme, setThemeState] = useState<"dark" | "light" | "sapphire">(() => {
+    try { return (localStorage.getItem("menashe-theme") as "dark" | "light" | "sapphire") || "dark"; } catch { return "dark"; }
   });
   const [location, setLocation] = useState<Location>(() => {
     try {
@@ -449,11 +449,16 @@ function AppShell() {
     setTimeout(() => setToast(""), 2500);
   }
 
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
+  function setTheme(next: "dark" | "light" | "sapphire") {
     setThemeState(next);
     try { localStorage.setItem("menashe-theme", next); } catch {}
-    showToast(`Switched to ${next} mode`);
+    const label = next === "dark" ? "Royal Midnight" : next === "light" ? "Parchment Light" : "Deep Sapphire";
+    showToast(`Theme: ${label}`);
+  }
+
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : theme === "light" ? "sapphire" : "dark";
+    setTheme(next);
   }
 
   function selectLocation(loc: Location) {
@@ -546,6 +551,7 @@ function AppShell() {
             theme={theme}
             location={location}
             onToggleTheme={toggleTheme}
+            onSetTheme={setTheme}
             onLocationClick={() => setModal("location")}
             onPremium={() => setActivePage("premium")}
             onTahara={() => setModal("tahara")}
@@ -583,7 +589,7 @@ function AppShell() {
 
   return (
     <LanguageProvider>
-      <div className={`app-container${isLight ? " light-theme" : ""}`}>
+      <div className={`app-container${theme === "light" ? " light-theme" : theme === "sapphire" ? " sapphire-theme" : ""}`}>
         <div className="app-shell">
           {readingBook && (
             <BookReaderModal book={readingBook} onClose={() => setReadingBook(null)} />
