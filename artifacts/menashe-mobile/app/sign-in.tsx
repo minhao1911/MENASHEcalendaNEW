@@ -9,17 +9,26 @@ import {
   Image,
   Platform,
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   ScrollView,
   Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Polygon, Polyline } from "react-native-svg";
+import Svg, { Polygon, Polyline, Path, Circle } from "react-native-svg";
 import { useSignIn, useSSO, useAuth } from "@clerk/expo";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { router, Link } from "expo-router";
+import {
+  getBiometricType,
+  hasSavedCredentials,
+  saveCredentials,
+  loadCredentialsWithBiometric,
+  clearSavedCredentials,
+  type BiometricType,
+} from "@/lib/biometricAuth";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -83,10 +92,73 @@ export default function SignInScreen() {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [bioType, setBioType] = useState<BiometricType>("none");
+  const [hasBioCreds, setHasBioCreds] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
 
   useEffect(() => {
     if (isSignedIn) router.replace("/(tabs)");
   }, [isSignedIn]);
+
+  useEffect(() => {
+    async function checkBiometrics() {
+      const [type, hasCreds] = await Promise.all([getBiometricType(), hasSavedCredentials()]);
+      setBioType(type);
+      setHasBioCreds(hasCreds);
+    }
+    checkBiometrics();
+  }, []);
+
+  async function offerToSaveCredentials(emailVal: string, passwordVal: string) {
+    if (bioType === "none") return;
+    const label = bioType === "face" ? "Face ID" : "Fingerprint";
+    Alert.alert(
+      `Save with ${label}?`,
+      `Sign in instantly next time using ${label} — no password needed.`,
+      [
+        { text: "Not now", style: "cancel" },
+        {
+          text: `Enable ${label}`,
+          onPress: async () => {
+            await saveCredentials(emailVal, passwordVal);
+            setHasBioCreds(true);
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleBiometricSignIn() {
+    if (!signIn) return;
+    setBioLoading(true);
+    setErrorMsg("");
+    try {
+      const creds = await loadCredentialsWithBiometric();
+      if (!creds) {
+        setBioLoading(false);
+        return;
+      }
+      const { error } = await signIn.password({ emailAddress: creds.email, password: creds.password });
+      if (error) {
+        setErrorMsg(error.message ?? "Sign-in failed");
+        await clearSavedCredentials();
+        setHasBioCreds(false);
+        setBioLoading(false);
+        return;
+      }
+      if (signIn.status === "complete") {
+        await signIn.finalize({
+          navigate: ({ decorateUrl }) => {
+            router.replace(decorateUrl("/") as "/(tabs)");
+          },
+        });
+      }
+    } catch (e: unknown) {
+      setErrorMsg(e instanceof Error ? e.message : "Biometric sign-in failed");
+    } finally {
+      setBioLoading(false);
+    }
+  }
 
   async function handleContinue() {
     if (!email.trim() || !password.trim()) return;
@@ -105,6 +177,7 @@ export default function SignInScreen() {
             router.replace(decorateUrl("/") as "/(tabs)");
           },
         });
+        await offerToSaveCredentials(email.trim(), password);
       }
     } catch (e: unknown) {
       setErrorMsg(e instanceof Error ? e.message : "Sign-in failed");
@@ -204,6 +277,67 @@ export default function SignInScreen() {
             <LinearGradient colors={["#111118", "#0f0f16"]} style={styles.formBody}>
               <Text style={styles.welcomeTitle}>Welcome back</Text>
               <Text style={styles.welcomeSub}>Sign in to access the sacred calendar</Text>
+
+              {/* Biometric quick sign-in — shown when device supports it & creds are saved */}
+              {hasBioCreds && bioType !== "none" && (
+                <>
+                  <TouchableOpacity
+                    style={styles.bioBtn}
+                    onPress={handleBiometricSignIn}
+                    activeOpacity={0.82}
+                    disabled={bioLoading || loading}
+                  >
+                    <LinearGradient
+                      colors={["#1a2440", "#111828"]}
+                      style={styles.bioBtnInner}
+                    >
+                      {bioLoading ? (
+                        <ActivityIndicator color={GOLD} />
+                      ) : (
+                        <>
+                          {bioType === "face" ? (
+                            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                              <Path d="M9 3H5a2 2 0 0 0-2 2v4" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                              <Path d="M15 3h4a2 2 0 0 1 2 2v4" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                              <Path d="M9 21H5a2 2 0 0 1-2-2v-4" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                              <Path d="M15 21h4a2 2 0 0 0 2-2v-4" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                              <Circle cx="9" cy="10" r="1" fill={GOLD}/>
+                              <Circle cx="15" cy="10" r="1" fill={GOLD}/>
+                              <Path d="M9 15a3 3 0 0 0 6 0" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round"/>
+                            </Svg>
+                          ) : (
+                            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                              <Path d="M12 10a2 2 0 0 1 2 2c0 1.5-.5 3-1.5 4" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round"/>
+                              <Path d="M12 6a6 6 0 0 1 6 6c0 2.5-.7 4.8-2 6.5" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round"/>
+                              <Path d="M12 2a10 10 0 0 1 10 10c0 3.5-1.1 6.7-3 9.2" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round"/>
+                              <Path d="M8.5 19.5A10 10 0 0 1 2 12c0-5.5 4.5-10 10-10" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round"/>
+                              <Path d="M9 12a3 3 0 0 1 3-3" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round"/>
+                            </Svg>
+                          )}
+                          <Text style={styles.bioBtnText}>
+                            Sign in with {bioType === "face" ? "Face ID" : "Fingerprint"}
+                          </Text>
+                        </>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeBioRow}
+                    onPress={async () => {
+                      await clearSavedCredentials();
+                      setHasBioCreds(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.removeBioText}>Remove saved login</Text>
+                  </TouchableOpacity>
+                  <View style={styles.dividerRow}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>or sign in with password</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+                </>
+              )}
 
               <TouchableOpacity
                 style={styles.googleBtn}
@@ -394,4 +528,15 @@ const styles = StyleSheet.create({
   footerText: { color: "#706050", fontSize: 13 },
   footerLink: { color: GOLD, fontSize: 13, fontWeight: "700" },
   tagline: { marginTop: 24, color: "rgba(212,175,55,0.30)", fontSize: 11, letterSpacing: 0.5, textAlign: "center" },
+  bioBtn: {
+    borderRadius: 10, marginBottom: 10,
+    borderWidth: 1, borderColor: "rgba(212,175,55,0.35)",
+    overflow: "hidden",
+  },
+  bioBtnInner: {
+    height: 50, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+  },
+  bioBtnText: { color: GOLD_BRIGHT, fontWeight: "700", fontSize: 15, letterSpacing: 0.2 },
+  removeBioRow: { alignItems: "center", marginBottom: 16 },
+  removeBioText: { color: "#504035", fontSize: 12, textDecorationLine: "underline" },
 });

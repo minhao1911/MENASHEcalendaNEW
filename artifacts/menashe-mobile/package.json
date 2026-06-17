@@ -67,6 +67,7 @@
   },
   "dependencies": {
     "@hebcal/core": "^6.5.3",
+    "expo-local-authentication": "~17.0.8",
     "expo-notifications": "^0.32.17",
     "suncalc": "^1.9.0"
   }
