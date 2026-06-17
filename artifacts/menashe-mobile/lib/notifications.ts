@@ -26,6 +26,8 @@ if (Platform.OS !== "web") {
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
     }),
   });
 }
@@ -87,7 +89,7 @@ export async function scheduleAllNotifications(
     try {
       await Notifications.scheduleNotificationAsync({
         identifier: id,
-        content: { title, body, sound: true, channelId: "menashe-default" },
+        content: { title, body, sound: true },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: fireAt,
@@ -128,7 +130,7 @@ export async function scheduleAllNotifications(
     if (prefs.parasha) {
       const paraEvents = HebrewCalendar.calendar({
         start: friday, end: friday, il: true, isHebrewYear: false,
-        mask: flags.PARASHA_HASHAVUA,
+        mask: flags.PARSHA_HASHAVUA,
       });
       if (paraEvents.length > 0) {
         const name = paraEvents[0].render("en");

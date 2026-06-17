@@ -75,7 +75,8 @@ export default function ForgotPasswordScreen() {
     setErrorMsg("");
     setLoading(true);
     try {
-      await signIn.create({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (signIn as any).create({
         strategy: "reset_password_email_code",
         identifier: email.trim(),
       });
@@ -97,7 +98,8 @@ export default function ForgotPasswordScreen() {
     setErrorMsg("");
     setLoading(true);
     try {
-      const result = await signIn.attemptFirstFactor({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (signIn as any).attemptFirstFactor({
         strategy: "reset_password_email_code",
         code: code.trim(),
         password: newPassword,

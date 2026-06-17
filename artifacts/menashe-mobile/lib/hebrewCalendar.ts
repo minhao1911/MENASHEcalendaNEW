@@ -81,7 +81,7 @@ export function getCurrentParasha(): string {
     end: nextWeek,
     il: true,
     isHebrewYear: false,
-    mask: flags.PARASHA_HASHAVUA,
+    mask: flags.PARSHA_HASHAVUA,
   });
   if (events.length > 0) return events[0].render("en");
   return "";
