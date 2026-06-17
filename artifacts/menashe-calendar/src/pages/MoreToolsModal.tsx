@@ -1,3 +1,5 @@
+import { GOLD, GOLD_GRAD } from "../lib/theme";
+
 interface MoreToolsModalProps {
   onClose: () => void;
   onTahara: () => void;
@@ -23,9 +25,6 @@ interface MoreToolsModalProps {
   onToggleCandle: () => void;
   onShowPremium: () => void;
 }
-
-const GOLD = "#d4a843";
-const GOLD_GRAD = "linear-gradient(135deg, #b8860b 0%, #d4a843 50%, #f0c96a 100%)";
 
 function PremiumBadge() {
   return (

@@ -1,13 +1,11 @@
 import { useState } from "react";
+import { GOLD, GOLD_GRAD } from "../lib/theme";
 
 interface PremiumPageProps {
   onUpgrade: () => void;
   onBack?: () => void;
   isPremium?: boolean;
 }
-
-const GOLD = "#d4a843";
-const GOLD_GRAD = "linear-gradient(135deg, #b8860b 0%, #d4a843 50%, #f0c96a 100%)";
 const DARK_CARD = "rgba(212,168,67,0.06)";
 const BORDER_GOLD = "rgba(212,168,67,0.25)";
 

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { createRazorpayOrder, verifyRazorpayPayment } from "../lib/userApi";
+import { GOLD_GRAD as GOLD } from "../lib/theme";
 
 interface Props { onClose: () => void; onActivated?: () => void; }
 
@@ -24,7 +25,6 @@ const UPI_APPS = [
 ];
 
 const UPI_ID = "8414981218@idfcfirst";
-const GOLD = "linear-gradient(135deg, #b8860b 0%, #d4a843 50%, #f0c96a 100%)";
 
 declare global {
   interface Window {
