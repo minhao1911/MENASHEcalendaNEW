@@ -76,7 +76,21 @@ function stripBase(path: string): string {
 }
 
 if (!clerkPubKey) {
-  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
+  const root = document.getElementById("root")!;
+  root.innerHTML = `
+    <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;background:#0F1829;font-family:Inter,sans-serif;padding:24px">
+      <div style="max-width:420px;width:100%;border:1px solid rgba(212,175,55,0.3);border-radius:16px;padding:32px;text-align:center;background:#0a1020">
+        <div style="font-size:40px;margin-bottom:16px">⚙️</div>
+        <h2 style="color:#D4AF37;font-size:18px;font-weight:700;margin:0 0 10px">Authentication Not Provisioned</h2>
+        <p style="color:#A89070;font-size:14px;line-height:1.6;margin:0 0 20px">
+          The Clerk authentication service hasn't been set up yet.<br/>
+          Please ask the Replit agent:<br/>
+          <strong style="color:#F5F0E8">"provision Clerk"</strong>
+        </p>
+        <p style="color:#A89070;font-size:12px;margin:0;opacity:0.6">Missing: VITE_CLERK_PUBLISHABLE_KEY</p>
+      </div>
+    </div>`;
+  throw new Error("Clerk not provisioned — run setupClerkWhitelabelAuth() via the agent.");
 }
 
 const clerkAppearance = {

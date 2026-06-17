@@ -1,2 +1,3 @@
 - [Bilingual system (EN + TK)](bilingual-system.md) — all UI text must go through LanguageContext; never hardcode English-only strings
 - [Clerk API auth in apiFetch](clerk-api-auth.md) — cookies alone don't work through Replit's proxy; always attach Bearer token via window.Clerk?.session?.getToken()
+- [Clerk provisioning requirement](clerk-provisioning.md) — must call setupClerkWhitelabelAuth() before the web app can start; check status first every session
