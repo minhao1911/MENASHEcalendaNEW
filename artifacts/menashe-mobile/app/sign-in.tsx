@@ -27,8 +27,8 @@ import {
   saveCredentials,
   loadCredentialsWithBiometric,
   clearSavedCredentials,
-  type BiometricType,
 } from "@/lib/biometricAuth";
+import type { BiometricType } from "@/lib/biometricAuth";
 
 WebBrowser.maybeCompleteAuthSession();
 
