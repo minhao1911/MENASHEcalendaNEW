@@ -3,11 +3,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { DEFAULT_LOCATION, type Location } from "@/lib/locations";
 import type { NotificationPrefs } from "@/lib/notifications";
+import type { ThemeKey } from "@/constants/colors";
 
 const LOCATION_KEY = "menashe-location";
 const PREFS_KEY = "menashe-notif-prefs";
 const LEAD_KEY = "menashe-lead-time";
 const EXPO_TOKEN_KEY = "menashe-expo-push-token";
+const THEME_KEY = "menashe-theme";
 
 export const DEFAULT_PREFS: NotificationPrefs = {
   shabbat: true,
@@ -18,6 +20,8 @@ export const DEFAULT_PREFS: NotificationPrefs = {
 };
 
 interface AppContextValue {
+  theme: ThemeKey;
+  setTheme: (t: ThemeKey) => Promise<void>;
   location: Location;
   setLocation: (loc: Location) => Promise<void>;
   notifPrefs: NotificationPrefs;
@@ -34,7 +38,7 @@ interface AppContextValue {
   syncServerPushPrefs: (getToken: () => Promise<string | null>) => Promise<void>;
 }
 
-const AppContext = createContext<AppContextValue | null>(null);
+export const AppContext = createContext<AppContextValue | null>(null);
 
 async function scheduleIfNative(
   prefs: NotificationPrefs,
@@ -47,6 +51,7 @@ async function scheduleIfNative(
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setThemeState] = useState<ThemeKey>("dark");
   const [location, setLocationState] = useState<Location>(DEFAULT_LOCATION);
   const [notifPrefs, setNotifPrefsState] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [leadMinutes, setLeadMinutesState] = useState<number>(15);
@@ -63,11 +68,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         await setupNotificationChannel();
       }
 
-      const [locRaw, prefsRaw, leadRaw, tokenRaw] = await Promise.all([
+      const [locRaw, prefsRaw, leadRaw, tokenRaw, themeRaw] = await Promise.all([
         AsyncStorage.getItem(LOCATION_KEY),
         AsyncStorage.getItem(PREFS_KEY),
         AsyncStorage.getItem(LEAD_KEY),
         AsyncStorage.getItem(EXPO_TOKEN_KEY),
+        AsyncStorage.getItem(THEME_KEY),
       ]);
 
       let loc = DEFAULT_LOCATION;
@@ -79,6 +85,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         try { prefs = { ...DEFAULT_PREFS, ...JSON.parse(prefsRaw) }; } catch (_e) { /* use default */ }
       }
       const lead = leadRaw ? Number(leadRaw) || 15 : 15;
+      if (themeRaw === "dark" || themeRaw === "light" || themeRaw === "sapphire") {
+        setThemeState(themeRaw);
+      }
 
       setLocationState(loc);
       setNotifPrefsState(prefs);
@@ -102,6 +111,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       initDoneRef.current = true;
     })();
   }, []);
+
+  const setTheme = async (t: ThemeKey) => {
+    setThemeState(t);
+    await AsyncStorage.setItem(THEME_KEY, t);
+  };
 
   const setLocation = async (loc: Location) => {
     setLocationState(loc);
@@ -158,6 +172,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider
       value={{
+        theme, setTheme,
         location, setLocation,
         notifPrefs, setNotifPrefs,
         leadMinutes, setLeadMinutes,

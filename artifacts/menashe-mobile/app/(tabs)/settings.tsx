@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import { useAuth, useUser } from "@clerk/expo";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
+import type { ThemeKey } from "@/constants/colors";
 import { LOCATIONS } from "@/lib/locations";
 import {
   requestPermission,
@@ -28,12 +29,18 @@ export default function SettingsScreen() {
   const { signOut, getToken } = useAuth();
   const { user } = useUser();
   const {
+    theme, setTheme,
     location, setLocation,
     notifPrefs, setNotifPrefs,
     leadMinutes, setLeadMinutes,
     scheduledCount, reschedule,
     serverPushRegistered, registerServerPush, unregisterServerPush,
   } = useApp();
+
+  async function handleSetTheme(t: ThemeKey) {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await setTheme(t);
+  }
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [permStatus, setPermStatus] = useState<Notifications.PermissionStatus | null>(null);
   const [rescheduling, setRescheduling] = useState(false);
@@ -152,7 +159,119 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
+        {/* ── APPEARANCE ── */}
         <View style={{ paddingTop: topPad + 16, paddingHorizontal: 16 }}>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>APPEARANCE</Text>
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16, marginBottom: 16 }]}>
+          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 14 }}>Theme</Text>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            {/* Royal Midnight */}
+            <TouchableOpacity
+              style={{ flex: 1, alignItems: "center" }}
+              onPress={() => handleSetTheme("dark")}
+              activeOpacity={0.75}
+            >
+              <View style={{
+                borderRadius: 14, overflow: "hidden", borderWidth: 2,
+                borderColor: theme === "dark" ? "#d4a843" : "transparent",
+                shadowColor: theme === "dark" ? "#d4a843" : "#000",
+                shadowOpacity: theme === "dark" ? 0.4 : 0.2,
+                shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+                elevation: theme === "dark" ? 4 : 1,
+              }}>
+                <View style={{ backgroundColor: "#080e1a", padding: 8, height: 72, gap: 4 }}>
+                  <View style={{ height: 8, borderRadius: 4, backgroundColor: "#d4a843", width: "60%" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#1a2540", width: "90%" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#1a2540", width: "75%" }} />
+                  <View style={{ flex: 1 }} />
+                  <View style={{ flexDirection: "row", gap: 4 }}>
+                    {[1,2,3].map(i => <View key={i} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: "#111827" }} />)}
+                  </View>
+                </View>
+                <View style={{ backgroundColor: "#0d1627", padding: 5, flexDirection: "row", justifyContent: "space-around" }}>
+                  {["🏠","📅","⏰","👥","⚙️"].map((ic, i) => (
+                    <Text key={i} style={{ fontSize: 8 }}>{ic}</Text>
+                  ))}
+                </View>
+              </View>
+              <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "dark" ? "700" : "500", color: theme === "dark" ? "#d4a843" : colors.mutedForeground }}>
+                {theme === "dark" ? "✓ " : ""}Midnight
+              </Text>
+            </TouchableOpacity>
+
+            {/* Parchment Light */}
+            <TouchableOpacity
+              style={{ flex: 1, alignItems: "center" }}
+              onPress={() => handleSetTheme("light")}
+              activeOpacity={0.75}
+            >
+              <View style={{
+                borderRadius: 14, overflow: "hidden", borderWidth: 2,
+                borderColor: theme === "light" ? "#8B6914" : "transparent",
+                shadowColor: theme === "light" ? "#8B6914" : "#000",
+                shadowOpacity: theme === "light" ? 0.3 : 0.15,
+                shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+                elevation: theme === "light" ? 4 : 1,
+              }}>
+                <View style={{ backgroundColor: "#F5EFE0", padding: 8, height: 72, gap: 4 }}>
+                  <View style={{ height: 8, borderRadius: 4, backgroundColor: "#8B6914", width: "60%" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#EDE4D3", width: "90%", borderWidth: 1, borderColor: "#D4C9B0" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#EDE4D3", width: "75%", borderWidth: 1, borderColor: "#D4C9B0" }} />
+                  <View style={{ flex: 1 }} />
+                  <View style={{ flexDirection: "row", gap: 4 }}>
+                    {[1,2,3].map(i => <View key={i} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: "#EDE4D3", borderWidth: 1, borderColor: "#D4C9B0" }} />)}
+                  </View>
+                </View>
+                <View style={{ backgroundColor: "#EDE4D3", padding: 5, borderTopWidth: 1, borderTopColor: "#D4C9B0", flexDirection: "row", justifyContent: "space-around" }}>
+                  {["🏠","📅","⏰","👥","⚙️"].map((ic, i) => (
+                    <Text key={i} style={{ fontSize: 8 }}>{ic}</Text>
+                  ))}
+                </View>
+              </View>
+              <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "light" ? "700" : "500", color: theme === "light" ? "#8B6914" : colors.mutedForeground }}>
+                {theme === "light" ? "✓ " : ""}Parchment
+              </Text>
+            </TouchableOpacity>
+
+            {/* Deep Sapphire */}
+            <TouchableOpacity
+              style={{ flex: 1, alignItems: "center" }}
+              onPress={() => handleSetTheme("sapphire")}
+              activeOpacity={0.75}
+            >
+              <View style={{
+                borderRadius: 14, overflow: "hidden", borderWidth: 2,
+                borderColor: theme === "sapphire" ? "#6382FF" : "transparent",
+                shadowColor: theme === "sapphire" ? "#6382FF" : "#000",
+                shadowOpacity: theme === "sapphire" ? 0.4 : 0.2,
+                shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+                elevation: theme === "sapphire" ? 4 : 1,
+              }}>
+                <View style={{ backgroundColor: "#060e1e", padding: 8, height: 72, gap: 4 }}>
+                  <View style={{ height: 8, borderRadius: 4, backgroundColor: "#6382FF", width: "60%" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#0c1830", width: "90%", borderWidth: 1, borderColor: "#1a2e58" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#0c1830", width: "75%", borderWidth: 1, borderColor: "#1a2e58" }} />
+                  <View style={{ flex: 1 }} />
+                  <View style={{ flexDirection: "row", gap: 4 }}>
+                    {[1,2,3].map(i => <View key={i} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: "#0c1830", borderWidth: 1, borderColor: "#1a2e58" }} />)}
+                  </View>
+                </View>
+                <View style={{ backgroundColor: "#060e1e", padding: 5, borderTopWidth: 1, borderTopColor: "#1a2e58", flexDirection: "row", justifyContent: "space-around" }}>
+                  {["🏠","📅","⏰","👥","⚙️"].map((ic, i) => (
+                    <Text key={i} style={{ fontSize: 8 }}>{ic}</Text>
+                  ))}
+                </View>
+              </View>
+              <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "sapphire" ? "700" : "500", color: theme === "sapphire" ? "#6382FF" : colors.mutedForeground }}>
+                {theme === "sapphire" ? "✓ " : ""}Sapphire
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── LOCATION ── */}
+        <View style={{ paddingHorizontal: 16 }}>
           <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>LOCATION</Text>
         </View>
 

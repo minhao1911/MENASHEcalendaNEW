@@ -2,14 +2,15 @@ import { BlurView } from "expo-blur";
 import { Tabs, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { useApp } from "@/context/AppContext";
 import { useAuth } from "@clerk/expo";
 
 export default function TabLayout() {
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { theme } = useApp();
+  const isDark = theme !== "light";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const { isSignedIn, isLoaded, getToken } = useAuth();
