@@ -89,6 +89,57 @@ async function dbPruneFired(id: string, remainingSchedule: ScheduleItem[]): Prom
   );
 }
 
+async function fireBroadcastNow(bc: { id: number; emoji: string; title: string; body: string }) {
+  const fullTitle = `${bc.emoji} ${bc.title}`;
+  const tag = `broadcast-${bc.id}`;
+  const icon = "/favicon.svg";
+
+  // Web push
+  if (VAPID_PUBLIC && VAPID_PRIVATE) {
+    let webRows: Array<{ id: string; endpoint: string; p256dh: string; auth: string }> = [];
+    try {
+      const r = await pool.query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
+        "SELECT id, endpoint, p256dh, auth FROM push_subscriptions"
+      );
+      webRows = r.rows;
+    } catch {}
+    for (const row of webRows) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+          JSON.stringify({ title: fullTitle, body: bc.body, tag, icon })
+        );
+      } catch (err: any) {
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
+          await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [row.id]).catch(() => {});
+        }
+      }
+    }
+  }
+
+  // Expo push
+  let expoRows: Array<{ token: string }> = [];
+  try {
+    const r = await pool.query<{ token: string }>("SELECT token FROM expo_push_tokens");
+    expoRows = r.rows;
+  } catch {}
+  const msgs: import("expo-server-sdk").ExpoPushMessage[] = expoRows
+    .filter((r) => Expo.isExpoPushToken(r.token))
+    .map((r) => ({ to: r.token, title: fullTitle, body: bc.body, sound: "default" as const, data: { tag } }));
+  if (msgs.length > 0) {
+    try {
+      const chunks = expo.chunkPushNotifications(msgs);
+      for (const chunk of chunks) await expo.sendPushNotificationsAsync(chunk);
+    } catch (err) {
+      logger.error({ err }, "scheduled-broadcast: expo send failed");
+    }
+  }
+
+  // Mark as sent
+  await pool.query("UPDATE scheduled_broadcasts SET sent_at = NOW() WHERE id = $1", [bc.id]).catch(() => {});
+  logger.info({ id: bc.id, title: bc.title }, "scheduled-broadcast: fired");
+}
+
 export function startPushScheduler() {
   setInterval(async () => {
     if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
@@ -137,6 +188,18 @@ export function startPushScheduler() {
           logger.warn({ err, id: row.id }, "push-scheduler: send failed");
         }
       }
+    }
+
+    // Fire any due scheduled broadcasts
+    try {
+      const r = await pool.query<{ id: number; emoji: string; title: string; body: string }>(
+        "SELECT id, emoji, title, body FROM scheduled_broadcasts WHERE fire_at <= NOW() AND sent_at IS NULL"
+      );
+      for (const bc of r.rows) {
+        await fireBroadcastNow(bc);
+      }
+    } catch (err) {
+      logger.error({ err }, "push-scheduler: failed to check scheduled broadcasts");
     }
   }, 30_000);
 }
@@ -275,6 +338,67 @@ router.post("/push/broadcast", async (req, res) => {
 
   logger.info({ webSent, webFailed, expoSent, expoFailed }, "broadcast: complete");
   res.json({ ok: true, webSent, webFailed, expoSent, expoFailed });
+});
+
+// ── Scheduled Broadcast endpoints ────────────────────────────────────────────
+
+function checkAdminPin(req: import("express").Request, res: import("express").Response): boolean {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
+    res.status(403).json({ error: "Forbidden" });
+    return false;
+  }
+  return true;
+}
+
+router.get("/push/broadcast/scheduled", async (req, res) => {
+  if (!checkAdminPin(req, res)) return;
+  try {
+    const r = await pool.query<{ id: number; emoji: string; title: string; body: string; fire_at: string; sent_at: string | null; created_at: string }>(
+      "SELECT id, emoji, title, body, fire_at, sent_at, created_at FROM scheduled_broadcasts ORDER BY fire_at ASC"
+    );
+    res.json(r.rows);
+  } catch (err) {
+    logger.error({ err }, "broadcast/scheduled GET: db error");
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+router.post("/push/broadcast/scheduled", async (req, res) => {
+  if (!checkAdminPin(req, res)) return;
+  const { emoji, title, body, fireAt } = req.body as { emoji?: string; title: string; body: string; fireAt: string };
+  if (!title?.trim() || !body?.trim() || !fireAt) {
+    res.status(400).json({ error: "emoji, title, body, fireAt are required" });
+    return;
+  }
+  const fireDate = new Date(fireAt);
+  if (isNaN(fireDate.getTime()) || fireDate <= new Date()) {
+    res.status(400).json({ error: "fireAt must be a future date" });
+    return;
+  }
+  try {
+    const r = await pool.query<{ id: number }>(
+      "INSERT INTO scheduled_broadcasts (emoji, title, body, fire_at) VALUES ($1,$2,$3,$4) RETURNING id",
+      [emoji ?? "📢", title.trim(), body.trim(), fireDate.toISOString()]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch (err) {
+    logger.error({ err }, "broadcast/scheduled POST: db error");
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+router.delete("/push/broadcast/scheduled/:id", async (req, res) => {
+  if (!checkAdminPin(req, res)) return;
+  const id = parseInt(req.params["id"] ?? "", 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  try {
+    await pool.query("DELETE FROM scheduled_broadcasts WHERE id = $1 AND sent_at IS NULL", [id]);
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "broadcast/scheduled DELETE: db error");
+    res.status(500).json({ error: "DB error" });
+  }
 });
 
 router.post("/push/send-test", requireAuth, async (req, res) => {

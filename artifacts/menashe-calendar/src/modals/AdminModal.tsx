@@ -111,6 +111,15 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [broadcasting, setBroadcasting] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState<{ webSent: number; expoSent: number; webFailed: number; expoFailed: number } | null>(null);
 
+  type ScheduleMode = "now" | "later";
+  interface ScheduledBroadcast { id: number; emoji: string; title: string; body: string; fire_at: string; sent_at: string | null; }
+  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("now");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [scheduledList, setScheduledList] = useState<ScheduledBroadcast[]>([]);
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleResult, setScheduleResult] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+
   const { uploadFile, isUploading, progress } = useUpload({
     onSuccess: (response) => {
       const servingUrl = `/api/storage${response.objectPath}`;
@@ -138,6 +147,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     if (!broadcastForm.title.trim() || !broadcastForm.body.trim()) return;
     setBroadcasting(true);
     setBroadcastResult(null);
+    setScheduleResult(null);
     try {
       const res = await fetch(`${API_BASE}/push/broadcast`, {
         method: "POST",
@@ -154,8 +164,51 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     finally { setBroadcasting(false); }
   }
 
+  async function fetchScheduled() {
+    try {
+      const res = await fetch(`${API_BASE}/push/broadcast/scheduled`, { headers: { "x-admin-pin": ADMIN_PIN } });
+      if (res.ok) setScheduledList(await res.json());
+    } catch {}
+  }
+
+  async function scheduleBroadcast() {
+    if (!broadcastForm.title.trim() || !broadcastForm.body.trim() || !scheduledAt) return;
+    setScheduling(true);
+    setScheduleResult(null);
+    setBroadcastResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/push/broadcast/scheduled`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN },
+        body: JSON.stringify({ ...broadcastForm, fireAt: scheduledAt }),
+      });
+      if (res.ok) {
+        setScheduleResult("scheduled");
+        setBroadcastForm(f => ({ ...f, title: "", body: "" }));
+        setScheduledAt("");
+        await fetchScheduled();
+      } else {
+        const d = await res.json();
+        setScheduleResult(d.error ?? "error");
+      }
+    } catch { setScheduleResult("error"); }
+    finally { setScheduling(false); }
+  }
+
+  async function cancelScheduled(id: number) {
+    setCancellingId(id);
+    try {
+      await fetch(`${API_BASE}/push/broadcast/scheduled/${id}`, {
+        method: "DELETE",
+        headers: { "x-admin-pin": ADMIN_PIN },
+      });
+      await fetchScheduled();
+    } catch {}
+    finally { setCancellingId(null); }
+  }
+
   function submitPin() {
-    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); fetchSubCount(); }
+    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); fetchSubCount(); fetchScheduled(); }
     else { setPinError("Incorrect PIN"); setPin(""); }
   }
 
@@ -785,7 +838,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
               ))}
             </div>
 
-            {/* Result banner */}
+            {/* Result banners */}
             {broadcastResult && (
               <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 22 }}>✅</span>
@@ -797,6 +850,17 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
                     Mobile: {broadcastResult.expoSent} sent{broadcastResult.expoFailed > 0 ? `, ${broadcastResult.expoFailed} failed` : ""}
                   </div>
                 </div>
+              </div>
+            )}
+            {scheduleResult === "scheduled" && (
+              <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 22 }}>🗓</span>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#22c55e" }}>Broadcast scheduled! It will fire automatically.</div>
+              </div>
+            )}
+            {scheduleResult && scheduleResult !== "scheduled" && (
+              <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", fontSize: 13, color: "#ef4444" }}>
+                ⚠️ {scheduleResult}
               </div>
             )}
 

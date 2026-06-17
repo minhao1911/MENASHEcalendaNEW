@@ -268,6 +268,19 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // Scheduled broadcasts (admin-composed, fire at a future time)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS scheduled_broadcasts (
+        id           SERIAL PRIMARY KEY,
+        emoji        TEXT NOT NULL DEFAULT '📢',
+        title        TEXT NOT NULL,
+        body         TEXT NOT NULL,
+        fire_at      TIMESTAMPTZ NOT NULL,
+        sent_at      TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");
