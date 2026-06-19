@@ -29,7 +29,7 @@ interface AppContextValue {
   leadMinutes: number;
   setLeadMinutes: (mins: number) => Promise<void>;
   scheduledCount: number;
-  reschedule: () => Promise<void>;
+  reschedule: () => Promise<number>;
   permissionGranted: boolean;
   expoPushToken: string | null;
   serverPushRegistered: boolean;
@@ -138,9 +138,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setScheduledCount(n);
   };
 
-  const reschedule = async () => {
+  const reschedule = async (): Promise<number> => {
     const n = await scheduleIfNative(notifPrefs, location, leadMinutes);
     setScheduledCount(n);
+    return n;
   };
 
   const registerServerPush = async (getToken: () => Promise<string | null>) => {

@@ -203,12 +203,12 @@ export default function CommunityScreen() {
 
           {/* Stats */}
           <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: "rgba(212,175,55,0.08)", borderColor: "rgba(212,175,55,0.2)" }]}>
-              <Text style={[styles.statNum, { color: "#D4AF37" }]}>{candleCount}</Text>
+            <View style={[styles.statCard, { backgroundColor: colors.primary + "14", borderColor: colors.primary + "33" }]}>
+              <Text style={[styles.statNum, { color: colors.primary }]}>{candleCount}</Text>
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>CANDLES LIT</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: "rgba(34,197,94,0.07)", borderColor: "rgba(34,197,94,0.18)" }]}>
-              <Text style={[styles.statNum, { color: "#22c55e" }]}>{learnerCount}</Text>
+            <View style={[styles.statCard, { backgroundColor: colors.success + "12", borderColor: colors.success + "2E" }]}>
+              <Text style={[styles.statNum, { color: colors.success }]}>{learnerCount}</Text>
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>LEARNING NOW</Text>
             </View>
           </View>
@@ -226,30 +226,30 @@ export default function CommunityScreen() {
                     activeOpacity={0.75}
                     style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: "800", color: "#D4AF37", letterSpacing: 0.6 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary, letterSpacing: 0.6 }}>
                       📢 ANNOUNCEMENTS
                     </Text>
-                    <Feather name={announcementsExpanded ? "chevron-up" : "chevron-down"} size={16} color="#D4AF37" />
+                    <Feather name={announcementsExpanded ? "chevron-up" : "chevron-down"} size={16} color={colors.primary} />
                   </TouchableOpacity>
                   {announcementsExpanded && announcements.map(ann => (
                     <View key={ann.id} style={{
                       borderRadius: 14, marginBottom: 10, overflow: "hidden",
                       borderWidth: ann.pinned ? 1 : 1,
-                      borderColor: ann.pinned ? "rgba(212,175,55,0.4)" : colors.border,
-                      backgroundColor: ann.pinned ? "rgba(212,175,55,0.06)" : colors.card,
+                      borderColor: ann.pinned ? colors.primary + "66" : colors.border,
+                      backgroundColor: ann.pinned ? colors.primary + "0F" : colors.card,
                     }}>
                       <View style={{ padding: 14, flexDirection: "row", gap: 12 }}>
                         <View style={{
                           width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                          backgroundColor: ann.pinned ? "rgba(212,175,55,0.12)" : "rgba(255,255,255,0.06)",
-                          borderWidth: 1, borderColor: ann.pinned ? "rgba(212,175,55,0.25)" : colors.border,
+                          backgroundColor: ann.pinned ? colors.primary + "1F" : "rgba(255,255,255,0.06)",
+                          borderWidth: 1, borderColor: ann.pinned ? colors.primary + "40" : colors.border,
                           alignItems: "center", justifyContent: "center",
                         }}>
                           <Text style={{ fontSize: 22 }}>{ann.emoji}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
                           {ann.pinned && (
-                            <Text style={{ fontSize: 10, color: "#D4AF37", fontWeight: "700", marginBottom: 2 }}>📌 Pinned</Text>
+                            <Text style={{ fontSize: 10, color: colors.primary, fontWeight: "700", marginBottom: 2 }}>📌 Pinned</Text>
                           )}
                           <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground, marginBottom: 3 }}>
                             {ann.title}
@@ -281,12 +281,12 @@ export default function CommunityScreen() {
 
               {/* Light a candle CTA */}
               <TouchableOpacity
-                style={[styles.ctaBtn, { borderColor: "rgba(212,175,55,0.4)" }]}
+                style={[styles.ctaBtn, { borderColor: colors.primary + "66", backgroundColor: colors.primary + "0D" }]}
                 onPress={goToForm}
                 activeOpacity={0.75}
               >
                 <Text style={{ fontSize: 20 }}>🕯</Text>
-                <Text style={[styles.ctaBtnText, { color: "#D4AF37" }]}>Light a Memorial Candle</Text>
+                <Text style={[styles.ctaBtnText, { color: colors.primary }]}>Light a Memorial Candle</Text>
               </TouchableOpacity>
 
               {loading && (
@@ -316,7 +316,7 @@ export default function CommunityScreen() {
                     return (
                       <View
                         key={entry.id}
-                        style={[styles.candleCard, { backgroundColor: "rgba(212,175,55,0.04)", borderColor: "rgba(212,175,55,0.18)" }]}
+                        style={[styles.candleCard, { backgroundColor: colors.primary + "0A", borderColor: colors.primary + "2E" }]}
                       >
                         <BurningCandleRN
                           deceasedName={entry.deceasedName}
@@ -336,7 +336,7 @@ export default function CommunityScreen() {
                         {/* Dedicate Learning */}
                         {!isDedicating && (
                           <TouchableOpacity
-                            style={styles.dedicateBtn}
+                            style={[styles.dedicateBtn, { backgroundColor: colors.primary + "14", borderColor: colors.primary + "33" }]}
                             onPress={() => {
                               setDedicateEntryId(entry.id);
                               setDedicateDone(false);
@@ -346,7 +346,7 @@ export default function CommunityScreen() {
                             }}
                             activeOpacity={0.7}
                           >
-                            <Text style={{ fontSize: 9, color: "#D4AF37", fontWeight: "700" }}>
+                            <Text style={{ fontSize: 9, color: colors.primary, fontWeight: "700" }}>
                               📖 Dedicate Learning
                             </Text>
                           </TouchableOpacity>
@@ -376,11 +376,11 @@ export default function CommunityScreen() {
                                 <Text style={{ fontSize: 9, color: colors.mutedForeground }}>Cancel</Text>
                               </TouchableOpacity>
                               <TouchableOpacity
-                                style={[styles.miniBtn, { flex: 2, backgroundColor: "rgba(212,175,55,0.15)", borderColor: "rgba(212,175,55,0.35)", opacity: (!dedicateName.trim() || dedicateSaving) ? 0.5 : 1 }]}
+                                style={[styles.miniBtn, { flex: 2, backgroundColor: colors.primary + "26", borderColor: colors.primary + "59", opacity: (!dedicateName.trim() || dedicateSaving) ? 0.5 : 1 }]}
                                 onPress={handleDedicate}
                                 disabled={dedicateSaving || !dedicateName.trim()}
                               >
-                                <Text style={{ fontSize: 9, color: "#D4AF37", fontWeight: "700" }}>
+                                <Text style={{ fontSize: 9, color: colors.primary, fontWeight: "700" }}>
                                   {dedicateSaving ? "…" : "🕯 Dedicate"}
                                 </Text>
                               </TouchableOpacity>
@@ -389,7 +389,7 @@ export default function CommunityScreen() {
                         )}
 
                         {isDedicating && dedicateDone && (
-                          <Text style={{ marginTop: 8, fontSize: 10, color: "#22c55e", fontWeight: "700", textAlign: "center" }}>
+                          <Text style={{ marginTop: 8, fontSize: 10, color: colors.success, fontWeight: "700", textAlign: "center" }}>
                             ✓ Your learning glows in the flame
                           </Text>
                         )}
@@ -450,7 +450,7 @@ export default function CommunityScreen() {
                     />
                   </View>
                   {passYear.length === 4 && (
-                    <Text style={{ fontSize: 11, color: "#D4AF37", marginTop: 5 }}>
+                    <Text style={{ fontSize: 11, color: colors.primary, marginTop: 5 }}>
                       ✡  {ordinalStr(CURRENT_YEAR - parseInt(passYear, 10))} Yahrzeit this year
                     </Text>
                   )}
@@ -491,15 +491,15 @@ export default function CommunityScreen() {
                       style={[
                         styles.tierRow,
                         {
-                          borderColor: donationIdx === i ? "rgba(212,175,55,0.6)" : colors.border,
-                          backgroundColor: donationIdx === i ? "rgba(212,175,55,0.07)" : colors.card,
+                          borderColor: donationIdx === i ? colors.primary + "99" : colors.border,
+                          backgroundColor: donationIdx === i ? colors.primary + "12" : colors.card,
                         },
                       ]}
                       onPress={() => setDonationIdx(i)}
                       activeOpacity={0.7}
                     >
-                      <View style={[styles.radio, { borderColor: donationIdx === i ? "#D4AF37" : colors.mutedForeground }]}>
-                        {donationIdx === i && <View style={styles.radioDot} />}
+                      <View style={[styles.radio, { borderColor: donationIdx === i ? colors.primary : colors.mutedForeground }]}>
+                        {donationIdx === i && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
                       </View>
                       <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground, flex: 1 }}>
                         {tier.tag ? `${tier.tag}  ` : ""}{tier.label}
@@ -507,7 +507,7 @@ export default function CommunityScreen() {
                     </TouchableOpacity>
                   ))}
                   {DONATION_TIERS[donationIdx].amount > 0 && (
-                    <View style={[styles.donationNote, { backgroundColor: "rgba(212,175,55,0.05)", borderColor: "rgba(212,175,55,0.15)" }]}>
+                    <View style={[styles.donationNote, { backgroundColor: colors.primary + "0D", borderColor: colors.primary + "26" }]}>
                       <Text style={{ fontSize: 11, color: colors.mutedForeground, lineHeight: 17 }}>
                         💳 Donation of ₹{DONATION_TIERS[donationIdx].amount} will be processed by community admin.
                       </Text>
@@ -517,9 +517,9 @@ export default function CommunityScreen() {
 
                 {/* Submit */}
                 {savedSuccess ? (
-                  <View style={[styles.successBox, { backgroundColor: "rgba(34,197,94,0.1)", borderColor: "rgba(34,197,94,0.3)" }]}>
+                  <View style={[styles.successBox, { backgroundColor: colors.success + "1A", borderColor: colors.success + "4D" }]}>
                     <Text style={{ fontSize: 32, marginBottom: 6 }}>🕯</Text>
-                    <Text style={{ fontSize: 15, fontWeight: "800", color: "#22c55e", textAlign: "center" }}>
+                    <Text style={{ fontSize: 15, fontWeight: "800", color: colors.success, textAlign: "center" }}>
                       Candle lit! May their memory be a blessing.
                     </Text>
                   </View>
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   ctaBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
     paddingVertical: 14, borderRadius: 13, borderWidth: 1.5, borderStyle: "dashed",
-    backgroundColor: "rgba(212,175,55,0.05)", marginBottom: 18,
+    marginBottom: 18,
   },
   ctaBtnText: { fontSize: 14, fontWeight: "800" },
   centerMsg: { alignItems: "center", paddingVertical: 40 },
@@ -565,8 +565,7 @@ const styles = StyleSheet.create({
   candleCard: { borderRadius: 16, padding: 12, borderWidth: 1, alignItems: "center", width: 150 },
   candleMessage: { fontSize: 9, fontStyle: "italic", textAlign: "center", marginTop: 5, lineHeight: 13 },
   dedicateBtn: {
-    marginTop: 8, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
-    backgroundColor: "rgba(212,175,55,0.08)", borderWidth: 1, borderColor: "rgba(212,175,55,0.2)",
+    marginTop: 8, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1,
   },
   miniInput: { borderWidth: 1, borderRadius: 7, padding: 6, fontSize: 10 },
   miniBtn: { borderWidth: 1, borderRadius: 7, padding: 5, alignItems: "center" },
@@ -575,7 +574,7 @@ const styles = StyleSheet.create({
   textarea: { minHeight: 72, textAlignVertical: "top", paddingTop: 11 },
   tierRow: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1.5, borderRadius: 10, padding: 12, marginBottom: 8 },
   radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, alignItems: "center", justifyContent: "center" },
-  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#D4AF37" },
+  radioDot: { width: 8, height: 8, borderRadius: 4 },
   donationNote: { borderWidth: 1, borderRadius: 8, padding: 10, marginTop: 4 },
   successBox: { borderWidth: 1, borderRadius: 14, padding: 20, alignItems: "center", marginTop: 8 },
   submitBtn: { borderRadius: 13, paddingVertical: 15, alignItems: "center", marginTop: 8 },

@@ -5,6 +5,13 @@ const config = getDefaultConfig(__dirname);
 
 config.resolver.unstable_enablePackageExports = true;
 
+// Explicit @/ alias so Metro resolves it correctly after cache invalidation.
+// babel-preset-expo reads tsconfig paths, but Metro's own resolver needs
+// this for require.context (expo-router) resolution to work reliably.
+config.resolver.alias = {
+  "@": path.resolve(__dirname),
+};
+
 // @hebcal/noaa@0.11.0 ships only pure ESM (export class + top-level await import).
 // Metro does not Babel-transform node_modules by default, so the raw ESM goes
 // directly to Terser during production builds and fails with "Unexpected token".

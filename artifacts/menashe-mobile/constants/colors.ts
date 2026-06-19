@@ -18,6 +18,7 @@ const colors = {
     destructiveForeground: "#ffffff",
     border: "#D4C9B0",
     input: "#EDE4D3",
+    success: "#166534",
   },
   dark: {
     text: "#f8fafc",
@@ -38,6 +39,7 @@ const colors = {
     destructiveForeground: "#ffffff",
     border: "#1e2d4a",
     input: "#1a2540",
+    success: "#22c55e",
   },
   sapphire: {
     text: "#e8f0ff",
@@ -58,6 +60,7 @@ const colors = {
     destructiveForeground: "#ffffff",
     border: "#1a2e58",
     input: "#111f3c",
+    success: "#22c55e",
   },
   radius: 12,
 };

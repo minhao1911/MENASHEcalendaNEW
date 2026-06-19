@@ -77,10 +77,10 @@ export default function SettingsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     setRescheduling(true);
-    await reschedule();
+    const n = await reschedule();
     setRescheduling(false);
     if (Platform.OS !== "web") {
-      Alert.alert("Done", `${scheduledCount} notifications scheduled on your device.`);
+      Alert.alert("Done", `${n} notifications scheduled on your device.`);
     }
   }
 

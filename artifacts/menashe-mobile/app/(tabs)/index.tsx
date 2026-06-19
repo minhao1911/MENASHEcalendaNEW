@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -8,8 +8,6 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
 import {
   getHebrewDate,
@@ -19,8 +17,6 @@ import {
 } from "@/lib/hebrewCalendar";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
-
-const SIGNED_IN_KEY = "menashe-mobile-signed-in";
 
 function getNextWeekday(targetDay: number): Date {
   const d = new Date();
