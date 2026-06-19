@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import { useAuth, useUser } from "@clerk/expo";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import type { ThemeKey } from "@/constants/colors";
 import { LOCATIONS } from "@/lib/locations";
 import {
@@ -36,10 +37,11 @@ export default function SettingsScreen() {
     scheduledCount, reschedule,
     serverPushRegistered, registerServerPush, unregisterServerPush,
   } = useApp();
+  const { lang, setLang, t } = useLanguage();
 
-  async function handleSetTheme(t: ThemeKey) {
+  async function handleSetTheme(themeKey: ThemeKey) {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await setTheme(t);
+    await setTheme(themeKey);
   }
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [permStatus, setPermStatus] = useState<Notifications.PermissionStatus | null>(null);
@@ -274,6 +276,41 @@ export default function SettingsScreen() {
               <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "sapphire" ? "700" : "500", color: theme === "sapphire" ? "#6382FF" : colors.mutedForeground }}>
                 {theme === "sapphire" ? "✓ " : ""}Sapphire
               </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── LANGUAGE ── */}
+        <View style={{ paddingTop: 24, paddingHorizontal: 16 }}>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t.settingsLanguage.toUpperCase()}</Text>
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16, marginBottom: 16 }]}>
+          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 4 }}>{t.settingsLanguage}</Text>
+          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 14 }}>{t.settingsLanguageHint}</Text>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <TouchableOpacity
+              style={{
+                flex: 1, borderRadius: 12, borderWidth: 1.5, paddingVertical: 12, alignItems: "center",
+                borderColor: lang === "en" ? colors.primary : colors.border,
+                backgroundColor: lang === "en" ? colors.primary + "15" : "transparent",
+              }}
+              onPress={() => setLang("en")}
+              activeOpacity={0.75}
+            >
+              <Text style={{ fontSize: 15, fontWeight: "700", color: lang === "en" ? colors.primary : colors.mutedForeground }}>English</Text>
+              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>EN</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                flex: 1, borderRadius: 12, borderWidth: 1.5, paddingVertical: 12, alignItems: "center",
+                borderColor: lang === "tk" ? colors.primary : colors.border,
+                backgroundColor: lang === "tk" ? colors.primary + "15" : "transparent",
+              }}
+              onPress={() => setLang("tk")}
+              activeOpacity={0.75}
+            >
+              <Text style={{ fontSize: 15, fontWeight: "700", color: lang === "tk" ? colors.primary : colors.mutedForeground }}>Thadou Kuki</Text>
+              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>TK</Text>
             </TouchableOpacity>
           </View>
         </View>

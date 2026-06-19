@@ -5,11 +5,13 @@ import React, { useEffect } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@clerk/expo";
 
 export default function TabLayout() {
   const colors = useColors();
   const { theme } = useApp();
+  const { t } = useLanguage();
   const isDark = theme !== "light";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
@@ -64,7 +66,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t.navHome,
           tabBarIcon: ({ color, focused }) => (
             <Feather name="home" size={focused ? 23 : 21} color={color} />
           ),
@@ -73,7 +75,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="calendar"
         options={{
-          title: "Calendar",
+          title: t.navCalendar,
           tabBarIcon: ({ color, focused }) => (
             <Feather name="calendar" size={focused ? 23 : 21} color={color} />
           ),
@@ -82,7 +84,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="zmanim"
         options={{
-          title: "Zmanim",
+          title: t.navZmanim,
           tabBarIcon: ({ color, focused }) => (
             <Feather name="clock" size={focused ? 23 : 21} color={color} />
           ),
@@ -91,7 +93,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="community"
         options={{
-          title: "Community",
+          title: t.navCommunity,
           tabBarIcon: ({ color, focused }) => (
             <Feather name="users" size={focused ? 22 : 20} color={color} />
           ),
@@ -100,7 +102,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="torah"
         options={{
-          title: "Torah",
+          title: t.navTorah,
           tabBarIcon: ({ color, focused }) => (
             <Feather name="book-open" size={focused ? 22 : 20} color={color} />
           ),
@@ -109,7 +111,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: t.navSettings,
           tabBarIcon: ({ color, focused }) => (
             <Feather name="settings" size={focused ? 22 : 20} color={color} />
           ),

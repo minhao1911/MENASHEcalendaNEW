@@ -17,6 +17,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 if (Platform.OS !== "web") {
   SplashScreen.preventAutoHideAsync();
@@ -49,18 +50,20 @@ export default function RootLayout() {
             <QueryClientProvider client={queryClient}>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <AppProvider>
-                  <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
-                    <Stack.Screen name="sign-in" options={{ headerShown: false }} />
-                    <Stack.Screen name="sign-up" options={{ headerShown: false }} />
-                    <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
-                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                    <Stack.Screen name="torah-tracker" options={{ headerShown: false, animation: "slide_from_right" }} />
-                    <Stack.Screen name="siddur" options={{ headerShown: false, animation: "slide_from_right" }} />
-                    <Stack.Screen name="daf-yomi" options={{ headerShown: false, animation: "slide_from_right" }} />
-                    <Stack.Screen name="mussar" options={{ headerShown: false, animation: "slide_from_right" }} />
-                    <Stack.Screen name="yahrzeit-calc" options={{ headerShown: false, animation: "slide_from_right" }} />
-                    <Stack.Screen name="prayer-board" options={{ headerShown: false, animation: "slide_from_right" }} />
-                  </Stack>
+                  <LanguageProvider>
+                    <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+                      <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+                      <Stack.Screen name="sign-up" options={{ headerShown: false }} />
+                      <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+                      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                      <Stack.Screen name="torah-tracker" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="siddur" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="daf-yomi" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="mussar" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="yahrzeit-calc" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="prayer-board" options={{ headerShown: false, animation: "slide_from_right" }} />
+                    </Stack>
+                  </LanguageProvider>
                 </AppProvider>
               </GestureHandlerRootView>
             </QueryClientProvider>
