@@ -2,5 +2,6 @@
 - [Clerk API auth in apiFetch](clerk-api-auth.md) — cookies alone don't work through Replit's proxy; always attach Bearer token via window.Clerk?.session?.getToken()
 - [Clerk provisioning requirement](clerk-provisioning.md) — must call setupClerkWhitelabelAuth() before the web app can start; check status first every session
 - [hebcal-noaa ESM shim](hebcal-noaa-shim.md) — @hebcal/noaa ships pure ESM; use a pre-compiled CJS shim via Metro resolveRequest to fix production build failures
-- [Mobile metro @/ alias](mobile-metro-alias.md) — must set config.resolver.alias explicitly in metro.config.js; tsconfig paths alone break on cache invalidation
+- [Mobile metro @/ alias](mobile-metro-alias.md) — Expo SDK 54 getDefaultConfig() handles tsconfig @/* paths; do NOT add resolver.alias (breaks require.context)
 - [Mobile auth guard pattern](mobile-auth-guard.md) — never gate tabs on custom AsyncStorage keys; Clerk isSignedIn in _layout.tsx is the single auth gate
+- [Clerk web native stubs](clerk-web-native-stubs.md) — Metro resolveRequest must intercept by RESOLVED file path, not module name, when unstable_enablePackageExports is on
