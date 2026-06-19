@@ -13,7 +13,7 @@ export default function TabLayout() {
   const isDark = theme !== "light";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
-  const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -25,6 +25,8 @@ export default function TabLayout() {
 
   if (!isLoaded || !isSignedIn) return null;
 
+  const TAB_BAR_HEIGHT = isWeb ? 68 : 64;
+
   return (
     <Tabs
       screenOptions={{
@@ -34,15 +36,23 @@ export default function TabLayout() {
         tabBarStyle: {
           position: "absolute",
           backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
+          borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          height: TAB_BAR_HEIGHT,
+          paddingBottom: isWeb ? 8 : 10,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "600",
+          letterSpacing: 0.3,
+          marginTop: 2,
         },
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
-              intensity={80}
+              intensity={90}
               tint={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
@@ -55,35 +65,45 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name="home" size={focused ? 23 : 21} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: "Calendar",
-          tabBarIcon: ({ color }) => <Feather name="calendar" size={22} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name="calendar" size={focused ? 23 : 21} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="zmanim"
         options={{
           title: "Zmanim",
-          tabBarIcon: ({ color }) => <Feather name="clock" size={22} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name="clock" size={focused ? 23 : 21} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="community"
         options={{
           title: "Community",
-          tabBarIcon: ({ color }) => <Feather name="users" size={22} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name="users" size={focused ? 23 : 21} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ color }) => <Feather name="bell" size={22} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name="settings" size={focused ? 23 : 21} color={color} />
+          ),
         }}
       />
     </Tabs>

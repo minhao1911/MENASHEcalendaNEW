@@ -42,7 +42,7 @@ type Screen = "board" | "form";
 export default function CommunityScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
   const [entries, setEntries] = useState<CommunityYahrzeitEntry[]>([]);
   const [loading, setLoading] = useState(true);

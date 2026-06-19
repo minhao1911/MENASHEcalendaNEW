@@ -47,7 +47,7 @@ export default function SettingsScreen() {
   const [serverPushLoading, setServerPushLoading] = useState(false);
   const [testPushLoading, setTestPushLoading] = useState(false);
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
   async function handleToggle(key: keyof NotificationPrefs, value: boolean) {
     if (Platform.OS !== "web") {
@@ -159,8 +159,16 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
+        {/* ── SCREEN HEADER ── */}
+        <View style={{ paddingTop: topPad + 12, paddingHorizontal: 16, marginBottom: 20 }}>
+          <Text style={{ fontSize: 28, fontWeight: "700", color: colors.foreground, letterSpacing: -0.5 }}>Settings</Text>
+          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 4, fontWeight: "500" }}>
+            {user?.primaryEmailAddress?.emailAddress ?? "Your account"}
+          </Text>
+        </View>
+
         {/* ── APPEARANCE ── */}
-        <View style={{ paddingTop: topPad + 16, paddingHorizontal: 16 }}>
+        <View style={{ paddingHorizontal: 16 }}>
           <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>APPEARANCE</Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16, marginBottom: 16 }]}>
