@@ -93,7 +93,16 @@ export default function TabLayout() {
         options={{
           title: "Community",
           tabBarIcon: ({ color, focused }) => (
-            <Feather name="users" size={focused ? 23 : 21} color={color} />
+            <Feather name="users" size={focused ? 22 : 20} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="torah"
+        options={{
+          title: "Torah",
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name="book-open" size={focused ? 22 : 20} color={color} />
           ),
         }}
       />
@@ -102,7 +111,7 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color, focused }) => (
-            <Feather name="settings" size={focused ? 23 : 21} color={color} />
+            <Feather name="settings" size={focused ? 22 : 20} color={color} />
           ),
         }}
       />
