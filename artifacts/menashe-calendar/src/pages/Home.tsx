@@ -609,7 +609,7 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
   );
 }
 
-function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () => void; onShowCensus: () => void }) {
+function CommunityCard({ onShowCommunity, onShowCensus, onShowMembers }: { onShowCommunity: () => void; onShowCensus: () => void; onShowMembers: () => void }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
@@ -666,7 +666,7 @@ function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () 
               padding: "3px 8px", borderRadius: 99,
               background: "rgba(99,179,237,0.12)", border: "1px solid rgba(99,179,237,0.22)",
               color: "#93c5fd",
-            }}>1 SERVICE</div>
+            }}>2 SERVICES</div>
           </div>
           <svg
             width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -689,6 +689,31 @@ function CommunityCard({ onShowCommunity, onShowCensus }: { onShowCommunity: () 
           padding: "12px 14px 16px",
           animation: "communitySlideDown 0.22s cubic-bezier(0.4,0,0.2,1)",
         }}>
+          {/* Member Directory Button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onShowMembers(); }}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14, marginBottom: 10,
+              background: "rgba(99,179,237,0.07)", border: "1px solid rgba(99,179,237,0.2)",
+              borderRadius: 13, padding: "13px 15px", cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <div style={{
+              width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+              background: "rgba(99,179,237,0.14)", border: "1px solid rgba(99,179,237,0.25)",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+            }}>👥</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Member Directory</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.42)", lineHeight: 1.4 }}>
+                Browse &amp; register in the community directory
+              </div>
+            </div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(99,179,237,0.55)" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+
           {/* Census & Demographics Button */}
           <button
             onClick={(e) => { e.stopPropagation(); onShowCensus(); }}
@@ -1071,6 +1096,7 @@ interface HomeProps {
   onOpenSiddur: () => void;
   onShowCommunity: () => void;
   onShowCensus: () => void;
+  onShowMembers: () => void;
   onNotifBell: () => void;
   notifActive: boolean;
   announcementCount: number;
@@ -1085,7 +1111,7 @@ interface HomeProps {
 export default function Home({
   location, theme, isPremium, candleEnabled,
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
-  onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus,
+  onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus, onShowMembers,
   onNotifBell, notifActive, announcementCount,
   onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
 }: HomeProps) {
@@ -1535,7 +1561,7 @@ export default function Home({
         </div>
 
         {/* ── Community Card (collapsible) ── */}
-        <CommunityCard onShowCommunity={onShowCommunity} onShowCensus={onShowCensus} />
+        <CommunityCard onShowCommunity={onShowCommunity} onShowCensus={onShowCensus} onShowMembers={onShowMembers} />
 
       </div>
 

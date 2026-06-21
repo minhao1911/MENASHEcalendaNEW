@@ -519,6 +519,7 @@ function AppShell() {
             onOpenSiddur={() => setActivePage("siddur")}
             onShowCommunity={() => setModal("community")}
             onShowCensus={() => setModal("census")}
+            onShowMembers={() => setModal("members")}
             onNotifBell={() => setModal("notifications")}
             notifActive={Object.values(notifPrefs).some(Boolean)}
             announcementCount={announcementCount}
