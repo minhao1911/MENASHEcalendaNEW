@@ -1289,53 +1289,66 @@ export default function Home({
         </div>
       )}
       <div className="app-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="/logo.jpeg" alt="Bnei Menashe" style={{ width: 38, height: 38, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(212,175,55,0.35)", display: "block" }} />
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1 }}>Menashe</div>
-            <div style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.1em", fontWeight: 600 }}>CALENDAR</div>
+        {/* ── Left: logo + brand + location ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+          <img
+            src="/logo.jpeg" alt="Bnei Menashe"
+            style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(212,175,55,0.35)", flexShrink: 0 }}
+          />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.01em" }}>
+              Menashe Calendar
+            </div>
+            <button
+              onClick={onLocationClick}
+              style={{
+                display: "flex", alignItems: "center", gap: 3,
+                background: "none", border: "none", padding: 0, cursor: "pointer", marginTop: 2,
+              }}
+            >
+              <span style={{ fontSize: 10 }}>📍</span>
+              <span style={{
+                fontSize: 11, color: "var(--text-muted)", fontWeight: 600,
+                maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>{location.name}</span>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2.5" strokeLinecap="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <button
-            onClick={onLocationClick}
-            style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--elevated)", border: "1px solid var(--border)", borderRadius: 99, padding: "5px 12px", cursor: "pointer" }}
-          >
-            <span style={{ fontSize: 12 }}>📍</span>
-            <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{location.name}</span>
-          </button>
 
-          {/* Premium Crown Button */}
+        {/* ── Right: 3 icon-only circles ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+
+          {/* Premium crown */}
           <button
             onClick={onShowPremium}
+            title={isPremium && candleEnabled && candleCountdown ? `🕯 ${candleCountdown}` : "Premium"}
             style={{
-              display: "flex", alignItems: "center", gap: 5,
-              background: "linear-gradient(90deg, #6b4800 0%, #b8860b 20%, #f0c050 50%, #b8860b 80%, #6b4800 100%)",
-              backgroundSize: "300% auto",
-              animation: "goldShimmer 4s linear infinite, goldGlow 2.5s ease-in-out infinite",
+              position: "relative",
+              width: 34, height: 34, borderRadius: "50%",
+              background: "linear-gradient(135deg, #b8860b 0%, #f0c050 50%, #b8860b 100%)",
+              backgroundSize: "200% auto",
+              animation: "goldShimmer 4s linear infinite",
               border: "none",
-              borderRadius: 99, padding: "6px 12px 6px 8px",
-              cursor: "pointer", flexShrink: 0,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
             }}
           >
-            <span style={{
-              fontSize: 14, lineHeight: 1, display: "inline-block",
-              animation: "crownFloat 3s ease-in-out infinite",
-            }}>👑</span>
-            {isPremium && candleEnabled && candleCountdown ? (
-              <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0 }}>
-                <span style={{ fontSize: 8, fontWeight: 900, color: "#1a0900", letterSpacing: "0.07em", lineHeight: 1 }}>PREMIUM</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 1 }}>
-                  <span style={{ fontSize: 9 }}>🕯</span>
-                  <span style={{ fontSize: 10, fontWeight: 900, color: "#1a0900", letterSpacing: "0.04em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{candleCountdown}</span>
-                </span>
-              </span>
-            ) : (
-              <span style={{ fontSize: 10, fontWeight: 900, color: "#1a0900", letterSpacing: "0.07em" }}>PREMIUM</span>
+            <span style={{ fontSize: 16, lineHeight: 1, animation: "crownFloat 3s ease-in-out infinite", display: "inline-block" }}>👑</span>
+            {isPremium && candleEnabled && candleCountdown && (
+              <div style={{
+                position: "absolute", bottom: -2, right: -2,
+                background: "var(--surface)", borderRadius: 8, padding: "1px 4px",
+                fontSize: 8, fontWeight: 800, color: "#d4a843",
+                border: "1px solid rgba(212,168,67,0.3)", lineHeight: 1.4,
+                fontVariantNumeric: "tabular-nums",
+              }}>🕯</div>
             )}
           </button>
 
-          {/* Notification Bell */}
+          {/* Notification bell */}
           <button
             onClick={onNotifBell}
             style={{
@@ -1357,11 +1370,9 @@ export default function Home({
               <div style={{
                 position: "absolute", top: -3, right: -3,
                 minWidth: 16, height: 16, borderRadius: 8,
-                background: "#ef4444",
-                border: "1.5px solid var(--surface)",
+                background: "#ef4444", border: "1.5px solid var(--surface)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 9, fontWeight: 800, color: "white",
-                padding: "0 3px", lineHeight: 1,
+                fontSize: 9, fontWeight: 800, color: "white", padding: "0 3px", lineHeight: 1,
               }}>
                 {announcementCount > 9 ? "9+" : announcementCount}
               </div>
@@ -1369,15 +1380,20 @@ export default function Home({
               <div style={{
                 position: "absolute", top: 5, right: 5,
                 width: 7, height: 7, borderRadius: "50%",
-                background: "#d4a843",
-                border: "1.5px solid var(--surface)",
+                background: "#d4a843", border: "1.5px solid var(--surface)",
               }} />
             ) : null}
           </button>
 
+          {/* Theme toggle */}
           <button
             onClick={onToggleTheme}
-            style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--elevated)", border: "1px solid var(--border)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}
+            style={{
+              width: 34, height: 34, borderRadius: "50%",
+              background: "var(--elevated)", border: "1px solid var(--border)",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 16, flexShrink: 0,
+            }}
           >
             {isLight ? "🌙" : "☀️"}
           </button>
