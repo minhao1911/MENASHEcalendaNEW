@@ -12,6 +12,10 @@ export interface Member {
   country: string;
   role: string;
   bio: string;
+  whatsapp?: string;
+  phone?: string;
+  email?: string;
+  otherContact?: string;
   status: "pending" | "approved" | "hidden";
   joinedAt: string;
 }
@@ -78,7 +82,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 function emptyReg(): Omit<Member, "id" | "status" | "joinedAt"> {
-  return { name: "", city: "", country: "India", role: "Member", bio: "" };
+  return { name: "", city: "", country: "India", role: "Member", bio: "", whatsapp: "", phone: "", email: "", otherContact: "" };
 }
 
 export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
@@ -228,11 +232,53 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
               </div>
             </div>
 
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>SHORT BIO (optional)</label>
               <textarea style={{ ...inputStyle, minHeight: 72, resize: "vertical", lineHeight: 1.5 }}
                 value={reg.bio} onChange={e => setReg(r => ({ ...r, bio: e.target.value }))}
                 placeholder="A few words about yourself and your connection to the community…" />
+            </div>
+
+            {/* Contact Information */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                <label style={{ ...labelStyle, marginBottom: 0, whiteSpace: "nowrap" }}>📡 CONTACT INFO (optional)</label>
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              </div>
+              <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(212,168,67,0.05)", border: "1px solid rgba(212,168,67,0.15)", fontSize: 11, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                Only visible to other approved members. Leave blank if you prefer privacy.
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>📱</span>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>WHATSAPP NUMBER</label>
+                    <input style={inputStyle} value={reg.whatsapp || ""} onChange={e => setReg(r => ({ ...r, whatsapp: e.target.value }))} placeholder="+91 98765 43210" inputMode="tel" />
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>📞</span>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>PHONE NUMBER</label>
+                    <input style={inputStyle} value={reg.phone || ""} onChange={e => setReg(r => ({ ...r, phone: e.target.value }))} placeholder="+91 98765 43210" inputMode="tel" />
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>✉️</span>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>EMAIL ADDRESS</label>
+                    <input style={inputStyle} value={reg.email || ""} onChange={e => setReg(r => ({ ...r, email: e.target.value }))} placeholder="you@example.com" inputMode="email" type="email" />
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>💬</span>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>OTHER (Telegram, Facebook, etc.)</label>
+                    <input style={inputStyle} value={reg.otherContact || ""} onChange={e => setReg(r => ({ ...r, otherContact: e.target.value }))} placeholder="e.g. @username on Telegram" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {regError && <div style={{ fontSize: 12, color: "#ef4444", marginBottom: 10 }}>⚠️ {regError}</div>}
@@ -305,6 +351,14 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
                         {FLAG[m.country] || "🌐"} {m.city}, {m.country} · Joined {fmtDate(m.joinedAt)}
                       </div>
                       {m.bio && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 4, lineHeight: 1.4 }}>{m.bio}</div>}
+                      {(m.whatsapp || m.phone || m.email || m.otherContact) && (
+                        <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+                          {m.whatsapp && <div style={{ fontSize: 10, color: "#25d366" }}>📱 WA: {m.whatsapp}</div>}
+                          {m.phone && <div style={{ fontSize: 10, color: "#60a5fa" }}>📞 Tel: {m.phone}</div>}
+                          {m.email && <div style={{ fontSize: 10, color: "#d4a843" }}>✉️ {m.email}</div>}
+                          {m.otherContact && <div style={{ fontSize: 10, color: "#a78bfa" }}>💬 {m.otherContact}</div>}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
@@ -437,7 +491,34 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
                       <span>Member since {fmtDate(m.joinedAt)}</span>
                     </div>
                     {m.bio && (
-                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{m.bio}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5, marginBottom: 4 }}>{m.bio}</div>
+                    )}
+                    {(m.whatsapp || m.phone || m.email || m.otherContact) && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                        {m.whatsapp && (
+                          <a href={`https://wa.me/${m.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.3)", color: "#25d366", textDecoration: "none" }}>
+                            📱 WhatsApp
+                          </a>
+                        )}
+                        {m.phone && (
+                          <a href={`tel:${m.phone.replace(/\s/g, "")}`}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.3)", color: "#60a5fa", textDecoration: "none" }}>
+                            📞 {m.phone}
+                          </a>
+                        )}
+                        {m.email && (
+                          <a href={`mailto:${m.email}`}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(212,168,67,0.10)", border: "1px solid rgba(212,168,67,0.25)", color: "#d4a843", textDecoration: "none" }}>
+                            ✉️ Email
+                          </a>
+                        )}
+                        {m.otherContact && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.25)", color: "#a78bfa" }}>
+                            💬 {m.otherContact}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
