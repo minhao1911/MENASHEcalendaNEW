@@ -610,6 +610,122 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
   );
 }
 
+// ── Upcoming Celebrations (Birthday / Aliyah Anniversary) ──────────────────
+const MEMBER_DIR_KEY = "menashe-member-directory";
+
+function daysUntilAnniversary(dateStr: string): number {
+  const d = new Date(dateStr + "T00:00:00");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let ann = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+  if (ann < today) ann = new Date(today.getFullYear() + 1, d.getMonth(), d.getDate());
+  return Math.round((ann.getTime() - today.getTime()) / 86400000);
+}
+
+interface CelebEntry {
+  id: string; name: string; role: string; country: string;
+  whatsapp?: string; email?: string; phone?: string;
+  type: "birthday" | "aliyah"; days: number;
+}
+
+function UpcomingCelebrations({ onShowMembers }: { onShowMembers: () => void }) {
+  const [celebs, setCelebs] = useState<CelebEntry[]>([]);
+
+  useEffect(() => {
+    function load() {
+      try {
+        const raw = localStorage.getItem(MEMBER_DIR_KEY);
+        const members = raw ? JSON.parse(raw) : [];
+        const found: CelebEntry[] = [];
+        for (const m of members) {
+          if (m.status !== "approved") continue;
+          if (m.birthday) {
+            const days = daysUntilAnniversary(m.birthday);
+            if (days >= 0 && days <= 7) found.push({ id: m.id, name: m.name, role: m.role, country: m.country, whatsapp: m.whatsapp, email: m.email, phone: m.phone, type: "birthday", days });
+          }
+          if (m.aliyahDate) {
+            const days = daysUntilAnniversary(m.aliyahDate);
+            if (days >= 0 && days <= 7) found.push({ id: m.id + "-al", name: m.name, role: m.role, country: m.country, whatsapp: m.whatsapp, email: m.email, phone: m.phone, type: "aliyah", days });
+          }
+        }
+        found.sort((a, b) => a.days - b.days);
+        setCelebs(found);
+      } catch {}
+    }
+    load();
+    window.addEventListener("storage", load);
+    return () => window.removeEventListener("storage", load);
+  }, []);
+
+  if (celebs.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 14, borderRadius: 16, overflow: "hidden", border: "1px solid rgba(212,168,67,0.25)", background: "linear-gradient(135deg, rgba(26,16,0,0.9), rgba(10,10,20,0.95))" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 14px 8px", borderBottom: "1px solid rgba(212,168,67,0.12)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <span style={{ fontSize: 16 }}>🎉</span>
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".07em", color: "#d4a843" }}>UPCOMING CELEBRATIONS</span>
+        </div>
+        <button onClick={onShowMembers} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "rgba(212,168,67,0.55)", fontWeight: 700 }}>Directory →</button>
+      </div>
+
+      {/* Cards */}
+      <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+        {celebs.map(c => {
+          const isBday = c.type === "birthday";
+          const firstName = c.name.split(" ")[0];
+          const msg = isBday
+            ? `🎂 Happy Birthday ${c.name}! May Hashem bless you with a year of Torah, joy, and shalom! מזל טוב from your Bnei Menashe family! 🕍`
+            : `✈️ Happy Aliyah Anniversary ${c.name}! Celebrating your sacred journey to Eretz Yisrael! May Hashem bless this year even more! 🇮🇱`;
+          const waLink = c.whatsapp
+            ? `https://wa.me/${c.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`
+            : null;
+          const mailLink = c.email
+            ? `mailto:${c.email}?subject=${encodeURIComponent(isBday ? `Happy Birthday ${firstName}! 🎂` : `Happy Aliyah Anniversary ${firstName}! ✈️`)}&body=${encodeURIComponent(msg)}`
+            : null;
+
+          return (
+            <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: isBday ? "rgba(212,168,67,0.07)" : "rgba(59,130,246,0.07)", border: isBday ? "1px solid rgba(212,168,67,0.18)" : "1px solid rgba(59,130,246,0.18)" }}>
+              <div style={{ fontSize: 26, flexShrink: 0, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", background: isBday ? "rgba(212,168,67,0.12)" : "rgba(59,130,246,0.12)", borderRadius: 11 }}>
+                {isBday ? "🎂" : "✈️"}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", marginBottom: 1 }}>{c.name}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: isBday ? "#d4a843" : "#60a5fa" }}>
+                  {isBday ? "Birthday" : "Aliyah Anniversary"} —{" "}
+                  {c.days === 0 ? "🎉 Today!" : `in ${c.days} day${c.days !== 1 ? "s" : ""}`}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                {waLink ? (
+                  <a href={waLink} target="_blank" rel="noreferrer"
+                    title="Send WhatsApp greeting"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "rgba(37,211,102,0.15)", border: "1px solid rgba(37,211,102,0.3)", color: "#25d366", fontSize: 18, textDecoration: "none" }}>
+                    📱
+                  </a>
+                ) : mailLink ? (
+                  <a href={mailLink}
+                    title="Send email greeting"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)", color: "#d4a843", fontSize: 18, textDecoration: "none" }}>
+                    ✉️
+                  </a>
+                ) : null}
+                {waLink && mailLink && (
+                  <a href={mailLink}
+                    title="Send email greeting"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)", color: "#d4a843", fontSize: 18, textDecoration: "none" }}>
+                    ✉️
+                  </a>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function CommunityCard({ onShowCommunity, onShowCensus, onShowMembers }: { onShowCommunity: () => void; onShowCensus: () => void; onShowMembers: () => void }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
@@ -1599,6 +1715,7 @@ export default function Home({
         </div>
 
         {/* ── Community Card (collapsible) ── */}
+        <UpcomingCelebrations onShowMembers={onShowMembers} />
         <CommunityCard onShowCommunity={onShowCommunity} onShowCensus={onShowCensus} onShowMembers={onShowMembers} />
 
       </div>

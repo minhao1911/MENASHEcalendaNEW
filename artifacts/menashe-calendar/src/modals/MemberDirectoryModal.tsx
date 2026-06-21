@@ -16,6 +16,8 @@ export interface Member {
   phone?: string;
   email?: string;
   otherContact?: string;
+  birthday?: string;
+  aliyahDate?: string;
   status: "pending" | "approved" | "hidden";
   joinedAt: string;
 }
@@ -65,9 +67,9 @@ function saveMembers(m: Member[]) {
 }
 
 const DEFAULT_MEMBERS: Member[] = [
-  { id: "d1", name: "Avichail Cohen", city: "Jerusalem", country: "Israel", role: "Community Leader", bio: "Leading the Bnei Menashe community in Jerusalem since aliyah.", status: "approved", joinedAt: "2023-03-15T00:00:00.000Z" },
-  { id: "d2", name: "Shmuel Haokip", city: "Churachandpur", country: "India", role: "Rabbi", bio: "Teaching Torah and preparing community members for aliyah.", status: "approved", joinedAt: "2023-06-01T00:00:00.000Z" },
-  { id: "d3", name: "Miriam Lhouvum", city: "Imphal", country: "India", role: "Women's Group", bio: "Organising women's Torah study and community events.", status: "approved", joinedAt: "2024-01-10T00:00:00.000Z" },
+  { id: "d1", name: "Avichail Cohen", city: "Jerusalem", country: "Israel", role: "Community Leader", bio: "Leading the Bnei Menashe community in Jerusalem since aliyah.", whatsapp: "+97250000001", email: "avichail@example.com", birthday: "1978-06-22", aliyahDate: "2010-06-22", status: "approved", joinedAt: "2023-03-15T00:00:00.000Z" },
+  { id: "d2", name: "Shmuel Haokip", city: "Churachandpur", country: "India", role: "Rabbi", bio: "Teaching Torah and preparing community members for aliyah.", whatsapp: "+9198765000", email: "shmuel@example.com", birthday: "1985-06-25", status: "approved", joinedAt: "2023-06-01T00:00:00.000Z" },
+  { id: "d3", name: "Miriam Lhouvum", city: "Imphal", country: "India", role: "Women's Group", bio: "Organising women's Torah study and community events.", email: "miriam@example.com", aliyahDate: "2017-06-26", status: "approved", joinedAt: "2024-01-10T00:00:00.000Z" },
   { id: "d4", name: "Yosef Thangkhiew", city: "Kiryat Arba", country: "Israel", role: "Elder", bio: "Keeper of Bnei Menashe traditions and oral history.", status: "approved", joinedAt: "2022-09-20T00:00:00.000Z" },
 ];
 
@@ -82,7 +84,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 function emptyReg(): Omit<Member, "id" | "status" | "joinedAt"> {
-  return { name: "", city: "", country: "India", role: "Member", bio: "", whatsapp: "", phone: "", email: "", otherContact: "" };
+  return { name: "", city: "", country: "India", role: "Member", bio: "", whatsapp: "", phone: "", email: "", otherContact: "", birthday: "", aliyahDate: "" };
 }
 
 export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
@@ -278,6 +280,34 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
                   <div style={{ flex: 1 }}>
                     <label style={labelStyle}>OTHER (Telegram, Facebook, etc.)</label>
                     <input style={inputStyle} value={reg.otherContact || ""} onChange={e => setReg(r => ({ ...r, otherContact: e.target.value }))} placeholder="e.g. @username on Telegram" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Celebration Dates */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                <label style={{ ...labelStyle, marginBottom: 0, whiteSpace: "nowrap" }}>🎉 CELEBRATION DATES (optional)</label>
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              </div>
+              <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(212,168,67,0.05)", border: "1px solid rgba(212,168,67,0.15)", fontSize: 11, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                Let the community wish you on your special days! Only approved members are notified.
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>🎂</span>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>BIRTHDAY (Gregorian)</label>
+                    <input type="date" style={inputStyle} value={reg.birthday || ""} onChange={e => setReg(r => ({ ...r, birthday: e.target.value }))} />
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>✈️</span>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>ALIYAH DATE (if applicable)</label>
+                    <input type="date" style={inputStyle} value={reg.aliyahDate || ""} onChange={e => setReg(r => ({ ...r, aliyahDate: e.target.value }))} />
                   </div>
                 </div>
               </div>
