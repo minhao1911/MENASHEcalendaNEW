@@ -109,6 +109,8 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
   const [adminFilter, setAdminFilter] = useState<"all" | "pending" | "approved" | "hidden">("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [adminTap, setAdminTap] = useState(0);
+  const [connectOpen, setConnectOpen] = useState<string | null>(null);
+  const [introMsg, setIntroMsg] = useState("Shalom! I found you in the Bnei Menashe Member Directory and would love to connect. 🕍");
 
   function persist(list: Member[]) { setMembers(list); saveMembers(list); }
 
@@ -463,64 +465,133 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
             {approved.map(m => {
               const rc = ROLE_COLORS[m.role] || ROLE_COLORS["Member"];
+              const hasContact = !!(m.whatsapp || m.phone || m.email || m.otherContact);
+              const isOpen = connectOpen === m.id;
+              const waLink = m.whatsapp
+                ? `https://wa.me/${m.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(introMsg)}`
+                : null;
+              const mailLink = m.email
+                ? `mailto:${m.email}?subject=${encodeURIComponent("Bnei Menashe Community — Hello!")}&body=${encodeURIComponent(introMsg)}`
+                : null;
               return (
                 <div key={m.id} style={{
-                  borderRadius: 16, background: "var(--card)", border: "1px solid var(--border)",
-                  padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start",
+                  borderRadius: 16, background: "var(--card)", border: isOpen ? "1px solid rgba(212,168,67,0.35)" : "1px solid var(--border)",
+                  overflow: "hidden", transition: "border-color 0.2s",
                 }}>
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-                    background: avatarBg(m.name), display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 17, fontWeight: 800, color: "rgba(255,255,255,0.85)", fontFamily: "serif",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}>
-                    {initials(m.name)}
+                  {/* Card header */}
+                  <div style={{ padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <div style={{
+                      width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+                      background: avatarBg(m.name), display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 17, fontWeight: 800, color: "rgba(255,255,255,0.85)", fontFamily: "serif",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}>
+                      {initials(m.name)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+                        <span style={{
+                          fontSize: 10, fontWeight: 800, letterSpacing: ".06em",
+                          color: rc.color, background: rc.bg, borderRadius: 5, padding: "2px 7px",
+                        }}>{m.role}</span>
+                        {hasContact && (
+                          <button
+                            onClick={() => { setConnectOpen(isOpen ? null : m.id); }}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 5,
+                              padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 800,
+                              cursor: "pointer", border: "none", transition: "all 0.18s",
+                              background: isOpen ? "rgba(212,168,67,0.18)" : "rgba(212,168,67,0.10)",
+                              color: "#d4a843",
+                            }}>
+                            {isOpen ? "✕ Close" : "💬 Connect"}
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginBottom: 3 }}>{m.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: m.bio ? 6 : 0, display: "flex", alignItems: "center", gap: 4 }}>
+                        <span>{FLAG[m.country] || "🌐"}</span>
+                        <span>{m.city}, {m.country}</span>
+                        <span style={{ color: "var(--border)" }}>·</span>
+                        <span>Member since {fmtDate(m.joinedAt)}</span>
+                      </div>
+                      {m.bio && (
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{m.bio}</div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 800, letterSpacing: ".06em",
-                        color: rc.color, background: rc.bg, borderRadius: 5, padding: "2px 7px",
-                      }}>{m.role}</span>
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginBottom: 3 }}>{m.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: m.bio ? 6 : 0, display: "flex", alignItems: "center", gap: 4 }}>
-                      <span>{FLAG[m.country] || "🌐"}</span>
-                      <span>{m.city}, {m.country}</span>
-                      <span style={{ color: "var(--border)" }}>·</span>
-                      <span>Member since {fmtDate(m.joinedAt)}</span>
-                    </div>
-                    {m.bio && (
-                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5, marginBottom: 4 }}>{m.bio}</div>
-                    )}
-                    {(m.whatsapp || m.phone || m.email || m.otherContact) && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-                        {m.whatsapp && (
-                          <a href={`https://wa.me/${m.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"
-                            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.3)", color: "#25d366", textDecoration: "none" }}>
+
+                  {/* Expandable Connect panel */}
+                  {isOpen && hasContact && (
+                    <div style={{
+                      borderTop: "1px solid rgba(212,168,67,0.15)",
+                      background: "rgba(212,168,67,0.04)",
+                      padding: "14px 16px",
+                    }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", marginBottom: 8 }}>
+                        ✍️ YOUR MESSAGE TO {m.name.split(" ")[0].toUpperCase()}
+                      </div>
+                      <textarea
+                        value={introMsg}
+                        onChange={e => setIntroMsg(e.target.value)}
+                        rows={3}
+                        style={{
+                          ...inputStyle, resize: "none", lineHeight: 1.5,
+                          fontSize: 12, marginBottom: 10,
+                        }}
+                      />
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {waLink && (
+                          <a href={waLink} target="_blank" rel="noreferrer"
+                            style={{
+                              flex: 1, minWidth: 120, display: "inline-flex", alignItems: "center", justifyContent: "center",
+                              gap: 6, padding: "10px 14px", borderRadius: 12, fontSize: 13, fontWeight: 800,
+                              background: "rgba(37,211,102,0.14)", border: "1px solid rgba(37,211,102,0.35)",
+                              color: "#25d366", textDecoration: "none",
+                            }}>
                             📱 WhatsApp
+                          </a>
+                        )}
+                        {mailLink && (
+                          <a href={mailLink}
+                            style={{
+                              flex: 1, minWidth: 120, display: "inline-flex", alignItems: "center", justifyContent: "center",
+                              gap: 6, padding: "10px 14px", borderRadius: 12, fontSize: 13, fontWeight: 800,
+                              background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.3)",
+                              color: "#d4a843", textDecoration: "none",
+                            }}>
+                            ✉️ Email
                           </a>
                         )}
                         {m.phone && (
                           <a href={`tel:${m.phone.replace(/\s/g, "")}`}
-                            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.3)", color: "#60a5fa", textDecoration: "none" }}>
-                            📞 {m.phone}
+                            style={{
+                              display: "inline-flex", alignItems: "center", justifyContent: "center",
+                              gap: 6, padding: "10px 14px", borderRadius: 12, fontSize: 13, fontWeight: 800,
+                              background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.3)",
+                              color: "#60a5fa", textDecoration: "none",
+                            }}>
+                            📞 Call
                           </a>
-                        )}
-                        {m.email && (
-                          <a href={`mailto:${m.email}`}
-                            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(212,168,67,0.10)", border: "1px solid rgba(212,168,67,0.25)", color: "#d4a843", textDecoration: "none" }}>
-                            ✉️ Email
-                          </a>
-                        )}
-                        {m.otherContact && (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.25)", color: "#a78bfa" }}>
-                            💬 {m.otherContact}
-                          </span>
                         )}
                       </div>
-                    )}
-                  </div>
+                      {m.otherContact && (
+                        <div style={{
+                          marginTop: 10, padding: "8px 12px", borderRadius: 10,
+                          background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)",
+                          fontSize: 12, color: "#a78bfa", display: "flex", alignItems: "center", gap: 6,
+                        }}>
+                          <span>💬</span>
+                          <span style={{ flex: 1 }}>{m.otherContact}</span>
+                          <button
+                            onClick={() => navigator.clipboard?.writeText(m.otherContact!)}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#a78bfa", fontWeight: 700, padding: "2px 6px" }}>
+                            Copy
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
