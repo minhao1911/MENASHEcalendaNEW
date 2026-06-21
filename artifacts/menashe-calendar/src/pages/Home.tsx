@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useUser } from "@clerk/react";
 import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 import { getOmerDay } from "../modals/OmerModal";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
@@ -1116,6 +1117,7 @@ export default function Home({
   onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
 }: HomeProps) {
   const { t } = useLanguage();
+  const { user } = useUser();
   const today = new Date();
   const hdate = getHebrewDate(today);
   const zmanim = calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes);
@@ -1289,12 +1291,29 @@ export default function Home({
         </div>
       )}
       <div className="app-header">
-        {/* ── Left: logo + brand + location ── */}
+        {/* ── Left: avatar + brand + location ── */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
-          <img
-            src="/logo.jpeg" alt="Bnei Menashe"
-            style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(212,175,55,0.35)", flexShrink: 0 }}
-          />
+          <button
+            onClick={() => onNavigate("settings")}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", flexShrink: 0 }}
+          >
+            {user?.imageUrl ? (
+              <img
+                src={user.imageUrl} alt={user.firstName ?? "Profile"}
+                style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(212,175,55,0.45)", display: "block" }}
+              />
+            ) : (
+              <div style={{
+                width: 36, height: 36, borderRadius: "50%",
+                background: "linear-gradient(135deg, #b8860b 0%, #f0c050 100%)",
+                border: "2px solid rgba(212,175,55,0.45)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 15, fontWeight: 800, color: "#1a0900",
+              }}>
+                {(user?.firstName?.[0] ?? user?.emailAddresses?.[0]?.emailAddress?.[0] ?? "M").toUpperCase()}
+              </div>
+            )}
+          </button>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.01em" }}>
               Menashe Calendar
