@@ -315,6 +315,26 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Edit Translations */}
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16, marginBottom: 16 }]}
+          onPress={() => router.push("/translation-editor")}
+          activeOpacity={0.75}
+        >
+          <View style={styles.rowBetween}>
+            <View style={styles.rowStart}>
+              <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: "rgba(212,168,67,0.12)", alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ fontSize: 17 }}>✏️</Text>
+              </View>
+              <View style={{ marginLeft: 12 }}>
+                <Text style={[styles.cardTitle, { color: colors.foreground }]}>{t.settingsEditTranslations}</Text>
+                <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{t.settingsEditTranslationsHint}</Text>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </View>
+        </TouchableOpacity>
+
         {/* ── LOCATION ── */}
         <View style={{ paddingHorizontal: 16 }}>
           <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>LOCATION</Text>
