@@ -10,6 +10,7 @@ import communityYahrzeitRouter from "./communityYahrzeit";
 import censusRouter from "./census";
 import announcementsRouter from "./announcements";
 import paymentsRouter from "./payments";
+import calendarRouter from "./calendar";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use("/community", communityYahrzeitRouter);
 router.use(censusRouter);
 router.use(announcementsRouter);
 router.use(paymentsRouter);
+router.use(calendarRouter);
 
 export default router;

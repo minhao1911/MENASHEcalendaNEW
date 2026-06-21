@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Location } from "../lib/locations";
 import { NotificationPrefs, LeadTime, LEAD_TIME_OPTIONS } from "../hooks/useNotifications";
 import { useLanguage } from "../context/LanguageContext";
@@ -46,6 +46,33 @@ export default function SettingsPage({
   const [pendingKey, setPendingKey] = useState<keyof NotificationPrefs | null>(null);
   const [showTxEditor, setShowTxEditor] = useState(false);
   const [testSent, setTestSent] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const icsUrl = `${window.location.origin}/api/calendar/ics?` + new URLSearchParams({
+    lat: String(location.lat),
+    lng: String(location.lng),
+    tz: location.tz,
+    locationName: location.name,
+    country: location.country,
+    months: "12",
+  }).toString();
+
+  const handleCopyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(icsUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = icsUrl;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  }, [icsUrl]);
   const isLight = theme === "light";
   const notifBlocked = notifPermission === "denied";
   const notifUnsupported = typeof Notification === "undefined";
@@ -529,6 +556,93 @@ export default function SettingsPage({
               <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{t.settingsPushActive} {location.name}</span>
             </div>
           )}
+        </div>
+
+        {/* Google Calendar Sync */}
+        <div className="section-header">CALENDAR SYNC</div>
+        <div className="card" style={{ marginBottom: 16, padding: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+              background: "white",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+            }}>
+              <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
+                <rect x="4" y="8" width="40" height="36" rx="4" fill="white" stroke="#dadce0" strokeWidth="2"/>
+                <rect x="4" y="8" width="40" height="13" rx="4" fill="#4285F4"/>
+                <rect x="4" y="17" width="40" height="4" fill="#4285F4"/>
+                <text x="24" y="37" textAnchor="middle" fontSize="16" fontWeight="700" fill="#4285F4" fontFamily="Arial">
+                  {new Date().getDate()}
+                </text>
+                <rect x="14" y="4" width="4" height="9" rx="2" fill="#4285F4"/>
+                <rect x="30" y="4" width="4" height="9" rx="2" fill="#4285F4"/>
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>Google Calendar</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>
+                Sync Shabbat times, holidays & Parasha to your calendar
+              </div>
+            </div>
+          </div>
+
+          {/* ICS URL box */}
+          <div style={{
+            background: "var(--elevated)", borderRadius: 10, padding: "10px 12px",
+            border: "1px solid var(--border)", marginBottom: 12,
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", marginBottom: 4 }}>
+              CALENDAR FEED URL
+            </div>
+            <div style={{
+              fontSize: 11, color: "var(--text-secondary)", wordBreak: "break-all",
+              fontFamily: "monospace", lineHeight: 1.5,
+            }}>
+              {icsUrl.slice(0, 80)}{icsUrl.length > 80 ? "…" : ""}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => window.open(
+                `https://calendar.google.com/calendar/r/settings/addbyurl?url=${encodeURIComponent(icsUrl)}`,
+                "_blank"
+              )}
+              style={{
+                flex: 1, padding: "11px 12px", borderRadius: 10,
+                background: "#4285F4", border: "none",
+                color: "white", fontWeight: 700, fontSize: 13,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                <path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+              </svg>
+              Add to Google Calendar
+            </button>
+            <button
+              onClick={handleCopyLink}
+              style={{
+                padding: "11px 14px", borderRadius: 10,
+                background: copied ? "rgba(34,197,94,0.15)" : "var(--elevated)",
+                border: `1px solid ${copied ? "rgba(34,197,94,0.4)" : "var(--border)"}`,
+                color: copied ? "#22c55e" : "var(--text-secondary)",
+                fontWeight: 600, fontSize: 13, cursor: "pointer",
+                transition: "all 0.2s", whiteSpace: "nowrap",
+              }}
+            >
+              {copied ? "✓ Copied" : "Copy Link"}
+            </button>
+          </div>
+
+          <div style={{ marginTop: 10, display: "flex", alignItems: "flex-start", gap: 6 }}>
+            <span style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 1 }}>ℹ️</span>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>
+              Works with Google Calendar, Apple Calendar, and Outlook. Events update automatically based on your location: <strong style={{ color: "var(--text-secondary)" }}>{location.name}</strong>.
+            </div>
+          </div>
         </div>
 
         {/* Tools */}
