@@ -704,9 +704,9 @@ function CommunityCard({ onShowCommunity, onShowCensus, onShowMembers }: { onSho
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
             }}>👥</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>Member Directory</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 2 }}>{t.homeMembersTitle}</div>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.42)", lineHeight: 1.4 }}>
-                Browse &amp; register in the community directory
+                {t.homeMembersDesc}
               </div>
             </div>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(99,179,237,0.55)" strokeWidth="2.5" strokeLinecap="round">

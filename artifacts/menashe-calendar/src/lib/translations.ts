@@ -110,6 +110,8 @@ export interface Translations {
   homeChagSameach: string;
   homeCommunityTitle: string;
   homeCommunityDesc: string;
+  homeMembersTitle: string;
+  homeMembersDesc: string;
   homeCensusTitle: string;
   homeCensusDesc: string;
   homeUpcomingHolidays: string;
@@ -254,6 +256,8 @@ export const en: Translations = {
   homeChagSameach: "Chag Sameach! 🎉",
   homeCommunityTitle: "Community",
   homeCommunityDesc: "Shavei Israel, Torah classes, connect with members",
+  homeMembersTitle: "Member Directory",
+  homeMembersDesc: "Browse & register in the community directory",
   homeCensusTitle: "Census & Demographics",
   homeCensusDesc: "Fill out the community census form and view statistics",
   homeUpcomingHolidays: "UPCOMING HOLIDAYS",
@@ -396,6 +400,8 @@ export const tk: Translations = {
   homeChagSameach: "Chag Sameach! 🎉",
   homeCommunityTitle: "Mipil",
   homeCommunityDesc: "Shavei Israel, Torah class, member te nen in inhmuh",
+  homeMembersTitle: "Member Directory",
+  homeMembersDesc: "Mipil directory-ah register la member te en",
   homeCensusTitle: "Mipil Chhiar",
   homeCensusDesc: "Mipil census form thlak la statistics en",
   homeUpcomingHolidays: "NI THIANGHLIM HLA",
