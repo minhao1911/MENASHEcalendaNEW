@@ -1119,6 +1119,9 @@ export default function Home({
   const { t } = useLanguage();
   const { user } = useUser();
   const today = new Date();
+  const hour = today.getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
+  const firstName = user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? null;
   const hdate = getHebrewDate(today);
   const zmanim = calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes);
   const parasha = getCurrentParasha(today);
@@ -1315,8 +1318,8 @@ export default function Home({
             )}
           </button>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.01em" }}>
-              Menashe Calendar
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 170 }}>
+              {greeting}{firstName ? `, ${firstName}` : ""} 👋
             </div>
             <button
               onClick={onLocationClick}
