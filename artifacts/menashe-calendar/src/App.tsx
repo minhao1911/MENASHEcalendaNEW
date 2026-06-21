@@ -529,6 +529,7 @@ function AppShell() {
             onShowMussar={() => setModal("mussar")}
             onShowPrayerBoard={() => setModal("prayers-board")}
             onShowTorahTracker={() => setModal("torah-tracker")}
+            unreadAnnouncements={unreadAnnouncements}
           />
         );
       case "calendar":
@@ -699,6 +700,12 @@ function AppShell() {
                   onUpdateLeadTime={updateLeadTime}
                   unreadAnnouncements={unreadAnnouncements}
                   onViewAllAnnouncements={() => { closeModal(); setTimeout(() => setModal("announcements"), 50); }}
+                  pushSupported={pushSupported}
+                  pushSubscribed={pushSubscribed}
+                  pushLoading={pushLoading}
+                  onSubscribePush={subscribePush}
+                  onUnsubscribePush={unsubscribePush}
+                  onSendTestPush={sendTestPush}
                 />
               )}
 

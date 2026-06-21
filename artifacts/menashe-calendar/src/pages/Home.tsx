@@ -9,6 +9,7 @@ import { Location } from "../lib/locations";
 import { sendNotification, isNotifSupported } from "../hooks/useNotifications";
 import { useLanguage } from "../context/LanguageContext";
 import { fetchCommunityYahrzeit } from "../lib/userApi";
+import type { ServerAnnouncement } from "../lib/announcementsApi";
 
 const API_BASE = "/api";
 
@@ -1223,6 +1224,96 @@ interface HomeProps {
   onShowMussar: () => void;
   onShowPrayerBoard: () => void;
   onShowTorahTracker: () => void;
+  unreadAnnouncements?: ServerAnnouncement[];
+}
+
+// ── Announcement Banner ──────────────────────────────────────────────────────
+function AnnouncementBanner({ announcements, onOpen }: { announcements: ServerAnnouncement[]; onOpen: () => void }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed || announcements.length === 0) return null;
+  const latest = announcements[0];
+  const count = announcements.length;
+
+  return (
+    <div
+      onClick={onOpen}
+      style={{
+        marginBottom: 14, borderRadius: 16, overflow: "hidden", cursor: "pointer",
+        background: "linear-gradient(135deg, rgba(212,168,67,0.12), rgba(26,16,0,0.95))",
+        border: "1px solid rgba(212,168,67,0.35)",
+        position: "relative",
+        animation: "annBannerIn 0.35s cubic-bezier(0.34,1.2,0.64,1) both",
+      }}
+    >
+      <style>{`
+        @keyframes annBannerIn {
+          from { transform: translateY(-8px); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+        @keyframes annPulse2 {
+          0%,100% { opacity: 1; }
+          50%      { opacity: 0.55; }
+        }
+      `}</style>
+
+      {/* Dismiss button */}
+      <button
+        onClick={e => { e.stopPropagation(); setDismissed(true); }}
+        style={{
+          position: "absolute", top: 8, right: 10,
+          background: "none", border: "none", cursor: "pointer",
+          fontSize: 14, color: "rgba(212,168,67,0.5)", lineHeight: 1, padding: 2,
+        }}
+      >✕</button>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 36px 12px 14px" }}>
+        {/* Pulsing emoji badge */}
+        <div style={{
+          width: 44, height: 44, borderRadius: 13, flexShrink: 0,
+          background: "rgba(212,168,67,0.15)", border: "1px solid rgba(212,168,67,0.3)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 22,
+        }}>
+          {latest.emoji}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Header row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+            <div style={{
+              width: 6, height: 6, borderRadius: "50%", background: "#ef4444", flexShrink: 0,
+              animation: "annPulse2 1.8s ease-in-out infinite",
+            }} />
+            <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: ".08em", color: "#d4a843" }}>
+              {count > 1 ? `${count} NEW ANNOUNCEMENTS` : "NEW ANNOUNCEMENT"}
+            </span>
+          </div>
+          {/* Title */}
+          <div style={{
+            fontSize: 13, fontWeight: 800, color: "var(--text-primary)",
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          }}>
+            {latest.title}
+          </div>
+          {/* Body preview */}
+          {latest.body && (
+            <div style={{
+              fontSize: 11, color: "var(--text-muted)", marginTop: 1,
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {latest.body}
+            </div>
+          )}
+        </div>
+
+        {/* Arrow */}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="rgba(212,168,67,0.6)" strokeWidth="2.5" strokeLinecap="round" flexShrink={0}>
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
+    </div>
+  );
 }
 
 export default function Home({
@@ -1231,6 +1322,7 @@ export default function Home({
   onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus, onShowMembers,
   onNotifBell, notifActive, announcementCount,
   onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
+  unreadAnnouncements = [],
 }: HomeProps) {
   const { t } = useLanguage();
   const { user } = useUser();
@@ -1714,7 +1806,10 @@ export default function Home({
           </div>
         </div>
 
-        {/* ── Community Card (collapsible) ── */}
+        {/* ── Announcement Banner ── */}
+        <AnnouncementBanner announcements={unreadAnnouncements} onOpen={onShowAnnouncements} />
+
+        {/* ── Celebrations + Community ── */}
         <UpcomingCelebrations onShowMembers={onShowMembers} />
         <CommunityCard onShowCommunity={onShowCommunity} onShowCensus={onShowCensus} onShowMembers={onShowMembers} />
 

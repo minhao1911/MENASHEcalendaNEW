@@ -25,6 +25,12 @@ interface NotificationDrawerProps {
   onUpdateLeadTime: (mins: LeadTime) => void;
   unreadAnnouncements: ServerAnnouncement[];
   onViewAllAnnouncements: () => void;
+  pushSupported?: boolean;
+  pushSubscribed?: boolean;
+  pushLoading?: boolean;
+  onSubscribePush?: () => Promise<boolean>;
+  onUnsubscribePush?: () => Promise<void>;
+  onSendTestPush?: () => Promise<boolean>;
 }
 
 export default function NotificationDrawer({
@@ -36,8 +42,16 @@ export default function NotificationDrawer({
   onUpdateLeadTime,
   unreadAnnouncements,
   onViewAllAnnouncements,
+  pushSupported = false,
+  pushSubscribed = false,
+  pushLoading = false,
+  onSubscribePush,
+  onUnsubscribePush,
+  onSendTestPush,
 }: NotificationDrawerProps) {
   const [pendingKey, setPendingKey] = useState<keyof NotificationPrefs | null>(null);
+  const [pushPending, setPushPending] = useState(false);
+  const [testSent, setTestSent] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const notifBlocked = notifPermission === "denied";
@@ -356,6 +370,74 @@ export default function NotificationDrawer({
               </div>
             </div>
           </div>
+
+          {/* Push notification subscribe row */}
+          {pushSupported && (
+            <div style={{ margin: "0 16px 16px" }}>
+              <div style={{ padding: "0 0 8px" }}>
+                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", color: "var(--text-muted)" }}>
+                  COMMUNITY PUSH
+                </span>
+              </div>
+              <div style={{
+                borderRadius: 14, border: pushSubscribed ? "1px solid rgba(212,168,67,0.35)" : "1px solid var(--border)",
+                background: pushSubscribed ? "rgba(212,168,67,0.06)" : "var(--elevated)",
+                overflow: "hidden",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px" }}>
+                  <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: pushSubscribed ? "#d4a843" : "var(--text-primary)" }}>
+                      📢 Community Announcements
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+                      {pushSubscribed ? "Push notifications enabled — you'll be notified of new announcements" : "Get OS push notifications when admins broadcast"}
+                    </div>
+                  </div>
+                  <button
+                    disabled={pushLoading || pushPending}
+                    onClick={async () => {
+                      setPushPending(true);
+                      if (pushSubscribed) { await onUnsubscribePush?.(); }
+                      else { await onSubscribePush?.(); }
+                      setPushPending(false);
+                    }}
+                    style={{
+                      padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      border: "1px solid",
+                      borderColor: pushSubscribed ? "rgba(239,68,68,0.35)" : "rgba(212,168,67,0.45)",
+                      background: pushSubscribed ? "rgba(239,68,68,0.08)" : "rgba(212,168,67,0.12)",
+                      color: pushSubscribed ? "#ef4444" : "#d4a843",
+                      opacity: (pushLoading || pushPending) ? 0.6 : 1,
+                      flexShrink: 0,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {(pushLoading || pushPending) ? "…" : pushSubscribed ? "Disable" : "Enable"}
+                  </button>
+                </div>
+                {pushSubscribed && onSendTestPush && (
+                  <div style={{ borderTop: "1px solid rgba(212,168,67,0.15)", padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Test that push is working</span>
+                    <button
+                      onClick={async () => {
+                        const ok = await onSendTestPush();
+                        if (ok) { setTestSent(true); setTimeout(() => setTestSent(false), 3000); }
+                      }}
+                      style={{
+                        padding: "5px 12px", borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                        background: testSent ? "rgba(74,222,128,0.15)" : "var(--elevated)",
+                        border: `1px solid ${testSent ? "rgba(74,222,128,0.35)" : "var(--border)"}`,
+                        color: testSent ? "#4ade80" : "var(--text-muted)",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      {testSent ? "✓ Sent!" : "Send Test"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Reminders section label */}
           <div style={{ padding: "0 16px 8px" }}>
