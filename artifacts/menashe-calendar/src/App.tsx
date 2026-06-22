@@ -8,9 +8,8 @@ import {
   useUser,
 } from "@clerk/react";
 import { fetchUserProfile, saveUserProfile, fetchPublicProfile, type PublicProfile } from "./lib/userApi";
-import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
-import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { LanguageProvider } from "./context/LanguageContext";
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
@@ -63,11 +62,6 @@ import WhatsNewModal, { APP_VERSION, VERSION_KEY } from "./modals/WhatsNewModal"
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
 
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -78,7 +72,7 @@ function stripBase(path: string): string {
     : path;
 }
 
-if (!clerkPubKey) {
+if (!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) {
   const root = document.getElementById("root")!;
   root.innerHTML = `
     <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;background:#0F1829;font-family:Inter,sans-serif;padding:24px">
@@ -93,7 +87,7 @@ if (!clerkPubKey) {
         <p style="color:#A89070;font-size:12px;margin:0;opacity:0.6">Missing: VITE_CLERK_PUBLISHABLE_KEY</p>
       </div>
     </div>`;
-  throw new Error("Clerk not provisioned — run setupClerkWhitelabelAuth() via the agent.");
+  throw new Error("Clerk not provisioned — set VITE_CLERK_PUBLISHABLE_KEY.");
 }
 
 const clerkAppearance = {
@@ -860,12 +854,13 @@ function AppRoute() {
   );
 }
 
-function ClerkProviderWithRoutes() {
+export default function App() {
   const [, setLocation] = useLocation();
 
   return (
     <ClerkProvider
-      publishableKey={clerkPubKey}
+      publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
+      afterSignOutUrl={`${basePath}/`}
       {...(clerkProxyUrl ? { proxyUrl: clerkProxyUrl } : {})}
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
@@ -897,13 +892,5 @@ function ClerkProviderWithRoutes() {
         </Route>
       </Switch>
     </ClerkProvider>
-  );
-}
-
-export default function App() {
-  return (
-    <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
-    </WouterRouter>
   );
 }

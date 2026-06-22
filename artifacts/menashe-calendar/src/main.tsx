@@ -1,9 +1,12 @@
 import { createRoot } from "react-dom/client";
 import { useState, useCallback } from "react";
+import { Router as WouterRouter } from "wouter";
 import App from "./App";
 import SplashScreen from "./components/SplashScreen";
 import OnboardingFlow, { hasSeenOnboarding } from "./components/OnboardingFlow";
 import "./index.css";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function Root() {
   const [splashDone, setSplashDone] = useState(false);
@@ -23,4 +26,8 @@ function Root() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<Root />);
+createRoot(document.getElementById("root")!).render(
+  <WouterRouter base={basePath}>
+    <Root />
+  </WouterRouter>
+);
