@@ -122,6 +122,12 @@ export interface Translations {
   annStripNew: string;
   annStripNews: string;
   annStripRead: string;
+  shabbatBarTitle: string;
+  shabbatBarTrialBadge: string;
+  shabbatBarTrialEnd: string;
+  shabbatBarUpgradeBtn: string;
+  shabbatBarTonightLabel: string;
+  shabbatBarPremiumBadge: string;
   homeOmer: string;
   omerSefiratTitle: string;
   omerDayCount: string;
@@ -327,6 +333,12 @@ export const en: Translations = {
   annStripNew: "New Announcement",
   annStripNews: "{n} New Announcements",
   annStripRead: "Read",
+  shabbatBarTitle: "Candle Lighting",
+  shabbatBarTrialBadge: "{n} free days left",
+  shabbatBarTrialEnd: "Free trial ended",
+  shabbatBarUpgradeBtn: "Upgrade 👑",
+  shabbatBarTonightLabel: "Tonight!",
+  shabbatBarPremiumBadge: "Premium",
   homeOmer: "OMER",
 
   fabTitle: "Community Hub",
@@ -519,6 +531,12 @@ export const tk: Translations = {
   annStripNew: "Thu Thar Dawng",
   annStripNews: "Thu Thar {n} Dawng",
   annStripRead: "Chhiar",
+  shabbatBarTitle: "Kerhi Hun",
+  shabbatBarTrialBadge: "Ni {n} theih leh",
+  shabbatBarTrialEnd: "Theih hun zo tawh",
+  shabbatBarUpgradeBtn: "Nei Ta 👑",
+  shabbatBarTonightLabel: "Zanin!",
+  shabbatBarPremiumBadge: "Premium",
   homeOmer: "OMER",
   omerSefiratTitle: "Sefirat HaOmer",
   omerDayCount: "{day} ni a ni, 49 chhung",

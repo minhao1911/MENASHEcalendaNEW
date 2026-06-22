@@ -11,6 +11,7 @@ import { sendNotification, isNotifSupported } from "../hooks/useNotifications";
 import { useLanguage } from "../context/LanguageContext";
 import { fetchCommunityYahrzeit } from "../lib/userApi";
 import type { ServerAnnouncement } from "../lib/announcementsApi";
+import { useTrialStatus } from "../hooks/useTrialStatus";
 
 const API_BASE = "/api";
 
@@ -1229,6 +1230,210 @@ interface HomeProps {
   profileName?: string | null;
 }
 
+// ── Shabbat Countdown Bar ────────────────────────────────────────────────────
+function ShabbatCountdownBar({
+  isPremium, location, onShowPremium,
+}: {
+  isPremium: boolean;
+  location: Location;
+  onShowPremium: () => void;
+}) {
+  const { t } = useLanguage();
+  const trial = useTrialStatus();
+  const canAccess = isPremium || trial.isInTrial;
+
+  const [countdown, setCountdown] = useState("");
+  const [isTonight, setIsTonight] = useState(false);
+
+  useEffect(() => {
+    function getNextCandleLighting(): Date | null {
+      const now = new Date();
+      let daysUntilFriday = (5 - now.getDay() + 7) % 7;
+      if (daysUntilFriday === 0) {
+        const todayZmanim = calculateZmanim(now, location.lat, location.lng, location.candleLightingMinutes);
+        if (todayZmanim.candleLighting && now >= todayZmanim.candleLighting) {
+          daysUntilFriday = 7;
+        }
+      }
+      const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilFriday);
+      const z = calculateZmanim(targetDate, location.lat, location.lng, location.candleLightingMinutes);
+      return z.candleLighting;
+    }
+
+    function tick() {
+      if (!canAccess) { setCountdown(""); return; }
+      const target = getNextCandleLighting();
+      if (!target) { setCountdown(""); return; }
+      const now = new Date();
+      const diff = target.getTime() - now.getTime();
+      if (diff <= 0) { setIsTonight(true); setCountdown(t.shabbatBarTonightLabel); return; }
+      setIsTonight(false);
+      const totalSecs = Math.floor(diff / 1000);
+      const d = Math.floor(totalSecs / 86400);
+      const h = Math.floor((totalSecs % 86400) / 3600);
+      const m = Math.floor((totalSecs % 3600) / 60);
+      const s = totalSecs % 60;
+      if (d > 1) {
+        setCountdown(`${d}d ${h}h ${String(m).padStart(2, "0")}m`);
+      } else if (d === 1) {
+        setCountdown(`1d ${h}h ${String(m).padStart(2, "0")}m`);
+      } else if (h > 0) {
+        setCountdown(`${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`);
+      } else {
+        setCountdown(`${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+      }
+    }
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [canAccess, location, t.shabbatBarTonightLabel]);
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <style>{`
+        @keyframes shabbatBarIn {
+          from { opacity: 0; transform: translateY(-5px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes candleFlick {
+          0%,100% { transform: scaleY(1) rotate(-1deg); }
+          50%      { transform: scaleY(1.08) rotate(1.5deg); }
+        }
+        @keyframes trialPulse {
+          0%,100% { opacity: 1; }
+          50%      { opacity: 0.65; }
+        }
+        @keyframes countdownTick {
+          0%   { opacity: 1; }
+          10%  { opacity: 0.7; }
+          20%  { opacity: 1; }
+        }
+      `}</style>
+
+      <div
+        style={{
+          borderRadius: 14,
+          background: canAccess
+            ? "linear-gradient(90deg, rgba(212,168,67,0.18) 0%, rgba(212,168,67,0.07) 100%)"
+            : "linear-gradient(90deg, rgba(100,100,100,0.12) 0%, rgba(80,80,80,0.05) 100%)",
+          border: canAccess
+            ? "1px solid rgba(212,168,67,0.32)"
+            : "1px solid rgba(120,120,120,0.2)",
+          overflow: "hidden",
+          animation: "shabbatBarIn 0.4s cubic-bezier(0.34,1.2,0.64,1) both",
+        }}
+      >
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "9px 12px 9px 12px",
+        }}>
+
+          {/* Candle icon */}
+          <div style={{
+            width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+            background: canAccess ? "rgba(212,168,67,0.14)" : "rgba(120,120,120,0.1)",
+            border: canAccess ? "1px solid rgba(212,168,67,0.28)" : "1px solid rgba(120,120,120,0.18)",
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17,
+          }}>
+            <span style={{ display: "inline-block", animation: canAccess ? "candleFlick 2.5s ease-in-out infinite" : "none" }}>
+              {canAccess ? "🕯" : "🔒"}
+            </span>
+          </div>
+
+          {/* Labels */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+              <span style={{
+                fontSize: 9, fontWeight: 900, letterSpacing: ".08em", textTransform: "uppercase",
+                color: canAccess ? "#d4a843" : "var(--text-muted)",
+              }}>
+                {t.shabbatBarTitle}
+              </span>
+
+              {/* Badge */}
+              {isPremium && (
+                <span style={{
+                  fontSize: 8, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase",
+                  padding: "1px 5px", borderRadius: 99,
+                  background: "linear-gradient(90deg, #5b3700, #d4a843)",
+                  color: "#1a0900",
+                }}>👑 {t.shabbatBarPremiumBadge}</span>
+              )}
+              {!isPremium && trial.isInTrial && (
+                <span style={{
+                  fontSize: 8, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase",
+                  padding: "1px 5px", borderRadius: 99,
+                  background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)",
+                  color: "#4ade80",
+                  animation: trial.daysLeft <= 5 ? "trialPulse 1.5s ease-in-out infinite" : "none",
+                }}>
+                  {t.shabbatBarTrialBadge.replace("{n}", String(trial.daysLeft))}
+                </span>
+              )}
+              {trial.trialExpired && !isPremium && (
+                <span style={{
+                  fontSize: 8, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase",
+                  padding: "1px 5px", borderRadius: 99,
+                  background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)",
+                  color: "#ef4444",
+                }}>
+                  {t.shabbatBarTrialEnd}
+                </span>
+              )}
+            </div>
+
+            {/* Countdown or upsell */}
+            {canAccess ? (
+              <div style={{
+                fontSize: 17, fontWeight: 900, color: isTonight ? "#4ade80" : "#f0c050",
+                fontVariantNumeric: "tabular-nums", letterSpacing: isTonight ? "0" : ".02em",
+                animation: "countdownTick 1s ease-out",
+              }}>
+                {countdown || "—"}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
+                {t.shabbatBarTrialEnd}
+              </div>
+            )}
+          </div>
+
+          {/* Right side: upgrade button OR candle time */}
+          {canAccess ? (
+            <div style={{ flexShrink: 0, textAlign: "right" }}>
+              <div style={{ fontSize: 8, fontWeight: 700, color: "rgba(212,168,67,0.5)", letterSpacing: ".07em", textTransform: "uppercase", marginBottom: 2 }}>
+                {t.shabbatCandleLighting}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
+                {(() => {
+                  const now = new Date();
+                  const daysUntilFriday = (5 - now.getDay() + 7) % 7;
+                  const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilFriday);
+                  const z = calculateZmanim(targetDate, location.lat, location.lng, location.candleLightingMinutes);
+                  return z.candleLighting ? formatTime(z.candleLighting) : "—";
+                })()}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={onShowPremium}
+              style={{
+                flexShrink: 0, padding: "6px 10px", borderRadius: 10, border: "none",
+                background: "linear-gradient(90deg, #6b4800, #d4a843)",
+                color: "#1a0900", fontSize: 10, fontWeight: 900, cursor: "pointer",
+                letterSpacing: ".04em",
+              }}
+            >
+              {t.shabbatBarUpgradeBtn}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Announcement Strip ───────────────────────────────────────────────────────
 const ANN_STRIP_DISMISSED_KEY = "menashe-ann-strip-dismissed";
 
@@ -1669,6 +1874,9 @@ export default function Home({
 
         {/* ── Community Announcement Strip ── */}
         <AnnouncementStrip announcements={unreadAnnouncements} onOpen={onShowAnnouncements} />
+
+        {/* ── Shabbat Countdown Bar ── */}
+        <ShabbatCountdownBar isPremium={isPremium} location={location} onShowPremium={onShowPremium} />
 
         {/* ── Date + Zmanim Card (collapsible) ── */}
         <DateZmanimCard
