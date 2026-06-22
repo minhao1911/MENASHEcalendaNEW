@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import type { Book } from "../pages/SiddurPage";
 import { useUpload } from "@workspace/object-storage-web";
+import {
+  fetchAnnouncements,
+  broadcastAnnouncement,
+  patchAnnouncement,
+  deleteAnnouncementServer,
+  type ServerAnnouncement,
+} from "../lib/announcementsApi";
 
 interface Props {
   onClose: () => void;
@@ -20,7 +27,10 @@ const COVER_COLORS = ["#1a3050","#2a1a40","#1a2a20","#30200a","#1a1a30","#0a2030
 
 type FormMode = "list" | "add" | "edit";
 type FileMode = "url" | "upload";
-type PanelTab = "books" | "users" | "payments" | "broadcast" | "census" | "yahrzeit";
+type PanelTab = "books" | "users" | "payments" | "broadcast" | "census" | "yahrzeit" | "announce";
+
+const ANN_EMOJIS = ["📢","📣","🔔","✡","🕍","🌟","📜","🙏","🎯","🫂","📌","🗓","🎉","🕎","🌿","💎","🏛","📚","🕯","✨","📖","🌾"];
+const defaultAnnForm = { emoji: "📢", title: "", body: "", pinned: false, scheduleMode: "now" as "now" | "later", scheduledAt: "" };
 
 interface CensusSubmission {
   id: string;
@@ -169,6 +179,15 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [deletingYahrzeit, setDeletingYahrzeit] = useState<string | null>(null);
   const [yahrzeitSearch, setYahrzeitSearch] = useState("");
 
+  const [announcements, setAnnouncements] = useState<ServerAnnouncement[]>([]);
+  const [annLoading, setAnnLoading] = useState(false);
+  const [annForm, setAnnForm] = useState(defaultAnnForm);
+  const [annEditId, setAnnEditId] = useState<string | null>(null);
+  const [annView, setAnnView] = useState<"list" | "compose">("list");
+  const [annSaving, setAnnSaving] = useState(false);
+  const [annDeleteId, setAnnDeleteId] = useState<string | null>(null);
+  const [annPinning, setAnnPinning] = useState<string | null>(null);
+
   const { uploadFile, isUploading, progress } = useUpload({
     onSuccess: (response) => {
       const servingUrl = `/api/storage${response.objectPath}`;
@@ -283,6 +302,72 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     } finally { setReviewingCensus(null); }
   }
 
+  async function loadAnnouncements() {
+    setAnnLoading(true);
+    try { setAnnouncements(await fetchAnnouncements(ADMIN_PIN)); } finally { setAnnLoading(false); }
+  }
+
+  function openAnnCompose(ann?: ServerAnnouncement) {
+    if (ann) {
+      setAnnForm({
+        emoji: ann.emoji, title: ann.title, body: ann.body, pinned: ann.pinned,
+        scheduleMode: ann.scheduledAt ? "later" : "now",
+        scheduledAt: ann.scheduledAt ? new Date(ann.scheduledAt).toISOString().slice(0, 16) : "",
+      });
+      setAnnEditId(ann.id);
+    } else {
+      setAnnForm({ ...defaultAnnForm });
+      setAnnEditId(null);
+    }
+    setAnnView("compose");
+  }
+
+  async function saveAnnouncement() {
+    if (!annForm.title.trim()) return;
+    setAnnSaving(true);
+    try {
+      const scheduledAt = annForm.scheduleMode === "later" && annForm.scheduledAt
+        ? new Date(annForm.scheduledAt).toISOString() : null;
+      if (annEditId) {
+        await patchAnnouncement(annEditId, ADMIN_PIN, {
+          emoji: annForm.emoji, title: annForm.title, body: annForm.body,
+          pinned: annForm.pinned,
+        });
+      } else {
+        await broadcastAnnouncement(ADMIN_PIN, {
+          emoji: annForm.emoji, title: annForm.title, body: annForm.body,
+          pinned: annForm.pinned, scheduledAt,
+        });
+      }
+      await loadAnnouncements();
+      setAnnView("list");
+    } finally { setAnnSaving(false); }
+  }
+
+  async function sendAnnNow(id: string) {
+    setAnnPinning(id);
+    try {
+      await patchAnnouncement(id, ADMIN_PIN, { sendNow: true });
+      await loadAnnouncements();
+    } finally { setAnnPinning(null); }
+  }
+
+  async function toggleAnnPin(ann: ServerAnnouncement) {
+    setAnnPinning(ann.id);
+    try {
+      await patchAnnouncement(ann.id, ADMIN_PIN, { pinned: !ann.pinned });
+      await loadAnnouncements();
+    } finally { setAnnPinning(null); }
+  }
+
+  async function deleteAnn(id: string) {
+    setAnnDeleteId(id);
+    try {
+      await deleteAnnouncementServer(id, ADMIN_PIN);
+      await loadAnnouncements();
+    } finally { setAnnDeleteId(null); }
+  }
+
   async function fetchYahrzeit() {
     setYahrzeitLoading(true);
     try {
@@ -304,7 +389,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   }
 
   function submitPin() {
-    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); fetchSubCount(); fetchScheduled(); fetchCensus(); fetchYahrzeit(); }
+    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); fetchSubCount(); fetchScheduled(); fetchCensus(); fetchYahrzeit(); loadAnnouncements(); }
     else { setPinError("Incorrect PIN"); setPin(""); }
   }
 
@@ -491,9 +576,12 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     <div style={{ position: "fixed", inset: 0, background: "var(--background)", zIndex: 200, display: "flex", flexDirection: "column" }}>
       {/* Top bar */}
       <div className="app-header" style={{ borderBottom: "1px solid var(--border)" }}>
-        {mode !== "list" ? (
+        {mode !== "list" || (panelTab === "announce" && annView === "compose") ? (
           <button
-            onClick={() => { setMode("list"); setForm(defaultForm); setEditId(null); setUploadedFileName(null); setCoverImageUploaded(null); setFileMode("url"); }}
+            onClick={() => {
+              if (panelTab === "announce" && annView === "compose") { setAnnView("list"); }
+              else { setMode("list"); setForm(defaultForm); setEditId(null); setUploadedFileName(null); setCoverImageUploaded(null); setFileMode("url"); }
+            }}
             style={{ fontSize: 14, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
           >
             ← Back
@@ -510,6 +598,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             : panelTab === "broadcast" ? "📣 Broadcast Notification"
             : panelTab === "census" ? "📋 Census Review"
             : panelTab === "yahrzeit" ? "🕯️ Yahrzeit Entries"
+            : panelTab === "announce" ? (annView === "compose" ? (annEditId ? "✏️ Edit Announcement" : "📢 New Announcement") : "📢 Announcements")
             : "💳 Payments"}
         </div>
         {panelTab === "books" && mode === "list" && (
@@ -548,19 +637,23 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
           </button>
         )}
         {panelTab === "census" && (
-          <button
-            onClick={fetchCensus}
-            style={{ padding: "7px 14px", borderRadius: 8, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-          >
+          <button onClick={fetchCensus} style={{ padding: "7px 14px", borderRadius: 8, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             {censusLoading ? "…" : "↻ Refresh"}
           </button>
         )}
         {panelTab === "yahrzeit" && (
-          <button
-            onClick={fetchYahrzeit}
-            style={{ padding: "7px 14px", borderRadius: 8, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-          >
+          <button onClick={fetchYahrzeit} style={{ padding: "7px 14px", borderRadius: 8, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             {yahrzeitLoading ? "…" : "↻ Refresh"}
+          </button>
+        )}
+        {panelTab === "announce" && annView === "list" && (
+          <button className="btn-gold" style={{ padding: "8px 14px", fontSize: 13, fontWeight: 700, borderRadius: 10 }} onClick={() => openAnnCompose()}>
+            + New
+          </button>
+        )}
+        {panelTab === "announce" && annView === "compose" && (
+          <button className="btn-gold" style={{ padding: "8px 14px", fontSize: 13, fontWeight: 700, borderRadius: 10, opacity: annSaving || !annForm.title.trim() ? 0.5 : 1 }} onClick={saveAnnouncement} disabled={annSaving || !annForm.title.trim()}>
+            {annSaving ? "Saving…" : annEditId ? "Save" : "Send"}
           </button>
         )}
       </div>
@@ -568,7 +661,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       {/* ── Tab switcher ── */}
       {mode === "list" && (
         <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-          {(["books", "users", "payments", "broadcast", "census", "yahrzeit"] as PanelTab[]).map(tab => (
+          {(["books", "users", "payments", "broadcast", "census", "yahrzeit", "announce"] as PanelTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setPanelTab(tab)}
@@ -583,6 +676,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
               {tab === "books" ? "📚"
                 : tab === "payments" ? "💳"
                 : tab === "broadcast" ? "📣"
+                : tab === "announce" ? "📢"
                 : tab === "census" ? (
                   <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
                     📋
@@ -612,6 +706,197 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       )}
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+        {/* ANNOUNCE PANEL */}
+        {panelTab === "announce" && mode === "list" && (
+          <>
+            {/* COMPOSE FORM */}
+            {annView === "compose" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* Emoji picker */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 6 }}>EMOJI</div>
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                    {ANN_EMOJIS.map(e => (
+                      <button key={e} onClick={() => setAnnForm(f => ({ ...f, emoji: e }))}
+                        style={{ width: 34, height: 34, borderRadius: 8, fontSize: 18, border: annForm.emoji === e ? "2px solid #d4a843" : "1px solid var(--border)", background: annForm.emoji === e ? "rgba(212,168,67,0.15)" : "var(--elevated)", cursor: "pointer" }}>
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 5 }}>TITLE <span style={{ color: "#ef4444" }}>*</span></div>
+                  <input
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box" }}
+                    value={annForm.title}
+                    onChange={e => setAnnForm(f => ({ ...f, title: e.target.value }))}
+                    placeholder="Announcement headline…"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Body */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 5 }}>BODY</div>
+                  <textarea
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 13, outline: "none", boxSizing: "border-box", minHeight: 90, resize: "vertical", lineHeight: 1.5 }}
+                    value={annForm.body}
+                    onChange={e => setAnnForm(f => ({ ...f, body: e.target.value }))}
+                    placeholder="Optional message body…"
+                  />
+                </div>
+
+                {/* Pin toggle */}
+                <label style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--card)", border: `1px solid ${annForm.pinned ? "rgba(212,168,67,0.4)" : "var(--border)"}`, borderRadius: 12, cursor: "pointer" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>📌 Pin to home screen</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Shows as a banner strip at the top of the community home</div>
+                  </div>
+                  <div onClick={() => setAnnForm(f => ({ ...f, pinned: !f.pinned }))} style={{ width: 44, height: 24, borderRadius: 12, background: annForm.pinned ? "#d4a843" : "var(--elevated)", border: "1px solid var(--border)", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+                    <div style={{ position: "absolute", top: 3, left: annForm.pinned ? 22 : 3, width: 16, height: 16, borderRadius: "50%", background: annForm.pinned ? "#1a0f00" : "var(--text-muted)", transition: "left 0.2s" }} />
+                  </div>
+                </label>
+
+                {/* Schedule (only for new) */}
+                {!annEditId && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 8 }}>WHEN</div>
+                    <div style={{ display: "flex", gap: 8, marginBottom: annForm.scheduleMode === "later" ? 10 : 0 }}>
+                      {(["now", "later"] as const).map(m => (
+                        <button key={m} onClick={() => setAnnForm(f => ({ ...f, scheduleMode: m }))}
+                          style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, border: annForm.scheduleMode === m ? "none" : "1px solid var(--border)", background: annForm.scheduleMode === m ? "linear-gradient(90deg, #b8860b, #d4a843)" : "var(--elevated)", color: annForm.scheduleMode === m ? "#1a0f00" : "var(--text-muted)", cursor: "pointer" }}>
+                          {m === "now" ? "📣 Send now" : "🗓 Schedule"}
+                        </button>
+                      ))}
+                    </div>
+                    {annForm.scheduleMode === "later" && (
+                      <input
+                        type="datetime-local"
+                        style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                        value={annForm.scheduledAt}
+                        onChange={e => setAnnForm(f => ({ ...f, scheduledAt: e.target.value }))}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Preview */}
+                {annForm.title.trim() && (
+                  <div style={{ borderRadius: 12, padding: "12px 14px", background: "rgba(212,168,67,0.07)", border: "1px solid rgba(212,168,67,0.25)" }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "#d4a843", letterSpacing: "0.08em", marginBottom: 6 }}>PREVIEW</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{annForm.emoji} {annForm.title}</div>
+                    {annForm.body && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.5 }}>{annForm.body}</div>}
+                    {annForm.pinned && <div style={{ fontSize: 10, color: "#d4a843", marginTop: 6, fontWeight: 700 }}>📌 Will appear as pinned banner</div>}
+                  </div>
+                )}
+
+                {/* Send button */}
+                <button
+                  className="btn-gold"
+                  style={{ padding: 14, fontSize: 15, fontWeight: 800, borderRadius: 12, opacity: annSaving || !annForm.title.trim() ? 0.6 : 1 }}
+                  onClick={saveAnnouncement}
+                  disabled={annSaving || !annForm.title.trim()}
+                >
+                  {annSaving ? "Saving…"
+                    : annEditId ? "✅ Save Changes"
+                    : annForm.scheduleMode === "later" ? "🗓 Schedule Announcement"
+                    : "📣 Send Now"}
+                </button>
+                <div style={{ height: 8 }} />
+              </div>
+            )}
+
+            {/* LIST VIEW */}
+            {annView === "list" && (
+              <>
+                {annLoading ? (
+                  <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 13 }}>Loading…</div>
+                ) : announcements.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "48px 16px" }}>
+                    <div style={{ fontSize: 36, marginBottom: 10 }}>📢</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>No announcements yet</div>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Create your first community announcement</div>
+                    <button className="btn-gold" style={{ padding: "12px 24px", fontSize: 14, fontWeight: 700, borderRadius: 12 }} onClick={() => openAnnCompose()}>
+                      + New Announcement
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {[...announcements].sort((a, b) => {
+                      const ta = new Date(a.sentAt ?? a.scheduledAt ?? a.createdAt).getTime();
+                      const tb = new Date(b.sentAt ?? b.scheduledAt ?? b.createdAt).getTime();
+                      return tb - ta;
+                    }).map(ann => {
+                      const isDeleting = annDeleteId === ann.id;
+                      const isActing = annPinning === ann.id;
+                      const statusColor = ann.status === "sent" ? "#4ade80" : ann.status === "scheduled" ? "#d4a843" : "#94a3b8";
+                      const statusLabel = ann.status === "sent" ? "SENT" : ann.status === "scheduled" ? "SCHEDULED" : "DRAFT";
+                      const sentTime = ann.sentAt ?? ann.scheduledAt ?? ann.createdAt;
+                      const timeLabel = new Date(sentTime).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                      return (
+                        <div key={ann.id} style={{ borderRadius: 12, background: "var(--card)", border: `1px solid ${ann.pinned ? "rgba(212,168,67,0.3)" : "var(--border)"}`, padding: "12px 14px" }}>
+                          {/* Header row */}
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 6 }}>
+                            <div style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>{ann.emoji}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.3 }}>{ann.title}</div>
+                              {ann.body && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.4 }}>{ann.body}</div>}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                              <span style={{ fontSize: 9, fontWeight: 900, padding: "2px 7px", borderRadius: 5, background: `${statusColor}22`, color: statusColor }}>
+                                {statusLabel}
+                              </span>
+                              {ann.pinned && <span style={{ fontSize: 9, color: "#d4a843", fontWeight: 800 }}>📌 PINNED</span>}
+                            </div>
+                          </div>
+
+                          {/* Time */}
+                          <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 10 }}>{timeLabel}</div>
+
+                          {/* Actions */}
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            {ann.status !== "sent" && (
+                              <button
+                                onClick={() => sendAnnNow(ann.id)}
+                                disabled={isActing}
+                                style={{ flex: "1 1 auto", padding: "8px 10px", borderRadius: 8, border: "none", background: isActing ? "rgba(74,222,128,0.3)" : "linear-gradient(90deg, #166534, #4ade80)", color: "#fff", fontSize: 11, fontWeight: 800, cursor: isActing ? "default" : "pointer" }}
+                              >
+                                {isActing ? "…" : "📣 Send Now"}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => toggleAnnPin(ann)}
+                              disabled={isActing}
+                              style={{ flex: "1 1 auto", padding: "8px 10px", borderRadius: 8, border: `1px solid ${ann.pinned ? "rgba(212,168,67,0.4)" : "var(--border)"}`, background: ann.pinned ? "rgba(212,168,67,0.1)" : "var(--elevated)", color: ann.pinned ? "#d4a843" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: isActing ? "default" : "pointer", opacity: isActing ? 0.5 : 1 }}
+                            >
+                              {ann.pinned ? "📌 Unpin" : "📌 Pin"}
+                            </button>
+                            <button
+                              onClick={() => openAnnCompose(ann)}
+                              style={{ flex: "0 0 auto", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--elevated)", color: "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => { if (confirm("Delete this announcement?")) deleteAnn(ann.id); }}
+                              disabled={isDeleting}
+                              style={{ flex: "0 0 auto", padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.07)", color: "#ef4444", fontSize: 11, fontWeight: 700, cursor: isDeleting ? "default" : "pointer", opacity: isDeleting ? 0.5 : 1 }}
+                            >
+                              {isDeleting ? "…" : "🗑"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
         {/* CENSUS PANEL */}
         {panelTab === "census" && mode === "list" && (
           <>
