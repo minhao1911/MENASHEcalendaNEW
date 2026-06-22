@@ -2688,6 +2688,104 @@ function CommunityFAB({
               }}
             />
           </button>
+
+          {/* ── Star of David overlay ── */}
+          <div
+            className="star-david-wrap"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -54%)",
+              width: 48,
+              height: 48,
+              pointerEvents: "none",
+              zIndex: 10,
+            }}
+          >
+            {/* Outer halo ring 1 */}
+            <div style={{
+              position: "absolute",
+              inset: -10,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(240,192,80,0.35) 0%, rgba(212,168,67,0.12) 45%, transparent 72%)",
+              animation: "starHaloA 2.6s ease-in-out infinite",
+            }} />
+            {/* Outer halo ring 2 — offset phase */}
+            <div style={{
+              position: "absolute",
+              inset: -18,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, transparent 30%, rgba(212,168,67,0.10) 52%, rgba(212,168,67,0.04) 70%, transparent 86%)",
+              animation: "starHaloB 2.6s ease-in-out 1.3s infinite",
+            }} />
+
+            {/* Star SVG */}
+            <svg
+              viewBox="0 0 40 40"
+              className="star-david-svg"
+              style={{ width: "100%", height: "100%", animation: "starRotateSlow 18s linear infinite" }}
+            >
+              <defs>
+                <filter id="starGlowFilter" x="-60%" y="-60%" width="220%" height="220%">
+                  <feGaussianBlur stdDeviation="1.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <linearGradient id="starGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+                  <stop offset="0%" stopColor="#fff9c4" />
+                  <stop offset="40%" stopColor="#f0c050" />
+                  <stop offset="100%" stopColor="#c8860a" />
+                </linearGradient>
+              </defs>
+
+              {/* Sparkle rays — 6 short lines at 60° intervals */}
+              <g className="star-rays" style={{ animation: "starRaysPulse 2.6s ease-in-out infinite" }}>
+                {[0, 60, 120, 180, 240, 300].map(deg => {
+                  const rad = (deg * Math.PI) / 180;
+                  const x1 = 20 + Math.cos(rad) * 17;
+                  const y1 = 20 + Math.sin(rad) * 17;
+                  const x2 = 20 + Math.cos(rad) * 21;
+                  const y2 = 20 + Math.sin(rad) * 21;
+                  return (
+                    <line
+                      key={deg}
+                      x1={x1} y1={y1} x2={x2} y2={y2}
+                      stroke="url(#starGrad)"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                      opacity="0.75"
+                    />
+                  );
+                })}
+              </g>
+
+              {/* Upward triangle */}
+              <polygon
+                points="20,3.5 33.8,27 6.2,27"
+                fill="url(#starGrad)"
+                filter="url(#starGlowFilter)"
+                style={{ animation: "starShine 2.6s ease-in-out infinite" }}
+              />
+              {/* Downward triangle */}
+              <polygon
+                points="20,36.5 6.2,13 33.8,13"
+                fill="url(#starGrad)"
+                filter="url(#starGlowFilter)"
+                style={{ animation: "starShine 2.6s ease-in-out infinite" }}
+              />
+
+              {/* Center hex highlight */}
+              <polygon
+                points="20,13.5 26.2,17.7 26.2,22.3 20,26.5 13.8,22.3 13.8,17.7"
+                fill="rgba(255,249,196,0.22)"
+                style={{ animation: "starCenterFlash 2.6s ease-in-out infinite" }}
+              />
+            </svg>
+          </div>
+
           {announcementCount > 0 && !open && (
             <span style={{
               position: "absolute", top: -3, right: -3,
@@ -2736,6 +2834,30 @@ function CommunityFAB({
           border-color: rgba(255,255,255,0.5) !important;
           transform: scale(1.03);
           transition: background 0.15s ease, transform 0.15s ease;
+        }
+        @keyframes starHaloA {
+          0%,100% { transform: scale(1);    opacity: 1;    }
+          50%     { transform: scale(1.35); opacity: 0.3;  }
+        }
+        @keyframes starHaloB {
+          0%,100% { transform: scale(1);    opacity: 0.6;  }
+          50%     { transform: scale(1.5);  opacity: 0.1;  }
+        }
+        @keyframes starRotateSlow {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        @keyframes starShine {
+          0%,100% { opacity: 0.88; filter: drop-shadow(0 0 3px rgba(240,192,80,0.7))  drop-shadow(0 0 8px  rgba(212,168,67,0.5)); }
+          50%     { opacity: 1;    filter: drop-shadow(0 0 7px rgba(255,240,120,1))   drop-shadow(0 0 18px rgba(240,192,80,0.85)) drop-shadow(0 0 32px rgba(212,168,67,0.55)); }
+        }
+        @keyframes starRaysPulse {
+          0%,100% { opacity: 0.45; transform: scale(0.92); }
+          50%     { opacity: 1;    transform: scale(1.12);  }
+        }
+        @keyframes starCenterFlash {
+          0%,100% { opacity: 0.15; }
+          50%     { opacity: 0.55; }
         }
         @keyframes shawlWeave {
           0%   { transform: scaleX(1)    scaleY(1);    }
