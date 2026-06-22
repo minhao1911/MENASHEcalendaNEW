@@ -290,6 +290,18 @@ export interface Translations {
   /* ── Not Found ── */
   notFoundTitle: string;
   notFoundHome: string;
+
+  /* ── Zmanim Timeline ── */
+  zmanimTimelineTitle: string;
+  zmanimTimelineDawn: string;
+  zmanimTimelineSunrise: string;
+  zmanimTimelineShema: string;
+  zmanimTimelineMidday: string;
+  zmanimTimelineMincha: string;
+  zmanimTimelineSunset: string;
+  zmanimTimelineNightfall: string;
+  zmanimTimelineNow: string;
+  zmanimTimelineTap: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -565,6 +577,17 @@ export const en: Translations = {
 
   notFoundTitle: "This screen doesn't exist.",
   notFoundHome: "Go to home screen!",
+
+  zmanimTimelineTitle: "TODAY AT A GLANCE",
+  zmanimTimelineDawn: "Dawn",
+  zmanimTimelineSunrise: "Sunrise",
+  zmanimTimelineShema: "Shema",
+  zmanimTimelineMidday: "Midday",
+  zmanimTimelineMincha: "Mincha",
+  zmanimTimelineSunset: "Sunset",
+  zmanimTimelineNightfall: "Nightfall",
+  zmanimTimelineNow: "Now",
+  zmanimTimelineTap: "Full Zmanim →",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -840,6 +863,17 @@ export const tk: Translations = {
 
   notFoundTitle: "Screen hei awm lo.",
   notFoundHome: "Inn screen-ah kal rawh!",
+
+  zmanimTimelineTitle: "NI ZMANIM TIMELINE",
+  zmanimTimelineDawn: "Alah",
+  zmanimTimelineSunrise: "Ni Leh",
+  zmanimTimelineShema: "Shema",
+  zmanimTimelineMidday: "Nitang",
+  zmanimTimelineMincha: "Mincha",
+  zmanimTimelineSunset: "Ni Tum",
+  zmanimTimelineNightfall: "Zanin",
+  zmanimTimelineNow: "Ni Tawp",
+  zmanimTimelineTap: "Zmanim en →",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

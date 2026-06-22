@@ -4,7 +4,7 @@ import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 import { getOmerDay, buildHebrewText } from "../modals/OmerModal";
 import RoshChodeshBanner from "../components/RoshChodeshBanner";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
-import { calculateZmanim, formatTime } from "../lib/zmanim";
+import { calculateZmanim, formatTime, ZmanimTimes } from "../lib/zmanim";
 import { getCurrentParasha, getUpcomingHolidays } from "../lib/parasha";
 import { Location } from "../lib/locations";
 import { sendNotification, isNotifSupported } from "../hooks/useNotifications";
@@ -1317,6 +1317,189 @@ interface HomeProps {
   profileName?: string | null;
 }
 
+// ── Zmanim Timeline ─────────────────────────────────────────────────────────
+function ZmanimTimeline({
+  zmanim,
+  location,
+  onNavigate,
+}: {
+  zmanim: ZmanimTimes;
+  location: Location;
+  onNavigate: (page: string) => void;
+}) {
+  const { t } = useLanguage();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const start = zmanim.alotHaShachar;
+  const end = zmanim.tzais;
+  if (!start || !end) return null;
+
+  const startMs = start.getTime();
+  const totalMs = end.getTime() - startMs;
+
+  const pct = (d: Date | null): number => {
+    if (!d) return -1;
+    return Math.max(0, Math.min(100, ((d.getTime() - startMs) / totalMs) * 100));
+  };
+  const isPast = (d: Date | null) => !!d && d.getTime() < now.getTime();
+
+  const nowPct = pct(now);
+
+  type Marker = { key: string; label: string; time: Date | null; emoji: string; above: boolean };
+  const markers: Marker[] = [
+    { key: "sunrise",  label: t.zmanimTimelineSunrise, time: zmanim.sunrise,       emoji: "🌅", above: true  },
+    { key: "shema",    label: t.zmanimTimelineShema,   time: zmanim.latestShema,   emoji: "📖", above: false },
+    { key: "midday",   label: t.zmanimTimelineMidday,  time: zmanim.chatzot,       emoji: "☀️", above: true  },
+    { key: "mincha",   label: t.zmanimTimelineMincha,  time: zmanim.minchaKetana,  emoji: "🙏", above: false },
+    { key: "sunset",   label: t.zmanimTimelineSunset,  time: zmanim.sunset,        emoji: "🌇", above: true  },
+  ].filter(m => m.time !== null) as Marker[];
+
+  return (
+    <div
+      className="card card-interactive"
+      onClick={() => onNavigate("zmanim")}
+      style={{ marginBottom: 12, padding: "12px 14px 14px", overflow: "hidden" }}
+    >
+      <style>{`
+        @keyframes nowPulse {
+          0%,100% { box-shadow: 0 0 0 3px rgba(240,192,80,0.30), 0 0 14px rgba(240,192,80,0.55); }
+          50%      { box-shadow: 0 0 0 5px rgba(240,192,80,0.15), 0 0 22px rgba(240,192,80,0.35); }
+        }
+      `}</style>
+
+      {/* ── Header ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 13 }}>🕐</span>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "var(--text-muted)", textTransform: "uppercase" }}>
+            {t.zmanimTimelineTitle}
+          </span>
+        </div>
+        <span style={{ fontSize: 10, fontWeight: 700, color: "#d4a843", letterSpacing: "0.04em" }}>
+          {t.zmanimTimelineTap}
+        </span>
+      </div>
+
+      {/* ── Track area ── */}
+      <div style={{ position: "relative", paddingTop: 26, paddingBottom: 26 }}>
+
+        {/* ABOVE labels */}
+        {markers.filter(m => m.above).map(m => (
+          <div key={m.key} style={{
+            position: "absolute",
+            left: `${pct(m.time)}%`,
+            top: 0,
+            transform: "translateX(-50%)",
+            textAlign: "center",
+            opacity: isPast(m.time) ? 0.38 : 1,
+            transition: "opacity 0.4s",
+          }}>
+            <div style={{ fontSize: 8, fontWeight: 700, color: isPast(m.time) ? "var(--text-muted)" : "#d4a843", whiteSpace: "nowrap", marginBottom: 2, letterSpacing: "0.04em" }}>
+              {m.emoji} {formatTime(m.time, location.tz)}
+            </div>
+            <div style={{ width: 1, height: 7, background: isPast(m.time) ? "rgba(255,255,255,0.08)" : "rgba(212,168,67,0.35)", margin: "0 auto" }} />
+          </div>
+        ))}
+
+        {/* ── Track bar ── */}
+        <div style={{
+          position: "relative",
+          height: 9,
+          borderRadius: 5,
+          background: "linear-gradient(90deg, #12103a 0%, #1c2f6e 12%, #2a6080 26%, #d4a843 44%, #fbbf24 54%, #f97316 70%, #7f1d1d 88%, #120820 100%)",
+          boxShadow: "inset 0 1px 3px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(255,255,255,0.04)",
+        }}>
+          {/* Past dimmer */}
+          {nowPct > 0 && nowPct < 100 && (
+            <div style={{
+              position: "absolute", left: 0, top: 0, bottom: 0,
+              width: `${nowPct}%`,
+              background: "rgba(0,0,0,0.52)",
+              borderRadius: "5px 0 0 5px",
+              pointerEvents: "none",
+            }} />
+          )}
+
+          {/* Zman dots */}
+          {markers.map(m => (
+            <div key={m.key} style={{
+              position: "absolute",
+              left: `${pct(m.time)}%`,
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 11, height: 11,
+              borderRadius: "50%",
+              background: isPast(m.time) ? "rgba(80,90,110,0.7)" : "#fff",
+              border: `2.5px solid ${isPast(m.time) ? "rgba(100,110,130,0.4)" : "#d4a843"}`,
+              boxShadow: isPast(m.time) ? "none" : "0 0 8px rgba(212,168,67,0.55)",
+              zIndex: 1,
+              transition: "background 0.4s, border-color 0.4s, box-shadow 0.4s",
+            }} />
+          ))}
+
+          {/* Now needle */}
+          {nowPct >= 0 && nowPct <= 100 && (
+            <div style={{
+              position: "absolute",
+              left: `${nowPct}%`,
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 15, height: 15,
+              borderRadius: "50%",
+              background: "radial-gradient(circle at 35% 35%, #fff9c4, #f0c050)",
+              border: "2.5px solid #fff",
+              animation: "nowPulse 2.4s ease-in-out infinite",
+              zIndex: 3,
+            }} />
+          )}
+        </div>
+
+        {/* BELOW labels */}
+        {markers.filter(m => !m.above).map(m => (
+          <div key={m.key} style={{
+            position: "absolute",
+            left: `${pct(m.time)}%`,
+            bottom: 0,
+            transform: "translateX(-50%)",
+            textAlign: "center",
+            opacity: isPast(m.time) ? 0.38 : 1,
+            transition: "opacity 0.4s",
+          }}>
+            <div style={{ width: 1, height: 7, background: isPast(m.time) ? "rgba(255,255,255,0.08)" : "rgba(148,163,184,0.4)", margin: "0 auto 2px" }} />
+            <div style={{ fontSize: 8, fontWeight: 700, color: isPast(m.time) ? "var(--text-muted)" : "var(--text-secondary)", whiteSpace: "nowrap", letterSpacing: "0.04em" }}>
+              {m.emoji} {formatTime(m.time, location.tz)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Footer: dawn / now / nightfall ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 4 }}>
+        <div style={{ fontSize: 8, color: "var(--text-muted)", fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+          🌌 <span>{t.zmanimTimelineDawn}</span>
+          <span style={{ opacity: 0.6 }}>{formatTime(zmanim.alotHaShachar, location.tz)}</span>
+        </div>
+
+        {/* Now indicator label */}
+        <div style={{ fontSize: 9, fontWeight: 800, color: "#f0c050", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 3 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#f0c050", boxShadow: "0 0 6px rgba(240,192,80,0.7)" }} />
+          {t.zmanimTimelineNow} · {formatTime(now, location.tz)}
+        </div>
+
+        <div style={{ fontSize: 8, color: "var(--text-muted)", fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+          <span style={{ opacity: 0.6 }}>{formatTime(zmanim.tzais, location.tz)}</span>
+          <span>{t.zmanimTimelineNightfall}</span> ⭐
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Shabbat Countdown Bar ────────────────────────────────────────────────────
 function ShabbatCountdownBar({
   isPremium, location, onShowPremium,
@@ -1971,6 +2154,9 @@ export default function Home({
           location={location} showCandleLighting={showCandleLighting}
           onNavigate={onNavigate}
         />
+
+        {/* ── Today at a Glance — Zmanim Timeline ── */}
+        <ZmanimTimeline zmanim={zmanim} location={location} onNavigate={onNavigate} />
 
         {/* ── Daily Spiritual Briefing ── */}
         <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
