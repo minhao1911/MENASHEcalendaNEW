@@ -291,6 +291,17 @@ export interface Translations {
   notFoundTitle: string;
   notFoundHome: string;
 
+  /* ── Week Strip ── */
+  weekStripTitle: string;
+  weekStripViewCal: string;
+  weekStripDaySun: string;
+  weekStripDayMon: string;
+  weekStripDayTue: string;
+  weekStripDayWed: string;
+  weekStripDayThu: string;
+  weekStripDayFri: string;
+  weekStripDaySat: string;
+
   /* ── Zmanim Timeline ── */
   zmanimTimelineTitle: string;
   zmanimTimelineDawn: string;
@@ -578,6 +589,16 @@ export const en: Translations = {
   notFoundTitle: "This screen doesn't exist.",
   notFoundHome: "Go to home screen!",
 
+  weekStripTitle: "THIS WEEK",
+  weekStripViewCal: "Calendar →",
+  weekStripDaySun: "SUN",
+  weekStripDayMon: "MON",
+  weekStripDayTue: "TUE",
+  weekStripDayWed: "WED",
+  weekStripDayThu: "THU",
+  weekStripDayFri: "FRI",
+  weekStripDaySat: "SAT",
+
   zmanimTimelineTitle: "TODAY AT A GLANCE",
   zmanimTimelineDawn: "Dawn",
   zmanimTimelineSunrise: "Sunrise",
@@ -863,6 +884,16 @@ export const tk: Translations = {
 
   notFoundTitle: "Screen hei awm lo.",
   notFoundHome: "Inn screen-ah kal rawh!",
+
+  weekStripTitle: "THAWHNI",
+  weekStripViewCal: "Kolam en →",
+  weekStripDaySun: "NI",
+  weekStripDayMon: "LUN",
+  weekStripDayTue: "ZAN",
+  weekStripDayWed: "ARB",
+  weekStripDayThu: "BRES",
+  weekStripDayFri: "PAR",
+  weekStripDaySat: "ZAT",
 
   zmanimTimelineTitle: "NI ZMANIM TIMELINE",
   zmanimTimelineDawn: "Alah",

@@ -1318,6 +1318,148 @@ interface HomeProps {
   profileName?: string | null;
 }
 
+// ── Week Strip ───────────────────────────────────────────────────────────────
+function WeekStrip({ onNavigate }: { onNavigate: (page: string) => void }) {
+  const { t } = useLanguage();
+
+  const today = new Date();
+  // Sunday of the current week
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - today.getDay());
+
+  const dayLabels = [
+    t.weekStripDaySun, t.weekStripDayMon, t.weekStripDayTue, t.weekStripDayWed,
+    t.weekStripDayThu, t.weekStripDayFri, t.weekStripDaySat,
+  ];
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(sunday);
+    date.setDate(sunday.getDate() + i);
+    const hd = new HDate(date);
+    const isToday =
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear();
+    const isShabbat = date.getDay() === 6;
+
+    // Lightweight holiday check — only flags that matter visually
+    const events = HebrewCalendar.calendar({
+      start: date,
+      end: date,
+      il: true,
+      isHebrewYear: false,
+      mask: flags.ROSH_CHODESH | flags.CHAG | flags.MODERN_HOLIDAY,
+    });
+
+    return { date, hd, isToday, isShabbat, isFriday, hasEvent: events.length > 0 };
+  });
+
+  return (
+    <div className="card" style={{ marginBottom: 12, padding: "12px 14px 14px" }}>
+      <style>{`
+        @keyframes todayPop {
+          from { transform: scale(0.88); opacity: 0; }
+          to   { transform: scale(1);    opacity: 1; }
+        }
+      `}</style>
+
+      {/* ── Header ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 13 }}>📅</span>
+          <span style={{
+            fontSize: 10, fontWeight: 800, letterSpacing: "0.12em",
+            color: "var(--text-muted)", textTransform: "uppercase",
+          }}>
+            {t.weekStripTitle}
+          </span>
+        </div>
+        <button
+          onClick={() => onNavigate("calendar")}
+          style={{
+            background: "none", border: "none", padding: 0, cursor: "pointer",
+            fontSize: 10, fontWeight: 700, color: "#d4a843", letterSpacing: "0.04em",
+          }}
+        >
+          {t.weekStripViewCal}
+        </button>
+      </div>
+
+      {/* ── Day cells ── */}
+      <div style={{ display: "flex", gap: 3 }}>
+        {days.map(({ date, hd, isToday, isShabbat, hasEvent }, i) => (
+          <button
+            key={i}
+            onClick={() => onNavigate("calendar")}
+            style={{
+              flex: 1, minWidth: 0, border: "none", cursor: "pointer",
+              background: isToday
+                ? "linear-gradient(160deg, rgba(212,168,67,0.22) 0%, rgba(212,168,67,0.08) 100%)"
+                : isShabbat
+                ? "rgba(110,70,220,0.07)"
+                : "transparent",
+              borderRadius: 10,
+              padding: "7px 2px 6px",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+              outline: isToday
+                ? "1px solid rgba(212,168,67,0.48)"
+                : isShabbat
+                ? "1px solid rgba(110,70,220,0.14)"
+                : "1px solid transparent",
+              boxShadow: isToday ? "0 0 12px rgba(212,168,67,0.15), inset 0 1px 0 rgba(212,168,67,0.12)" : "none",
+              animation: isToday ? "todayPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both" : "none",
+              transition: "background 0.15s, outline-color 0.15s",
+            }}
+          >
+            {/* Day abbrev */}
+            <div style={{
+              fontSize: 7.5, fontWeight: 800, letterSpacing: "0.06em", lineHeight: 1,
+              color: isToday ? "#d4a843" : isShabbat ? "rgba(160,130,240,0.85)" : "var(--text-muted)",
+            }}>
+              {dayLabels[i]}
+            </div>
+
+            {/* Gregorian number */}
+            <div style={{
+              fontSize: 16, fontWeight: isToday ? 900 : 700, lineHeight: 1,
+              color: isToday ? "#f0c050" : isShabbat ? "rgba(190,165,255,0.9)" : "var(--text-primary)",
+            }}>
+              {date.getDate()}
+            </div>
+
+            {/* Hebrew numeral */}
+            <div style={{
+              fontFamily: "'Noto Serif Hebrew', serif",
+              fontSize: 10, fontWeight: 600, lineHeight: 1, direction: "rtl",
+              color: isToday ? "rgba(240,192,80,0.8)" : isShabbat ? "rgba(160,130,240,0.65)" : "var(--text-muted)",
+            }}>
+              {hebrewDayNumeral(hd.getDate())}
+            </div>
+
+            {/* Holiday / event dot */}
+            {hasEvent && (
+              <div style={{
+                width: 4, height: 4, borderRadius: "50%", marginTop: 1,
+                background: isToday ? "#f0c050" : "#d4a843",
+                boxShadow: isToday ? "0 0 4px rgba(240,192,80,0.7)" : "none",
+              }} />
+            )}
+
+            {/* Today underline bar */}
+            {isToday && (
+              <div style={{
+                width: "60%", height: 2.5, borderRadius: 99, marginTop: 1,
+                background: "linear-gradient(90deg, #d4a843, #f0c050)",
+                boxShadow: "0 0 6px rgba(212,168,67,0.5)",
+              }} />
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Zmanim Timeline ─────────────────────────────────────────────────────────
 function ZmanimTimeline({
   zmanim,
@@ -2155,6 +2297,9 @@ export default function Home({
           location={location} showCandleLighting={showCandleLighting}
           onNavigate={onNavigate}
         />
+
+        {/* ── This Week — mini calendar strip ── */}
+        <WeekStrip onNavigate={onNavigate} />
 
         {/* ── Today at a Glance — Zmanim Timeline ── */}
         <ZmanimTimeline zmanim={zmanim} location={location} onNavigate={onNavigate} />
