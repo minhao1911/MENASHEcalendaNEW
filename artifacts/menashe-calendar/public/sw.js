@@ -1,4 +1,4 @@
-const CACHE_NAME = "menashe-v1";
+const CACHE_NAME = "menashe-v2";
 const OFFLINE_URLS = [
   "/",
   "/manifest.json",
@@ -27,6 +27,9 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (url.pathname.startsWith("/api/")) return;
+  if (url.pathname.startsWith("/@") || url.pathname.startsWith("/node_modules/")) return;
+
+  const isNavigation = event.request.mode === "navigate";
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
@@ -38,7 +41,10 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() => cached || caches.match("/"));
+        .catch(() => {
+          if (isNavigation) return cached || caches.match("/");
+          return cached;
+        });
       return cached || networkFetch;
     })
   );
