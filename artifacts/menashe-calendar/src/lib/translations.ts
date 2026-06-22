@@ -174,6 +174,9 @@ export interface Translations {
   whatsNewSubtitle: string;
   whatsNewGotIt: string;
 
+  /* ── Splash screen ── */
+  splashTagline: string;
+
   /* ── Install prompt ── */
   installTitle: string;
   installBody: string;
@@ -343,6 +346,8 @@ export const en: Translations = {
   whatsNewTitle: "What's New",
   whatsNewSubtitle: "Highlights from the latest update",
   whatsNewGotIt: "Got it — let's go!",
+
+  splashTagline: "The Sacred Calendar of Bnei Menashe",
 
   installTitle: "Add to Home Screen",
   installBody: "Install Menashe Calendar for quick access.",
@@ -516,6 +521,8 @@ export const tk: Translations = {
   whatsNewTitle: "Thar Zawng Zawng",
   whatsNewSubtitle: "Update thar ber-ah thil thar zawng",
   whatsNewGotIt: "A lo — kal ang!",
+
+  splashTagline: "Bnei Menashe Gil Ni Thu Leh Thla",
 
   installTitle: "Home Screen-ah Chhuang",
   installBody: "Menashe Calendar install siam la a hun zel.",
