@@ -145,6 +145,12 @@ export interface Translations {
   txEditorGroupSettings: string;
   txEditorGroupHome: string;
   txEditorNote: string;
+
+  /* ── Install prompt ── */
+  installTitle: string;
+  installBody: string;
+  installBtn: string;
+  installDismiss: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -289,6 +295,11 @@ export const en: Translations = {
   txEditorGroupSettings: "Settings",
   txEditorGroupHome: "Home Page",
   txEditorNote: "Tip: Switch the app to Thadou Kuki mode (Settings → Appearance) to see your changes live.",
+
+  installTitle: "Add to Home Screen",
+  installBody: "Install Menashe Calendar for quick access.",
+  installBtn: "Install",
+  installDismiss: "Not now",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -433,6 +444,11 @@ export const tk: Translations = {
   txEditorGroupSettings: "Siam Dan",
   txEditorGroupHome: "Inn Page",
   txEditorNote: "Tip: Thadou Kuki mode on siam la (Siam Dan → SIM BUATSAIH) nakin na siam zawng en theih.",
+
+  installTitle: "Home Screen-ah Chhuang",
+  installBody: "Menashe Calendar install siam la a hun zel.",
+  installBtn: "Install",
+  installDismiss: "Hun dang ah",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

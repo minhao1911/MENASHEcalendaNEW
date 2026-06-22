@@ -56,6 +56,7 @@ import PrayerTimesModal from "./modals/PrayerTimesModal";
 import CommunityYahrzeitModal from "./modals/CommunityYahrzeitModal";
 import MoreToolsModal from "./pages/MoreToolsModal";
 import NotificationDrawer from "./components/NotificationDrawer";
+import InstallPrompt from "./components/InstallPrompt";
 
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
@@ -803,6 +804,7 @@ function AppShell() {
           )}
         </div>
       </div>
+      <InstallPrompt />
     </LanguageProvider>
   );
 }
