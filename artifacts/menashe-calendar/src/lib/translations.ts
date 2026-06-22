@@ -119,6 +119,9 @@ export interface Translations {
   homeParashah: string;
   homeDafYomi: string;
   homeMoreTools: string;
+  annStripNew: string;
+  annStripNews: string;
+  annStripRead: string;
   homeOmer: string;
   omerSefiratTitle: string;
   omerDayCount: string;
@@ -321,6 +324,9 @@ export const en: Translations = {
   homeParashah: "PARASHAH",
   homeDafYomi: "DAF YOMI",
   homeMoreTools: "More Tools",
+  annStripNew: "New Announcement",
+  annStripNews: "{n} New Announcements",
+  annStripRead: "Read",
   homeOmer: "OMER",
 
   fabTitle: "Community Hub",
@@ -510,6 +516,9 @@ export const tk: Translations = {
   homeParashah: "PARASHAH",
   homeDafYomi: "DAF YOMI",
   homeMoreTools: "Thil Pawimawh Zawk",
+  annStripNew: "Thu Thar Dawng",
+  annStripNews: "Thu Thar {n} Dawng",
+  annStripRead: "Chhiar",
   homeOmer: "OMER",
   omerSefiratTitle: "Sefirat HaOmer",
   omerDayCount: "{day} ni a ni, 49 chhung",

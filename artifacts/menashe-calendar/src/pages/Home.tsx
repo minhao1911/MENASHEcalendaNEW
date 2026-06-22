@@ -1229,91 +1229,122 @@ interface HomeProps {
   profileName?: string | null;
 }
 
-// ── Announcement Banner ──────────────────────────────────────────────────────
-function AnnouncementBanner({ announcements, onOpen }: { announcements: ServerAnnouncement[]; onOpen: () => void }) {
-  const [dismissed, setDismissed] = useState(false);
-  if (dismissed || announcements.length === 0) return null;
-  const latest = announcements[0];
-  const count = announcements.length;
+// ── Announcement Strip ───────────────────────────────────────────────────────
+const ANN_STRIP_DISMISSED_KEY = "menashe-ann-strip-dismissed";
+
+function loadStripDismissed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(ANN_STRIP_DISMISSED_KEY);
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch {}
+  return new Set();
+}
+
+function AnnouncementStrip({ announcements, onOpen }: { announcements: ServerAnnouncement[]; onOpen: () => void }) {
+  const { t } = useLanguage();
+  const [dismissed, setDismissed] = useState<Set<string>>(loadStripDismissed);
+
+  // Pinned first, then most recent — skip any already dismissed by ID
+  const sorted = [...announcements].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return new Date(b.sentAt ?? b.createdAt).getTime() - new Date(a.sentAt ?? a.createdAt).getTime();
+  });
+  const visible = sorted.find(a => !dismissed.has(a.id));
+  if (!visible) return null;
+
+  const unreadCount = announcements.filter(a => !dismissed.has(a.id)).length;
+
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDismissed(prev => {
+      const next = new Set([...prev, visible.id]);
+      try { localStorage.setItem(ANN_STRIP_DISMISSED_KEY, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
 
   return (
     <div
       onClick={onOpen}
       style={{
-        marginBottom: 14, borderRadius: 16, overflow: "hidden", cursor: "pointer",
-        background: "linear-gradient(135deg, rgba(212,168,67,0.12), rgba(26,16,0,0.95))",
-        border: "1px solid rgba(212,168,67,0.35)",
-        position: "relative",
-        animation: "annBannerIn 0.35s cubic-bezier(0.34,1.2,0.64,1) both",
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "9px 10px 9px 12px", marginBottom: 14, borderRadius: 14,
+        background: "linear-gradient(90deg, rgba(212,168,67,0.16) 0%, rgba(212,168,67,0.06) 100%)",
+        border: "1px solid rgba(212,168,67,0.32)",
+        cursor: "pointer",
+        animation: "annStripIn 0.4s cubic-bezier(0.34,1.2,0.64,1) both",
       }}
     >
       <style>{`
-        @keyframes annBannerIn {
-          from { transform: translateY(-8px); opacity: 0; }
+        @keyframes annStripIn {
+          from { transform: translateY(-6px); opacity: 0; }
           to   { transform: translateY(0);    opacity: 1; }
         }
-        @keyframes annPulse2 {
-          0%,100% { opacity: 1; }
-          50%      { opacity: 0.55; }
+        @keyframes annDot {
+          0%,100% { opacity: 1; transform: scale(1); }
+          50%      { opacity: 0.5; transform: scale(0.85); }
         }
       `}</style>
 
-      {/* Dismiss button */}
-      <button
-        onClick={e => { e.stopPropagation(); setDismissed(true); }}
-        style={{
-          position: "absolute", top: 8, right: 10,
-          background: "none", border: "none", cursor: "pointer",
-          fontSize: 14, color: "rgba(212,168,67,0.5)", lineHeight: 1, padding: 2,
-        }}
-      >✕</button>
+      {/* Live dot */}
+      <div style={{
+        width: 7, height: 7, borderRadius: "50%", background: "#ef4444", flexShrink: 0,
+        animation: "annDot 1.8s ease-in-out infinite",
+      }} />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 36px 12px 14px" }}>
-        {/* Pulsing emoji badge */}
-        <div style={{
-          width: 44, height: 44, borderRadius: 13, flexShrink: 0,
-          background: "rgba(212,168,67,0.15)", border: "1px solid rgba(212,168,67,0.3)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 22,
-        }}>
-          {latest.emoji}
-        </div>
+      {/* Emoji */}
+      <span style={{ fontSize: 17, flexShrink: 0, lineHeight: 1 }}>{visible.emoji}</span>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Header row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-            <div style={{
-              width: 6, height: 6, borderRadius: "50%", background: "#ef4444", flexShrink: 0,
-              animation: "annPulse2 1.8s ease-in-out infinite",
-            }} />
-            <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: ".08em", color: "#d4a843" }}>
-              {count > 1 ? `${count} NEW ANNOUNCEMENTS` : "NEW ANNOUNCEMENT"}
+      {/* Text */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+          <span style={{ fontSize: 9, fontWeight: 900, letterSpacing: ".08em", color: "#d4a843", textTransform: "uppercase" }}>
+            {unreadCount > 1 ? t.annStripNews.replace("{n}", String(unreadCount)) : t.annStripNew}
+          </span>
+          {visible.pinned && (
+            <span style={{ fontSize: 9, fontWeight: 800, color: "rgba(212,168,67,0.6)", letterSpacing: ".05em", textTransform: "uppercase" }}>
+              · 📌
             </span>
-          </div>
-          {/* Title */}
-          <div style={{
-            fontSize: 13, fontWeight: 800, color: "var(--text-primary)",
-            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          }}>
-            {latest.title}
-          </div>
-          {/* Body preview */}
-          {latest.body && (
-            <div style={{
-              fontSize: 11, color: "var(--text-muted)", marginTop: 1,
-              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-            }}>
-              {latest.body}
-            </div>
           )}
         </div>
-
-        {/* Arrow */}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="rgba(212,168,67,0.6)" strokeWidth="2.5" strokeLinecap="round" flexShrink={0}>
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
+        <div style={{
+          fontSize: 12, fontWeight: 800, color: "var(--text-primary)",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        }}>
+          {visible.title}
+        </div>
+        {visible.body && (
+          <div style={{
+            fontSize: 10.5, color: "var(--text-muted)", marginTop: 1,
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          }}>
+            {visible.body}
+          </div>
+        )}
       </div>
+
+      {/* Read label */}
+      <span style={{
+        fontSize: 9, fontWeight: 800, color: "rgba(212,168,67,0.65)", flexShrink: 0,
+        textTransform: "uppercase", letterSpacing: ".07em",
+      }}>
+        {t.annStripRead}
+      </span>
+
+      {/* Dismiss */}
+      <button
+        onClick={handleDismiss}
+        title="Dismiss"
+        style={{
+          background: "none", border: "none", cursor: "pointer",
+          fontSize: 12, color: "rgba(212,168,67,0.35)", lineHeight: 1,
+          padding: "3px 2px 3px 6px", flexShrink: 0,
+          transition: "color 0.15s",
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = "rgba(212,168,67,0.75)")}
+        onMouseLeave={e => (e.currentTarget.style.color = "rgba(212,168,67,0.35)")}
+      >✕</button>
     </div>
   );
 }
@@ -1636,6 +1667,9 @@ export default function Home({
 
       <div style={{ padding: "14px 16px 0" }}>
 
+        {/* ── Community Announcement Strip ── */}
+        <AnnouncementStrip announcements={unreadAnnouncements} onOpen={onShowAnnouncements} />
+
         {/* ── Date + Zmanim Card (collapsible) ── */}
         <DateZmanimCard
           today={today} hdate={hdate} zmanim={zmanim}
@@ -1825,9 +1859,6 @@ export default function Home({
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>{t.homeMoreTools}</div>
           </div>
         </div>
-
-        {/* ── Announcement Banner ── */}
-        <AnnouncementBanner announcements={unreadAnnouncements} onOpen={onShowAnnouncements} />
 
         {/* ── Celebrations + Community ── */}
         <UpcomingCelebrations onShowMembers={onShowMembers} />
