@@ -27,7 +27,18 @@ const COVER_COLORS = ["#1a3050","#2a1a40","#1a2a20","#30200a","#1a1a30","#0a2030
 
 type FormMode = "list" | "add" | "edit";
 type FileMode = "url" | "upload";
-type PanelTab = "books" | "users" | "payments" | "broadcast" | "census" | "yahrzeit" | "announce";
+type PanelTab = "books" | "users" | "payments" | "broadcast" | "census" | "yahrzeit" | "announce" | "dir";
+
+const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
+  "Rabbi":            { bg: "rgba(212,168,67,0.18)",  color: "#d4a843" },
+  "Cantor":           { bg: "rgba(212,168,67,0.12)",  color: "#c9a03a" },
+  "Community Leader": { bg: "rgba(139,92,246,0.18)",  color: "#a78bfa" },
+  "Youth Leader":     { bg: "rgba(59,130,246,0.18)",  color: "#60a5fa" },
+  "Women's Group":    { bg: "rgba(236,72,153,0.15)",  color: "#f472b6" },
+  "Student":          { bg: "rgba(74,222,128,0.12)",  color: "#4ade80" },
+  "Elder":            { bg: "rgba(255,180,50,0.15)",  color: "#fbbf24" },
+  "Member":           { bg: "rgba(100,116,139,0.15)", color: "#94a3b8" },
+};
 
 const ANN_EMOJIS = ["📢","📣","🔔","✡","🕍","🌟","📜","🙏","🎯","🫂","📌","🗓","🎉","🕎","🌿","💎","🏛","📚","🕯","✨","📖","🌾"];
 const defaultAnnForm = { emoji: "📢", title: "", body: "", pinned: false, scheduleMode: "now" as "now" | "later", scheduledAt: "" };
@@ -77,6 +88,8 @@ interface UserRow {
   updatedAt: string;
   displayName: string | null;
   congregation: string | null;
+  bio: string | null;
+  role: string | null;
   city: string | null;
   country: string | null;
   avatarEmoji: string;
@@ -147,6 +160,8 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [usersLoading, setUsersLoading] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [togglingUser, setTogglingUser] = useState<string | null>(null);
+  const [dirSearch, setDirSearch] = useState("");
+  const [expandedDir, setExpandedDir] = useState<string | null>(null);
 
   const [requests, setRequests] = useState<PremiumRequest[]>([]);
   const [actingRequest, setActingRequest] = useState<string | null>(null);
@@ -599,6 +614,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             : panelTab === "census" ? "📋 Census Review"
             : panelTab === "yahrzeit" ? "🕯️ Yahrzeit Entries"
             : panelTab === "announce" ? (annView === "compose" ? (annEditId ? "✏️ Edit Announcement" : "📢 New Announcement") : "📢 Announcements")
+            : panelTab === "dir" ? "👥 Member Directory"
             : "💳 Payments"}
         </div>
         {panelTab === "books" && mode === "list" && (
@@ -656,12 +672,17 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             {annSaving ? "Saving…" : annEditId ? "Save" : "Send"}
           </button>
         )}
+        {panelTab === "dir" && (
+          <button onClick={fetchUsers} style={{ padding: "7px 14px", borderRadius: 8, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            {usersLoading ? "…" : "↻ Refresh"}
+          </button>
+        )}
       </div>
 
       {/* ── Tab switcher ── */}
       {mode === "list" && (
         <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-          {(["books", "users", "payments", "broadcast", "census", "yahrzeit", "announce"] as PanelTab[]).map(tab => (
+          {(["books", "users", "payments", "broadcast", "census", "yahrzeit", "announce", "dir"] as PanelTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setPanelTab(tab)}
@@ -687,6 +708,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
                     )}
                   </span>
                 ) : tab === "yahrzeit" ? "🕯️"
+                : tab === "dir" ? "🔍"
                 : (
                 <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                   👥
@@ -1097,6 +1119,145 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
                 }
               </div>
             )}
+          </>
+        )}
+
+        {/* DIRECTORY PANEL */}
+        {panelTab === "dir" && mode === "list" && (
+          <>
+            {/* Search bar */}
+            <div style={{ position: "relative", marginBottom: 14 }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, pointerEvents: "none" }}>🔍</span>
+              <input
+                placeholder="Search by name, role, congregation, or city…"
+                value={dirSearch}
+                onChange={e => setDirSearch(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px 10px 34px", borderRadius: 10, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+              />
+              {dirSearch && (
+                <button onClick={() => setDirSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text-muted)", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
+              )}
+            </div>
+
+            {/* Stats bar */}
+            {!usersLoading && (
+              <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                {[
+                  { label: "Total", value: users.filter(u => u.displayName).length, color: "var(--text-muted)" },
+                  { label: "With profile", value: users.filter(u => u.displayName && u.bio).length, color: "#60a5fa" },
+                  { label: "Premium", value: users.filter(u => u.isPremium && u.displayName).length, color: "#d4a843" },
+                ].map(s => (
+                  <div key={s.label} style={{ background: "var(--elevated)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px", display: "flex", gap: 6, alignItems: "center" }}>
+                    <span style={{ fontSize: 16, fontWeight: 900, color: s.color }}>{s.value}</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {usersLoading ? (
+              <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40, fontSize: 13 }}>Loading members…</div>
+            ) : (() => {
+              const q = dirSearch.toLowerCase().trim();
+              const filtered = users.filter(u => {
+                if (!u.displayName) return false;
+                if (!q) return true;
+                return (u.displayName ?? "").toLowerCase().includes(q)
+                  || (u.role ?? "").toLowerCase().includes(q)
+                  || (u.congregation ?? "").toLowerCase().includes(q)
+                  || (u.city ?? "").toLowerCase().includes(q)
+                  || (u.country ?? "").toLowerCase().includes(q);
+              });
+              if (filtered.length === 0) return (
+                <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40, fontSize: 13 }}>
+                  {q ? `No members match "${dirSearch}"` : "No members with profiles yet."}
+                </div>
+              );
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {filtered.map(u => {
+                    const roleStyle = ROLE_COLORS[u.role ?? ""] ?? ROLE_COLORS["Member"];
+                    const isExpanded = expandedDir === u.userId;
+                    return (
+                      <div
+                        key={u.userId}
+                        style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", cursor: "pointer", transition: "border-color 0.15s" }}
+                        onClick={() => setExpandedDir(isExpanded ? null : u.userId)}
+                      >
+                        {/* Collapsed row */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
+                          {/* Avatar */}
+                          <div style={{
+                            width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
+                            background: "var(--elevated)", border: "1px solid var(--border)",
+                            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+                          }}>
+                            {u.avatarEmoji || "👤"}
+                          </div>
+                          {/* Name + tags */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {u.displayName}
+                              </span>
+                              {u.isPremium && (
+                                <span style={{ fontSize: 9, fontWeight: 800, background: "rgba(212,168,67,0.18)", color: "#d4a843", borderRadius: 6, padding: "2px 6px" }}>✦ PREMIUM</span>
+                              )}
+                              {u.role && (
+                                <span style={{ fontSize: 9, fontWeight: 800, background: roleStyle.bg, color: roleStyle.color, borderRadius: 6, padding: "2px 6px" }}>{u.role.toUpperCase()}</span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              {u.congregation && <span>🕍 {u.congregation}</span>}
+                              {u.city && <span>📍 {u.city}{u.country ? `, ${u.country}` : ""}</span>}
+                            </div>
+                          </div>
+                          <span style={{ fontSize: 12, color: "var(--text-muted)", flexShrink: 0 }}>{isExpanded ? "▲" : "▼"}</span>
+                        </div>
+
+                        {/* Expanded details */}
+                        {isExpanded && (
+                          <div style={{ borderTop: "1px solid var(--border)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                            {u.bio && (
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", marginBottom: 4 }}>BIO</div>
+                                <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{u.bio}</div>
+                              </div>
+                            )}
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px" }}>
+                              {u.congregation && (
+                                <div>
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em" }}>CONGREGATION</div>
+                                  <div style={{ fontSize: 12, color: "var(--text-primary)", marginTop: 2 }}>{u.congregation}</div>
+                                </div>
+                              )}
+                              {u.city && (
+                                <div>
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em" }}>CITY / COUNTRY</div>
+                                  <div style={{ fontSize: 12, color: "var(--text-primary)", marginTop: 2 }}>{u.city}{u.country ? `, ${u.country}` : ""}</div>
+                                </div>
+                              )}
+                              {u.role && (
+                                <div>
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em" }}>ROLE</div>
+                                  <div style={{ fontSize: 12, marginTop: 2 }}>
+                                    <span style={{ background: roleStyle.bg, color: roleStyle.color, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{u.role}</span>
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em" }}>MEMBER SINCE</div>
+                                <div style={{ fontSize: 12, color: "var(--text-primary)", marginTop: 2 }}>{new Date(u.updatedAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </>
         )}
 

@@ -419,6 +419,8 @@ router.get("/admin/users", async (req, res) => {
         up.updated_at,
         pp.display_name,
         pp.congregation,
+        pp.bio,
+        pp.role,
         pp.city,
         pp.country,
         pp.avatar_emoji
@@ -432,6 +434,8 @@ router.get("/admin/users", async (req, res) => {
       updatedAt: r.updated_at,
       displayName: r.display_name ?? null,
       congregation: r.congregation ?? null,
+      bio: r.bio ?? null,
+      role: r.role ?? null,
       city: r.city ?? null,
       country: r.country ?? null,
       avatarEmoji: r.avatar_emoji ?? "👤",
