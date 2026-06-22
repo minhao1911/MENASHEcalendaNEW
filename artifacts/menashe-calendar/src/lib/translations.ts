@@ -150,6 +150,13 @@ export interface Translations {
   txEditorGroupHome: string;
   txEditorNote: string;
 
+  /* ── Rosh Chodesh banner ── */
+  roshChodeshLabel: string;
+  roshChodeshTodayTitle: string;
+  roshChodeshTodaySub: string;
+  roshChodeshTomorrowTitle: string;
+  roshChodeshTomorrowSub: string;
+
   /* ── Shabbat banner ── */
   shabbatApproaching: string;
   shabbatShalomEn: string;
@@ -317,6 +324,12 @@ export const en: Translations = {
   txEditorGroupHome: "Home Page",
   txEditorNote: "Tip: Switch the app to Thadou Kuki mode (Settings → Appearance) to see your changes live.",
 
+  roshChodeshLabel: "ROSH CHODESH",
+  roshChodeshTodayTitle: "Chodesh Tov! 🌙",
+  roshChodeshTodaySub: "Today is Rosh Chodesh {month}",
+  roshChodeshTomorrowTitle: "Erev Rosh Chodesh",
+  roshChodeshTomorrowSub: "Tomorrow begins Rosh Chodesh {month}",
+
   shabbatApproaching: "Shabbat begins soon",
   shabbatShalomEn: "Shabbat Shalom",
   shabbatShalomTk: "Shabbat Shalom",
@@ -483,6 +496,12 @@ export const tk: Translations = {
   txEditorGroupSettings: "Siam Dan",
   txEditorGroupHome: "Inn Page",
   txEditorNote: "Tip: Thadou Kuki mode on siam la (Siam Dan → SIM BUATSAIH) nakin na siam zawng en theih.",
+
+  roshChodeshLabel: "ROSH CHODESH",
+  roshChodeshTodayTitle: "Chodesh Tov! 🌙",
+  roshChodeshTodaySub: "Ni thar chu Rosh Chodesh {month}",
+  roshChodeshTomorrowTitle: "Erev Rosh Chodesh",
+  roshChodeshTomorrowSub: "Ni thar {month} chu thleng dawn",
 
   shabbatApproaching: "Shabbat a thleng a tlem",
   shabbatShalomEn: "Shabbat Shalom",

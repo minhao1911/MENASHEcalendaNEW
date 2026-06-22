@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/react";
 import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 import { getOmerDay, buildHebrewText } from "../modals/OmerModal";
+import RoshChodeshBanner from "../components/RoshChodeshBanner";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import { getCurrentParasha, getUpcomingHolidays } from "../lib/parasha";
@@ -1641,6 +1642,9 @@ export default function Home({
 
         {/* ── Daily Spiritual Briefing ── */}
         <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
+
+        {/* ── Rosh Chodesh banner ── */}
+        <RoshChodeshBanner hdate={hdate} />
 
         {/* ── Today's Holiday ── */}
         {todayHolidays.map(name => (
