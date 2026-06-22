@@ -120,6 +120,10 @@ export interface Translations {
   homeDafYomi: string;
   homeMoreTools: string;
   homeOmer: string;
+  omerSefiratTitle: string;
+  omerDayCount: string;
+  omerDaysLeft: string;
+  omerDayLeft: string;
 
   /* ── Community FAB ── */
   fabTitle: string;
@@ -452,6 +456,10 @@ export const tk: Translations = {
   homeDafYomi: "DAF YOMI",
   homeMoreTools: "Thil Pawimawh Zawk",
   homeOmer: "OMER",
+  omerSefiratTitle: "Sefirat HaOmer",
+  omerDayCount: "{day} ni a ni, 49 chhung",
+  omerDaysLeft: "Shavuot hma {days} ni",
+  omerDayLeft: "Shavuot hma {days} ni",
 
   fabTitle: "Mipil Inn",
   fabAnnouncements: "Thupek",

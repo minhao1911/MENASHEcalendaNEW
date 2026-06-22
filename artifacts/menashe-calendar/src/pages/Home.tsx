@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/react";
 import { HebrewCalendar, HDate, flags } from "@hebcal/core";
-import { getOmerDay } from "../modals/OmerModal";
+import { getOmerDay, buildHebrewText } from "../modals/OmerModal";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import { getCurrentParasha, getUpcomingHolidays } from "../lib/parasha";
@@ -331,7 +331,7 @@ function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
               />
             </svg>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#d4a843", whiteSpace: "nowrap" }}>
-              Omer {omerDay}/49
+              {t.homeOmer} {omerDay}/49
             </span>
           </button>
         )}
@@ -1673,12 +1673,25 @@ export default function Home({
               </div>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                 <span className="tag tag-gold" style={{ fontSize: 10 }}>{t.homeOmer}</span>
-                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Day {omerDay} of 49</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                  {t.omerDayCount.replace("{day}", String(omerDay))}
+                </span>
               </div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 1 }}>Sefirat HaOmer</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{49 - omerDay} day{49 - omerDay !== 1 ? "s" : ""} until Shavuot</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 3 }}>
+                {t.omerSefiratTitle}
+              </div>
+              <div style={{
+                fontFamily: "'Noto Serif Hebrew', serif",
+                fontSize: 13, color: "var(--gold)", marginBottom: 4,
+                lineHeight: 1.4, direction: "rtl",
+              }}>
+                {buildHebrewText(omerDay!)}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                {(49 - omerDay! === 1 ? t.omerDayLeft : t.omerDaysLeft).replace("{days}", String(49 - omerDay!))}
+              </div>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
           </div>
