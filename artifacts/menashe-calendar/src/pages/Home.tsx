@@ -630,7 +630,34 @@ interface CelebEntry {
   type: "birthday" | "aliyah"; days: number;
 }
 
+function CountdownChip({ days, t }: { days: number; t: { celebToday: string; celebTomorrow: string; celebInDays: string } }) {
+  if (days === 0) return (
+    <span style={{
+      fontSize: 10, fontWeight: 900, padding: "4px 10px", borderRadius: 99,
+      background: "linear-gradient(90deg, rgba(74,222,128,0.25), rgba(74,222,128,0.12))",
+      border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80",
+      letterSpacing: ".04em", whiteSpace: "nowrap",
+      animation: "celebPulse 1.8s ease-in-out infinite",
+    }}>{t.celebToday}</span>
+  );
+  if (days === 1) return (
+    <span style={{
+      fontSize: 10, fontWeight: 900, padding: "4px 10px", borderRadius: 99,
+      background: "rgba(251,191,36,0.13)", border: "1px solid rgba(251,191,36,0.35)",
+      color: "#fbbf24", letterSpacing: ".04em", whiteSpace: "nowrap",
+    }}>{t.celebTomorrow}</span>
+  );
+  return (
+    <span style={{
+      fontSize: 10, fontWeight: 800, padding: "4px 10px", borderRadius: 99,
+      background: "rgba(148,163,184,0.1)", border: "1px solid rgba(148,163,184,0.2)",
+      color: "var(--text-muted)", letterSpacing: ".04em", whiteSpace: "nowrap",
+    }}>{t.celebInDays.replace("{n}", String(days))}</span>
+  );
+}
+
 function UpcomingCelebrations({ onShowMembers }: { onShowMembers: () => void }) {
+  const { t } = useLanguage();
   const [celebs, setCelebs] = useState<CelebEntry[]>([]);
 
   useEffect(() => {
@@ -662,19 +689,49 @@ function UpcomingCelebrations({ onShowMembers }: { onShowMembers: () => void }) 
   if (celebs.length === 0) return null;
 
   return (
-    <div style={{ marginBottom: 14, borderRadius: 16, overflow: "hidden", border: "1px solid rgba(212,168,67,0.25)", background: "linear-gradient(135deg, rgba(26,16,0,0.9), rgba(10,10,20,0.95))" }}>
+    <div style={{
+      marginBottom: 14, borderRadius: 16, overflow: "hidden",
+      border: "1px solid rgba(212,168,67,0.22)",
+      background: "linear-gradient(135deg, rgba(26,16,0,0.88), rgba(10,10,20,0.94))",
+    }}>
+      <style>{`
+        @keyframes celebPulse {
+          0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+          50%      { box-shadow: 0 0 0 4px rgba(74,222,128,0.15); }
+        }
+        @keyframes celebRowIn {
+          from { opacity: 0; transform: translateX(-8px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
+
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 14px 8px", borderBottom: "1px solid rgba(212,168,67,0.12)" }}>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "11px 14px 9px",
+        borderBottom: "1px solid rgba(212,168,67,0.1)",
+      }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <span style={{ fontSize: 16 }}>🎉</span>
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".07em", color: "#d4a843" }}>UPCOMING CELEBRATIONS</span>
+          <span style={{ fontSize: 15 }}>🎉</span>
+          <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: ".09em", color: "#d4a843", textTransform: "uppercase" }}>
+            {t.celebTitle}
+          </span>
+          <span style={{
+            fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 99,
+            background: "rgba(212,168,67,0.15)", color: "#d4a843", border: "1px solid rgba(212,168,67,0.25)",
+          }}>{celebs.length}</span>
         </div>
-        <button onClick={onShowMembers} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "rgba(212,168,67,0.55)", fontWeight: 700 }}>Directory →</button>
+        <button
+          onClick={onShowMembers}
+          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "rgba(212,168,67,0.5)", fontWeight: 700 }}
+        >
+          {t.celebDirLink}
+        </button>
       </div>
 
-      {/* Cards */}
-      <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-        {celebs.map(c => {
+      {/* Celebration rows */}
+      <div style={{ padding: "8px 12px 10px", display: "flex", flexDirection: "column", gap: 7 }}>
+        {celebs.map((c, idx) => {
           const isBday = c.type === "birthday";
           const firstName = c.name.split(" ")[0];
           const msg = isBday
@@ -686,37 +743,67 @@ function UpcomingCelebrations({ onShowMembers }: { onShowMembers: () => void }) 
           const mailLink = c.email
             ? `mailto:${c.email}?subject=${encodeURIComponent(isBday ? `Happy Birthday ${firstName}! 🎂` : `Happy Aliyah Anniversary ${firstName}! ✈️`)}&body=${encodeURIComponent(msg)}`
             : null;
+          const accentColor = isBday ? "#d4a843" : "#60a5fa";
+          const accentBg = isBday ? "rgba(212,168,67,0.09)" : "rgba(59,130,246,0.09)";
+          const accentBorder = isBday ? "rgba(212,168,67,0.2)" : "rgba(59,130,246,0.2)";
 
           return (
-            <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: isBday ? "rgba(212,168,67,0.07)" : "rgba(59,130,246,0.07)", border: isBday ? "1px solid rgba(212,168,67,0.18)" : "1px solid rgba(59,130,246,0.18)" }}>
-              <div style={{ fontSize: 26, flexShrink: 0, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", background: isBday ? "rgba(212,168,67,0.12)" : "rgba(59,130,246,0.12)", borderRadius: 11 }}>
+            <div
+              key={c.id}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "9px 10px", borderRadius: 12,
+                background: accentBg, border: `1px solid ${accentBorder}`,
+                animation: `celebRowIn 0.3s ${idx * 0.06}s cubic-bezier(0.34,1.2,0.64,1) both`,
+              }}
+            >
+              {/* Icon */}
+              <div style={{
+                width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+                background: isBday ? "rgba(212,168,67,0.14)" : "rgba(59,130,246,0.14)",
+                border: `1px solid ${accentBorder}`,
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19,
+              }}>
                 {isBday ? "🎂" : "✈️"}
               </div>
+
+              {/* Name + type */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", marginBottom: 1 }}>{c.name}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: isBday ? "#d4a843" : "#60a5fa" }}>
-                  {isBday ? "Birthday" : "Aliyah Anniversary"} —{" "}
-                  {c.days === 0 ? "🎉 Today!" : `in ${c.days} day${c.days !== 1 ? "s" : ""}`}
+                <div style={{
+                  fontSize: 12, fontWeight: 800, color: "var(--text-primary)",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3,
+                }}>
+                  {c.name}
+                </div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: accentColor, letterSpacing: ".03em" }}>
+                  {isBday ? t.celebTypeBirthday : t.celebTypeAliyah}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                {waLink ? (
-                  <a href={waLink} target="_blank" rel="noreferrer"
-                    title="Send WhatsApp greeting"
-                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "rgba(37,211,102,0.15)", border: "1px solid rgba(37,211,102,0.3)", color: "#25d366", fontSize: 18, textDecoration: "none" }}>
+
+              {/* Countdown chip */}
+              <CountdownChip days={c.days} t={t} />
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: 5, flexShrink: 0, marginLeft: 2 }}>
+                {waLink && (
+                  <a href={waLink} target="_blank" rel="noreferrer" title="Send WhatsApp greeting"
+                    style={{
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      width: 32, height: 32, borderRadius: 9,
+                      background: "rgba(37,211,102,0.13)", border: "1px solid rgba(37,211,102,0.28)",
+                      fontSize: 16, textDecoration: "none",
+                    }}>
                     📱
                   </a>
-                ) : mailLink ? (
-                  <a href={mailLink}
-                    title="Send email greeting"
-                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)", color: "#d4a843", fontSize: 18, textDecoration: "none" }}>
-                    ✉️
-                  </a>
-                ) : null}
-                {waLink && mailLink && (
-                  <a href={mailLink}
-                    title="Send email greeting"
-                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)", color: "#d4a843", fontSize: 18, textDecoration: "none" }}>
+                )}
+                {mailLink && (
+                  <a href={mailLink} title="Send email greeting"
+                    style={{
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      width: 32, height: 32, borderRadius: 9,
+                      background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.22)",
+                      fontSize: 15, textDecoration: "none",
+                    }}>
                     ✉️
                   </a>
                 )}

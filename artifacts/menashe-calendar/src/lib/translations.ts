@@ -120,6 +120,13 @@ export interface Translations {
   homeDafYomi: string;
   homeMoreTools: string;
   annStripNew: string;
+  celebTitle: string;
+  celebDirLink: string;
+  celebTypeBirthday: string;
+  celebTypeAliyah: string;
+  celebToday: string;
+  celebTomorrow: string;
+  celebInDays: string;
   annStripNews: string;
   annStripRead: string;
   shabbatBarTitle: string;
@@ -331,6 +338,13 @@ export const en: Translations = {
   homeDafYomi: "DAF YOMI",
   homeMoreTools: "More Tools",
   annStripNew: "New Announcement",
+  celebTitle: "Upcoming Celebrations",
+  celebDirLink: "See All →",
+  celebTypeBirthday: "Birthday 🎂",
+  celebTypeAliyah: "Aliyah Anniversary ✈️",
+  celebToday: "Today 🎉",
+  celebTomorrow: "Tomorrow",
+  celebInDays: "{n}d",
   annStripNews: "{n} New Announcements",
   annStripRead: "Read",
   shabbatBarTitle: "Candle Lighting",
@@ -529,6 +543,13 @@ export const tk: Translations = {
   homeDafYomi: "DAF YOMI",
   homeMoreTools: "Thil Pawimawh Zawk",
   annStripNew: "Thu Thar Dawng",
+  celebTitle: "Ni Lawmawm Hla",
+  celebDirLink: "Zawng Ta →",
+  celebTypeBirthday: "Nirualna 🎂",
+  celebTypeAliyah: "Aliyah Ni Thleng ✈️",
+  celebToday: "Nihin 🎉",
+  celebTomorrow: "Zanthla",
+  celebInDays: "{n}ni",
   annStripNews: "Thu Thar {n} Dawng",
   annStripRead: "Chhiar",
   shabbatBarTitle: "Kerhi Hun",
