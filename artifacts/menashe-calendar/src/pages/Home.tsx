@@ -1318,7 +1318,7 @@ interface HomeProps {
   profileName?: string | null;
 }
 
-// ── Week Strip ───────────────────────────────────────────────────────────────
+// ── Week Strip (mini 7-day overview) ─────────────────────────────────────────
 function WeekStrip({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { t } = useLanguage();
 
@@ -1351,7 +1351,7 @@ function WeekStrip({ onNavigate }: { onNavigate: (page: string) => void }) {
       mask: flags.ROSH_CHODESH | flags.CHAG | flags.MODERN_HOLIDAY,
     });
 
-    return { date, hd, isToday, isShabbat, isFriday, hasEvent: events.length > 0 };
+    return { date, hd, isToday, isShabbat, hasEvent: events.length > 0 };
   });
 
   return (

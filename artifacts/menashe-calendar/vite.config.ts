@@ -27,6 +27,19 @@ export default defineConfig({
     react(),
     tailwindcss({ optimize: false }),
     runtimeErrorOverlay(),
+    // Force full-page reload for large files where HMR corrupts React state.
+    {
+      name: "full-reload-large-modules",
+      handleHotUpdate({ file, server }) {
+        if (
+          file.includes("Home.tsx") ||
+          file.includes("translations.ts")
+        ) {
+          server.ws.send({ type: "full-reload" });
+          return [];
+        }
+      },
+    },
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
