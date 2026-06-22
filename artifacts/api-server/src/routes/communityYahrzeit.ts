@@ -142,4 +142,56 @@ router.post("/yahrzeit/:id/dedicate", requireAuth, async (req, res) => {
   }
 });
 
+/* ── Admin: GET /admin/yahrzeit — all entries ── */
+router.get("/admin/yahrzeit", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT cy.*, COUNT(cyl.id) FILTER (WHERE cyl.active_until > NOW()) AS active_learners
+      FROM community_yahrzeit cy
+      LEFT JOIN community_yahrzeit_learners cyl ON cyl.entry_id = cy.id
+      GROUP BY cy.id
+      ORDER BY cy.created_at DESC
+    `);
+    return res.json(rows.map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      deceasedName: r.deceased_name,
+      hebrewDay: r.hebrew_day,
+      hebrewMonth: r.hebrew_month,
+      displayDate: r.display_date,
+      passingYear: r.passing_year,
+      message: r.message,
+      candleLit: r.candle_lit,
+      candleLitAt: r.candle_lit_at,
+      donorDisplayName: r.donor_display_name,
+      createdAt: r.created_at,
+      activeLearners: Number(r.active_learners),
+    })));
+  } finally {
+    client.release();
+  }
+});
+
+/* ── Admin: DELETE /admin/yahrzeit/:id — remove any entry ── */
+router.delete("/admin/yahrzeit/:id", async (req, res) => {
+  const pin = req.headers["x-admin-pin"];
+  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query("DELETE FROM community_yahrzeit_learners WHERE entry_id = $1", [id]);
+    await client.query("DELETE FROM community_yahrzeit WHERE id = $1", [id]);
+    return res.json({ ok: true });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;

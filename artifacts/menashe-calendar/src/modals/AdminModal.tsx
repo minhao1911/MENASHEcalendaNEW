@@ -20,7 +20,46 @@ const COVER_COLORS = ["#1a3050","#2a1a40","#1a2a20","#30200a","#1a1a30","#0a2030
 
 type FormMode = "list" | "add" | "edit";
 type FileMode = "url" | "upload";
-type PanelTab = "books" | "users" | "payments" | "broadcast";
+type PanelTab = "books" | "users" | "payments" | "broadcast" | "census" | "yahrzeit";
+
+interface CensusSubmission {
+  id: string;
+  branch: { id: string; name: string; cityName: string; adminName?: string; established?: string; families: unknown[] };
+  submittedAt: string;
+  status: "pending" | "approved" | "rejected";
+  reviewNote?: string;
+  reviewedAt?: string;
+}
+
+interface MemberSubmission {
+  id: string;
+  branchId: string;
+  branchName: string;
+  submitterName: string;
+  submitterNote?: string;
+  headCensus: Record<string, unknown>;
+  members: unknown[];
+  status: "pending" | "approved" | "rejected";
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+}
+
+interface YahrzeitEntry {
+  id: string;
+  userId: string;
+  deceasedName: string;
+  hebrewDay: number;
+  hebrewMonth: number;
+  displayDate: string;
+  passingYear?: number;
+  message?: string;
+  candleLit: boolean;
+  candleLitAt?: string;
+  donorDisplayName: string;
+  createdAt: string;
+  activeLearners: number;
+}
 
 interface UserRow {
   userId: string;
@@ -120,6 +159,16 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [scheduleResult, setScheduleResult] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
 
+  const [censusSubmissions, setCensusSubmissions] = useState<CensusSubmission[]>([]);
+  const [memberSubmissions, setMemberSubmissions] = useState<MemberSubmission[]>([]);
+  const [censusLoading, setCensusLoading] = useState(false);
+  const [reviewingCensus, setReviewingCensus] = useState<string | null>(null);
+
+  const [yahrzeitEntries, setYahrzeitEntries] = useState<YahrzeitEntry[]>([]);
+  const [yahrzeitLoading, setYahrzeitLoading] = useState(false);
+  const [deletingYahrzeit, setDeletingYahrzeit] = useState<string | null>(null);
+  const [yahrzeitSearch, setYahrzeitSearch] = useState("");
+
   const { uploadFile, isUploading, progress } = useUpload({
     onSuccess: (response) => {
       const servingUrl = `/api/storage${response.objectPath}`;
@@ -207,8 +256,55 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     finally { setCancellingId(null); }
   }
 
+  async function fetchCensus() {
+    setCensusLoading(true);
+    try {
+      const [subRes, memRes] = await Promise.all([
+        fetch(`${API_BASE}/census/submissions`),
+        fetch(`${API_BASE}/census/member-submissions`),
+      ]);
+      if (subRes.ok) setCensusSubmissions(await subRes.json());
+      if (memRes.ok) setMemberSubmissions(await memRes.json());
+    } finally { setCensusLoading(false); }
+  }
+
+  async function reviewCensus(id: string, type: "branch" | "member", status: "approved" | "rejected", reviewNote?: string) {
+    setReviewingCensus(id);
+    try {
+      const endpoint = type === "branch"
+        ? `${API_BASE}/census/submissions/${id}`
+        : `${API_BASE}/census/member-submissions/${id}`;
+      await fetch(endpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, reviewNote: reviewNote || undefined }),
+      });
+      await fetchCensus();
+    } finally { setReviewingCensus(null); }
+  }
+
+  async function fetchYahrzeit() {
+    setYahrzeitLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/yahrzeit`, { headers: { "x-admin-pin": ADMIN_PIN } });
+      if (res.ok) setYahrzeitEntries(await res.json());
+    } finally { setYahrzeitLoading(false); }
+  }
+
+  async function deleteYahrzeit(id: string) {
+    if (!confirm("Delete this yahrzeit entry? This cannot be undone.")) return;
+    setDeletingYahrzeit(id);
+    try {
+      await fetch(`${API_BASE}/admin/yahrzeit/${id}`, {
+        method: "DELETE",
+        headers: { "x-admin-pin": ADMIN_PIN },
+      });
+      await fetchYahrzeit();
+    } finally { setDeletingYahrzeit(null); }
+  }
+
   function submitPin() {
-    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); fetchSubCount(); fetchScheduled(); }
+    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); fetchSubCount(); fetchScheduled(); fetchCensus(); fetchYahrzeit(); }
     else { setPinError("Incorrect PIN"); setPin(""); }
   }
 
@@ -412,6 +508,8 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             ? (mode === "list" ? "📚 Library Admin" : mode === "add" ? "➕ Add Book" : "✏️ Edit Book")
             : panelTab === "users" ? "👥 Premium Users"
             : panelTab === "broadcast" ? "📣 Broadcast Notification"
+            : panelTab === "census" ? "📋 Census Review"
+            : panelTab === "yahrzeit" ? "🕯️ Yahrzeit Entries"
             : "💳 Payments"}
         </div>
         {panelTab === "books" && mode === "list" && (
@@ -449,12 +547,28 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
             {paymentsLoading ? "…" : "↻ Refresh"}
           </button>
         )}
+        {panelTab === "census" && (
+          <button
+            onClick={fetchCensus}
+            style={{ padding: "7px 14px", borderRadius: 8, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+          >
+            {censusLoading ? "…" : "↻ Refresh"}
+          </button>
+        )}
+        {panelTab === "yahrzeit" && (
+          <button
+            onClick={fetchYahrzeit}
+            style={{ padding: "7px 14px", borderRadius: 8, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+          >
+            {yahrzeitLoading ? "…" : "↻ Refresh"}
+          </button>
+        )}
       </div>
 
       {/* ── Tab switcher ── */}
       {mode === "list" && (
         <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-          {(["books", "users", "payments", "broadcast"] as PanelTab[]).map(tab => (
+          {(["books", "users", "payments", "broadcast", "census", "yahrzeit"] as PanelTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setPanelTab(tab)}
@@ -466,12 +580,22 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
                 transition: "all 0.15s",
               }}
             >
-              {tab === "books" ? "📚 Books"
-                : tab === "payments" ? "💳 Payments"
-                : tab === "broadcast" ? "📣 Broadcast"
+              {tab === "books" ? "📚"
+                : tab === "payments" ? "💳"
+                : tab === "broadcast" ? "📣"
+                : tab === "census" ? (
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+                    📋
+                    {censusSubmissions.filter(s => s.status === "pending").length + memberSubmissions.filter(s => s.status === "pending").length > 0 && (
+                      <span style={{ background: "#f59e0b", color: "#1a0f00", borderRadius: 8, fontSize: 9, fontWeight: 900, padding: "1px 4px", lineHeight: 1.4 }}>
+                        {censusSubmissions.filter(s => s.status === "pending").length + memberSubmissions.filter(s => s.status === "pending").length}
+                      </span>
+                    )}
+                  </span>
+                ) : tab === "yahrzeit" ? "🕯️"
                 : (
                 <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                  👥 Users
+                  👥
                   {requests.length > 0 && (
                     <span style={{
                       background: "#ef4444", color: "#fff", borderRadius: 8,
@@ -488,6 +612,209 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       )}
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+        {/* CENSUS PANEL */}
+        {panelTab === "census" && mode === "list" && (
+          <>
+            {censusLoading ? (
+              <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 13 }}>Loading…</div>
+            ) : (
+              <>
+                {/* Branch submissions */}
+                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.07em", marginBottom: 8 }}>
+                  BRANCH SUBMISSIONS ({censusSubmissions.length})
+                </div>
+                {censusSubmissions.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No branch submissions yet</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+                    {censusSubmissions.map(sub => {
+                      const isPending = sub.status === "pending";
+                      const reviewing = reviewingCensus === sub.id;
+                      const statusColor = sub.status === "approved" ? "#4ade80" : sub.status === "rejected" ? "#ef4444" : "#f59e0b";
+                      return (
+                        <div key={sub.id} style={{
+                          borderRadius: 12, background: "var(--card)", border: `1px solid ${isPending ? "rgba(245,158,11,0.3)" : "var(--border)"}`,
+                          padding: "12px 14px",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+                            <div style={{ fontSize: 22, lineHeight: 1 }}>🏛️</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{sub.branch.name}</div>
+                              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                                {sub.branch.cityName}{sub.branch.adminName ? ` · Admin: ${sub.branch.adminName}` : ""}
+                                {" · "}{sub.branch.families.length} families
+                              </div>
+                            </div>
+                            <span style={{
+                              fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 6,
+                              background: `${statusColor}22`, color: statusColor,
+                            }}>
+                              {sub.status.toUpperCase()}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: isPending ? 10 : 0 }}>
+                            Submitted {new Date(sub.submittedAt).toLocaleDateString()}
+                            {sub.reviewNote && <span style={{ marginLeft: 8, color: "var(--text-muted)", fontStyle: "italic" }}>· "{sub.reviewNote}"</span>}
+                          </div>
+                          {isPending && (
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button
+                                onClick={() => reviewCensus(sub.id, "branch", "rejected")}
+                                disabled={reviewing}
+                                style={{ flex: 1, padding: "8px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: reviewing ? "default" : "pointer", opacity: reviewing ? 0.5 : 1 }}
+                              >
+                                ✗ Reject
+                              </button>
+                              <button
+                                onClick={() => reviewCensus(sub.id, "branch", "approved")}
+                                disabled={reviewing}
+                                style={{ flex: 2, padding: "8px", borderRadius: 8, border: "none", background: reviewing ? "rgba(74,222,128,0.3)" : "linear-gradient(90deg, #166534, #4ade80)", color: "#fff", fontSize: 12, fontWeight: 800, cursor: reviewing ? "default" : "pointer" }}
+                              >
+                                ✓ Approve
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Member submissions */}
+                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.07em", marginBottom: 8, marginTop: 4 }}>
+                  FAMILY CENSUS SUBMISSIONS ({memberSubmissions.length})
+                </div>
+                {memberSubmissions.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No family submissions yet</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {memberSubmissions.map(sub => {
+                      const isPending = sub.status === "pending";
+                      const reviewing = reviewingCensus === sub.id;
+                      const statusColor = sub.status === "approved" ? "#4ade80" : sub.status === "rejected" ? "#ef4444" : "#f59e0b";
+                      const head = sub.headCensus as Record<string, string>;
+                      return (
+                        <div key={sub.id} style={{
+                          borderRadius: 12, background: "var(--card)", border: `1px solid ${isPending ? "rgba(245,158,11,0.3)" : "var(--border)"}`,
+                          padding: "12px 14px",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 6 }}>
+                            <div style={{ fontSize: 22, lineHeight: 1 }}>👨‍👩‍👧‍👦</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                                {head.namePerPassport || sub.submitterName}
+                              </div>
+                              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                                {sub.branchName}{" · "}{sub.members.length} members
+                              </div>
+                            </div>
+                            <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 6, background: `${statusColor}22`, color: statusColor }}>
+                              {sub.status.toUpperCase()}
+                            </span>
+                          </div>
+                          {sub.submitterNote && (
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 8, padding: "5px 8px", background: "rgba(255,255,255,0.04)", borderRadius: 7 }}>
+                              "{sub.submitterNote}"
+                            </div>
+                          )}
+                          <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: isPending ? 10 : 0 }}>
+                            Submitted {new Date(sub.submittedAt).toLocaleDateString()}
+                          </div>
+                          {isPending && (
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button
+                                onClick={() => reviewCensus(sub.id, "member", "rejected")}
+                                disabled={reviewing}
+                                style={{ flex: 1, padding: "8px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: reviewing ? "default" : "pointer", opacity: reviewing ? 0.5 : 1 }}
+                              >
+                                ✗ Reject
+                              </button>
+                              <button
+                                onClick={() => reviewCensus(sub.id, "member", "approved")}
+                                disabled={reviewing}
+                                style={{ flex: 2, padding: "8px", borderRadius: 8, border: "none", background: reviewing ? "rgba(74,222,128,0.3)" : "linear-gradient(90deg, #166534, #4ade80)", color: "#fff", fontSize: 12, fontWeight: 800, cursor: reviewing ? "default" : "pointer" }}
+                              >
+                                ✓ Approve
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* YAHRZEIT PANEL */}
+        {panelTab === "yahrzeit" && mode === "list" && (
+          <>
+            {/* Search */}
+            <div style={{ marginBottom: 12 }}>
+              <input
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                placeholder="Search by name or donor…"
+                value={yahrzeitSearch}
+                onChange={e => setYahrzeitSearch(e.target.value)}
+              />
+            </div>
+            {yahrzeitLoading ? (
+              <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 13 }}>Loading…</div>
+            ) : yahrzeitEntries.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 13 }}>No yahrzeit entries yet</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {yahrzeitEntries
+                  .filter(e => !yahrzeitSearch || e.deceasedName.toLowerCase().includes(yahrzeitSearch.toLowerCase()) || e.donorDisplayName?.toLowerCase().includes(yahrzeitSearch.toLowerCase()))
+                  .map(entry => {
+                    const deleting = deletingYahrzeit === entry.id;
+                    return (
+                      <div key={entry.id} style={{ borderRadius: 12, background: "var(--card)", border: "1px solid var(--border)", padding: "12px 14px" }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                          <div style={{ fontSize: 22, lineHeight: 1 }}>{entry.candleLit ? "🕯️" : "🌑"}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>
+                              {entry.deceasedName}
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: entry.message ? 4 : 0 }}>
+                              {entry.displayDate}{entry.passingYear ? ` · ${entry.passingYear}` : ""}
+                              {" · "} by {entry.donorDisplayName || "Anonymous"}
+                            </div>
+                            {entry.message && (
+                              <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 4 }}>
+                                "{entry.message}"
+                              </div>
+                            )}
+                            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                                {new Date(entry.createdAt).toLocaleDateString()}
+                              </span>
+                              {entry.activeLearners > 0 && (
+                                <span style={{ fontSize: 10, background: "rgba(212,168,67,0.15)", color: "#d4a843", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
+                                  {entry.activeLearners} learning now
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => deleteYahrzeit(entry.id)}
+                            disabled={deleting}
+                            style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: deleting ? "default" : "pointer", opacity: deleting ? 0.5 : 1, flexShrink: 0 }}
+                          >
+                            {deleting ? "…" : "Delete"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            )}
+          </>
+        )}
+
         {/* USERS PANEL */}
         {panelTab === "users" && mode === "list" && (
           <>
