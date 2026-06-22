@@ -57,6 +57,7 @@ import CommunityYahrzeitModal from "./modals/CommunityYahrzeitModal";
 import MoreToolsModal from "./pages/MoreToolsModal";
 import NotificationDrawer from "./components/NotificationDrawer";
 import InstallPrompt from "./components/InstallPrompt";
+import ShabbatBanner from "./components/ShabbatBanner";
 import WhatsNewModal, { APP_VERSION, VERSION_KEY } from "./modals/WhatsNewModal";
 
 import { LOCATIONS, Location } from "./lib/locations";
@@ -820,6 +821,7 @@ function AppShell() {
           )}
         </div>
       </div>
+      <ShabbatBanner location={location} />
       <InstallPrompt />
     </LanguageProvider>
   );

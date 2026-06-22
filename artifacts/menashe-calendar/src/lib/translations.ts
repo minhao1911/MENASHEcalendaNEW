@@ -146,6 +146,14 @@ export interface Translations {
   txEditorGroupHome: string;
   txEditorNote: string;
 
+  /* ── Shabbat banner ── */
+  shabbatApproaching: string;
+  shabbatShalomEn: string;
+  shabbatShalomTk: string;
+  shabbatCandleLighting: string;
+  shabbatHavdalah: string;
+  shabbatMinutes: string;
+
   /* ── Settings: What's New entry ── */
   settingsWhatsNew: string;
   settingsWhatsNewSub: string;
@@ -305,6 +313,13 @@ export const en: Translations = {
   txEditorGroupHome: "Home Page",
   txEditorNote: "Tip: Switch the app to Thadou Kuki mode (Settings → Appearance) to see your changes live.",
 
+  shabbatApproaching: "Shabbat begins soon",
+  shabbatShalomEn: "Shabbat Shalom",
+  shabbatShalomTk: "Shabbat Shalom",
+  shabbatCandleLighting: "Candle lighting",
+  shabbatHavdalah: "Havdalah",
+  shabbatMinutes: "min away",
+
   settingsWhatsNew: "Release Notes",
   settingsWhatsNewSub: "See what changed in this version",
 
@@ -460,6 +475,13 @@ export const tk: Translations = {
   txEditorGroupSettings: "Siam Dan",
   txEditorGroupHome: "Inn Page",
   txEditorNote: "Tip: Thadou Kuki mode on siam la (Siam Dan → SIM BUATSAIH) nakin na siam zawng en theih.",
+
+  shabbatApproaching: "Shabbat a thleng a tlem",
+  shabbatShalomEn: "Shabbat Shalom",
+  shabbatShalomTk: "Shabbat Shalom — Ni Thianghlim",
+  shabbatCandleLighting: "Kerhi hun",
+  shabbatHavdalah: "Havdalah",
+  shabbatMinutes: "min chhung",
 
   settingsWhatsNew: "Release Notes",
   settingsWhatsNewSub: "Version thar-ah thil thar zawng en",
