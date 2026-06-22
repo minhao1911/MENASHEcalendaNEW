@@ -18,6 +18,7 @@ interface SettingsPageProps {
   onCensus: () => void;
   onProfile: () => void;
   onSignOut: () => void;
+  onWhatsNew: () => void;
   profileName?: string;
   profileRole?: string;
   notifPermission: NotificationPermission;
@@ -37,7 +38,7 @@ interface SettingsPageProps {
 export default function SettingsPage({
   theme, location,
   onToggleTheme, onSetTheme, onLocationClick, onPremium, onTahara, onYartzeit, onBirthday, onCommunity, onCensus,
-  onProfile, onSignOut, profileName, profileRole,
+  onProfile, onSignOut, onWhatsNew, profileName, profileRole,
   notifPermission, notifPrefs, leadTime, onUpdateNotifPref, onUpdateLeadTime,
   pushSubscribed, pushSupported, pushLoading, pushError, onSubscribePush, onUnsubscribePush, onTestPush,
 }: SettingsPageProps) {
@@ -684,6 +685,24 @@ export default function SettingsPage({
         {/* Account */}
         <div className="section-header">{t.settingsAccount}</div>
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
+          {/* Release Notes row */}
+          <div
+            style={{
+              padding: "14px 16px",
+              display: "flex", alignItems: "center", gap: 12,
+              cursor: "pointer",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+            }}
+            onClick={onWhatsNew}
+          >
+            <span style={{ fontSize: 20, lineHeight: 1 }}>✨</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{t.settingsWhatsNew}</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>{t.settingsWhatsNewSub}</div>
+            </div>
+            <span style={{ color: "#d4a843", fontSize: 18 }}>›</span>
+          </div>
+
           <div style={{ padding: "14px 16px" }} onClick={onSignOut}>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#ef4444", cursor: "pointer" }}>{t.settingsSignOut}</div>
           </div>
@@ -691,7 +710,7 @@ export default function SettingsPage({
 
         {/* Version */}
         <div style={{ textAlign: "center", padding: "8px 0 16px", opacity: 0.4 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.settingsVersion} · v1.0.0</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.settingsVersion} · v1.2</div>
           <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 14, color: "var(--gold)", marginTop: 4 }}>ברוך הבא</div>
         </div>
       </div>

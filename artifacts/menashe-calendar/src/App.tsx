@@ -586,6 +586,7 @@ function AppShell() {
             onCommunity={() => setModal("community")}
             onCensus={() => setModal("census")}
             onProfile={() => setModal("profile")}
+            onWhatsNew={() => setModal("whats-new")}
             onSignOut={() => signOut({ redirectUrl: `${basePath}/` })}
             profileName={publicProfile?.displayName}
             profileRole={publicProfile?.role !== "Member" ? publicProfile?.role : undefined}

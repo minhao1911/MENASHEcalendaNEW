@@ -146,6 +146,10 @@ export interface Translations {
   txEditorGroupHome: string;
   txEditorNote: string;
 
+  /* ── Settings: What's New entry ── */
+  settingsWhatsNew: string;
+  settingsWhatsNewSub: string;
+
   /* ── What's New ── */
   whatsNewTitle: string;
   whatsNewSubtitle: string;
@@ -301,6 +305,9 @@ export const en: Translations = {
   txEditorGroupHome: "Home Page",
   txEditorNote: "Tip: Switch the app to Thadou Kuki mode (Settings → Appearance) to see your changes live.",
 
+  settingsWhatsNew: "Release Notes",
+  settingsWhatsNewSub: "See what changed in this version",
+
   whatsNewTitle: "What's New",
   whatsNewSubtitle: "Highlights from the latest update",
   whatsNewGotIt: "Got it — let's go!",
@@ -453,6 +460,9 @@ export const tk: Translations = {
   txEditorGroupSettings: "Siam Dan",
   txEditorGroupHome: "Inn Page",
   txEditorNote: "Tip: Thadou Kuki mode on siam la (Siam Dan → SIM BUATSAIH) nakin na siam zawng en theih.",
+
+  settingsWhatsNew: "Release Notes",
+  settingsWhatsNewSub: "Version thar-ah thil thar zawng en",
 
   whatsNewTitle: "Thar Zawng Zawng",
   whatsNewSubtitle: "Update thar ber-ah thil thar zawng",
