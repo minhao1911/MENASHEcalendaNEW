@@ -14,7 +14,7 @@ const HOLIDAY_FLAG_LABELS: Record<number, string> = {
   [flags.ROSH_CHODESH]:   "Rosh Chodesh",
   [flags.MINOR_FAST]:     "Minor Fast",
   [flags.MAJOR_FAST]:     "Major Fast",
-  [flags.PARASHA_HASHAVUA]: "Torah Portion",
+  [flags.PARSHA_HASHAVUA]: "Torah Portion",
   [flags.OMER_COUNT]:     "Sefirat HaOmer",
   [flags.YOM_TOV_ENDS]:   "Yom Tov Ends",
   [flags.CHANUKAH_CANDLES]: "Chanukah",
@@ -33,7 +33,7 @@ function flagColor(flag: number): { color: string; bg: string } {
   if (flag & flags.MAJOR_FAST)       return { color: "#60a5fa", bg: "rgba(96,165,250,0.10)" };
   if (flag & flags.MINOR_FAST)       return { color: "#a78bfa", bg: "rgba(167,139,250,0.10)" };
   if (flag & flags.ROSH_CHODESH)     return { color: "#4ade80", bg: "rgba(74,222,128,0.10)" };
-  if (flag & flags.PARASHA_HASHAVUA) return { color: "#fb923c", bg: "rgba(251,146,60,0.10)" };
+  if (flag & flags.PARSHA_HASHAVUA) return { color: "#fb923c", bg: "rgba(251,146,60,0.10)" };
   if (flag & flags.OMER_COUNT)       return { color: "#f472b6", bg: "rgba(244,114,182,0.10)" };
   if (flag & flags.CHANUKAH_CANDLES) return { color: "#facc15", bg: "rgba(250,204,21,0.10)" };
   return { color: "var(--text-muted)", bg: "rgba(255,255,255,0.05)" };
@@ -89,10 +89,10 @@ export default function HebrewDateModal({ onClose }: Props) {
     }
   } catch { /* ignore */ }
 
-  const parasha = events.find(e => e.getFlags() & flags.PARASHA_HASHAVUA);
+  const parasha = events.find(e => e.getFlags() & flags.PARSHA_HASHAVUA);
   const omerEvent = events.find(e => e.getFlags() & flags.OMER_COUNT);
   const otherEvents = events.filter(e =>
-    !(e.getFlags() & flags.PARASHA_HASHAVUA) && !(e.getFlags() & flags.OMER_COUNT)
+    !(e.getFlags() & flags.PARSHA_HASHAVUA) && !(e.getFlags() & flags.OMER_COUNT)
   );
 
   const weekday = gregorianDate.toLocaleDateString("en-US", { weekday: "long" });

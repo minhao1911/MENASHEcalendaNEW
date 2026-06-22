@@ -584,7 +584,7 @@ export function startExpoScheduler() {
         if (now.getDay() === 5 && now.getHours() === 8 && now.getMinutes() < 5) {
           const events = HebrewCalendar.calendar({
             start: now, end: now, il: true, isHebrewYear: false,
-            mask: flags.PARASHA_HASHAVUA,
+            mask: flags.PARSHA_HASHAVUA,
           });
           if (events.length > 0) {
             const name = events[0].render("en");

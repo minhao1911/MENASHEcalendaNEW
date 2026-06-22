@@ -146,8 +146,7 @@ export default function HolidaysModal({ onClose }: Props) {
       flags.MINOR_FAST |
       flags.MAJOR_FAST |
       flags.MINOR_HOLIDAY |
-      flags.SPECIAL_SHABBAT |
-      flags.YOM_TOV,
+      flags.SPECIAL_SHABBAT,
   }).map(ev => {
     const name = ev.render("en");
     return {

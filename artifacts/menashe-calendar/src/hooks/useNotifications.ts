@@ -149,8 +149,13 @@ export function useNotifications(location: Location) {
     try {
       const raw = localStorage.getItem(PREFS_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as NotificationPrefs;
-        return { shema: false, shabbatDigest: false, yahrzeit: false, ...parsed };
+        const parsed = JSON.parse(raw) as Partial<NotificationPrefs>;
+        const defaults: NotificationPrefs = {
+          shabbat: false, havdalah: false, holiday: false,
+          omer: false, prayers: false, parasha: false,
+          shema: false, shabbatDigest: false, yahrzeit: false,
+        };
+        return { ...defaults, ...parsed };
       }
     } catch {}
     return {

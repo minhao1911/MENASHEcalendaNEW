@@ -65,11 +65,10 @@ router.get("/calendar/ics", async (req, res) => {
       start,
       end,
       location: hebLoc,
-      candleLighting: true,
+      candlelighting: true,
       havdalahMins: 50,
       sedrot: true,
       omer: false,
-      shabbatMoons: false,
       noModern: false,
       il: country === "IL" || country === "Israel",
     });
@@ -122,10 +121,10 @@ router.get("/calendar/ics", async (req, res) => {
     res.setHeader("Content-Type", "text/calendar; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="menashe-calendar.ics"`);
     res.setHeader("Cache-Control", "public, max-age=3600");
-    res.send(icsContent);
+    return res.send(icsContent);
   } catch (err) {
     req.log.error(err);
-    res.status(500).json({ error: "Failed to generate calendar feed" });
+    return res.status(500).json({ error: "Failed to generate calendar feed" });
   }
 });
 

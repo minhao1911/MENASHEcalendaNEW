@@ -179,8 +179,7 @@ export function getUpcomingHolidays(date: Date = new Date(), count = 5): Array<{
         flags.MODERN_HOLIDAY |
         flags.MINOR_FAST |
         flags.MAJOR_FAST |
-        flags.MINOR_HOLIDAY |
-        flags.YOM_TOV,
+        flags.MINOR_HOLIDAY,
     });
     return events.slice(0, count).map(ev => ({
       name: ev.render("en"),

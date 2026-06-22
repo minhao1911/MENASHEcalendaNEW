@@ -354,6 +354,10 @@ export const en: Translations = {
   shabbatBarTonightLabel: "Tonight!",
   shabbatBarPremiumBadge: "Premium",
   homeOmer: "OMER",
+  omerSefiratTitle: "Sefirat HaOmer",
+  omerDayCount: "Day {day} of 49",
+  omerDaysLeft: "{days} days until Shavuot",
+  omerDayLeft: "{days} day until Shavuot",
 
   fabTitle: "Community Hub",
   fabAnnouncements: "Announcements",

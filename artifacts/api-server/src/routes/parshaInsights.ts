@@ -101,10 +101,10 @@ Return only valid JSON, no markdown fences.`;
     };
 
     cache.set(cacheKey, result);
-    res.json(result);
+    return res.json(result);
   } catch (err: any) {
     req.log.error(err);
-    res.status(500).json({ error: "Failed to generate Torah insights. Please try again." });
+    return res.status(500).json({ error: "Failed to generate Torah insights. Please try again." });
   }
 });
 

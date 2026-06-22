@@ -962,7 +962,7 @@ function StatusCheckView({ memberSubmissions, onBack, onResubmit, defaultName }:
                   ["Passport Name", ms.headCensus.namePerPassport],
                   ms.headCensus.surname ? ["Surname", ms.headCensus.surname] : null,
                   ms.headCensus.hebrewName ? ["Hebrew Name", ms.headCensus.hebrewName] : null,
-                ].filter(Boolean).map(([k, v]) => (
+                ].filter((x): x is [string, string] => Boolean(x)).map(([k, v]) => (
                   <div key={k as string}>
                     <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.07em" }}>{k}</div>
                     <div style={{ fontSize: 11, color: "var(--text-primary)", fontWeight: 600 }}>{v}</div>

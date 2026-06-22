@@ -66,7 +66,7 @@ function getThisWeekParasha(): string | null {
       sedrot: true, noHolidays: true, il: true,
       start: today, end,
     });
-    const ev = events.find(e => (e.getFlags() & flags.PARASHA_HASHAVUA) !== 0);
+    const ev = events.find(e => (e.getFlags() & flags.PARSHA_HASHAVUA) !== 0);
     if (!ev) return null;
     return ev.render("en").replace(/^Parashat\s+/, "").replace(/^Parashah\s+/, "");
   } catch { return null; }

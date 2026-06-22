@@ -49,10 +49,10 @@ router.get("/books/:id", async (req, res) => {
     const [book] = await db.select().from(booksTable).where(eq(booksTable.id, id));
     if (!book) return res.status(404).json({ error: "Not found" });
 
-    res.json(book);
+    return res.json(book);
   } catch (err) {
     req.log.error(err);
-    res.status(500).json({ error: "Failed to fetch book" });
+    return res.status(500).json({ error: "Failed to fetch book" });
   }
 });
 
@@ -64,10 +64,10 @@ router.post("/books", async (req, res) => {
       return res.status(400).json({ error: "Invalid data", details: parsed.error.issues });
     }
     const [book] = await db.insert(booksTable).values(parsed.data).returning();
-    res.status(201).json(book);
+    return res.status(201).json(book);
   } catch (err) {
     req.log.error(err);
-    res.status(500).json({ error: "Failed to create book" });
+    return res.status(500).json({ error: "Failed to create book" });
   }
 });
 
@@ -88,10 +88,10 @@ router.put("/books/:id", async (req, res) => {
       .returning();
 
     if (!book) return res.status(404).json({ error: "Not found" });
-    res.json(book);
+    return res.json(book);
   } catch (err) {
     req.log.error(err);
-    res.status(500).json({ error: "Failed to update book" });
+    return res.status(500).json({ error: "Failed to update book" });
   }
 });
 
@@ -103,10 +103,10 @@ router.delete("/books/:id", async (req, res) => {
 
     const [book] = await db.delete(booksTable).where(eq(booksTable.id, id)).returning();
     if (!book) return res.status(404).json({ error: "Not found" });
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     req.log.error(err);
-    res.status(500).json({ error: "Failed to delete book" });
+    return res.status(500).json({ error: "Failed to delete book" });
   }
 });
 
@@ -128,10 +128,10 @@ router.post("/books/seed", async (req, res) => {
     ];
 
     const inserted = await db.insert(booksTable).values(seed).returning();
-    res.json({ seeded: inserted.length });
+    return res.json({ seeded: inserted.length });
   } catch (err) {
     req.log.error(err);
-    res.status(500).json({ error: "Seed failed" });
+    return res.status(500).json({ error: "Seed failed" });
   }
 });
 

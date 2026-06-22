@@ -33,7 +33,7 @@ function flagMeta(flag: number): { emoji: string; color: string; bg: string; bad
   if (flag & flags.MINOR_FAST)        return { emoji: "💧", color: "#a78bfa", bg: "rgba(167,139,250,0.09)", badge: "Fast" };
   if (flag & flags.ROSH_CHODESH)      return { emoji: "🌙", color: "#4ade80", bg: "rgba(74,222,128,0.09)", badge: "Rosh Chodesh" };
   if (flag & flags.CHANUKAH_CANDLES)  return { emoji: "🕎", color: "#facc15", bg: "rgba(250,204,21,0.09)", badge: "Chanukah" };
-  if (flag & flags.PARASHA_HASHAVUA)  return { emoji: "📖", color: "#fb923c", bg: "rgba(251,146,60,0.09)", badge: "Parasha" };
+  if (flag & flags.PARSHA_HASHAVUA)  return { emoji: "📖", color: "#fb923c", bg: "rgba(251,146,60,0.09)", badge: "Parasha" };
   if (flag & flags.SHABBAT_MEVARCHIM) return { emoji: "🌙", color: "#818cf8", bg: "rgba(129,140,248,0.09)", badge: "Mevarchim" };
   if (flag & flags.OMER_COUNT)        return { emoji: "🌾", color: "#f472b6", bg: "rgba(244,114,182,0.09)", badge: "Omer" };
   return { emoji: "📅", color: "var(--text-muted)", bg: "rgba(255,255,255,0.04)", badge: "" };
@@ -51,7 +51,6 @@ function buildLuach(hebrewYear: number): MonthGroup[] {
     sedrot: true,
     omer: false,          // omit daily omer for brevity
     shabbatMevarchim: true,
-    roshChodesh: true,
     noModern: false,
     il: false,
   });
