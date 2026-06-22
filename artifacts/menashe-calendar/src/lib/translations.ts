@@ -177,6 +177,25 @@ export interface Translations {
   /* ── Splash screen ── */
   splashTagline: string;
 
+  /* ── Onboarding ── */
+  onboardingStep: string;
+  onboardingSkip: string;
+  onboardingNext: string;
+  onboardingGetStarted: string;
+  onboardingLangTitle: string;
+  onboardingLangSubtitle: string;
+  onboardingLocTitle: string;
+  onboardingLocSubtitle: string;
+  onboardingLocDetect: string;
+  onboardingLocDetecting: string;
+  onboardingLocSelected: string;
+  onboardingNotifTitle: string;
+  onboardingNotifSubtitle: string;
+  onboardingNotifEnable: string;
+  onboardingNotifLater: string;
+  onboardingNotifEnabled: string;
+  onboardingNotifDenied: string;
+
   /* ── Install prompt ── */
   installTitle: string;
   installBody: string;
@@ -348,6 +367,24 @@ export const en: Translations = {
   whatsNewGotIt: "Got it — let's go!",
 
   splashTagline: "The Sacred Calendar of Bnei Menashe",
+
+  onboardingStep: "Step {n} of 3",
+  onboardingSkip: "Skip",
+  onboardingNext: "Next",
+  onboardingGetStarted: "Get Started",
+  onboardingLangTitle: "Choose Your Language",
+  onboardingLangSubtitle: "Select how you'd like to use the app",
+  onboardingLocTitle: "Where Are You Located?",
+  onboardingLocSubtitle: "Used to calculate accurate prayer times",
+  onboardingLocDetect: "📍 Detect My Location",
+  onboardingLocDetecting: "Detecting…",
+  onboardingLocSelected: "✓ Location set",
+  onboardingNotifTitle: "Stay Connected",
+  onboardingNotifSubtitle: "Get reminders for Shabbat candle lighting, prayer times, and holidays",
+  onboardingNotifEnable: "🔔 Enable Notifications",
+  onboardingNotifLater: "Maybe Later",
+  onboardingNotifEnabled: "✓ Notifications enabled!",
+  onboardingNotifDenied: "Notifications blocked — enable them in browser settings",
 
   installTitle: "Add to Home Screen",
   installBody: "Install Menashe Calendar for quick access.",
@@ -523,6 +560,24 @@ export const tk: Translations = {
   whatsNewGotIt: "A lo — kal ang!",
 
   splashTagline: "Bnei Menashe Gil Ni Thu Leh Thla",
+
+  onboardingStep: "Lehkha {n} / 3",
+  onboardingSkip: "Kal Ta",
+  onboardingNext: "Hla Ta",
+  onboardingGetStarted: "Tan Ta",
+  onboardingLangTitle: "Thu Dang Thlang",
+  onboardingLangSubtitle: "App ah thuzia zawng thlang rawh",
+  onboardingLocTitle: "Na Hmun Engzat?",
+  onboardingLocSubtitle: "Zmanim chiang tak phuah tan hmang",
+  onboardingLocDetect: "📍 Na Hmun En Ta",
+  onboardingLocDetecting: "A en mek…",
+  onboardingLocSelected: "✓ Hmun siam zo",
+  onboardingNotifTitle: "Inhmuh Zel",
+  onboardingNotifSubtitle: "Shabbat mei, thu dawt hun leh ni thianghlim hlabu dawng rawh",
+  onboardingNotifEnable: "🔔 Hlabu On Siam",
+  onboardingNotifLater: "Hun Dang Ah",
+  onboardingNotifEnabled: "✓ Hlabu a on mek!",
+  onboardingNotifDenied: "Hlabu a block — browser siam dan-ah on siam rawh",
 
   installTitle: "Home Screen-ah Chhuang",
   installBody: "Menashe Calendar install siam la a hun zel.",
