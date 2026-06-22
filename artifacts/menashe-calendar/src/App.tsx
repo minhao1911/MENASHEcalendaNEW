@@ -541,6 +541,7 @@ function AppShell() {
             onShowPrayerBoard={() => setModal("prayers-board")}
             onShowTorahTracker={() => setModal("torah-tracker")}
             unreadAnnouncements={unreadAnnouncements}
+            profileName={publicProfile?.displayName}
           />
         );
       case "calendar":

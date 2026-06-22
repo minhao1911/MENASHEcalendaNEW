@@ -1226,6 +1226,7 @@ interface HomeProps {
   onShowPrayerBoard: () => void;
   onShowTorahTracker: () => void;
   unreadAnnouncements?: ServerAnnouncement[];
+  profileName?: string | null;
 }
 
 // ── Announcement Banner ──────────────────────────────────────────────────────
@@ -1324,13 +1325,15 @@ export default function Home({
   onNotifBell, notifActive, announcementCount,
   onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
   unreadAnnouncements = [],
+  profileName,
 }: HomeProps) {
   const { t } = useLanguage();
   const { user } = useUser();
   const today = new Date();
   const hour = today.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
-  const firstName = user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? null;
+  const displayName = profileName?.trim() || user?.firstName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || null;
+  const firstName = displayName;
   const hdate = getHebrewDate(today);
   const zmanim = calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes);
   const parasha = getCurrentParasha(today);
@@ -1522,7 +1525,7 @@ export default function Home({
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 15, fontWeight: 800, color: "#1a0900",
               }}>
-                {(user?.firstName?.[0] ?? user?.emailAddresses?.[0]?.emailAddress?.[0] ?? "M").toUpperCase()}
+                {(displayName?.[0] ?? user?.emailAddresses?.[0]?.emailAddress?.[0] ?? "M").toUpperCase()}
               </div>
             )}
           </button>
