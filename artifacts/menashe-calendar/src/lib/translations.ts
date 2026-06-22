@@ -146,6 +146,11 @@ export interface Translations {
   txEditorGroupHome: string;
   txEditorNote: string;
 
+  /* ── What's New ── */
+  whatsNewTitle: string;
+  whatsNewSubtitle: string;
+  whatsNewGotIt: string;
+
   /* ── Install prompt ── */
   installTitle: string;
   installBody: string;
@@ -296,6 +301,10 @@ export const en: Translations = {
   txEditorGroupHome: "Home Page",
   txEditorNote: "Tip: Switch the app to Thadou Kuki mode (Settings → Appearance) to see your changes live.",
 
+  whatsNewTitle: "What's New",
+  whatsNewSubtitle: "Highlights from the latest update",
+  whatsNewGotIt: "Got it — let's go!",
+
   installTitle: "Add to Home Screen",
   installBody: "Install Menashe Calendar for quick access.",
   installBtn: "Install",
@@ -444,6 +453,10 @@ export const tk: Translations = {
   txEditorGroupSettings: "Siam Dan",
   txEditorGroupHome: "Inn Page",
   txEditorNote: "Tip: Thadou Kuki mode on siam la (Siam Dan → SIM BUATSAIH) nakin na siam zawng en theih.",
+
+  whatsNewTitle: "Thar Zawng Zawng",
+  whatsNewSubtitle: "Update thar ber-ah thil thar zawng",
+  whatsNewGotIt: "A lo — kal ang!",
 
   installTitle: "Home Screen-ah Chhuang",
   installBody: "Menashe Calendar install siam la a hun zel.",

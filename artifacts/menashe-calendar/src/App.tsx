@@ -57,6 +57,7 @@ import CommunityYahrzeitModal from "./modals/CommunityYahrzeitModal";
 import MoreToolsModal from "./pages/MoreToolsModal";
 import NotificationDrawer from "./components/NotificationDrawer";
 import InstallPrompt from "./components/InstallPrompt";
+import WhatsNewModal, { APP_VERSION, VERSION_KEY } from "./modals/WhatsNewModal";
 
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
@@ -207,7 +208,7 @@ type Modal =
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
   | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar"
   | "announcements" | "events" | "members" | "prayers-board" | "torah-tracker" | "profile"
-  | "community-yahrzeit" | "notifications" | null;
+  | "community-yahrzeit" | "notifications" | "whats-new" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -394,6 +395,14 @@ function AppShell() {
     try { return localStorage.getItem("menashe-is-premium") === "true"; } catch { return false; }
   });
   const [premiumJustApproved, setPremiumJustApproved] = useState(false);
+
+  // Auto-show "What's New" when the app version bumps
+  useEffect(() => {
+    const seen = localStorage.getItem(VERSION_KEY);
+    if (seen !== APP_VERSION) {
+      setTimeout(() => setModal("whats-new"), 800);
+    }
+  }, []);
   const [candleEnabled, setCandleEnabled] = useState(() => {
     try { return localStorage.getItem("menashe-candle-enabled") !== "false"; } catch { return true; }
   });
@@ -747,6 +756,12 @@ function AppShell() {
               )}
               {modal === "prayers-board" && (
                 <PrayerBoardModal onClose={closeModal} userName={publicProfile?.displayName} />
+              )}
+              {modal === "whats-new" && (
+                <WhatsNewModal onClose={() => {
+                  localStorage.setItem(VERSION_KEY, APP_VERSION);
+                  closeModal();
+                }} />
               )}
               {modal === "torah-tracker" && <TorahTrackerModal onClose={closeModal} />}
               {modal === "profile" && (
