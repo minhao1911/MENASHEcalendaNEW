@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLanguage } from "../context/LanguageContext";
 import { HDate } from "@hebcal/core";
 import { hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim } from "../lib/zmanim";
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export default function YartzeitModal({ onClose, location, onCommunityBoard }: Props) {
+  const { t } = useLanguage();
   const [entries, setEntries] = useState<YartzeitEntry[]>(() => getYahrzeitEntries());
   const [showForm, setShowForm] = useState(false);
 
@@ -159,9 +161,9 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>🕯 Yahrzeit Calculator</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>🕯 {t.yartzeitTitle}</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-              Calculates the correct Hebrew date per Halacha
+              {t.yartzeitSub}
             </div>
           </div>
           <button className="modal-close-btn" onClick={onClose}>✕</button>
@@ -187,7 +189,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
         {/* Saved entries */}
         {entries.length > 0 && (
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.1em", marginBottom: 8 }}>SAVED REMINDERS</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.1em", marginBottom: 8 }}>{t.yartzeitSavedReminders}</div>
             {entries.map(entry => {
               const next = getNextYahrzeit(entry.hebrewDay, entry.hebrewMonth);
               const isDeleting = deleteConfirm === entry.id;
@@ -289,7 +291,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
 
             <div style={{ padding: "10px 14px" }}>
               {/* Name */}
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 5, letterSpacing: "0.06em" }}>NAME OF THE DEPARTED</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 5, letterSpacing: "0.06em" }}>{t.yartzeitNameLabel.toUpperCase()}</div>
               <input
                 type="text"
                 placeholder="e.g. Miriam Cohen"
@@ -303,7 +305,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
               />
 
               {/* Date */}
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 5, letterSpacing: "0.06em" }}>DATE OF PASSING</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 5, letterSpacing: "0.06em" }}>{t.yartzeitDateLabel.toUpperCase()}</div>
               <input
                 type="date"
                 value={passDateStr}
@@ -317,8 +319,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
 
               {/* Time */}
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 5, letterSpacing: "0.06em" }}>
-                TIME OF PASSING
-                <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 400, marginLeft: 6 }}>(used to determine if death was after sunset)</span>
+                {t.yartzeitTimeLabel.toUpperCase()}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 11 }}>
                 <input
@@ -341,7 +342,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
                     onChange={e => { setTimeUnknown(e.target.checked); setResult(null); }}
                     style={{ width: 16, height: 16, accentColor: "#d4a843", cursor: "pointer" }}
                   />
-                  <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Unknown</span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>{t.yartzeitTimeUnknown}</span>
                 </label>
               </div>
 
@@ -350,7 +351,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
                 padding: "9px 11px", borderRadius: 9, marginBottom: 12,
                 background: "rgba(212,168,67,0.07)", border: "1px solid rgba(212,168,67,0.18)",
               }}>
-                <div style={{ fontSize: 11, color: "#d4a843", fontWeight: 700, marginBottom: 3 }}>📜 Halachic Note</div>
+                <div style={{ fontSize: 11, color: "#d4a843", fontWeight: 700, marginBottom: 3 }}>📜 {t.yartzeitHalachicNote}</div>
                 <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.6 }}>
                   If the person passed away <strong style={{ color: "var(--text-primary)" }}>after sunset</strong>, the Yahrzeit falls on the <strong style={{ color: "var(--text-primary)" }}>following Hebrew day</strong>, since the Jewish day begins at nightfall.
                 </div>
@@ -367,7 +368,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
                   opacity: canCalculate ? 1 : 0.4, marginBottom: result ? 12 : 0,
                 }}
               >
-                Calculate Yahrzeit Date
+                {t.yartzeitCalculate}
               </button>
 
               {/* Result */}
@@ -443,7 +444,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
                       padding: "12px", borderRadius: 10, textAlign: "center",
                       background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)",
                       fontSize: 13, fontWeight: 700, color: "#22c55e",
-                    }}>✓ Reminder saved</div>
+                    }}>{t.yartzeitSaved}</div>
                   ) : (
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => { setShowForm(false); resetForm(); }} style={{
@@ -455,7 +456,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
                         flex: 2, padding: "10px 0", borderRadius: 9,
                         fontSize: 13, fontWeight: 800,
                         opacity: name.trim() ? 1 : 0.4,
-                      }}>🔔 Save Reminder</button>
+                      }}>🔔 {t.yartzeitSaveReminder}</button>
                     </div>
                   )}
                 </div>
@@ -472,7 +473,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
           </div>
         )}
 
-        <button onClick={onClose} className="btn-close-full">Close</button>
+        <button onClick={onClose} className="btn-close-full">{t.yartzeitClose}</button>
       </div>
     </div>
   );

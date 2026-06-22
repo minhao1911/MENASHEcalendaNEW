@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { createRazorpayOrder, verifyRazorpayPayment } from "../lib/userApi";
 import { GOLD_GRAD as GOLD } from "../lib/theme";
+import { useLanguage } from "../context/LanguageContext";
 
 interface Props { onClose: () => void; onActivated?: () => void; }
 
@@ -181,6 +182,7 @@ function Spinner() {
 }
 
 export default function PremiumModal({ onClose, onActivated }: Props) {
+  const { t } = useLanguage();
   const [step, setStep] = useState<Step>("plans");
   const [plan, setPlan] = useState<Plan>("annual");
   const [payMethod, setPayMethod] = useState<PayMethod>("upi");
@@ -389,8 +391,8 @@ export default function PremiumModal({ onClose, onActivated }: Props) {
               <>
                 <div style={{ textAlign: "center", marginBottom: 20 }}>
                   <div style={{ width: 58, height: 58, borderRadius: 18, background: GOLD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, margin: "0 auto 10px", boxShadow: "0 4px 20px rgba(212,168,67,0.45)" }}>⭐</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "var(--foreground)" }}>Upgrade to Premium</div>
-                  <div style={{ fontSize: 13, color: "var(--muted-foreground)", marginTop: 4 }}>Unlock the full Sacred Calendar experience</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "var(--foreground)" }}>{t.premiumTitle}</div>
+                  <div style={{ fontSize: 13, color: "var(--muted-foreground)", marginTop: 4 }}>{t.premiumSubtitle}</div>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>

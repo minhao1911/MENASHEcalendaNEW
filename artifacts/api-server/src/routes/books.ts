@@ -6,7 +6,10 @@ import { z } from "zod/v4";
 
 const router = Router();
 
-const ADMIN_PIN = process.env.ADMIN_PIN ?? "1948";
+const ADMIN_PIN = process.env.ADMIN_PIN;
+if (!ADMIN_PIN) {
+  throw new Error("ADMIN_PIN environment variable is required");
+}
 
 function checkAdmin(req: any, res: any): boolean {
   const pin = req.headers["x-admin-pin"] ?? req.body?.adminPin;

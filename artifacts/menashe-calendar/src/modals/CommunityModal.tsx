@@ -20,7 +20,7 @@ const DEFAULT_LINKS: CommunityLink[] = [
 ];
 
 const STORAGE_KEY = "menashe-community-links";
-const ADMIN_PIN = "1948";
+const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
 
 const CATEGORY_OPTIONS = ["Organizations", "Support", "Media", "Learning", "Community", "Resources", "Other"];
 const EMOJI_OPTIONS = ["🏛","📞","📰","🎓","🤝","✡","🕍","🌟","📚","🙏","🌿","💎","🔗","📱","🗺","🎵","📜","🕎","🏠","🌐","📡","🔔","💬","📣","🎯","🫂"];

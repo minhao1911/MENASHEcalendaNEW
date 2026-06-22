@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { HDate } from "@hebcal/core";
+import { useLanguage } from "../context/LanguageContext";
 
 interface Props { onClose: () => void; }
 
@@ -71,6 +72,7 @@ function flattenText(val: unknown): string[] {
 }
 
 export default function DafYomiModal({ onClose }: Props) {
+  const { t } = useLanguage();
   const hdate = new HDate();
   const local = getLocalDaf();
 
@@ -203,9 +205,9 @@ export default function DafYomiModal({ onClose }: Props) {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Daf Yomi</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>{t.dafYomiTitle}</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-              Daily Talmud Study · Cycle {cycle}
+              {t.dafYomiSub} · Cycle {cycle}
               {!loading && !error && (
                 <span style={{ marginLeft: 6, color: "#4ade80", fontSize: 10, fontWeight: 700 }}>● LIVE</span>
               )}
@@ -230,7 +232,7 @@ export default function DafYomiModal({ onClose }: Props) {
           {loading ? (
             <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, padding: "16px 0" }}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>📚</div>
-              Loading from Sefaria…
+              {t.dafYomiLoading}
             </div>
           ) : (
             <>
@@ -379,7 +381,7 @@ export default function DafYomiModal({ onClose }: Props) {
             }}
           >
             <span>📖</span>
-            <span>Read on Sefaria</span>
+            <span>{t.dafYomiReadSefaria}</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5">
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
             </svg>
@@ -408,7 +410,7 @@ export default function DafYomiModal({ onClose }: Props) {
             {shareState === "copied" ? (
               <>
                 <span>✅</span>
-                <span>Copied to clipboard!</span>
+                <span>{t.dafYomiCopied}</span>
               </>
             ) : (
               <>
@@ -416,7 +418,7 @@ export default function DafYomiModal({ onClose }: Props) {
                   <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                   <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                 </svg>
-                <span>Share Today's Daf</span>
+                <span>{t.dafYomiShare}</span>
               </>
             )}
           </button>

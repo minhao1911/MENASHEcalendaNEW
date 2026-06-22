@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { HebrewCalendar, flags } from "@hebcal/core";
 import { getHolidayInsight, getHolidayEmoji, getHolidayHebrewName } from "../lib/holidayInsights";
+import { useLanguage } from "../context/LanguageContext";
 
 interface Props { onClose: () => void; }
 
@@ -12,14 +13,17 @@ interface HolidayEvent {
   category: string;
 }
 
-const CATEGORY_LABEL: Record<string, { label: string; color: string; bg: string }> = {
-  major:         { label: "Yom Tov",       color: "#d4a843", bg: "rgba(212,168,67,0.12)" },
-  fast:          { label: "Fast Day",       color: "#94a3b8", bg: "rgba(148,163,184,0.1)" },
-  minor:         { label: "Minor Holiday",  color: "#60a5fa", bg: "rgba(96,165,250,0.12)" },
-  rosh_chodesh:  { label: "Rosh Chodesh",   color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
-  modern:        { label: "Modern",         color: "#4ade80", bg: "rgba(74,222,128,0.12)" },
-  shabbat_special: { label: "Special Shabbat", color: "#f472b6", bg: "rgba(244,114,182,0.12)" },
-};
+function useCategoryLabel() {
+  const { t } = useLanguage();
+  return {
+    major:           { label: t.holidaysCategoryYomTov,     color: "#d4a843", bg: "rgba(212,168,67,0.12)" },
+    fast:            { label: t.holidaysCategoryFast,        color: "#94a3b8", bg: "rgba(148,163,184,0.1)" },
+    minor:           { label: t.holidaysCategoryMinor,       color: "#60a5fa", bg: "rgba(96,165,250,0.12)" },
+    rosh_chodesh:    { label: t.holidaysCategoryRoshChodesh, color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
+    modern:          { label: t.holidaysCategoryModern,      color: "#4ade80", bg: "rgba(74,222,128,0.12)" },
+    shabbat_special: { label: t.holidaysCategoryShabbat,    color: "#f472b6", bg: "rgba(244,114,182,0.12)" },
+  };
+}
 
 function getCategoryFromName(name: string): string {
   const n = name.toLowerCase();
@@ -32,6 +36,7 @@ function getCategoryFromName(name: string): string {
 }
 
 function MussarInsightPanel({ name, hebrewName }: { name: string; hebrewName: string }) {
+  const { t } = useLanguage();
   const insight = getHolidayInsight(name);
   const [section, setSection] = useState<string | null>(null);
 
@@ -39,18 +44,18 @@ function MussarInsightPanel({ name, hebrewName }: { name: string; hebrewName: st
     return (
       <div style={{ padding: "14px 0 4px" }}>
         <p style={{ fontSize: 13, color: "var(--text-muted)", fontStyle: "italic" }}>
-          Detailed insights for this observance are coming soon.
+          {t.holidaysInsightsSoon}
         </p>
       </div>
     );
   }
 
   const sections = [
-    { key: "overview",              icon: "📋", label: "Overview",                  text: insight.overview,              accent: false },
-    { key: "observances",           icon: "🕍", label: "Observances & Practices",   text: insight.observances,           accent: false },
-    { key: "mussarLesson",          icon: "⚖️", label: "Mussar Lesson",             text: insight.mussarLesson,          accent: true  },
-    { key: "spiritualTheme",        icon: "🌟", label: "Spiritual Theme",           text: insight.spiritualTheme,        accent: false },
-    { key: "bneiManasheConnection", icon: "✡", label: "Bnei Menashe Connection",   text: insight.bneiManasheConnection, accent: true  },
+    { key: "overview",              icon: "📋", label: "Overview",                    text: insight.overview,              accent: false },
+    { key: "observances",           icon: "🕍", label: "Observances & Practices",     text: insight.observances,           accent: false },
+    { key: "mussarLesson",          icon: "⚖️", label: t.holidaysMussarLesson,        text: insight.mussarLesson,          accent: true  },
+    { key: "spiritualTheme",        icon: "🌟", label: t.holidaysSpiritualTheme,      text: insight.spiritualTheme,        accent: false },
+    { key: "bneiManasheConnection", icon: "✡", label: "Bnei Menashe Connection",     text: insight.bneiManasheConnection, accent: true  },
   ];
 
   return (
@@ -129,6 +134,8 @@ const TABS: { key: FilterTab; label: string }[] = [
 ];
 
 export default function HolidaysModal({ onClose }: Props) {
+  const { t } = useLanguage();
+  const CATEGORY_LABEL = useCategoryLabel();
   const today = new Date();
   const end = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -184,7 +191,7 @@ export default function HolidaysModal({ onClose }: Props) {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Jewish Holidays</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>{t.holidaysTitle}</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
               {today.getFullYear()}–{today.getFullYear() + 1} · {allEvents.length} observances · tap for Mussar insights
             </div>

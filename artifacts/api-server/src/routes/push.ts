@@ -247,7 +247,7 @@ router.delete("/push/unsubscribe", async (req, res) => {
 
 router.get("/push/subscriber-count", async (req, res) => {
   const pin = req.headers["x-admin-pin"];
-  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
+  if (!process.env["ADMIN_PIN"] || pin !== process.env["ADMIN_PIN"]) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -266,7 +266,7 @@ router.get("/push/subscriber-count", async (req, res) => {
 
 router.post("/push/broadcast", async (req, res) => {
   const pin = req.headers["x-admin-pin"];
-  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
+  if (!process.env["ADMIN_PIN"] || pin !== process.env["ADMIN_PIN"]) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -344,7 +344,7 @@ router.post("/push/broadcast", async (req, res) => {
 
 function checkAdminPin(req: import("express").Request, res: import("express").Response): boolean {
   const pin = req.headers["x-admin-pin"];
-  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
+  if (!process.env["ADMIN_PIN"] || pin !== process.env["ADMIN_PIN"]) {
     res.status(403).json({ error: "Forbidden" });
     return false;
   }

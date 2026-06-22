@@ -13,7 +13,7 @@ interface Props {
   isAdmin?: boolean;
 }
 
-const ADMIN_PIN = "1948";
+const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
 const EMOJI_OPTIONS = ["📢","📣","🔔","✡","🕍","🌟","📜","🙏","🎯","🫂","⚡","💬","📌","🗓","🌐","🎉","🕎","🌿","💎","🏛","📚","🔗","🕯","✨","🇮🇱","📖","🌾"];
 
 const inputStyle: React.CSSProperties = {

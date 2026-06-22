@@ -217,6 +217,79 @@ export interface Translations {
   installBody: string;
   installBtn: string;
   installDismiss: string;
+
+  /* ── Tahara Modal ── */
+  taharaTitle: string;
+  taharaSub: string;
+  taharaPeriodLabel: string;
+  taharaCalculate: string;
+  taharaHefsek: string;
+  taharaMikveh: string;
+  taharaPosekNote: string;
+  taharaClose: string;
+
+  /* ── Yahrzeit Modal ── */
+  yartzeitTitle: string;
+  yartzeitSub: string;
+  yartzeitSavedReminders: string;
+  yartzeitNameLabel: string;
+  yartzeitDateLabel: string;
+  yartzeitTimeLabel: string;
+  yartzeitTimeUnknown: string;
+  yartzeitCalculate: string;
+  yartzeitSaveReminder: string;
+  yartzeitSaved: string;
+  yartzeitAddNew: string;
+  yartzeitHalachicNote: string;
+  yartzeitClose: string;
+
+  /* ── Daf Yomi Modal ── */
+  dafYomiTitle: string;
+  dafYomiSub: string;
+  dafYomiReadSefaria: string;
+  dafYomiCopied: string;
+  dafYomiShare: string;
+  dafYomiLoading: string;
+  dafYomiError: string;
+
+  /* ── Holidays Modal ── */
+  holidaysTitle: string;
+  holidaysCategoryYomTov: string;
+  holidaysCategoryFast: string;
+  holidaysCategoryMinor: string;
+  holidaysCategoryRoshChodesh: string;
+  holidaysCategoryModern: string;
+  holidaysCategoryShabbat: string;
+  holidaysMussarLesson: string;
+  holidaysSpiritualTheme: string;
+  holidaysInsightsSoon: string;
+
+  /* ── Prayer Board Modal ── */
+  prayerBoardTitle: string;
+  prayerBoardAdminAccess: string;
+  prayerBoardAdminPin: string;
+  prayerBoardSubmitTitle: string;
+  prayerBoardCategory: string;
+  prayerBoardAnonymous: string;
+  prayerBoardSubmit: string;
+  prayerBoardModerate: string;
+  prayerBoardResponse: string;
+  prayerBoardAmen: string;
+  prayerBoardPending: string;
+  prayerBoardApprove: string;
+  prayerBoardRemove: string;
+
+  /* ── Premium Modal ── */
+  premiumTitle: string;
+  premiumSubtitle: string;
+  premiumSecure: string;
+  premiumCancel: string;
+  premiumPayment: string;
+  premiumReviewed: string;
+
+  /* ── Not Found ── */
+  notFoundTitle: string;
+  notFoundHome: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -426,6 +499,72 @@ export const en: Translations = {
   installBody: "Install Menashe Calendar for quick access.",
   installBtn: "Install",
   installDismiss: "Not now",
+
+  taharaTitle: "💧 Tahara Calculator",
+  taharaSub: "Purity & Mikveh timing",
+  taharaPeriodLabel: "Start of period (vesset)",
+  taharaCalculate: "Calculate",
+  taharaHefsek: "HEFSEK TAHARA",
+  taharaMikveh: "MIKVEH NIGHT (EARLIEST)",
+  taharaPosekNote: "⚠️ Always consult a qualified posek (halachic authority) for personal guidance.",
+  taharaClose: "Close",
+
+  yartzeitTitle: "Yahrzeit Calculator",
+  yartzeitSub: "Anniversary of passing",
+  yartzeitSavedReminders: "SAVED REMINDERS",
+  yartzeitNameLabel: "Name of the departed",
+  yartzeitDateLabel: "Date of passing",
+  yartzeitTimeLabel: "Time of passing",
+  yartzeitTimeUnknown: "Time unknown",
+  yartzeitCalculate: "Calculate",
+  yartzeitSaveReminder: "Save Reminder",
+  yartzeitSaved: "✓ Saved",
+  yartzeitAddNew: "Add New",
+  yartzeitHalachicNote: "Halachic Note",
+  yartzeitClose: "Close",
+
+  dafYomiTitle: "Daf Yomi",
+  dafYomiSub: "Daily Talmud Study",
+  dafYomiReadSefaria: "Read on Sefaria",
+  dafYomiCopied: "Copied to clipboard",
+  dafYomiShare: "Share Today's Daf",
+  dafYomiLoading: "Loading today's daf…",
+  dafYomiError: "Could not load daf. Showing local calculation.",
+
+  holidaysTitle: "Jewish Holidays",
+  holidaysCategoryYomTov: "Yom Tov",
+  holidaysCategoryFast: "Fast Day",
+  holidaysCategoryMinor: "Minor Holiday",
+  holidaysCategoryRoshChodesh: "Rosh Chodesh",
+  holidaysCategoryModern: "Modern",
+  holidaysCategoryShabbat: "Special Shabbat",
+  holidaysMussarLesson: "Mussar Lesson",
+  holidaysSpiritualTheme: "Spiritual Theme",
+  holidaysInsightsSoon: "Detailed insights for this observance are coming soon.",
+
+  prayerBoardTitle: "Prayer Board",
+  prayerBoardAdminAccess: "Admin Access",
+  prayerBoardAdminPin: "Enter your PIN to moderate the prayer board",
+  prayerBoardSubmitTitle: "Submit Prayer Request",
+  prayerBoardCategory: "PRAYER TYPE",
+  prayerBoardAnonymous: "Submit Anonymously",
+  prayerBoardSubmit: "Submit",
+  prayerBoardModerate: "Moderate Prayers",
+  prayerBoardResponse: "Pastoral response",
+  prayerBoardAmen: "Amen",
+  prayerBoardPending: "Pending",
+  prayerBoardApprove: "Approve",
+  prayerBoardRemove: "Remove",
+
+  premiumTitle: "Menashe Premium",
+  premiumSubtitle: "Unlock everything",
+  premiumSecure: "Secure",
+  premiumCancel: "Cancel anytime",
+  premiumPayment: "UPI & cards accepted",
+  premiumReviewed: "Community reviewed",
+
+  notFoundTitle: "This screen doesn't exist.",
+  notFoundHome: "Go to home screen!",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -635,6 +774,72 @@ export const tk: Translations = {
   installBody: "Menashe Calendar install siam la a hun zel.",
   installBtn: "Install",
   installDismiss: "Hun dang ah",
+
+  taharaTitle: "💧 Tahara Chhiar",
+  taharaSub: "Ropui leh Mikveh hun",
+  taharaPeriodLabel: "Vesset tan ni",
+  taharaCalculate: "Chhiar Ta",
+  taharaHefsek: "HEFSEK TAHARA",
+  taharaMikveh: "MIKVEH ZAN (HMASAWN BER)",
+  taharaPosekNote: "⚠️ Posek (dinna thu neih) nen inpawl rawh.",
+  taharaClose: "Tawp Ta",
+
+  yartzeitTitle: "Yahrzeit Chhiar",
+  yartzeitSub: "Thi ni chhiar",
+  yartzeitSavedReminders: "CHHUANG ZO HLABU",
+  yartzeitNameLabel: "Thi mi hming",
+  yartzeitDateLabel: "Thi ni",
+  yartzeitTimeLabel: "Thi hun",
+  yartzeitTimeUnknown: "Hun hre lo",
+  yartzeitCalculate: "Chhiar Ta",
+  yartzeitSaveReminder: "Hlabu Chhuang",
+  yartzeitSaved: "✓ Chhuangin zo",
+  yartzeitAddNew: "Thar Chhuang",
+  yartzeitHalachicNote: "Dinna Thu",
+  yartzeitClose: "Tawp Ta",
+
+  dafYomiTitle: "Daf Yomi",
+  dafYomiSub: "Ni Tin Talmud Ziak",
+  dafYomiReadSefaria: "Sefaria-ah Chhiar",
+  dafYomiCopied: "Clipboard-ah chhuang zo",
+  dafYomiShare: "Nizan Daf Sawi Chhuak",
+  dafYomiLoading: "Nizan daf lo mek…",
+  dafYomiError: "Daf load theih lo. Chhiar dan hrang hmang.",
+
+  holidaysTitle: "Ni Thianghlim",
+  holidaysCategoryYomTov: "Yom Tov",
+  holidaysCategoryFast: "Ni Tawh",
+  holidaysCategoryMinor: "Ni Thianghlim Hmelhriat",
+  holidaysCategoryRoshChodesh: "Rosh Chodesh",
+  holidaysCategoryModern: "Modern",
+  holidaysCategoryShabbat: "Shabbat Hlawhtling",
+  holidaysMussarLesson: "Mussar Thu",
+  holidaysSpiritualTheme: "Thianghlim Thu",
+  holidaysInsightsSoon: "Ni thianghlim hian thu zawng a lo dawn.",
+
+  prayerBoardTitle: "Thu Dawt Hmang",
+  prayerBoardAdminAccess: "Admin Lut Dan",
+  prayerBoardAdminPin: "Thu dawt hmang moderate tan PIN dil rawh",
+  prayerBoardSubmitTitle: "Thu Dawt Thawn",
+  prayerBoardCategory: "THU DAWT DAN",
+  prayerBoardAnonymous: "Hming Nei Lo Ber Thawn",
+  prayerBoardSubmit: "Thawn Ta",
+  prayerBoardModerate: "Thu Dawt Moderate",
+  prayerBoardResponse: "Pastoral response",
+  prayerBoardAmen: "Amen",
+  prayerBoardPending: "A lo mek",
+  prayerBoardApprove: "Pawm Ta",
+  prayerBoardRemove: "Thlak Ta",
+
+  premiumTitle: "Menashe Premium",
+  premiumSubtitle: "Zawng zawng en theih",
+  premiumSecure: "Thlen tak",
+  premiumCancel: "Hun dang ah tawp theih",
+  premiumPayment: "UPI & card dawng",
+  premiumReviewed: "Mipil enkawl",
+
+  notFoundTitle: "Screen hei awm lo.",
+  notFoundHome: "Inn screen-ah kal rawh!",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

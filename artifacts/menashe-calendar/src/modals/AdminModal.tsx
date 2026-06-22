@@ -15,7 +15,7 @@ interface Props {
 }
 
 const API_BASE = "/api";
-const ADMIN_PIN = "1948";
+const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
 
 const CATEGORIES = [
   "Siddur", "Tehillim", "Torah Portions", "Kuki Christian Books",

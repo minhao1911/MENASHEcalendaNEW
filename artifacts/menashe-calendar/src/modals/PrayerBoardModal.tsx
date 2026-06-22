@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 interface Props { onClose: () => void; userName?: string; }
 
@@ -17,7 +18,7 @@ export interface PrayerRequest {
 
 const STORAGE_KEY = "menashe-prayer-board";
 const AMENS_KEY   = "menashe-prayer-amens-cast";
-const ADMIN_PIN   = "1948";
+const ADMIN_PIN   = import.meta.env.VITE_ADMIN_PIN ?? "";
 
 const CATEGORIES = ["Healing", "Blessing", "Aliyah", "Family", "Livelihood", "Community", "Gratitude", "Protection", "Other"];
 
@@ -81,6 +82,7 @@ function emptyForm() {
 }
 
 export default function PrayerBoardModal({ onClose, userName }: Props) {
+  const { t } = useLanguage();
   const [requests, setRequests] = useState<PrayerRequest[]>(loadRequests);
   const [castAmens, setCastAmens] = useState<Set<string>>(loadCastAmens);
   const [view, setView]       = useState<"board" | "submit" | "pin" | "admin">("board");
@@ -155,8 +157,8 @@ export default function PrayerBoardModal({ onClose, userName }: Props) {
         <div className="modal-handle" />
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Admin Access</div>
-          <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Enter your PIN to moderate the prayer board</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>{t.prayerBoardAdminAccess}</div>
+          <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{t.prayerBoardAdminPin}</div>
         </div>
         <input type="password" inputMode="numeric" value={pin}
           onChange={e => { setPin(e.target.value); setPinError(""); }}
@@ -177,7 +179,7 @@ export default function PrayerBoardModal({ onClose, userName }: Props) {
         <div className="modal-handle" />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
           <button onClick={() => { setView("board"); setSubmitted(false); setForm(emptyForm()); setSubmitError(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-muted)" }}>← Back</button>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>🙏 Submit Prayer Request</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>🙏 {t.prayerBoardSubmitTitle}</div>
           <div />
         </div>
 
@@ -202,7 +204,7 @@ export default function PrayerBoardModal({ onClose, userName }: Props) {
           <>
             {/* Category picker */}
             <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>PRAYER TYPE</label>
+              <label style={labelStyle}>{t.prayerBoardCategory}</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {CATEGORIES.map(cat => {
                   const cs = CAT_STYLE[cat];

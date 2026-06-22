@@ -15,7 +15,7 @@ export interface CommunityEvent {
 }
 
 const STORAGE_KEY = "menashe-community-events";
-const ADMIN_PIN = "1948";
+const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
 
 const CATEGORIES = [
   "Shabbat", "Torah Class", "Community Gathering", "Aliyah", "Prayer", "Celebration", "Youth", "Women", "Lifecycle", "Other",
