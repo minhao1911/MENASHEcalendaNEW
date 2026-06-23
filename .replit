@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "bash"]
+modules = ["nodejs-20", "web", "bash", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -89,3 +89,4 @@ SUPABASE = "pk_test_cHJlc2VudC1waXBlZmlzaC0xNy5jbGVyay5hY2NvdW50cy5kZXYk"
 SUPABASE_API_sec_key = "sk_test_O4HdH2jIETJ5dc37SEPW9p3qhTiEjuTzxsjyq3QJht"
 ADMIN_PIN = "1948"
 VITE_ADMIN_PIN = "1948"
+ADMIN_USER_ID = "user_3FY97P9A6kElvpsVl74YZxr1giS"
