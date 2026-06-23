@@ -1145,6 +1145,62 @@ function DateZmanimCard({
               </div>
             )}
           </div>
+
+          {/* ── Live Location Map ── */}
+          <div style={{ margin: "0 14px 16px" }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6, marginBottom: 8,
+            }}>
+              <span style={{ fontSize: 11 }}>📍</span>
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,168,67,0.6)" }}>
+                YOUR LOCATION
+              </span>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 600, marginLeft: 4 }}>
+                {location.name}
+              </span>
+            </div>
+            <div style={{
+              borderRadius: 13,
+              overflow: "hidden",
+              border: "1px solid rgba(212,168,67,0.2)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+              position: "relative",
+            }}>
+              <iframe
+                title={`Map of ${location.name}`}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${location.lng - 0.06},${location.lat - 0.06},${location.lng + 0.06},${location.lat + 0.06}&layer=mapnik&marker=${location.lat},${location.lng}`}
+                style={{
+                  width: "100%",
+                  height: 170,
+                  border: "none",
+                  display: "block",
+                  filter: "brightness(0.88) saturate(0.85) hue-rotate(185deg)",
+                }}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+              {/* Dark overlay tint for app theme */}
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "rgba(10,14,28,0.18)",
+                pointerEvents: "none",
+                borderRadius: 13,
+              }} />
+              {/* Location pin label */}
+              <div style={{
+                position: "absolute", bottom: 8, left: 8,
+                background: "rgba(10,14,28,0.82)",
+                border: "1px solid rgba(212,168,67,0.3)",
+                borderRadius: 8,
+                padding: "4px 9px",
+                display: "flex", alignItems: "center", gap: 5,
+                backdropFilter: "blur(6px)",
+              }}>
+                <span style={{ fontSize: 10 }}>📍</span>
+                <span style={{ fontSize: 10, color: "#d4a843", fontWeight: 700 }}>{location.name}</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
