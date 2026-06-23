@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export interface CompassCardProps {
   gradient: string;
@@ -16,8 +17,194 @@ export interface CompassCardProps {
   minHeight?: number;
   style?: React.CSSProperties;
   shimmerColor?: string;
+  popupMaxWidth?: number;
 }
 
+/* ─────────────────────────────────────────────
+   Centered floating popup — matches Jerusalem
+   Compass popup style exactly
+───────────────────────────────────────────── */
+function CompassPopup({
+  open,
+  onClose,
+  accentColor,
+  gradient,
+  category,
+  title,
+  subtitle,
+  icon,
+  children,
+  maxWidth = 400,
+}: {
+  open: boolean;
+  onClose: () => void;
+  accentColor: string;
+  gradient: string;
+  category: string;
+  title: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  maxWidth?: number;
+}) {
+  const [visible, setVisible] = useState(false);
+  const [animOut, setAnimOut] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setAnimOut(false);
+      requestAnimationFrame(() => setVisible(true));
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      setVisible(false);
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  function handleClose() {
+    setAnimOut(true);
+    setTimeout(() => { setAnimOut(false); onClose(); }, 280);
+  }
+
+  if (!open && !animOut) return null;
+
+  return createPortal(
+    <>
+      <style>{`
+        @keyframes cc-pop-backdrop-in {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes cc-pop-backdrop-out {
+          from { opacity: 1; }
+          to   { opacity: 0; }
+        }
+        @keyframes cc-pop-card-in {
+          from { opacity: 0; transform: scale(0.82) translateY(16px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes cc-pop-card-out {
+          from { opacity: 1; transform: scale(1) translateY(0); }
+          to   { opacity: 0; transform: scale(0.82) translateY(16px); }
+        }
+        @keyframes cc-shimmer-pop {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+      `}</style>
+
+      {/* Backdrop */}
+      <div
+        onClick={handleClose}
+        style={{
+          position: "fixed", inset: 0, zIndex: 9900,
+          background: "rgba(0,0,0,0.78)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "20px 20px",
+          animation: animOut
+            ? "cc-pop-backdrop-out 0.28s ease forwards"
+            : "cc-pop-backdrop-in 0.22s ease",
+        }}
+      >
+        {/* Card */}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: "100%", maxWidth,
+            background: "linear-gradient(160deg, #0e1020 0%, #0a0e1a 55%, #10090a 100%)",
+            border: `1.5px solid ${accentColor}70`,
+            borderRadius: 24,
+            boxShadow: `0 28px 90px rgba(0,0,0,0.85), 0 0 0 1px ${accentColor}20, inset 0 1px 0 ${accentColor}15`,
+            position: "relative",
+            overflow: "hidden",
+            maxHeight: "85vh",
+            display: "flex", flexDirection: "column",
+            animation: animOut
+              ? "cc-pop-card-out 0.28s cubic-bezier(0.4,0,1,1) forwards"
+              : "cc-pop-card-in 0.32s cubic-bezier(0.34,1.4,0.64,1)",
+          }}
+        >
+          {/* Shimmer overlay */}
+          <div style={{
+            position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
+            background: `linear-gradient(105deg, transparent 30%, ${accentColor}12 50%, transparent 70%)`,
+            backgroundSize: "200% 100%",
+            animation: "cc-shimmer-pop 6s linear infinite",
+          }} />
+
+          {/* Radial accent glow top-right */}
+          <div style={{
+            position: "absolute", top: 0, right: 0, width: 180, height: 180,
+            background: `radial-gradient(ellipse at 80% 20%, ${accentColor}18 0%, transparent 65%)`,
+            pointerEvents: "none", zIndex: 0,
+          }} />
+
+          {/* ── Header ── */}
+          <div style={{
+            position: "relative", zIndex: 1,
+            padding: "22px 22px 18px",
+            borderBottom: `1px solid ${accentColor}20`,
+            flexShrink: 0,
+          }}>
+            {/* Category label + icon row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              {icon && <span style={{ fontSize: 18, lineHeight: 1 }}>{icon}</span>}
+              <span style={{
+                fontSize: 9.5, fontWeight: 900, letterSpacing: "0.18em",
+                color: accentColor, textTransform: "uppercase",
+              }}>{category}</span>
+            </div>
+
+            {/* Title */}
+            <div style={{
+              fontSize: 20, fontWeight: 900, color: "white", lineHeight: 1.2,
+              letterSpacing: "-0.01em", marginBottom: subtitle ? 4 : 0,
+              paddingRight: 36,
+            }}>{title}</div>
+
+            {subtitle && (
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>{subtitle}</div>
+            )}
+
+            {/* Close button */}
+            <button
+              onClick={handleClose}
+              style={{
+                position: "absolute", top: 18, right: 18,
+                width: 32, height: 32, borderRadius: "50%",
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "rgba(255,255,255,0.65)", fontSize: 15, fontWeight: 700,
+                transition: "background 0.15s",
+                flexShrink: 0,
+              }}
+            >✕</button>
+          </div>
+
+          {/* ── Scrollable body ── */}
+          <div style={{
+            position: "relative", zIndex: 1,
+            overflowY: "auto", flex: 1,
+            padding: "0 0 24px",
+            WebkitOverflowScrolling: "touch",
+          }}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
+/* ─────────────────────────────────────────────
+   CompassCard — the card that sits in the feed
+───────────────────────────────────────────── */
 export default function CompassCard({
   gradient,
   accentColor,
@@ -34,56 +221,28 @@ export default function CompassCard({
   minHeight = 200,
   style,
   shimmerColor,
+  popupMaxWidth = 420,
 }: CompassCardProps) {
   const [open, setOpen] = useState(false);
-  const [closing, setClosing] = useState(false);
   const [pressed, setPressed] = useState(false);
-  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const shimmer = shimmerColor ?? accentColor;
 
   function handleTap() {
     if (onTap) { onTap(); return; }
     if (children) setOpen(true);
   }
 
-  function handleClose() {
-    setClosing(true);
-    setTimeout(() => { setOpen(false); setClosing(false); }, 320);
-  }
-
-  useEffect(() => {
-    if (open) { document.body.style.overflow = "hidden"; }
-    else { document.body.style.overflow = ""; }
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
-
-  const shimmer = shimmerColor ?? accentColor;
-
   return (
     <>
       <style>{`
-        @keyframes cc-shimmer {
-          0% { background-position: -200% center; }
+        @keyframes cc-feed-shimmer {
+          0%   { background-position: -200% center; }
           100% { background-position: 200% center; }
         }
-        @keyframes cc-overlay-in {
-          from { opacity: 0; transform: translateY(100%); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes cc-overlay-out {
-          from { opacity: 1; transform: translateY(0); }
-          to   { opacity: 0; transform: translateY(100%); }
-        }
-        @keyframes cc-backdrop-in {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        @keyframes cc-backdrop-out {
-          from { opacity: 1; }
-          to   { opacity: 0; }
-        }
         @keyframes cc-explore-pulse {
-          0%, 100% { opacity: 0.5; transform: translateX(0); }
-          50%  { opacity: 1;   transform: translateX(3px); }
+          0%, 100% { opacity: 0.45; transform: translateX(0); }
+          50%       { opacity: 1;   transform: translateX(3px); }
         }
         .compass-card-root {
           position: relative;
@@ -93,29 +252,27 @@ export default function CompassCard({
           cursor: pointer;
           user-select: none;
           -webkit-tap-highlight-color: transparent;
-          transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1),
-                      box-shadow 0.18s ease;
+          transition: transform 0.16s cubic-bezier(0.34,1.56,0.64,1),
+                      box-shadow 0.16s ease;
           will-change: transform;
         }
-        .compass-card-root:active {
-          transform: scale(0.973);
-        }
+        .compass-card-root:active,
         .compass-card-root.pressed {
-          transform: scale(0.973);
+          transform: scale(0.968);
           box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
         }
-        .compass-card-explore {
-          animation: cc-explore-pulse 1.8s ease-in-out infinite;
+        .cc-explore-chevron {
+          animation: cc-explore-pulse 1.9s ease-in-out infinite;
         }
       `}</style>
 
-      {/* ── Collapsed Card ── */}
+      {/* ── Feed Card ── */}
       <div
         className={`compass-card-root${pressed ? " pressed" : ""}`}
         style={{
           background: gradient,
-          boxShadow: "0 6px 28px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)",
-          border: `1px solid ${accentColor}33`,
+          boxShadow: "0 6px 28px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)",
+          border: `1px solid ${accentColor}30`,
           minHeight,
           ...style,
         }}
@@ -124,47 +281,46 @@ export default function CompassCard({
         onPointerLeave={() => setPressed(false)}
         onPointerCancel={() => setPressed(false)}
       >
-        {/* Shimmer overlay */}
+        {/* Shimmer sweep */}
         <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
-          background: `linear-gradient(105deg, transparent 30%, ${shimmer}18 50%, transparent 70%)`,
+          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, borderRadius: 22,
+          background: `linear-gradient(105deg, transparent 28%, ${shimmer}1a 50%, transparent 72%)`,
           backgroundSize: "200% 100%",
-          animation: "cc-shimmer 5s linear infinite",
-          borderRadius: 22,
+          animation: "cc-feed-shimmer 5s linear infinite",
         }} />
 
-        {/* Gradient fade at bottom */}
+        {/* Bottom gradient fade */}
         <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, height: 80,
-          background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)",
-          pointerEvents: "none", zIndex: 1,
+          position: "absolute", bottom: 0, left: 0, right: 0, height: 70,
+          background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)",
+          pointerEvents: "none", zIndex: 1, borderRadius: "0 0 22px 22px",
         }} />
 
-        {/* Content */}
+        {/* Card content */}
         <div style={{ position: "relative", zIndex: 2 }}>
-          {/* Category + badge row */}
+          {/* Category + badge */}
           <div style={{ padding: "18px 18px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{
-              fontSize: 9.5, fontWeight: 900, letterSpacing: "0.14em",
+              fontSize: 9.5, fontWeight: 900, letterSpacing: "0.15em",
               color: accentColor, textTransform: "uppercase",
-              background: `${accentColor}20`, border: `1px solid ${accentColor}40`,
-              padding: "3px 9px", borderRadius: 20,
+              background: `${accentColor}1e`, border: `1px solid ${accentColor}40`,
+              padding: "3px 10px", borderRadius: 20,
             }}>{category}</span>
             {badge && <div>{badge}</div>}
           </div>
 
           {/* Icon + Title */}
           <div style={{ padding: "12px 18px 0" }}>
-            <div style={{ fontSize: 38, lineHeight: 1, marginBottom: 8, filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.5))" }}>
+            <div style={{ fontSize: 40, lineHeight: 1, marginBottom: 8, filter: "drop-shadow(0 2px 14px rgba(0,0,0,0.5))" }}>
               {icon}
             </div>
             <div style={{
               fontSize: 22, fontWeight: 900, color: "white", lineHeight: 1.15,
               letterSpacing: "-0.02em", marginBottom: subtitle ? 4 : 0,
-              textShadow: "0 1px 8px rgba(0,0,0,0.6)",
+              textShadow: "0 1px 8px rgba(0,0,0,0.55)",
             }}>{title}</div>
             {subtitle && (
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.58)", fontWeight: 500, lineHeight: 1.4 }}>{subtitle}</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500, lineHeight: 1.4 }}>{subtitle}</div>
             )}
           </div>
 
@@ -173,16 +329,20 @@ export default function CompassCard({
             <div style={{ padding: "10px 18px 0" }}>{previewContent}</div>
           )}
 
-          {/* Explore chevron */}
+          {/* Explore indicator */}
           <div style={{
             padding: "12px 18px 16px",
             display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4,
           }}>
-            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>
-              {onTap ? "Open" : "Explore"}
+            <span style={{
+              fontSize: 10, fontWeight: 800, letterSpacing: "0.1em",
+              color: "rgba(255,255,255,0.38)", textTransform: "uppercase",
+            }}>
+              {onTap ? "Open" : "Read"}
             </span>
-            <div className="compass-card-explore">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <div className="cc-explore-chevron">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="rgba(255,255,255,0.42)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </div>
@@ -190,90 +350,21 @@ export default function CompassCard({
         </div>
       </div>
 
-      {/* ── Full-Screen Expanded Overlay ── */}
-      {open && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 9800,
-            background: "rgba(0,0,0,0.7)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            animation: closing ? "cc-backdrop-out 0.32s ease forwards" : "cc-backdrop-in 0.25s ease",
-          }}
-          onClick={handleClose}
+      {/* ── Centered Popup (Jerusalem Compass style) ── */}
+      {children && (
+        <CompassPopup
+          open={open}
+          onClose={() => setOpen(false)}
+          accentColor={accentColor}
+          gradient={gradient}
+          category={category}
+          title={expandedTitle ?? title}
+          subtitle={expandedSubtitle ?? subtitle}
+          icon={icon}
+          maxWidth={popupMaxWidth}
         >
-          <div
-            ref={bodyRef}
-            onClick={e => e.stopPropagation()}
-            style={{
-              position: "absolute", left: 0, right: 0, bottom: 0,
-              maxHeight: "92vh",
-              borderRadius: "24px 24px 0 0",
-              background: "linear-gradient(180deg, #0d1020 0%, #080b14 100%)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderBottom: "none",
-              boxShadow: "0 -8px 60px rgba(0,0,0,0.7)",
-              display: "flex", flexDirection: "column",
-              animation: closing ? "cc-overlay-out 0.32s cubic-bezier(0.4,0,1,1) forwards" : "cc-overlay-in 0.38s cubic-bezier(0.34,1.3,0.64,1)",
-            }}
-          >
-            {/* Expanded Header */}
-            <div style={{
-              background: gradient,
-              borderRadius: "24px 24px 0 0",
-              padding: "22px 20px 18px",
-              flexShrink: 0,
-              position: "relative",
-              overflow: "hidden",
-            }}>
-              {/* Shimmer */}
-              <div style={{
-                position: "absolute", inset: 0, pointerEvents: "none",
-                background: `linear-gradient(105deg, transparent 30%, ${shimmer}18 50%, transparent 70%)`,
-                backgroundSize: "200% 100%",
-                animation: "cc-shimmer 5s linear infinite",
-              }} />
-
-              {/* Pull handle */}
-              <div style={{
-                position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
-                width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.25)",
-              }} />
-
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", position: "relative", zIndex: 1 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{
-                    fontSize: 9, fontWeight: 900, letterSpacing: "0.14em", color: accentColor,
-                    textTransform: "uppercase",
-                    background: `${accentColor}20`, border: `1px solid ${accentColor}40`,
-                    padding: "3px 9px", borderRadius: 20, display: "inline-block", marginBottom: 8,
-                  }}>{category}</span>
-                  <div style={{
-                    fontSize: 24, fontWeight: 900, color: "white", lineHeight: 1.1,
-                    letterSpacing: "-0.02em", marginBottom: expandedSubtitle ? 4 : 0,
-                  }}>{expandedTitle ?? title}</div>
-                  {expandedSubtitle && (
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{expandedSubtitle}</div>
-                  )}
-                </div>
-                <button
-                  onClick={handleClose}
-                  style={{
-                    flexShrink: 0, width: 34, height: 34, borderRadius: "50%",
-                    background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.15)",
-                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 16, color: "rgba(255,255,255,0.8)", marginLeft: 12,
-                  }}
-                >✕</button>
-              </div>
-            </div>
-
-            {/* Scrollable body */}
-            <div style={{ overflowY: "auto", flex: 1, padding: "0 0 40px" }}>
-              {children}
-            </div>
-          </div>
-        </div>
+          {children}
+        </CompassPopup>
       )}
     </>
   );
