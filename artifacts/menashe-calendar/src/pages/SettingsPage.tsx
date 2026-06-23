@@ -8,6 +8,7 @@ import { getYahrzeitEntries, getNextYahrzeit, YartzeitEntry } from "../lib/yahrz
 import TranslationEditorModal from "../modals/TranslationEditorModal";
 
 const BIRTHDAY_KEY = "menashe-my-birthday";
+const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
 
 function getBirthdayCountdown(dateStr: string): { hebrewDay: number; hebrewMonth: number; hebrewYear: number; nextGreg: Date; diffDays: number } | null {
   if (!dateStr) return null;
@@ -77,6 +78,17 @@ export default function SettingsPage({
   const [showTxEditor, setShowTxEditor] = useState(false);
   const [testSent, setTestSent] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // ── Admin panel state ──────────────────────────────────────────────────────
+  const [adminMode, setAdminMode] = useState<"none" | "pin" | "panel">("none");
+  const [adminPinInput, setAdminPinInput] = useState("");
+  const [adminPinError, setAdminPinError] = useState("");
+  const [adminTab, setAdminTab] = useState<"requests" | "users">("requests");
+  const [adminRequests, setAdminRequests] = useState<any[]>([]);
+  const [adminUsers, setAdminUsers] = useState<any[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminActionId, setAdminActionId] = useState<string | null>(null);
+
   const [savedBirthday, setSavedBirthday] = useState(() => {
     try { return localStorage.getItem(BIRTHDAY_KEY) ?? ""; } catch { return ""; }
   });
@@ -187,8 +199,232 @@ export default function SettingsPage({
 
   const anyActive = notifPrefs.shabbat || notifPrefs.havdalah || notifPrefs.holiday || notifPrefs.omer || notifPrefs.prayers || notifPrefs.parasha || notifPrefs.shema;
 
+  // ── Admin panel functions ──────────────────────────────────────────────────
+  async function fetchAdminData() {
+    setAdminLoading(true);
+    try {
+      const [reqRes, usrRes] = await Promise.all([
+        fetch("/api/admin/premium-requests", { headers: { "x-admin-pin": ADMIN_PIN } }),
+        fetch("/api/admin/users", { headers: { "x-admin-pin": ADMIN_PIN } }),
+      ]);
+      if (reqRes.ok) setAdminRequests(await reqRes.json());
+      if (usrRes.ok) setAdminUsers(await usrRes.json());
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  function checkAdminPin() {
+    if (adminPinInput === ADMIN_PIN) {
+      setAdminPinError("");
+      setAdminPinInput("");
+      setAdminMode("panel");
+      fetchAdminData();
+    } else {
+      setAdminPinError("Incorrect PIN. Try again.");
+    }
+  }
+
+  async function handleApprove(userId: string) {
+    setAdminActionId(userId);
+    await fetch(`/api/admin/premium-requests/${userId}/approve`, {
+      method: "PUT",
+      headers: { "x-admin-pin": ADMIN_PIN },
+    });
+    setAdminRequests(r => r.filter(x => x.userId !== userId));
+    setAdminActionId(null);
+  }
+
+  async function handleDeny(userId: string) {
+    setAdminActionId(userId);
+    await fetch(`/api/admin/premium-requests/${userId}/deny`, {
+      method: "PUT",
+      headers: { "x-admin-pin": ADMIN_PIN },
+    });
+    setAdminRequests(r => r.filter(x => x.userId !== userId));
+    setAdminActionId(null);
+  }
+
+  async function handleTogglePremium(userId: string, current: boolean) {
+    setAdminActionId(userId);
+    await fetch(`/api/admin/users/${userId}/premium`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN },
+      body: JSON.stringify({ isPremium: !current }),
+    });
+    setAdminUsers(u => u.map(x => x.userId === userId ? { ...x, isPremium: !current } : x));
+    setAdminActionId(null);
+  }
+
+  // ── Admin Panel (full-page view when authenticated) ───────────────────────
+  if (adminMode === "panel") {
+    return (
+      <div style={{ padding: "0 0 80px" }}>
+        <div className="app-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              onClick={() => setAdminMode("none")}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-primary)", fontSize: 18, padding: "4px 8px 4px 0" }}
+            >←</button>
+            <div className="app-icon">⚙</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>Admin Panel</div>
+          </div>
+          <button
+            onClick={fetchAdminData}
+            style={{ background: "var(--elevated)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, color: "var(--text-muted)" }}
+          >{adminLoading ? "Loading…" : "↻ Refresh"}</button>
+        </div>
+
+        <div style={{ padding: "16px 16px 0" }}>
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {(["requests", "users"] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setAdminTab(tab)}
+                style={{
+                  flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13,
+                  background: adminTab === tab ? "linear-gradient(135deg, #b8860b, #d4a843)" : "var(--elevated)",
+                  color: adminTab === tab ? "#1a0f00" : "var(--text-secondary)",
+                  border: adminTab === tab ? "none" : "1px solid var(--border)",
+                }}
+              >
+                {tab === "requests" ? `📋 Requests ${adminRequests.length > 0 ? `(${adminRequests.length})` : ""}` : "👥 Users"}
+              </button>
+            ))}
+          </div>
+
+          {adminLoading && (
+            <div style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>Loading…</div>
+          )}
+
+          {/* Pending Access Requests */}
+          {!adminLoading && adminTab === "requests" && (
+            <div>
+              <div className="section-header">PENDING PREMIUM REQUESTS</div>
+              {adminRequests.length === 0 ? (
+                <div className="card" style={{ padding: "20px 16px", textAlign: "center" }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>✅</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>No pending requests</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>All access requests have been reviewed.</div>
+                </div>
+              ) : adminRequests.map((req: any) => (
+                <div key={req.userId} className="card" style={{ padding: "14px 16px", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
+                    <div style={{ fontSize: 26, lineHeight: 1 }}>{req.avatarEmoji ?? "👤"}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{req.displayName ?? "Unknown"}</div>
+                      {req.congregation && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{req.congregation}{req.city ? ` · ${req.city}` : ""}</div>}
+                      {req.note && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontStyle: "italic" }}>"{req.note}"</div>}
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>
+                        {new Date(req.requestedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => handleDeny(req.userId)}
+                      disabled={adminActionId === req.userId}
+                      style={{
+                        flex: 1, padding: "9px", borderRadius: 9, cursor: "pointer", fontWeight: 700, fontSize: 13,
+                        background: "transparent", border: "1px solid rgba(239,68,68,0.4)", color: "#ef4444",
+                        opacity: adminActionId === req.userId ? 0.5 : 1,
+                      }}
+                    >✗ Deny</button>
+                    <button
+                      onClick={() => handleApprove(req.userId)}
+                      disabled={adminActionId === req.userId}
+                      style={{
+                        flex: 2, padding: "9px", borderRadius: 9, cursor: "pointer", fontWeight: 800, fontSize: 13,
+                        background: "linear-gradient(135deg, #b8860b, #d4a843)", color: "#1a0f00", border: "none",
+                        opacity: adminActionId === req.userId ? 0.5 : 1,
+                      }}
+                    >{adminActionId === req.userId ? "Processing…" : "✓ Approve Premium"}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* All Users */}
+          {!adminLoading && adminTab === "users" && (
+            <div>
+              <div className="section-header">ALL USERS ({adminUsers.length})</div>
+              {adminUsers.length === 0 ? (
+                <div className="card" style={{ padding: "20px 16px", textAlign: "center" }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No users found.</div>
+                </div>
+              ) : adminUsers.map((user: any) => (
+                <div key={user.userId} className="card" style={{ padding: "12px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ fontSize: 24, lineHeight: 1 }}>{user.avatarEmoji ?? "👤"}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {user.displayName ?? "Unnamed User"}
+                    </div>
+                    {user.congregation && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{user.congregation}{user.city ? ` · ${user.city}` : ""}</div>}
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
+                      {user.role ?? "Member"} {user.isPremium ? "· 👑 Premium" : ""}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePremium(user.userId, user.isPremium)}
+                    disabled={adminActionId === user.userId}
+                    style={{
+                      padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 12,
+                      background: user.isPremium ? "rgba(212,168,67,0.15)" : "var(--elevated)",
+                      color: user.isPremium ? "#d4a843" : "var(--text-muted)",
+                      border: `1px solid ${user.isPremium ? "rgba(212,168,67,0.4)" : "var(--border)"}`,
+                      opacity: adminActionId === user.userId ? 0.5 : 1,
+                      flexShrink: 0,
+                    }}
+                  >{adminActionId === user.userId ? "…" : user.isPremium ? "👑 Premium" : "Free"}</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: "0 0 4px" }}>
+      {/* PIN dialog overlay */}
+      {adminMode === "pin" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 18, padding: 28, width: "100%", maxWidth: 320, textAlign: "center" }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🔐</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>Admin Access</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 18 }}>Enter your admin PIN to continue</div>
+            <input
+              type="password"
+              inputMode="numeric"
+              value={adminPinInput}
+              onChange={e => { setAdminPinInput(e.target.value); setAdminPinError(""); }}
+              onKeyDown={e => e.key === "Enter" && checkAdminPin()}
+              placeholder="• • • •"
+              autoFocus
+              style={{
+                width: "100%", padding: "12px 14px", borderRadius: 10, fontSize: 18, textAlign: "center",
+                background: "var(--elevated)", border: `1px solid ${adminPinError ? "#ef4444" : "var(--border)"}`,
+                color: "var(--text-primary)", outline: "none", letterSpacing: "0.3em", boxSizing: "border-box" as const,
+              }}
+            />
+            {adminPinError && <div style={{ fontSize: 12, color: "#ef4444", marginTop: 6 }}>{adminPinError}</div>}
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button
+                onClick={() => { setAdminMode("none"); setAdminPinInput(""); setAdminPinError(""); }}
+                style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+              >Cancel</button>
+              <button
+                onClick={checkAdminPin}
+                style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #b8860b, #d4a843)", color: "#1a0f00", fontSize: 14, fontWeight: 800, cursor: "pointer" }}
+              >Enter</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="app-header">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div className="app-icon">✡</div>
@@ -975,6 +1211,21 @@ export default function SettingsPage({
           <div style={{ padding: "14px 16px" }} onClick={onSignOut}>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#ef4444", cursor: "pointer" }}>{t.settingsSignOut}</div>
           </div>
+        </div>
+
+        {/* Admin button */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+          <button
+            onClick={() => setAdminMode("pin")}
+            style={{
+              background: "none", border: "1px solid var(--border)", borderRadius: 99,
+              padding: "7px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+              color: "var(--text-muted)", fontSize: 12, fontWeight: 600,
+            }}
+          >
+            <span>🔐</span>
+            <span>Admin</span>
+          </button>
         </div>
 
         {/* Version */}

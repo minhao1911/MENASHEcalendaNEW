@@ -742,9 +742,12 @@ export default function PremiumPage({ onUpgrade, onBack, isPremium = false }: Pr
   );
 }
 
+const UPI_ID = import.meta.env.VITE_UPI_ID ?? "menashepay@upi";
+
 function RequestAccessButton() {
-  const [status, setStatus] = useState<"idle" | "form" | "submitting" | "done" | "pending" | "approved" | "denied">("idle");
+  const [status, setStatus] = useState<"idle" | "payment" | "form" | "submitting" | "done" | "pending" | "approved" | "denied">("idle");
   const [note, setNote] = useState("");
+  const [paidViaUpi, setPaidViaUpi] = useState(false);
   const userId: string = (window as any).Clerk?.user?.id ?? "";
 
   // Check if a request already exists on mount
@@ -819,15 +822,55 @@ function RequestAccessButton() {
     );
   }
 
+  if (status === "payment") {
+    return (
+      <div style={{ borderRadius: 14, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(212,168,67,0.3)", padding: "18px", marginBottom: 10, textAlign: "left" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 22 }}>💳</span>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#d4a843", letterSpacing: "0.05em" }}>PAY ₹1,000 FOR PREMIUM</div>
+        </div>
+        <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 14, lineHeight: 1.7 }}>
+          Send ₹1,000 via UPI to the address below. After payment, tap <strong style={{ color: "#d4a843" }}>"I've Paid"</strong> to submit your request — we'll verify and activate Premium within a few hours.
+        </div>
+        <div style={{
+          background: "rgba(212,168,67,0.08)", border: "1px dashed rgba(212,168,67,0.35)",
+          borderRadius: 10, padding: "12px 14px", marginBottom: 14,
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--muted-foreground)", letterSpacing: "0.06em", marginBottom: 4 }}>UPI ID</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#d4a843", letterSpacing: "0.04em", marginBottom: 8 }}>{UPI_ID}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--muted-foreground)", letterSpacing: "0.06em", marginBottom: 4 }}>AMOUNT</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: "white" }}>₹1,000</div>
+        </div>
+        <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginBottom: 14, lineHeight: 1.6 }}>
+          💡 Add your <strong>name + "Menashe Premium"</strong> in the payment note so we can identify your transaction.
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => setStatus("idle")}
+            style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--muted-foreground)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+          >← Back</button>
+          <button
+            onClick={() => { setPaidViaUpi(true); setNote("Paid ₹1,000 via UPI to " + UPI_ID); setStatus("form"); }}
+            style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: GOLD_GRAD, color: "#1a0f00", fontSize: 13, fontWeight: 800, cursor: "pointer" }}
+          >✓ I've Paid — Submit Request</button>
+        </div>
+      </div>
+    );
+  }
+
   if (status === "form" || status === "submitting") {
     return (
       <div style={{ borderRadius: 14, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(212,168,67,0.2)", padding: "14px", marginBottom: 10, textAlign: "left" }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "#d4a843", letterSpacing: "0.06em", marginBottom: 8 }}>REQUEST PREMIUM ACCESS</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#d4a843", letterSpacing: "0.06em", marginBottom: 8 }}>
+          {paidViaUpi ? "CONFIRM PAYMENT REQUEST" : "REQUEST PREMIUM ACCESS"}
+        </div>
         <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 12, lineHeight: 1.6 }}>
-          A community leader will review and approve your access, usually within 24 hours.
+          {paidViaUpi
+            ? "We'll verify your ₹1,000 UPI payment and activate Premium within a few hours."
+            : "A community leader will review and approve your access, usually within 24 hours."}
         </div>
         <label style={{ fontSize: 11, fontWeight: 700, color: "var(--muted-foreground)", letterSpacing: "0.04em", display: "block", marginBottom: 6 }}>
-          NOTE (optional) — your congregation, city, or reason
+          {paidViaUpi ? "PAYMENT NOTE" : "NOTE (optional) — your congregation, city, or reason"}
         </label>
         <textarea
           value={note}
@@ -843,7 +886,7 @@ function RequestAccessButton() {
         />
         <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <button
-            onClick={() => setStatus("idle")}
+            onClick={() => { setStatus(paidViaUpi ? "payment" : "idle"); }}
             style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--muted-foreground)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
           >
             Cancel
@@ -857,7 +900,7 @@ function RequestAccessButton() {
               opacity: status === "submitting" ? 0.7 : 1,
             }}
           >
-            {status === "submitting" ? "Submitting…" : "✦ Submit Request"}
+            {status === "submitting" ? "Submitting…" : paidViaUpi ? "✦ Confirm Payment Request" : "✦ Submit Request"}
           </button>
         </div>
       </div>
@@ -868,7 +911,7 @@ function RequestAccessButton() {
     <>
       <button
         className="upgrade-btn"
-        onClick={() => setStatus("form")}
+        onClick={() => setStatus("payment")}
         style={{
           width: "100%", padding: "16px 24px",
           background: GOLD_GRAD, color: "#1a0f00",
@@ -878,12 +921,23 @@ function RequestAccessButton() {
           transition: "transform 0.1s", marginBottom: 10,
         }}
       >
-        ✦ Request Premium Access
+        💳 Pay ₹1,000 for Premium
+      </button>
+      <button
+        onClick={() => setStatus("form")}
+        style={{
+          width: "100%", padding: "13px 24px",
+          background: "transparent", color: "#d4a843",
+          border: "1px solid rgba(212,168,67,0.35)", borderRadius: 14, cursor: "pointer",
+          fontWeight: 700, fontSize: 14, marginBottom: 10,
+        }}
+      >
+        ✦ Request Free Access (Owner Approval)
       </button>
       <div style={{ fontSize: 11, color: "var(--muted-foreground)", display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
         <span>✓ Community reviewed</span>
         <span>✓ Approved within 24hrs</span>
-        <span>✓ No payment required</span>
+        <span>✓ Pay ₹1,000 or request free</span>
       </div>
     </>
   );
