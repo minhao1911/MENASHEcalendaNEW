@@ -1031,6 +1031,17 @@ function DateZmanimCard({
 
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${synMap.lng - 0.06},${synMap.lat - 0.06},${synMap.lng + 0.06},${synMap.lat + 0.06}&layer=mapnik&marker=${synMap.lat},${synMap.lng}`;
 
+  // Bearing from current location to Jerusalem (31.7767°N, 35.2345°E)
+  const bearingToJerusalem = (() => {
+    const toRad = (d: number) => d * Math.PI / 180;
+    const lat1 = toRad(location.lat);
+    const lat2 = toRad(31.7767);
+    const dLng = toRad(35.2345 - location.lng);
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  })();
+
   const hebrewDay   = hebrewDayNumeral(hdate.getDate());
   const hebrewMonth = getHebrewMonthName(hdate);
   const hebrewYear  = hdate.getFullYear();
@@ -1260,6 +1271,78 @@ function DateZmanimCard({
                 position: "absolute", inset: 0, background: "rgba(10,14,28,0.15)",
                 pointerEvents: "none", borderRadius: 13,
               }} />
+
+              {/* Jerusalem Compass — top-left overlay */}
+              <div style={{
+                position: "absolute", top: 8, left: 8,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                pointerEvents: "none",
+              }}>
+                {/* Compass disc */}
+                <div style={{
+                  width: 50, height: 50,
+                  background: "rgba(8,11,24,0.88)",
+                  border: "1.5px solid rgba(212,168,67,0.55)",
+                  borderRadius: "50%",
+                  backdropFilter: "blur(8px)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  position: "relative",
+                  boxShadow: "0 2px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,168,67,0.1)",
+                }}>
+                  {/* Cardinal tick marks */}
+                  <svg width="50" height="50" style={{ position: "absolute", top: 0, left: 0, overflow: "visible" }}>
+                    {[0, 45, 90, 135, 180, 225, 270, 315].map(angle => {
+                      const rad = (angle - 90) * Math.PI / 180;
+                      const major = angle % 90 === 0;
+                      const r1 = major ? 19 : 20, r2 = 23;
+                      return (
+                        <line key={angle}
+                          x1={25 + r1 * Math.cos(rad)} y1={25 + r1 * Math.sin(rad)}
+                          x2={25 + r2 * Math.cos(rad)} y2={25 + r2 * Math.sin(rad)}
+                          stroke={major ? "rgba(212,168,67,0.55)" : "rgba(212,168,67,0.2)"}
+                          strokeWidth={major ? 1.5 : 0.8}
+                        />
+                      );
+                    })}
+                  </svg>
+                  {/* Rotating needle */}
+                  <div style={{
+                    width: "100%", height: "100%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transform: `rotate(${bearingToJerusalem}deg)`,
+                    position: "absolute",
+                  }}>
+                    <svg width="34" height="34" viewBox="0 0 34 34">
+                      {/* Gold north tip (points to Jerusalem) */}
+                      <polygon points="17,3 20.5,17 17,15 13.5,17" fill="#f0c050" />
+                      {/* Dim south tip */}
+                      <polygon points="17,31 20.5,17 17,19 13.5,17" fill="rgba(255,255,255,0.18)" />
+                      {/* Centre pivot */}
+                      <circle cx="17" cy="17" r="2.5" fill="#d4a843" stroke="rgba(10,14,28,0.8)" strokeWidth="1" />
+                    </svg>
+                  </div>
+                  {/* ✡ watermark */}
+                  <span style={{
+                    position: "absolute", fontSize: 7,
+                    color: "rgba(212,168,67,0.25)", userSelect: "none",
+                  }}>✡</span>
+                </div>
+                {/* Label */}
+                <div style={{
+                  background: "rgba(8,11,24,0.88)",
+                  border: "1px solid rgba(212,168,67,0.35)",
+                  borderRadius: 5, padding: "2px 7px",
+                  backdropFilter: "blur(6px)",
+                }}>
+                  <span style={{
+                    fontSize: 8, color: "#d4a843",
+                    fontWeight: 800, letterSpacing: "0.1em",
+                  }}>
+                    {t.compassJerusalem.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+
               {/* Pin label */}
               <div style={{
                 position: "absolute", bottom: 8, left: 8,

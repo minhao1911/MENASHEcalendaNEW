@@ -150,6 +150,7 @@ export interface Translations {
   fabPrayerBoard: string;
   fabTorahTracker: string;
   fabLocationMap: string;
+  compassJerusalem: string;
 
   /* ── Translation Editor ── */
   txEditorTitle: string;
@@ -499,6 +500,7 @@ export const en: Translations = {
   fabPrayerBoard: "Prayer Board",
   fabTorahTracker: "Torah Tracker",
   fabLocationMap: "Location Map",
+  compassJerusalem: "Jerusalem",
 
   txEditorTitle: "Edit Thadou Kuki Labels",
   txEditorSubtitle: "Correct any translation below. Changes are saved on your device.",
@@ -830,6 +832,7 @@ export const tk: Translations = {
   fabPrayerBoard: "Thu Dawt Hmang",
   fabTorahTracker: "Torah Chhiar",
   fabLocationMap: "Hmun Kolam",
+  compassJerusalem: "Yerusalem",
 
   txEditorTitle: "Thadou Kuki Label Siam",
   txEditorSubtitle: "Label dang tak chu hnuaiah siam rawh. Na device-ah chhuang a ni.",
