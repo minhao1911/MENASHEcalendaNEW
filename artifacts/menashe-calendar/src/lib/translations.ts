@@ -359,6 +359,7 @@ export interface Translations {
   chatVoiceUnsupported: string;
   chatShare: string;
   chatCopied: string;
+  chatSuggestLabel: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -700,6 +701,7 @@ export const en: Translations = {
   chatVoiceUnsupported: "Voice not supported in this browser",
   chatShare: "Share",
   chatCopied: "Copied!",
+  chatSuggestLabel: "Ask more",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1041,6 +1043,7 @@ export const tk: Translations = {
   chatVoiceUnsupported: "Voice browser-in support lo",
   chatShare: "Share",
   chatCopied: "Copy!",
+  chatSuggestLabel: "Zawk hran",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

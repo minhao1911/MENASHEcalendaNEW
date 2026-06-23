@@ -3297,6 +3297,35 @@ const AI_SUGGESTED = [
   "What are the Zmanim for prayer?",
 ];
 
+const AI_FOLLOWUPS_EN = [
+  "Can you explain that in more detail?",
+  "What does the Torah say about this?",
+  "When is the next upcoming holiday?",
+  "What is Daf Yomi today?",
+  "When is the next Rosh Chodesh?",
+  "How do I observe Havdalah?",
+  "What does this teach us spiritually?",
+  "Tell me more about the Bnei Menashe tradition",
+  "What are the Shalosh Regalim?",
+  "How do I calculate my Hebrew birthday?",
+  "What is the significance of this Parasha?",
+  "What blessings should I say today?",
+];
+const AI_FOLLOWUPS_TK = [
+  "Zawhna hi hrang hrang dik taka sawi la",
+  "Torah-in hian engtia sawi a ni?",
+  "Zing khawm zing a awm tak tak engtin nge?",
+  "Daf Yomi tun hunah eng nge?",
+  "Rosh Chodesh a zing leh engnge?",
+  "Havdalah hi engtiin ka fiamthu ang?",
+  "Spiritual anga engtia zirtirna a neih?",
+  "Bnei Menashe tradition thu hrang hrang sawi la",
+  "Shalosh Regalim chu eng ni nge?",
+  "Ka Hebrew ni thuamhnawm engtiin ka hmu ang?",
+  "Parasha hi engtin nge a manglam?",
+  "Tun ni hian ka sawi tur blessing eng nge?",
+];
+
 async function getAiToken(): Promise<string | null> {
   return (await (window as any).Clerk?.session?.getToken()) ?? null;
 }
@@ -3304,7 +3333,7 @@ async function getAiToken(): Promise<string | null> {
 interface AiMessage { role: "user" | "assistant"; content: string; streaming?: boolean; }
 
 function AiChatFAB() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<AiMessage[]>(() => {
     try {
@@ -3779,6 +3808,45 @@ function AiChatFAB() {
                     </button>
                   </div>
                 )}
+
+                {/* Follow-up suggestions — only after the last completed assistant message */}
+                {msg.role === "assistant" && !msg.streaming && msg.content && i === messages.length - 1 && (() => {
+                  const pool = lang === "tk" ? AI_FOLLOWUPS_TK : AI_FOLLOWUPS_EN;
+                  const offset = Math.floor(i / 2) % (pool.length - 2);
+                  const picks = pool.slice(offset, offset + 3);
+                  return (
+                    <div style={{ paddingLeft: 30, marginTop: 4 }}>
+                      <div style={{ fontSize: 9, color: "#5A4A2A", marginBottom: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                        {t.chatSuggestLabel}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {picks.map((q, qi) => (
+                          <button
+                            key={qi}
+                            onClick={() => { if (!loading) sendMessage(q); }}
+                            style={{
+                              background: "rgba(212,175,55,0.06)",
+                              border: "1px solid rgba(212,175,55,0.15)",
+                              borderRadius: 10,
+                              padding: "5px 10px",
+                              color: "#B89A3A",
+                              fontSize: 10.5,
+                              cursor: loading ? "default" : "pointer",
+                              textAlign: "left",
+                              lineHeight: 1.4,
+                              opacity: loading ? 0.5 : 1,
+                              transition: "all 0.15s",
+                            }}
+                            onMouseOver={e => { if (!loading) { (e.currentTarget as HTMLElement).style.background = "rgba(212,175,55,0.13)"; (e.currentTarget as HTMLElement).style.color = "#D4AF37"; } }}
+                            onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = "rgba(212,175,55,0.06)"; (e.currentTarget as HTMLElement).style.color = "#B89A3A"; }}
+                          >
+                            ↩ {q}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ))}
             <div ref={bottomRef} />
