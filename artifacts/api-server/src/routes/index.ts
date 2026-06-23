@@ -11,6 +11,7 @@ import censusRouter from "./census";
 import announcementsRouter from "./announcements";
 import paymentsRouter from "./payments";
 import calendarRouter from "./calendar";
+import chatRouter from "./chat";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(censusRouter);
 router.use(announcementsRouter);
 router.use(paymentsRouter);
 router.use(calendarRouter);
+router.use(chatRouter);
 
 export default router;

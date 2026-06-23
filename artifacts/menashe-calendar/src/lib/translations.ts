@@ -338,6 +338,16 @@ export interface Translations {
   yartzeitCardSetup: string;
   yartzeitCardToday: string;
   yartzeitCardDays: string;
+
+  /* ── AI Chat Assistant ── */
+  chatTitle: string;
+  chatSubtitle: string;
+  chatWelcomeTitle: string;
+  chatWelcomeDesc: string;
+  chatPlaceholder: string;
+  chatDisclaimer: string;
+  chatError: string;
+  chatFabLabel: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -659,6 +669,15 @@ export const en: Translations = {
   yartzeitCardSetup: "Tap to add a Yahrzeit reminder →",
   yartzeitCardToday: "Today's Yahrzeit",
   yartzeitCardDays: "days away",
+
+  chatTitle: "Rav Menashe AI",
+  chatSubtitle: "Your Jewish calendar & Torah companion",
+  chatWelcomeTitle: "Shalom! How can I help you?",
+  chatWelcomeDesc: "Ask me anything about the Jewish calendar, Torah, prayer times, holidays, or Bnei Menashe traditions.",
+  chatPlaceholder: "Ask about Shabbat, Zmanim, Torah…",
+  chatDisclaimer: "For practical halachic decisions, consult your rabbi.",
+  chatError: "Sorry, I couldn't respond. Please try again.",
+  chatFabLabel: "Ask Rabbi AI",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -980,6 +999,15 @@ export const tk: Translations = {
   yartzeitCardSetup: "Yahrzeit hlabu en →",
   yartzeitCardToday: "Ni tawp Yahrzeit",
   yartzeitCardDays: "ni en",
+
+  chatTitle: "Rav Menashe AI",
+  chatSubtitle: "Jewish kolam & Torah thu ropui",
+  chatWelcomeTitle: "Shalom! Keimah thiam em?",
+  chatWelcomeDesc: "Jewish kolam, Torah, thu dawt hun, ni thianghlim, leh Bnei Menashe thu zawng theih.",
+  chatPlaceholder: "Shabbat, Zmanim, Torah zawng…",
+  chatDisclaimer: "Thu halacha dik tak tan, Rabbi-a din rawh.",
+  chatError: "Thlen theih lo. Chhiar dan hrang hmang.",
+  chatFabLabel: "Rabbi AI Zawng",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

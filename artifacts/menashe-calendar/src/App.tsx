@@ -54,6 +54,7 @@ import OmerModal from "./modals/OmerModal";
 import PrayerTimesModal from "./modals/PrayerTimesModal";
 import CommunityYahrzeitModal from "./modals/CommunityYahrzeitModal";
 import MoreToolsModal from "./pages/MoreToolsModal";
+import ChatModal from "./modals/ChatModal";
 import NotificationDrawer from "./components/NotificationDrawer";
 import InstallPrompt from "./components/InstallPrompt";
 import ShabbatBanner from "./components/ShabbatBanner";
@@ -371,6 +372,7 @@ function AppShell() {
 
   const [activePage, setActivePage] = useState<Page>("home");
   const [modal, setModal] = useState<Modal>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const [dayModal, setDayModal] = useState<DayInfo>(null);
   const [readingBook, setReadingBook] = useState<Book | null>(null);
   const [siddurRefreshKey, setSiddurRefreshKey] = useState(0);
@@ -818,6 +820,36 @@ function AppShell() {
       </div>
       <ShabbatBanner location={location} />
       <InstallPrompt />
+
+      {/* AI Chat FAB */}
+      {!chatOpen && !modal && (
+        <button
+          onClick={() => setChatOpen(true)}
+          aria-label="Open AI Chat"
+          style={{
+            position: "fixed",
+            bottom: 90,
+            right: 18,
+            zIndex: 500,
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            background: "linear-gradient(135deg,#D4AF37,#A0821A)",
+            border: "2px solid rgba(255,220,100,0.3)",
+            boxShadow: "0 4px 20px rgba(212,175,55,0.45), 0 2px 8px rgba(0,0,0,0.5)",
+            color: "#0F1829",
+            fontSize: 22,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          ✡
+        </button>
+      )}
+
+      {chatOpen && <ChatModal onClose={() => setChatOpen(false)} />}
     </LanguageProvider>
   );
 }
