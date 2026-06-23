@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getCurrentParasha, getUpcomingParashiyot } from "../lib/parasha";
 import { getParashaInsights, type ParashaInsights } from "../lib/parashaInsights";
+import { getAliyot, ALIYAH_LABELS } from "../lib/aliyot";
 
 const API_BASE = "/api";
 
@@ -295,6 +296,78 @@ export default function ParashahModal({ onClose }: Props) {
                 {parasha.summary}
               </p>
             </Section>
+
+            {/* ── Aliyot breakdown ── */}
+            {(() => {
+              const aliyot = getAliyot(parasha.name);
+              if (!aliyot) return null;
+              return (
+                <Section icon="🕍" title="Weekly Torah Reading — Aliyot" defaultOpen={false}>
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{
+                      fontSize: 11, color: "var(--text-muted)", marginBottom: 10, lineHeight: 1.5,
+                    }}>
+                      {parasha.book} · {parasha.verses}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)" }}>
+                      {ALIYAH_LABELS.map((label, idx) => {
+                        const verses = aliyot[idx];
+                        if (!verses) return null;
+                        const isMaftir = idx === 7;
+                        return (
+                          <div
+                            key={idx}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 12,
+                              padding: "10px 14px",
+                              borderBottom: idx < 7 ? "1px solid var(--border)" : "none",
+                              background: isMaftir
+                                ? "rgba(212,168,67,0.05)"
+                                : idx % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent",
+                            }}
+                          >
+                            <div style={{
+                              width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                              background: isMaftir ? "rgba(212,168,67,0.15)" : "rgba(255,255,255,0.06)",
+                              border: `1px solid ${isMaftir ? "rgba(212,168,67,0.3)" : "var(--border)"}`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              flexDirection: "column",
+                            }}>
+                              <span style={{
+                                fontSize: isMaftir ? 8 : 10, fontWeight: 800,
+                                color: isMaftir ? "#d4a843" : "var(--text-muted)",
+                                letterSpacing: isMaftir ? ".04em" : 0,
+                                lineHeight: 1,
+                              }}>
+                                {isMaftir ? "M" : `${idx + 1}`}
+                              </span>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: isMaftir ? "#d4a843" : "var(--text-primary)", marginBottom: 1 }}>
+                                {label.en}
+                              </div>
+                              <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                                {parasha.book} {verses}
+                              </div>
+                            </div>
+                            <div style={{
+                              fontFamily: "'Noto Serif Hebrew',serif",
+                              fontSize: 13, color: isMaftir ? "#d4a843" : "var(--text-muted)",
+                              direction: "rtl", flexShrink: 0,
+                            }}>
+                              {label.he}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.5, fontStyle: "italic" }}>
+                      Haftarah: {parasha.haftarah.book} {parasha.haftarah.verses}
+                    </div>
+                  </div>
+                </Section>
+              );
+            })()}
 
             <Section icon="📜" title="Haftarah Reading" defaultOpen={false}>
               <div style={{ marginTop: 12 }}>
