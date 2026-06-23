@@ -965,6 +965,61 @@ function DateZmanimCard({
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
+  // ── Nearby Synagogues state ──
+  interface Synagogue {
+    id: number;
+    name: string;
+    lat: number;
+    lng: number;
+    distKm: number;
+  }
+  const [synMap, setSynMap] = useState<{ lat: number; lng: number }>({ lat: location.lat, lng: location.lng });
+  const [synSelected, setSynSelected] = useState<Synagogue | null>(null);
+  const [synagogues, setSynagogues] = useState<Synagogue[]>([]);
+  const [synLoading, setSynLoading] = useState(false);
+  const [synError, setSynError] = useState(false);
+  const synFetchedRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!expanded) return;
+    const key = `${location.lat.toFixed(4)},${location.lng.toFixed(4)}`;
+    if (synFetchedRef.current === key) return;
+    synFetchedRef.current = key;
+    setSynLoading(true);
+    setSynError(false);
+    setSynagogues([]);
+    setSynSelected(null);
+    setSynMap({ lat: location.lat, lng: location.lng });
+
+    const query = `[out:json][timeout:15];(node["amenity"="place_of_worship"]["religion"="jewish"](around:10000,${location.lat},${location.lng});way["amenity"="place_of_worship"]["religion"="jewish"](around:10000,${location.lat},${location.lng}););out center 12;`;
+    fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`)
+      .then(r => r.json())
+      .then(data => {
+        const toRad = (d: number) => (d * Math.PI) / 180;
+        const distKm = (lat2: number, lng2: number) => {
+          const R = 6371;
+          const dLat = toRad(lat2 - location.lat);
+          const dLng = toRad(lng2 - location.lng);
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(location.lat)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        };
+        const results: Synagogue[] = (data.elements ?? []).map((el: any) => ({
+          id: el.id,
+          name: el.tags?.name || el.tags?.["name:en"] || "Synagogue",
+          lat: el.lat ?? el.center?.lat,
+          lng: el.lon ?? el.center?.lon,
+          distKm: distKm(el.lat ?? el.center?.lat, el.lon ?? el.center?.lon),
+        })).filter((s: Synagogue) => s.lat && s.lng)
+          .sort((a: Synagogue, b: Synagogue) => a.distKm - b.distKm)
+          .slice(0, 8);
+        setSynagogues(results);
+        setSynLoading(false);
+      })
+      .catch(() => { setSynError(true); setSynLoading(false); });
+  }, [expanded, location.lat, location.lng]);
+
+  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${synMap.lng - 0.06},${synMap.lat - 0.06},${synMap.lng + 0.06},${synMap.lat + 0.06}&layer=mapnik&marker=${synMap.lat},${synMap.lng}`;
+
   const hebrewDay   = hebrewDayNumeral(hdate.getDate());
   const hebrewMonth = getHebrewMonthName(hdate);
   const hebrewYear  = hdate.getFullYear();
@@ -1146,59 +1201,193 @@ function DateZmanimCard({
             )}
           </div>
 
-          {/* ── Live Location Map ── */}
+          {/* ── Live Location Map + Nearby Synagogues ── */}
           <div style={{ margin: "0 14px 16px" }}>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 6, marginBottom: 8,
-            }}>
-              <span style={{ fontSize: 11 }}>📍</span>
-              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,168,67,0.6)" }}>
-                YOUR LOCATION
-              </span>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 600, marginLeft: 4 }}>
-                {location.name}
-              </span>
+
+            {/* Header row */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11 }}>🗺️</span>
+                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,168,67,0.6)" }}>
+                  LOCATION MAP
+                </span>
+              </div>
+              {synSelected && (
+                <button
+                  onClick={() => { setSynSelected(null); setSynMap({ lat: location.lat, lng: location.lng }); }}
+                  style={{
+                    background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.25)",
+                    borderRadius: 6, padding: "3px 8px", color: "#d4a843", fontSize: 9,
+                    fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em",
+                  }}
+                >
+                  ← MY LOCATION
+                </button>
+              )}
             </div>
+
+            {/* Map iframe */}
             <div style={{
-              borderRadius: 13,
-              overflow: "hidden",
-              border: "1px solid rgba(212,168,67,0.2)",
+              borderRadius: 13, overflow: "hidden",
+              border: `1px solid ${synSelected ? "rgba(212,168,67,0.35)" : "rgba(212,168,67,0.2)"}`,
               boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
               position: "relative",
+              transition: "border-color 0.2s",
             }}>
               <iframe
-                title={`Map of ${location.name}`}
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${location.lng - 0.06},${location.lat - 0.06},${location.lng + 0.06},${location.lat + 0.06}&layer=mapnik&marker=${location.lat},${location.lng}`}
+                key={mapSrc}
+                title={synSelected ? synSelected.name : `Map of ${location.name}`}
+                src={mapSrc}
                 style={{
-                  width: "100%",
-                  height: 170,
-                  border: "none",
-                  display: "block",
+                  width: "100%", height: 170, border: "none", display: "block",
                   filter: "brightness(0.88) saturate(0.85) hue-rotate(185deg)",
                 }}
                 loading="lazy"
                 referrerPolicy="no-referrer"
               />
-              {/* Dark overlay tint for app theme */}
               <div style={{
-                position: "absolute", inset: 0,
-                background: "rgba(10,14,28,0.18)",
-                pointerEvents: "none",
-                borderRadius: 13,
+                position: "absolute", inset: 0, background: "rgba(10,14,28,0.15)",
+                pointerEvents: "none", borderRadius: 13,
               }} />
-              {/* Location pin label */}
+              {/* Pin label */}
               <div style={{
                 position: "absolute", bottom: 8, left: 8,
-                background: "rgba(10,14,28,0.82)",
-                border: "1px solid rgba(212,168,67,0.3)",
-                borderRadius: 8,
-                padding: "4px 9px",
+                background: "rgba(10,14,28,0.85)", border: "1px solid rgba(212,168,67,0.3)",
+                borderRadius: 8, padding: "4px 9px",
                 display: "flex", alignItems: "center", gap: 5,
                 backdropFilter: "blur(6px)",
               }}>
-                <span style={{ fontSize: 10 }}>📍</span>
-                <span style={{ fontSize: 10, color: "#d4a843", fontWeight: 700 }}>{location.name}</span>
+                <span style={{ fontSize: 10 }}>{synSelected ? "🕍" : "📍"}</span>
+                <span style={{ fontSize: 10, color: "#d4a843", fontWeight: 700, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {synSelected ? synSelected.name : location.name}
+                </span>
               </div>
+              {/* Synagogue badge */}
+              {synSelected && (
+                <div style={{
+                  position: "absolute", top: 8, right: 8,
+                  background: "rgba(212,168,67,0.18)", border: "1px solid rgba(212,168,67,0.4)",
+                  borderRadius: 8, padding: "3px 8px",
+                  fontSize: 9, color: "#f0c050", fontWeight: 800, letterSpacing: "0.08em",
+                  backdropFilter: "blur(6px)",
+                }}>
+                  {synSelected.distKm < 1
+                    ? `${Math.round(synSelected.distKm * 1000)}m away`
+                    : `${synSelected.distKm.toFixed(1)} km away`}
+                </div>
+              )}
+            </div>
+
+            {/* Nearby Synagogues section */}
+            <div style={{ marginTop: 12 }}>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6, marginBottom: 8,
+              }}>
+                <span style={{ fontSize: 11 }}>🕍</span>
+                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,168,67,0.6)" }}>
+                  NEARBY SYNAGOGUES
+                </span>
+                {!synLoading && synagogues.length > 0 && (
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontWeight: 600, marginLeft: 2 }}>
+                    within 10 km
+                  </span>
+                )}
+              </div>
+
+              {synLoading && (
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  gap: 8, padding: "16px 0",
+                }}>
+                  <div style={{
+                    width: 16, height: 16, border: "2px solid rgba(212,168,67,0.2)",
+                    borderTop: "2px solid #d4a843", borderRadius: "50%",
+                    animation: "spin 0.8s linear infinite",
+                  }} />
+                  <span style={{ fontSize: 11, color: "rgba(212,168,67,0.5)" }}>Searching nearby…</span>
+                  <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                </div>
+              )}
+
+              {synError && (
+                <div style={{
+                  padding: "10px 12px", borderRadius: 10,
+                  background: "rgba(255,100,100,0.06)", border: "1px solid rgba(255,100,100,0.15)",
+                  fontSize: 11, color: "rgba(255,150,150,0.7)", textAlign: "center",
+                }}>
+                  Could not load nearby synagogues. Check your connection.
+                </div>
+              )}
+
+              {!synLoading && !synError && synagogues.length === 0 && synFetchedRef.current && (
+                <div style={{
+                  padding: "10px 12px", borderRadius: 10,
+                  background: "rgba(212,168,67,0.04)", border: "1px solid rgba(212,168,67,0.1)",
+                  fontSize: 11, color: "rgba(255,255,255,0.35)", textAlign: "center",
+                }}>
+                  No synagogues found within 10 km of {location.name}.
+                </div>
+              )}
+
+              {!synLoading && synagogues.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {synagogues.map(syn => {
+                    const isActive = synSelected?.id === syn.id;
+                    return (
+                      <button
+                        key={syn.id}
+                        onClick={() => {
+                          setSynSelected(isActive ? null : syn);
+                          setSynMap(isActive ? { lat: location.lat, lng: location.lng } : { lat: syn.lat, lng: syn.lng });
+                        }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "9px 12px", borderRadius: 11,
+                          background: isActive ? "rgba(212,168,67,0.13)" : "rgba(255,255,255,0.04)",
+                          border: `1px solid ${isActive ? "rgba(212,168,67,0.4)" : "rgba(255,255,255,0.07)"}`,
+                          cursor: "pointer", textAlign: "left",
+                          transition: "background 0.15s, border-color 0.15s",
+                          width: "100%",
+                        }}
+                      >
+                        <div style={{
+                          width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+                          background: isActive ? "rgba(212,168,67,0.2)" : "rgba(255,255,255,0.06)",
+                          border: `1px solid ${isActive ? "rgba(212,168,67,0.4)" : "rgba(255,255,255,0.1)"}`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 14,
+                        }}>
+                          🕍
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            fontSize: 12, fontWeight: 700,
+                            color: isActive ? "#f0c050" : "rgba(255,255,255,0.85)",
+                            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                          }}>
+                            {syn.name}
+                          </div>
+                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 1, fontWeight: 600 }}>
+                            {syn.distKm < 1
+                              ? `${Math.round(syn.distKm * 1000)} m away`
+                              : `${syn.distKm.toFixed(1)} km away`}
+                          </div>
+                        </div>
+                        {isActive && (
+                          <div style={{
+                            fontSize: 9, color: "#d4a843", fontWeight: 800,
+                            letterSpacing: "0.08em", background: "rgba(212,168,67,0.1)",
+                            border: "1px solid rgba(212,168,67,0.25)", borderRadius: 5,
+                            padding: "2px 6px", flexShrink: 0,
+                          }}>
+                            ON MAP
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
