@@ -313,6 +313,18 @@ router.post("/premium/request", requireAuth, async (req, res) => {
       [userId, note ?? "", profile.display_name ?? null, profile.avatar_emoji ?? "👤",
        profile.congregation ?? null, profile.city ?? null, profile.country ?? null],
     );
+
+    // Notify admin via push if ADMIN_USER_ID is configured
+    const adminUserId = process.env["ADMIN_USER_ID"];
+    if (adminUserId) {
+      const isPaid = typeof note === "string" && note.toLowerCase().includes("paid");
+      sendPushToUser(adminUserId, {
+        title: isPaid ? "💳 New Payment Request" : "🔔 New Premium Request",
+        body: `${profile.display_name ?? "Someone"} has requested Premium access.${isPaid ? " (UPI payment claimed)" : ""}`,
+        tag: `admin-premium-request-${userId}`,
+      }).catch(() => {});
+    }
+
     return res.json({ ok: true });
   } finally {
     client.release();
