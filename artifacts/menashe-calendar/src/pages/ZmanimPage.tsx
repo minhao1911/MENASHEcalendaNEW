@@ -8,6 +8,8 @@ interface ZmanimPageProps {
   location: Location;
   onInfo: () => void;
   onLocationClick: () => void;
+  isPremium?: boolean;
+  onShowPremium?: () => void;
 }
 
 interface NextZman {
@@ -131,7 +133,7 @@ function RemindButton({ zmanName, time, tz }: { zmanName: string; time: Date | n
   );
 }
 
-export default function ZmanimPage({ location, onInfo, onLocationClick }: ZmanimPageProps) {
+export default function ZmanimPage({ location, onInfo, onLocationClick, isPremium = false, onShowPremium }: ZmanimPageProps) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -196,7 +198,12 @@ export default function ZmanimPage({ location, onInfo, onLocationClick }: Zmanim
             <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{location.name} · {dayLabel}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span className="premium-badge">⭐ PREMIUM</span>
+            <button
+              onClick={onShowPremium}
+              style={{ background: "none", border: "none", padding: 0, cursor: onShowPremium ? "pointer" : "default" }}
+            >
+              <span className="premium-badge">{isPremium ? "👑 PREMIUM" : "⭐ PREMIUM"}</span>
+            </button>
             <button
               onClick={onInfo}
               style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--elevated)", border: "1px solid var(--border)", cursor: "pointer", color: "var(--text-muted)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -366,6 +373,97 @@ export default function ZmanimPage({ location, onInfo, onLocationClick }: Zmanim
             )}
           </div>
         </div>
+
+        {/* ── Premium Feature Card: Week Ahead Zmanim ── */}
+        {isPremium ? (
+          <div
+            className="card"
+            style={{
+              marginBottom: 12,
+              overflow: "hidden",
+              border: "1px solid rgba(212,168,67,0.3)",
+              background: "linear-gradient(135deg, rgba(212,168,67,0.07), rgba(212,168,67,0.02))",
+            }}
+          >
+            <div style={{ padding: "12px 16px 8px", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 16 }}>📅</span>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#d4a843", letterSpacing: "0.06em" }}>WEEK AHEAD — SUNRISE & SUNSET</div>
+            </div>
+            <div>
+              {Array.from({ length: 7 }, (_, i) => {
+                const d = new Date(today);
+                d.setDate(d.getDate() + i);
+                const z = calculateZmanim(d, location.lat, location.lng, location.candleLightingMinutes);
+                const dayName = i === 0 ? "Today" : i === 1 ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short" });
+                const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                const isSat = d.getDay() === 6;
+                const isFri = d.getDay() === 5;
+                return (
+                  <div
+                    key={i}
+                    className="zmanim-row"
+                    style={{
+                      background: i === 0 ? "rgba(212,168,67,0.06)" : undefined,
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: i === 0 ? 700 : 500, color: isSat ? "#ef4444" : "var(--text-primary)" }}>
+                        {dayName}
+                        {isFri && <span style={{ fontSize: 10, color: "#d4a843", marginLeft: 6 }}>🕯 Candle Lighting</span>}
+                        {isSat && <span style={{ fontSize: 10, color: "#ef4444", marginLeft: 6 }}>Shabbat</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{dateStr}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, marginBottom: 1 }}>SUNRISE</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#d4a843" }}>{formatTime(z.sunrise, tz)}</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, marginBottom: 1 }}>SUNSET</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{formatTime(z.sunset, tz)}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div
+            className="card card-interactive"
+            onClick={onShowPremium}
+            style={{
+              marginBottom: 12,
+              padding: "18px 16px",
+              border: "1px solid rgba(212,168,67,0.25)",
+              background: "linear-gradient(135deg, rgba(212,168,67,0.06), rgba(212,168,67,0.02))",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+            }}
+          >
+            <div style={{
+              width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+              background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+            }}>📅</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#d4a843", marginBottom: 3 }}>Week Ahead Zmanim</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                See sunrise, sunset & candle lighting for the next 7 days — Premium feature.
+              </div>
+            </div>
+            <div style={{
+              background: "linear-gradient(135deg, #b8860b, #d4a843)",
+              color: "#1a0900", fontWeight: 700, fontSize: 12,
+              padding: "8px 14px", borderRadius: 99, whiteSpace: "nowrap", flexShrink: 0,
+            }}>
+              👑 Upgrade
+            </div>
+          </div>
+        )}
 
         {/* Hebrew date footer */}
         <div style={{ textAlign: "center", padding: "8px 0 8px", opacity: 0.5 }}>

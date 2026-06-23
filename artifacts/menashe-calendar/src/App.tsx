@@ -555,6 +555,8 @@ function AppShell() {
             location={location}
             onInfo={() => setModal("zmaniminfo")}
             onLocationClick={() => setModal("location")}
+            isPremium={isPremium}
+            onShowPremium={() => setActivePage("premium")}
           />
         );
       case "siddur":
