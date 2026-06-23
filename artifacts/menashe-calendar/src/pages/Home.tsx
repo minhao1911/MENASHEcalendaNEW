@@ -3,6 +3,7 @@ import { useUser } from "@clerk/react";
 import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 import { getOmerDay, buildHebrewText } from "../modals/OmerModal";
 import RoshChodeshBanner from "../components/RoshChodeshBanner";
+import CompassCard from "../components/CompassCard";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import type { ZmanimTimes } from "../lib/zmanim";
@@ -2874,29 +2875,55 @@ export default function Home({
         {/* ── Community Announcement Strip ── */}
         <AnnouncementStrip announcements={unreadAnnouncements} onOpen={onShowAnnouncements} />
 
-        {/* ── Shabbat Countdown Bar ── */}
-        <ShabbatCountdownBar isPremium={isPremium} location={location} onShowPremium={onShowPremium} />
-
-        {/* ── Date + Zmanim Card (collapsible) ── */}
-        <DateZmanimCard
-          today={today} hdate={hdate} zmanim={zmanim}
-          location={location} showCandleLighting={showCandleLighting}
-          onNavigate={onNavigate}
-          forceExpand={mapForceExpand}
-          cardRef={mapCardRef}
-        />
-
-        {/* ── This Week — mini calendar strip ── */}
-        <WeekStrip onNavigate={onNavigate} />
-
-        {/* ── Today at a Glance — Zmanim Timeline ── */}
-        <ZmanimTimeline zmanim={zmanim} location={location} onNavigate={onNavigate} />
-
-        {/* ── Next Holiday Countdown ── */}
-        <NextHolidayCard holidays={holidays} />
-
-        {/* ── Daily Spiritual Briefing ── */}
-        <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
+        {/* ══════════════════════════════════════════
+            TODAY CARD — Hebrew Date + Zmanim
+        ══════════════════════════════════════════ */}
+        <CompassCard
+          gradient="linear-gradient(160deg, #0c1128 0%, #080d1e 45%, #130a1a 100%)"
+          accentColor="#d4a843"
+          shimmerColor="#f0c050"
+          category="TODAY"
+          icon={
+            <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 40, color: "#d4a843", lineHeight: 1, display: "block" }}>
+              {hebrewDay}
+            </span>
+          }
+          title={`${hebrewMonth} ${hebrewYear}`}
+          subtitle={`${dayName} · ${monthStr} ${today.getDate()}, ${yearStr} · ${location.name}`}
+          previewContent={
+            <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+              {[
+                { label: "SUNRISE", time: zmanim.sunrise },
+                { label: "MIDDAY", time: zmanim.chatzot },
+                { label: showCandleLighting && zmanim.candleLighting ? "CANDLES" : "SUNSET", time: showCandleLighting && zmanim.candleLighting ? zmanim.candleLighting : zmanim.sunset },
+              ].map(({ label, time }) => (
+                <div key={label} style={{
+                  flex: 1, textAlign: "center",
+                  background: "rgba(255,255,255,0.06)", borderRadius: 10,
+                  padding: "7px 4px",
+                  border: "1px solid rgba(212,168,67,0.12)",
+                }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(212,168,67,0.7)", letterSpacing: "0.1em", marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "white" }}>{time ? formatTime(time) : "—"}</div>
+                </div>
+              ))}
+            </div>
+          }
+          expandedTitle="Today's Calendar"
+          expandedSubtitle={`${dayName} · ${monthStr} ${today.getDate()}, ${yearStr}`}
+        >
+          <div style={{ padding: "16px 16px 0" }}>
+            <ShabbatCountdownBar isPremium={isPremium} location={location} onShowPremium={onShowPremium} />
+            <DateZmanimCard
+              today={today} hdate={hdate} zmanim={zmanim}
+              location={location} showCandleLighting={showCandleLighting}
+              onNavigate={onNavigate}
+              forceExpand={mapForceExpand}
+            />
+            <WeekStrip onNavigate={onNavigate} />
+            <ZmanimTimeline zmanim={zmanim} location={location} onNavigate={onNavigate} />
+          </div>
+        </CompassCard>
 
         {/* ── Rosh Chodesh banner ── */}
         <RoshChodeshBanner hdate={hdate} />
@@ -2906,143 +2933,154 @@ export default function Home({
           <TodayHolidayCard key={name} name={name} />
         ))}
 
-        {/* ── Omer Counter (during the 49 days) ── */}
-        {omerDay !== null && (
-          <div
-            className="card card-interactive"
-            onClick={onShowOmer}
-            style={{ padding: 14, marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }}
-          >
-            {/* Mini progress ring */}
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <svg width="52" height="52" viewBox="0 0 52 52">
-                <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
-                <circle cx="26" cy="26" r="21" fill="none" stroke="#d4a843" strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 21}
-                  strokeDashoffset={2 * Math.PI * 21 - (omerDay / 49) * 2 * Math.PI * 21}
-                  transform="rotate(-90 26 26)"
-                />
-              </svg>
-              <div style={{
-                position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center",
-              }}>
-                <span style={{ fontSize: 13, fontWeight: 900, color: "var(--text-primary)", lineHeight: 1 }}>{omerDay}</span>
-              </div>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <span className="tag tag-gold" style={{ fontSize: 10 }}>{t.homeOmer}</span>
-                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  {t.omerDayCount.replace("{day}", String(omerDay))}
-                </span>
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 3 }}>
-                {t.omerSefiratTitle}
-              </div>
-              <div style={{
-                fontFamily: "'Noto Serif Hebrew', serif",
-                fontSize: 13, color: "var(--gold)", marginBottom: 4,
-                lineHeight: 1.4, direction: "rtl",
-              }}>
-                {buildHebrewText(omerDay!)}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {(49 - omerDay! === 1 ? t.omerDayLeft : t.omerDaysLeft).replace("{days}", String(49 - omerDay!))}
-              </div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
-          </div>
-        )}
-
-
-        {/* ── Parasha Card ── */}
+        {/* ══════════════════════════════════════════
+            PARASHA CARD — Weekly Torah Portion
+        ══════════════════════════════════════════ */}
         {parasha && (
-          <div className="card card-interactive" style={{ padding: 16, marginBottom: 12 }} onClick={onShowParashah}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 800, letterSpacing: "0.1em" }}>THIS WEEK'S PARASHA</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              {/* Icon */}
-              <div style={{
-                width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                background: "linear-gradient(135deg, rgba(212,168,67,0.2), rgba(212,168,67,0.08))",
-                border: "1px solid rgba(212,168,67,0.25)",
-                display: "flex", alignItems: "center", justifyContent: "center",
+          <CompassCard
+            gradient="linear-gradient(160deg, #071a10 0%, #041410 55%, #0a1a14 100%)"
+            accentColor="#4ade80"
+            shimmerColor="#86efac"
+            category="THIS WEEK'S PARASHA"
+            icon={
+              <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 42, color: "#4ade80", lineHeight: 1, display: "block", filter: "drop-shadow(0 0 12px rgba(74,222,128,0.5))" }}>
+                פ
+              </span>
+            }
+            title={`Parashat ${parasha.name}`}
+            subtitle={`${parasha.book} · ${parasha.verses}`}
+            badge={
+              <span style={{
+                fontSize: 10, fontWeight: 800, color: "#4ade80", letterSpacing: "0.08em",
+                background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)",
+                padding: "3px 9px", borderRadius: 20,
               }}>
-                <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 26, color: "var(--gold)", lineHeight: 1 }}>פ</span>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  Parashat {parasha.name}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{parasha.book} · {parasha.verses}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span className="tag tag-blue" style={{ fontSize: 10 }}>SHABBAT</span>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                    {nextShabbat.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </span>
-                </div>
-              </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6" /></svg>
-            </div>
-          </div>
+                SHABBAT {nextShabbat.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}
+              </span>
+            }
+            onTap={onShowParashah}
+            minHeight={180}
+          />
         )}
 
-        {/* ── Upcoming Holiday ── */}
-        {holidays.length > 0 && (
-          <div className="card card-interactive" style={{ padding: 14, marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }} onClick={onShowHolidays}>
-            <div className="icon-circle" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.2)", fontSize: 22 }}>
-              🌙
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <span className="tag tag-green" style={{ fontSize: 10 }}>UPCOMING</span>
+        {/* ══════════════════════════════════════════
+            HOLIDAYS CARD — Upcoming Jewish Calendar
+        ══════════════════════════════════════════ */}
+        {holidays.length > 0 && (() => {
+          const next = holidays[0];
+          const todayM = new Date(); todayM.setHours(0,0,0,0);
+          const holM = new Date(next.date); holM.setHours(0,0,0,0);
+          const diffD = Math.round((holM.getTime() - todayM.getTime()) / 86400000);
+          const holEmoji = getHolidayEmoji(next.name);
+          const countLbl = diffD === 0 ? "TODAY" : diffD === 1 ? "TOMORROW" : `IN ${diffD} DAYS`;
+          const urgColor = diffD === 0 ? "#ef4444" : diffD <= 7 ? "#fbbf24" : "#d4a843";
+          return (
+            <CompassCard
+              gradient="linear-gradient(160deg, #130820 0%, #0c0518 55%, #180a28 100%)"
+              accentColor="#a78bfa"
+              shimmerColor="#c4b5fd"
+              category="UPCOMING HOLIDAY"
+              icon={<span style={{ fontSize: 42, filter: "drop-shadow(0 0 10px rgba(167,139,250,0.4))" }}>{holEmoji}</span>}
+              title={next.name}
+              subtitle={next.date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+              badge={
+                <span style={{
+                  fontSize: 10, fontWeight: 900, letterSpacing: "0.1em",
+                  color: urgColor, background: `${urgColor}22`, border: `1px solid ${urgColor}44`,
+                  padding: "3px 10px", borderRadius: 20,
+                }}>{countLbl}</span>
+              }
+              onTap={onShowHolidays}
+              minHeight={180}
+            />
+          );
+        })()}
+
+        {/* ══════════════════════════════════════════
+            OMER COUNTER (during 49-day period)
+        ══════════════════════════════════════════ */}
+        {omerDay !== null && (
+          <CompassCard
+            gradient="linear-gradient(160deg, #1a1000 0%, #120c00 55%, #1a1500 100%)"
+            accentColor="#f0c050"
+            shimmerColor="#fde68a"
+            category="SEFIRAT HA-OMER"
+            icon={
+              <div style={{ position: "relative", display: "inline-block", width: 48, height: 48 }}>
+                <svg width="48" height="48" viewBox="0 0 52 52">
+                  <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(240,192,80,0.15)" strokeWidth="5" />
+                  <circle cx="26" cy="26" r="21" fill="none" stroke="#f0c050" strokeWidth="5"
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 21}
+                    strokeDashoffset={2 * Math.PI * 21 - (omerDay / 49) * 2 * Math.PI * 21}
+                    transform="rotate(-90 26 26)"
+                  />
+                </svg>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 14, fontWeight: 900, color: "#f0c050" }}>{omerDay}</span>
+                </div>
               </div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 1 }}>{holidays[0].name}</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {holidays[0].date.toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}
-              </div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6" /></svg>
-          </div>
+            }
+            title={t.omerSefiratTitle}
+            subtitle={`${t.omerDayCount.replace("{day}", String(omerDay))} · ${(49 - omerDay === 1 ? t.omerDayLeft : t.omerDaysLeft).replace("{days}", String(49 - omerDay))}`}
+            onTap={onShowOmer}
+            minHeight={170}
+          />
         )}
 
-        {/* ── Siddur Library ── */}
-        <div
-          onClick={onOpenSiddur}
-          className="card-interactive"
-          style={{
-            marginBottom: 12, borderRadius: 14, overflow: "hidden", cursor: "pointer",
-            background: "linear-gradient(140deg, #1a2a4a 0%, #0f1e38 55%, #1a1a30 100%)",
-            border: "1px solid rgba(212,168,67,0.28)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)",
-          }}
-        >
-          <div style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{
-              width: 50, height: 66, borderRadius: 8, flexShrink: 0,
-              background: "linear-gradient(160deg, #203560, #0f1e38)",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
-              border: "1px solid rgba(212,168,67,0.22)",
-              boxShadow: "3px 4px 12px rgba(0,0,0,0.5)",
-            }}>📚</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: "#d4a843", letterSpacing: "0.12em", marginBottom: 4 }}>SIDDUR LIBRARY</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "white", marginBottom: 3 }}>Sacred Texts & Prayers</div>
-              <div style={{ fontSize: 12, color: "#7a90b0" }}>Siddurim, Tehillim, Torah & more</div>
+        {/* ══════════════════════════════════════════
+            DAILY WISDOM CARD — Torah Thought
+        ══════════════════════════════════════════ */}
+        {(() => {
+          const dayIdx = Math.abs(hdate.abs()) % TORAH_THOUGHTS.length;
+          const thought = TORAH_THOUGHTS[dayIdx];
+          return (
+            <CompassCard
+              gradient="linear-gradient(160deg, #1a0e00 0%, #120900 55%, #1a1000 100%)"
+              accentColor="#fb923c"
+              shimmerColor="#fbbf24"
+              category="DAILY WISDOM"
+              icon={<span style={{ fontSize: 38 }}>✡</span>}
+              title={`"${thought.quote.length > 60 ? thought.quote.slice(0, 60) + "…" : thought.quote}"`}
+              subtitle={thought.source}
+              expandedTitle="Daily Wisdom"
+              expandedSubtitle="Sacred teachings for today"
+            >
+              <div style={{ padding: "20px 20px 0" }}>
+                <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
+              </div>
+            </CompassCard>
+          );
+        })()}
+
+        {/* ══════════════════════════════════════════
+            SIDDUR LIBRARY CARD
+        ══════════════════════════════════════════ */}
+        <CompassCard
+          gradient="linear-gradient(160deg, #0a1630 0%, #06101e 55%, #0f1838 100%)"
+          accentColor="#d4a843"
+          shimmerColor="#f0c050"
+          category="SIDDUR LIBRARY"
+          icon={<span style={{ fontSize: 42 }}>📚</span>}
+          title="Sacred Texts & Prayers"
+          subtitle="Siddurim, Tehillim, Torah & Kuki Books"
+          previewContent={
+            <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
+              {["Siddur", "Tehillim", "Torah", "Kuki Books"].map(cat => (
+                <div key={cat} style={{
+                  flex: 1, textAlign: "center",
+                  background: "rgba(212,168,67,0.07)",
+                  border: "1px solid rgba(212,168,67,0.14)",
+                  borderRadius: 8, padding: "5px 2px",
+                  fontSize: 9, fontWeight: 700, color: "rgba(212,168,67,0.7)",
+                  letterSpacing: "0.05em",
+                }}>{cat}</div>
+              ))}
             </div>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(212,168,67,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4a843" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-          </div>
-          <div style={{ display: "flex", borderTop: "1px solid rgba(212,168,67,0.1)", padding: "8px 16px", gap: 0 }}>
-            {["Siddur", "Tehillim", "Torah", "Kuki Books"].map((cat, i, arr) => (
-              <div key={cat} style={{ flex: 1, fontSize: 10, color: "#64748b", fontWeight: 700, letterSpacing: "0.06em", textAlign: "center", borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>{cat}</div>
-            ))}
-          </div>
-        </div>
+          }
+          onTap={onOpenSiddur}
+          minHeight={200}
+        />
 
         {/* ── Quick Actions ── */}
         <div className="quick-action-grid" style={{ marginBottom: 12 }}>
