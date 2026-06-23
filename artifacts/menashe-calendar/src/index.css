@@ -460,6 +460,22 @@ html, body, #root {
 
 .popup-card > * { position: relative; z-index: 1; }
 
+/* Drag handle inside popup-card — shows swipe-to-close affordance */
+.popup-handle {
+  width: 44px;
+  height: 5px;
+  background: rgba(212,168,67,0.38);
+  border-radius: 99px;
+  margin: 4px auto 16px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.light-theme .popup-handle {
+  background: rgba(160,110,30,0.35);
+}
+
 .modal-sheet {
   background: rgba(15, 27, 48, 0.96);
   backdrop-filter: blur(20px);
