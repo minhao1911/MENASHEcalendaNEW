@@ -2576,11 +2576,14 @@ export default function Home({
 
   const mapCardRef = useRef<HTMLDivElement>(null);
   const [mapForceExpand, setMapForceExpand] = useState(false);
+  const [showCompassCard, setShowCompassCard] = useState(false);
 
   function onShowMap() {
     setMapForceExpand(true);
     setTimeout(() => setMapForceExpand(false), 200);
   }
+
+  function onShowCompass() { setShowCompassCard(true); }
 
   const [candleCountdown, setCandleCountdown] = useState("");
   const [showShabbatBanner, setShowShabbatBanner] = useState(false);
@@ -3090,8 +3093,192 @@ export default function Home({
         onShowPrayerBoard={onShowPrayerBoard}
         onShowTorahTracker={onShowTorahTracker}
         onShowMap={onShowMap}
+        onShowCompass={onShowCompass}
         announcementCount={announcementCount}
       />
+
+      {/* ── Jerusalem Compass Card overlay ── */}
+      {showCompassCard && (() => {
+        const toRad = (d: number) => d * Math.PI / 180;
+        const lat1 = toRad(location.lat);
+        const lat2 = toRad(31.7767);
+        const dLng = toRad(35.2345 - location.lng);
+        const y = Math.sin(dLng) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+        const bearing = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+
+        // Great-circle distance to Jerusalem
+        const R = 6371;
+        const dLat2 = toRad(31.7767 - location.lat);
+        const dLng2 = toRad(35.2345 - location.lng);
+        const a = Math.sin(dLat2 / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng2 / 2) ** 2;
+        const distKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+
+        return (
+          <div
+            onClick={() => setShowCompassCard(false)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 9000,
+              background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "0 24px",
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: "100%", maxWidth: 340,
+                background: "linear-gradient(160deg, #0e1020 0%, #0a0e1a 55%, #10090a 100%)",
+                border: "1.5px solid rgba(212,168,67,0.45)",
+                borderRadius: 24,
+                padding: "28px 24px 24px",
+                boxShadow: "0 24px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(212,168,67,0.1)",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 0,
+                position: "relative",
+              }}
+            >
+              {/* Close */}
+              <button
+                onClick={() => setShowCompassCard(false)}
+                style={{
+                  position: "absolute", top: 14, right: 14,
+                  background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "50%", width: 30, height: 30, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "rgba(255,255,255,0.6)", fontSize: 14, fontWeight: 700,
+                }}
+              >✕</button>
+
+              {/* Title */}
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: "rgba(212,168,67,0.6)", marginBottom: 20 }}>
+                🧭 {t.fabCompass.toUpperCase()}
+              </div>
+
+              {/* Large compass disc */}
+              <div style={{
+                width: 200, height: 200, borderRadius: "50%", position: "relative",
+                background: "radial-gradient(circle at 40% 35%, rgba(212,168,67,0.08) 0%, rgba(8,11,24,0.95) 65%)",
+                border: "2px solid rgba(212,168,67,0.45)",
+                boxShadow: "0 0 40px rgba(212,168,67,0.12), inset 0 0 30px rgba(0,0,0,0.5)",
+                marginBottom: 20,
+              }}>
+                <style>{`
+                  @keyframes compassPulse {
+                    0%, 100% { box-shadow: 0 0 40px rgba(212,168,67,0.12), inset 0 0 30px rgba(0,0,0,0.5); }
+                    50% { box-shadow: 0 0 60px rgba(212,168,67,0.22), inset 0 0 30px rgba(0,0,0,0.5); }
+                  }
+                `}</style>
+
+                {/* Degree ring */}
+                <svg width="200" height="200" style={{ position: "absolute", top: 0, left: 0 }}>
+                  {/* Cardinal labels */}
+                  {[{ a: 0, l: "N" }, { a: 90, l: "E" }, { a: 180, l: "S" }, { a: 270, l: "W" }].map(({ a, l }) => {
+                    const rad = (a - 90) * Math.PI / 180;
+                    const r = 82;
+                    return (
+                      <text key={l}
+                        x={100 + r * Math.cos(rad)} y={100 + r * Math.sin(rad)}
+                        textAnchor="middle" dominantBaseline="central"
+                        fill="rgba(212,168,67,0.5)" fontSize="11" fontWeight="800"
+                        fontFamily="system-ui, sans-serif" letterSpacing="0.05em"
+                      >{l}</text>
+                    );
+                  })}
+                  {/* Tick marks every 30° */}
+                  {Array.from({ length: 12 }, (_, i) => i * 30).map(angle => {
+                    const rad = (angle - 90) * Math.PI / 180;
+                    const major = angle % 90 === 0;
+                    const r1 = major ? 68 : 71, r2 = 76;
+                    return (
+                      <line key={angle}
+                        x1={100 + r1 * Math.cos(rad)} y1={100 + r1 * Math.sin(rad)}
+                        x2={100 + r2 * Math.cos(rad)} y2={100 + r2 * Math.sin(rad)}
+                        stroke={major ? "rgba(212,168,67,0.55)" : "rgba(212,168,67,0.22)"}
+                        strokeWidth={major ? 2 : 1}
+                      />
+                    );
+                  })}
+                  {/* Inner ring */}
+                  <circle cx="100" cy="100" r="63" fill="none" stroke="rgba(212,168,67,0.1)" strokeWidth="1" />
+                </svg>
+
+                {/* Rotating needle */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transform: `rotate(${bearing}deg)`,
+                  transition: "transform 0.6s cubic-bezier(0.34,1.56,0.64,1)",
+                }}>
+                  <svg width="120" height="120" viewBox="0 0 120 120">
+                    {/* Gold north tip → Jerusalem */}
+                    <polygon points="60,10 67,58 60,52 53,58"
+                      fill="url(#goldNeedle)" />
+                    <defs>
+                      <linearGradient id="goldNeedle" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ffe066" />
+                        <stop offset="100%" stopColor="#c8860a" />
+                      </linearGradient>
+                    </defs>
+                    {/* Dim south tail */}
+                    <polygon points="60,110 67,62 60,68 53,62"
+                      fill="rgba(255,255,255,0.15)" />
+                    {/* Centre ring */}
+                    <circle cx="60" cy="60" r="7" fill="#0a0e1a" stroke="#d4a843" strokeWidth="2" />
+                    <circle cx="60" cy="60" r="3" fill="#f0c050" />
+                  </svg>
+                </div>
+
+                {/* ✡ centre watermark */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  pointerEvents: "none",
+                }}>
+                  <span style={{ fontSize: 13, color: "rgba(212,168,67,0.18)", userSelect: "none" }}>✡</span>
+                </div>
+              </div>
+
+              {/* JERUSALEM label */}
+              <div style={{
+                fontSize: 22, fontWeight: 900, color: "#f0c050",
+                letterSpacing: "0.1em", marginBottom: 6,
+                fontFamily: "'Noto Serif Hebrew', serif",
+              }}>
+                {t.compassJerusalem.toUpperCase()}
+              </div>
+
+              {/* Stats row */}
+              <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 11, color: "rgba(212,168,67,0.5)", fontWeight: 800, letterSpacing: "0.1em", marginBottom: 2 }}>
+                    {t.compassBearing.toUpperCase()}
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: "white" }}>
+                    {Math.round(bearing)}°
+                  </div>
+                </div>
+                <div style={{ width: 1, background: "rgba(212,168,67,0.15)" }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 11, color: "rgba(212,168,67,0.5)", fontWeight: 800, letterSpacing: "0.1em", marginBottom: 2 }}>
+                    {t.compassDistKm.toUpperCase()}
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: "white" }}>
+                    {distKm.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              {/* From city */}
+              <div style={{
+                fontSize: 11, color: "rgba(255,255,255,0.3)", fontWeight: 600,
+                letterSpacing: "0.05em",
+              }}>
+                {t.compassFromCity} {location.name}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
@@ -3099,7 +3286,7 @@ export default function Home({
 
 function CommunityFAB({
   onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit,
-  onShowMussar, onShowPrayerBoard, onShowTorahTracker, onShowMap, announcementCount,
+  onShowMussar, onShowPrayerBoard, onShowTorahTracker, onShowMap, onShowCompass, announcementCount,
 }: {
   onShowAnnouncements: () => void;
   onShowEvents: () => void;
@@ -3108,6 +3295,7 @@ function CommunityFAB({
   onShowPrayerBoard: () => void;
   onShowTorahTracker: () => void;
   onShowMap: () => void;
+  onShowCompass: () => void;
   announcementCount: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -3118,11 +3306,11 @@ function CommunityFAB({
   function triggerClose() {
     setIsClosing(true);
     if (closeTimer.current) clearTimeout(closeTimer.current);
-    // 7 items × 70ms stagger + 400ms animation = 890ms; wait 920ms
+    // 8 items × 70ms stagger + 400ms animation = 960ms; wait 990ms
     closeTimer.current = setTimeout(() => {
       setOpen(false);
       setIsClosing(false);
-    }, 920);
+    }, 990);
   }
 
   const [upcomingEventCount, setUpcomingEventCount] = useState(0);
@@ -3180,6 +3368,7 @@ function CommunityFAB({
     { label: t.fabPrayerBoard, icon: "🙏", action: onShowPrayerBoard },
     { label: t.fabTorahTracker, icon: "✡", action: onShowTorahTracker },
     { label: t.fabLocationMap, icon: "🗺️", action: onShowMap },
+    { label: t.fabCompass, icon: "🧭", action: onShowCompass },
   ];
 
   function handleItem(action: () => void) {
