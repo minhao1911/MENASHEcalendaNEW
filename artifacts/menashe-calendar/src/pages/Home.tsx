@@ -1823,6 +1823,16 @@ function ShabbatCountdownBar({
 
   const [countdown, setCountdown] = useState("");
   const [isTonight, setIsTonight] = useState(false);
+  const [minimised, setMinimised] = useState(() => {
+    try { return localStorage.getItem("menashe-shabbat-bar-minimised") === "true"; } catch { return false; }
+  });
+
+  function toggleMinimise(e: React.MouseEvent) {
+    e.stopPropagation();
+    const next = !minimised;
+    setMinimised(next);
+    try { localStorage.setItem("menashe-shabbat-bar-minimised", String(next)); } catch {}
+  }
 
   useEffect(() => {
     function getNextCandleLighting(): Date | null {
@@ -1867,6 +1877,43 @@ function ShabbatCountdownBar({
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [canAccess, location, t.shabbatBarTonightLabel]);
+
+  /* ── Minimised compact strip ── */
+  if (minimised) {
+    const compactText = canAccess && countdown ? `🕯 ${t.shabbatBarTitle} · ${countdown}` : `🕯 ${t.shabbatBarTitle}`;
+    return (
+      <div style={{ marginBottom: 14 }}>
+        <div style={{
+          borderRadius: 12, display: "flex", alignItems: "center", gap: 10,
+          padding: "9px 12px",
+          background: canAccess
+            ? "rgba(212,168,67,0.07)"
+            : "rgba(100,100,100,0.07)",
+          border: canAccess
+            ? "1px solid rgba(212,168,67,0.22)"
+            : "1px solid rgba(120,120,120,0.15)",
+        }}>
+          <span style={{ fontSize: 16, flexShrink: 0 }}>🕯</span>
+          <span style={{
+            flex: 1, fontSize: 13, fontWeight: 600,
+            color: canAccess ? "#d4a843" : "var(--text-muted)",
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          }}>
+            {compactText}
+          </span>
+          <button
+            onClick={toggleMinimise}
+            aria-label="Expand candle lighting bar"
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              padding: "4px 6px", color: "rgba(255,255,255,0.4)",
+              fontSize: 13, lineHeight: 1, flexShrink: 0,
+            }}
+          >▼</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginBottom: 14 }}>
@@ -1978,34 +2025,57 @@ function ShabbatCountdownBar({
             )}
           </div>
 
-          {/* Right side: upgrade button OR candle time */}
+          {/* Right side: upgrade button OR candle time + minimise */}
           {canAccess ? (
-            <div style={{ flexShrink: 0, textAlign: "right" }}>
-              <div style={{ fontSize: 8, fontWeight: 700, color: "rgba(212,168,67,0.5)", letterSpacing: ".07em", textTransform: "uppercase", marginBottom: 2 }}>
-                {t.shabbatCandleLighting}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 8, fontWeight: 700, color: "rgba(212,168,67,0.5)", letterSpacing: ".07em", textTransform: "uppercase", marginBottom: 2 }}>
+                  {t.shabbatCandleLighting}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
+                  {(() => {
+                    const now = new Date();
+                    const daysUntilFriday = (5 - now.getDay() + 7) % 7;
+                    const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilFriday);
+                    const z = calculateZmanim(targetDate, location.lat, location.lng, location.candleLightingMinutes);
+                    return z.candleLighting ? formatTime(z.candleLighting) : "—";
+                  })()}
+                </div>
               </div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
-                {(() => {
-                  const now = new Date();
-                  const daysUntilFriday = (5 - now.getDay() + 7) % 7;
-                  const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilFriday);
-                  const z = calculateZmanim(targetDate, location.lat, location.lng, location.candleLightingMinutes);
-                  return z.candleLighting ? formatTime(z.candleLighting) : "—";
-                })()}
-              </div>
+              <button
+                onClick={toggleMinimise}
+                aria-label="Minimise candle lighting bar"
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  padding: "6px", color: "rgba(255,255,255,0.35)",
+                  fontSize: 13, lineHeight: 1, borderRadius: 6,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >▲</button>
             </div>
           ) : (
-            <button
-              onClick={onShowPremium}
-              style={{
-                flexShrink: 0, padding: "6px 10px", borderRadius: 10, border: "none",
-                background: "linear-gradient(90deg, #6b4800, #d4a843)",
-                color: "#1a0900", fontSize: 10, fontWeight: 900, cursor: "pointer",
-                letterSpacing: ".04em",
-              }}
-            >
-              {t.shabbatBarUpgradeBtn}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              <button
+                onClick={onShowPremium}
+                style={{
+                  padding: "6px 10px", borderRadius: 10, border: "none",
+                  background: "linear-gradient(90deg, #6b4800, #d4a843)",
+                  color: "#1a0900", fontSize: 10, fontWeight: 900, cursor: "pointer",
+                  letterSpacing: ".04em",
+                }}
+              >
+                {t.shabbatBarUpgradeBtn}
+              </button>
+              <button
+                onClick={toggleMinimise}
+                aria-label="Minimise candle lighting bar"
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  padding: "6px", color: "rgba(255,255,255,0.3)",
+                  fontSize: 13, lineHeight: 1, borderRadius: 6,
+                }}
+              >▲</button>
+            </div>
           )}
         </div>
       </div>
