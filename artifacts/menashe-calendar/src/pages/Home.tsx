@@ -953,7 +953,7 @@ function CommunityCard({ onShowCommunity, onShowCensus, onShowMembers }: { onSho
 }
 
 function DateZmanimCard({
-  today, hdate, zmanim, location, showCandleLighting, onNavigate,
+  today, hdate, zmanim, location, showCandleLighting, onNavigate, forceExpand, cardRef,
 }: {
   today: Date;
   hdate: import("@hebcal/core").HDate;
@@ -961,9 +961,20 @@ function DateZmanimCard({
   location: Location;
   showCandleLighting: boolean;
   onNavigate: (page: string) => void;
+  forceExpand?: boolean;
+  cardRef?: React.RefObject<HTMLDivElement>;
 }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (forceExpand) {
+      setExpanded(true);
+      setTimeout(() => {
+        cardRef?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  }, [forceExpand]);
 
   // ── Nearby Synagogues state ──
   interface Synagogue {
@@ -1028,7 +1039,7 @@ function DateZmanimCard({
   const yearStr     = today.getFullYear();
 
   return (
-    <div style={{
+    <div ref={cardRef} style={{
       marginBottom: 12, borderRadius: 18, overflow: "hidden",
       background: "linear-gradient(160deg, #0e1020 0%, #0a0e1a 50%, #10090a 100%)",
       border: `1px solid ${expanded ? "rgba(212,168,67,0.4)" : "rgba(212,168,67,0.22)"}`,
@@ -2480,6 +2491,14 @@ export default function Home({
   const todayHolidays = getTodayHolidays();
   const omerDay = getOmerDay(today);
 
+  const mapCardRef = useRef<HTMLDivElement>(null);
+  const [mapForceExpand, setMapForceExpand] = useState(false);
+
+  function onShowMap() {
+    setMapForceExpand(true);
+    setTimeout(() => setMapForceExpand(false), 200);
+  }
+
   const [candleCountdown, setCandleCountdown] = useState("");
   const [showShabbatBanner, setShowShabbatBanner] = useState(false);
   const candleNotifFiredRef = useRef<string>("");
@@ -2777,6 +2796,8 @@ export default function Home({
           today={today} hdate={hdate} zmanim={zmanim}
           location={location} showCandleLighting={showCandleLighting}
           onNavigate={onNavigate}
+          forceExpand={mapForceExpand}
+          cardRef={mapCardRef}
         />
 
         {/* ── This Week — mini calendar strip ── */}
@@ -2985,6 +3006,7 @@ export default function Home({
         onShowMussar={onShowMussar}
         onShowPrayerBoard={onShowPrayerBoard}
         onShowTorahTracker={onShowTorahTracker}
+        onShowMap={onShowMap}
         announcementCount={announcementCount}
       />
 
@@ -2994,7 +3016,7 @@ export default function Home({
 
 function CommunityFAB({
   onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit,
-  onShowMussar, onShowPrayerBoard, onShowTorahTracker, announcementCount,
+  onShowMussar, onShowPrayerBoard, onShowTorahTracker, onShowMap, announcementCount,
 }: {
   onShowAnnouncements: () => void;
   onShowEvents: () => void;
@@ -3002,6 +3024,7 @@ function CommunityFAB({
   onShowMussar: () => void;
   onShowPrayerBoard: () => void;
   onShowTorahTracker: () => void;
+  onShowMap: () => void;
   announcementCount: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -3012,11 +3035,11 @@ function CommunityFAB({
   function triggerClose() {
     setIsClosing(true);
     if (closeTimer.current) clearTimeout(closeTimer.current);
-    // 6 items × 70ms stagger + 400ms animation = 820ms; wait 850ms
+    // 7 items × 70ms stagger + 400ms animation = 890ms; wait 920ms
     closeTimer.current = setTimeout(() => {
       setOpen(false);
       setIsClosing(false);
-    }, 850);
+    }, 920);
   }
 
   const [upcomingEventCount, setUpcomingEventCount] = useState(0);
@@ -3073,6 +3096,7 @@ function CommunityFAB({
     { label: t.fabTorahWisdom, icon: "📖", action: onShowMussar },
     { label: t.fabPrayerBoard, icon: "🙏", action: onShowPrayerBoard },
     { label: t.fabTorahTracker, icon: "✡", action: onShowTorahTracker },
+    { label: t.fabLocationMap, icon: "🗺️", action: onShowMap },
   ];
 
   function handleItem(action: () => void) {

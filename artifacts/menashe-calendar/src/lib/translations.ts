@@ -149,6 +149,7 @@ export interface Translations {
   fabTorahWisdom: string;
   fabPrayerBoard: string;
   fabTorahTracker: string;
+  fabLocationMap: string;
 
   /* ── Translation Editor ── */
   txEditorTitle: string;
@@ -497,6 +498,7 @@ export const en: Translations = {
   fabTorahWisdom: "48 Ways to Torah Wisdom",
   fabPrayerBoard: "Prayer Board",
   fabTorahTracker: "Torah Tracker",
+  fabLocationMap: "Location Map",
 
   txEditorTitle: "Edit Thadou Kuki Labels",
   txEditorSubtitle: "Correct any translation below. Changes are saved on your device.",
@@ -827,6 +829,7 @@ export const tk: Translations = {
   fabTorahWisdom: "Torah Thu 48 Dan",
   fabPrayerBoard: "Thu Dawt Hmang",
   fabTorahTracker: "Torah Chhiar",
+  fabLocationMap: "Hmun Kolam",
 
   txEditorTitle: "Thadou Kuki Label Siam",
   txEditorSubtitle: "Label dang tak chu hnuaiah siam rawh. Na device-ah chhuang a ni.",
