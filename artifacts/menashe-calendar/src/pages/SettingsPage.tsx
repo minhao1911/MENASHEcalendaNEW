@@ -127,6 +127,8 @@ export default function SettingsPage({
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminActionId, setAdminActionId] = useState<string | null>(null);
+  const [selectedRequests, setSelectedRequests] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   const [savedBirthday, setSavedBirthday] = useState(() => {
     try { return localStorage.getItem(BIRTHDAY_KEY) ?? ""; } catch { return ""; }
@@ -271,6 +273,7 @@ export default function SettingsPage({
       headers: { "x-admin-pin": ADMIN_PIN },
     });
     setAdminRequests(r => r.filter(x => x.userId !== userId));
+    setSelectedRequests(s => { const n = new Set(s); n.delete(userId); return n; });
     setAdminActionId(null);
   }
 
@@ -281,7 +284,54 @@ export default function SettingsPage({
       headers: { "x-admin-pin": ADMIN_PIN },
     });
     setAdminRequests(r => r.filter(x => x.userId !== userId));
+    setSelectedRequests(s => { const n = new Set(s); n.delete(userId); return n; });
     setAdminActionId(null);
+  }
+
+  async function handleBulkApprove() {
+    const ids = Array.from(selectedRequests);
+    if (ids.length === 0) return;
+    setBulkProcessing(true);
+    await Promise.all(ids.map(userId =>
+      fetch(`/api/admin/premium-requests/${userId}/approve`, {
+        method: "PUT",
+        headers: { "x-admin-pin": ADMIN_PIN },
+      }).catch(() => {})
+    ));
+    setAdminRequests(r => r.filter(x => !selectedRequests.has(x.userId)));
+    setSelectedRequests(new Set());
+    setBulkProcessing(false);
+  }
+
+  async function handleBulkDeny() {
+    const ids = Array.from(selectedRequests);
+    if (ids.length === 0) return;
+    setBulkProcessing(true);
+    await Promise.all(ids.map(userId =>
+      fetch(`/api/admin/premium-requests/${userId}/deny`, {
+        method: "PUT",
+        headers: { "x-admin-pin": ADMIN_PIN },
+      }).catch(() => {})
+    ));
+    setAdminRequests(r => r.filter(x => !selectedRequests.has(x.userId)));
+    setSelectedRequests(new Set());
+    setBulkProcessing(false);
+  }
+
+  function toggleSelectRequest(userId: string) {
+    setSelectedRequests(s => {
+      const n = new Set(s);
+      if (n.has(userId)) n.delete(userId); else n.add(userId);
+      return n;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedRequests.size === adminRequests.length) {
+      setSelectedRequests(new Set());
+    } else {
+      setSelectedRequests(new Set(adminRequests.map((r: any) => r.userId)));
+    }
   }
 
   async function handleTogglePremium(userId: string, current: boolean) {
@@ -350,41 +400,144 @@ export default function SettingsPage({
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>No pending requests</div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>All access requests have been reviewed.</div>
                 </div>
-              ) : adminRequests.map((req: any) => (
-                <div key={req.userId} className="card" style={{ padding: "14px 16px", marginBottom: 10 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
-                    <div style={{ fontSize: 26, lineHeight: 1 }}>{req.avatarEmoji ?? "👤"}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{req.displayName ?? "Unknown"}</div>
-                      {req.congregation && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{req.congregation}{req.city ? ` · ${req.city}` : ""}</div>}
-                      {req.note && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontStyle: "italic" }}>"{req.note}"</div>}
-                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>
-                        {new Date(req.requestedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+              ) : (
+                <>
+                  {/* Select all bar */}
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "8px 12px", marginBottom: 8, borderRadius: 10,
+                    background: "rgba(212,168,67,0.05)", border: "1px solid rgba(212,168,67,0.15)",
+                  }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
+                      <div
+                        onClick={toggleSelectAll}
+                        style={{
+                          width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                          background: selectedRequests.size === adminRequests.length ? "linear-gradient(135deg, #b8860b, #d4a843)" : "var(--elevated)",
+                          border: `2px solid ${selectedRequests.size > 0 ? "#d4a843" : "var(--border)"}`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          cursor: "pointer", transition: "all 0.15s",
+                        }}
+                      >
+                        {selectedRequests.size === adminRequests.length && (
+                          <span style={{ fontSize: 11, color: "#1a0f00", fontWeight: 900, lineHeight: 1 }}>✓</span>
+                        )}
+                        {selectedRequests.size > 0 && selectedRequests.size < adminRequests.length && (
+                          <span style={{ fontSize: 14, color: "#d4a843", fontWeight: 900, lineHeight: 1, marginTop: -1 }}>−</span>
+                        )}
                       </div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>
+                        {selectedRequests.size === 0
+                          ? "Select all"
+                          : selectedRequests.size === adminRequests.length
+                          ? `All ${adminRequests.length} selected`
+                          : `${selectedRequests.size} of ${adminRequests.length} selected`}
+                      </span>
+                    </label>
+                    {selectedRequests.size > 0 && (
+                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                        {selectedRequests.size} selected
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Request cards */}
+                  {adminRequests.map((req: any) => {
+                    const isSelected = selectedRequests.has(req.userId);
+                    const isActioning = adminActionId === req.userId;
+                    return (
+                      <div
+                        key={req.userId}
+                        className="card"
+                        style={{
+                          padding: "14px 16px", marginBottom: 10,
+                          border: isSelected ? "1.5px solid rgba(212,168,67,0.5)" : undefined,
+                          background: isSelected ? "rgba(212,168,67,0.04)" : undefined,
+                          transition: "border-color 0.15s, background 0.15s",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
+                          {/* Checkbox */}
+                          <div
+                            onClick={() => toggleSelectRequest(req.userId)}
+                            style={{
+                              width: 22, height: 22, borderRadius: 7, flexShrink: 0, marginTop: 3,
+                              background: isSelected ? "linear-gradient(135deg, #b8860b, #d4a843)" : "var(--elevated)",
+                              border: `2px solid ${isSelected ? "#d4a843" : "var(--border)"}`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              cursor: "pointer", transition: "all 0.15s",
+                            }}
+                          >
+                            {isSelected && <span style={{ fontSize: 12, color: "#1a0f00", fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                          </div>
+                          <div style={{ fontSize: 26, lineHeight: 1 }}>{req.avatarEmoji ?? "👤"}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{req.displayName ?? "Unknown"}</div>
+                            {req.congregation && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{req.congregation}{req.city ? ` · ${req.city}` : ""}</div>}
+                            {req.note && <div style={{ fontSize: 12, color: req.note.toLowerCase().includes("paid") ? "#d4a843" : "var(--text-secondary)", marginTop: 4, fontStyle: "italic" }}>"{req.note}"</div>}
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>
+                              {new Date(req.requestedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            onClick={() => handleDeny(req.userId)}
+                            disabled={isActioning || bulkProcessing}
+                            style={{
+                              flex: 1, padding: "9px", borderRadius: 9, cursor: "pointer", fontWeight: 700, fontSize: 13,
+                              background: "transparent", border: "1px solid rgba(239,68,68,0.4)", color: "#ef4444",
+                              opacity: isActioning || bulkProcessing ? 0.4 : 1,
+                            }}
+                          >✗ Deny</button>
+                          <button
+                            onClick={() => handleApprove(req.userId)}
+                            disabled={isActioning || bulkProcessing}
+                            style={{
+                              flex: 2, padding: "9px", borderRadius: 9, cursor: "pointer", fontWeight: 800, fontSize: 13,
+                              background: "linear-gradient(135deg, #b8860b, #d4a843)", color: "#1a0f00", border: "none",
+                              opacity: isActioning || bulkProcessing ? 0.4 : 1,
+                            }}
+                          >{isActioning ? "Processing…" : "✓ Approve"}</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Bulk action bar — sticky at bottom when items selected */}
+                  {selectedRequests.size > 0 && (
+                    <div style={{
+                      position: "sticky", bottom: 16, zIndex: 10,
+                      background: "var(--card)", border: "1.5px solid rgba(212,168,67,0.4)",
+                      borderRadius: 14, padding: "12px 14px",
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                      display: "flex", alignItems: "center", gap: 8,
+                    }}>
+                      <div style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#d4a843" }}>
+                        {selectedRequests.size} selected
+                      </div>
+                      <button
+                        onClick={handleBulkDeny}
+                        disabled={bulkProcessing}
+                        style={{
+                          padding: "10px 14px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13,
+                          background: "transparent", border: "1px solid rgba(239,68,68,0.4)", color: "#ef4444",
+                          opacity: bulkProcessing ? 0.5 : 1,
+                        }}
+                      >✗ Deny All</button>
+                      <button
+                        onClick={handleBulkApprove}
+                        disabled={bulkProcessing}
+                        style={{
+                          padding: "10px 18px", borderRadius: 10, cursor: "pointer", fontWeight: 800, fontSize: 13,
+                          background: "linear-gradient(135deg, #b8860b, #d4a843)", color: "#1a0f00", border: "none",
+                          opacity: bulkProcessing ? 0.5 : 1,
+                        }}
+                      >{bulkProcessing ? "Processing…" : `✓ Approve ${selectedRequests.size}`}</button>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => handleDeny(req.userId)}
-                      disabled={adminActionId === req.userId}
-                      style={{
-                        flex: 1, padding: "9px", borderRadius: 9, cursor: "pointer", fontWeight: 700, fontSize: 13,
-                        background: "transparent", border: "1px solid rgba(239,68,68,0.4)", color: "#ef4444",
-                        opacity: adminActionId === req.userId ? 0.5 : 1,
-                      }}
-                    >✗ Deny</button>
-                    <button
-                      onClick={() => handleApprove(req.userId)}
-                      disabled={adminActionId === req.userId}
-                      style={{
-                        flex: 2, padding: "9px", borderRadius: 9, cursor: "pointer", fontWeight: 800, fontSize: 13,
-                        background: "linear-gradient(135deg, #b8860b, #d4a843)", color: "#1a0f00", border: "none",
-                        opacity: adminActionId === req.userId ? 0.5 : 1,
-                      }}
-                    >{adminActionId === req.userId ? "Processing…" : "✓ Approve Premium"}</button>
-                  </div>
-                </div>
-              ))}
+                  )}
+                </>
+              )}
             </div>
           )}
 
