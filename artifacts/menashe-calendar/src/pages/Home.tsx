@@ -3097,6 +3097,9 @@ export default function Home({
         announcementCount={announcementCount}
       />
 
+      {/* ── AI Chat Floating Widget ── */}
+      <AiChatFAB />
+
       {/* ── Jerusalem Compass Card overlay ── */}
       {showCompassCard && (() => {
         const toRad = (d: number) => d * Math.PI / 180;
@@ -3281,6 +3284,404 @@ export default function Home({
       })()}
 
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   AI Chat Floating Widget
+───────────────────────────────────────────────────────────────────── */
+const AI_SUGGESTED = [
+  "What is today's Parasha about?",
+  "When does Shabbat start this week?",
+  "Tell me about Bnei Menashe",
+  "What are the Zmanim for prayer?",
+];
+
+async function getAiToken(): Promise<string | null> {
+  return (await (window as any).Clerk?.session?.getToken()) ?? null;
+}
+
+interface AiMessage { role: "user" | "assistant"; content: string; streaming?: boolean; }
+
+function AiChatFAB() {
+  const { t } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<AiMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 120);
+  }, [open]);
+
+  async function sendMessage(text: string) {
+    if (!text.trim() || loading) return;
+    const userMsg: AiMessage = { role: "user", content: text.trim() };
+    const nextMsgs = [...messages, userMsg];
+    setMessages(nextMsgs);
+    setInput("");
+    setLoading(true);
+
+    const assistant: AiMessage = { role: "assistant", content: "", streaming: true };
+    setMessages([...nextMsgs, assistant]);
+
+    const token = await getAiToken();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        signal: ctrl.signal,
+        body: JSON.stringify({ messages: nextMsgs.map(({ role, content }) => ({ role, content })) }),
+      });
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let acc = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const line of dec.decode(value, { stream: true }).split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") break;
+          try {
+            const p = JSON.parse(payload);
+            if (p.error) acc = p.error;
+            else if (p.text) acc += p.text;
+            setMessages(prev => {
+              const u = [...prev];
+              u[u.length - 1] = { role: "assistant", content: acc, streaming: true };
+              return u;
+            });
+          } catch {}
+        }
+      }
+      setMessages(prev => {
+        const u = [...prev];
+        u[u.length - 1] = { role: "assistant", content: acc || t.chatError, streaming: false };
+        return u;
+      });
+    } catch (err: any) {
+      if (err.name === "AbortError") return;
+      setMessages(prev => {
+        const u = [...prev];
+        u[u.length - 1] = { role: "assistant", content: t.chatError, streaming: false };
+        return u;
+      });
+    } finally {
+      setLoading(false);
+      abortRef.current = null;
+    }
+  }
+
+  function handleStop() {
+    abortRef.current?.abort();
+    setLoading(false);
+    setMessages(prev => {
+      const u = [...prev];
+      const last = u[u.length - 1];
+      if (last?.streaming) u[u.length - 1] = { ...last, streaming: false };
+      return u;
+    });
+  }
+
+  return (
+    <>
+      {/* Floating Chat Panel */}
+      {open && (
+        <div
+          ref={panelRef}
+          style={{
+            position: "fixed",
+            bottom: 96,
+            left: 16,
+            width: "min(360px, calc(100vw - 32px))",
+            height: "min(520px, calc(100dvh - 130px))",
+            background: "linear-gradient(180deg,#0F1829 0%,#0a1020 100%)",
+            borderRadius: 20,
+            border: "1px solid rgba(212,175,55,0.3)",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.7), 0 0 30px rgba(212,175,55,0.08)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            zIndex: 450,
+            animation: "aiChatSlideIn 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+          }}
+        >
+          {/* Header */}
+          <div style={{
+            padding: "12px 14px 10px",
+            borderBottom: "1px solid rgba(212,175,55,0.15)",
+            background: "rgba(212,175,55,0.04)",
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: "50%",
+              background: "linear-gradient(135deg,#D4AF37,#A0821A)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 18, flexShrink: 0,
+            }}>✡</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: "#D4AF37", fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>
+                {t.chatTitle}
+              </div>
+              <div style={{ color: "#6A5A3A", fontSize: 10, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {t.chatSubtitle}
+              </div>
+            </div>
+            {messages.length > 0 && (
+              <button
+                onClick={() => setMessages([])}
+                title="Clear chat"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 6, color: "#6A5A3A",
+                  width: 28, height: 28,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", fontSize: 11, flexShrink: 0,
+                }}
+              >🗑</button>
+            )}
+            <button
+              onClick={() => setOpen(false)}
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 8, color: "#A89070",
+                width: 28, height: 28,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", fontSize: 14, flexShrink: 0,
+              }}
+            >✕</button>
+          </div>
+
+          {/* Messages */}
+          <div style={{
+            flex: 1, overflowY: "auto",
+            padding: "12px 12px 8px",
+            display: "flex", flexDirection: "column", gap: 10,
+          }}>
+            {messages.length === 0 && (
+              <div style={{ textAlign: "center", padding: "10px 4px 0" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>🕍</div>
+                <div style={{ color: "#D4AF37", fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+                  {t.chatWelcomeTitle}
+                </div>
+                <div style={{ color: "#7A6A4A", fontSize: 11, lineHeight: 1.55, marginBottom: 14 }}>
+                  {t.chatWelcomeDesc}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {AI_SUGGESTED.map(q => (
+                    <button
+                      key={q}
+                      onClick={() => sendMessage(q)}
+                      style={{
+                        background: "rgba(212,175,55,0.07)",
+                        border: "1px solid rgba(212,175,55,0.18)",
+                        borderRadius: 10,
+                        padding: "7px 12px",
+                        color: "#C8A84B",
+                        fontSize: 11,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        lineHeight: 1.4,
+                        transition: "background 0.15s",
+                      }}
+                      onMouseOver={e => (e.currentTarget.style.background = "rgba(212,175,55,0.14)")}
+                      onMouseOut={e => (e.currentTarget.style.background = "rgba(212,175,55,0.07)")}
+                    >{q}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {messages.map((msg, i) => (
+              <div key={i} style={{
+                display: "flex",
+                justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                alignItems: "flex-end",
+                gap: 6,
+              }}>
+                {msg.role === "assistant" && (
+                  <div style={{
+                    width: 24, height: 24, borderRadius: "50%",
+                    background: "linear-gradient(135deg,#D4AF37,#A0821A)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, flexShrink: 0, marginBottom: 2,
+                  }}>✡</div>
+                )}
+                <div style={{
+                  maxWidth: "80%",
+                  padding: "8px 12px",
+                  borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                  background: msg.role === "user"
+                    ? "linear-gradient(135deg,#D4AF37,#A0821A)"
+                    : "rgba(255,255,255,0.06)",
+                  border: msg.role === "user" ? "none" : "1px solid rgba(212,175,55,0.12)",
+                  color: msg.role === "user" ? "#0F1829" : "#E8DCC8",
+                  fontSize: 12,
+                  lineHeight: 1.6,
+                  fontWeight: msg.role === "user" ? 600 : 400,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}>
+                  {msg.content}
+                  {msg.streaming && (
+                    <span style={{
+                      display: "inline-block", width: 6, height: 12,
+                      background: "#D4AF37", marginLeft: 2,
+                      borderRadius: 2, animation: "aiChatBlink 1s step-start infinite",
+                    }} />
+                  )}
+                </div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input */}
+          <div style={{
+            padding: "8px 10px 10px",
+            borderTop: "1px solid rgba(212,175,55,0.12)",
+            background: "rgba(0,0,0,0.2)",
+            flexShrink: 0,
+          }}>
+            <div style={{
+              display: "flex", gap: 8, alignItems: "flex-end",
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(212,175,55,0.2)",
+              borderRadius: 14, padding: "8px 10px",
+            }}>
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
+                placeholder={t.chatPlaceholder}
+                rows={1}
+                disabled={loading}
+                style={{
+                  flex: 1, background: "transparent", border: "none", outline: "none",
+                  color: "#F5F0E8", fontSize: 13, lineHeight: 1.5,
+                  resize: "none", maxHeight: 80, overflowY: "auto", fontFamily: "inherit",
+                }}
+                onInput={e => {
+                  const el = e.target as HTMLTextAreaElement;
+                  el.style.height = "auto";
+                  el.style.height = Math.min(el.scrollHeight, 80) + "px";
+                }}
+              />
+              {loading ? (
+                <button onClick={handleStop} style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: "rgba(220,60,60,0.2)", border: "1px solid rgba(220,60,60,0.4)",
+                  color: "#E05555", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, flexShrink: 0,
+                }}>◼</button>
+              ) : (
+                <button
+                  onClick={() => sendMessage(input)}
+                  disabled={!input.trim()}
+                  style={{
+                    width: 32, height: 32, borderRadius: "50%",
+                    background: input.trim() ? "linear-gradient(135deg,#D4AF37,#A0821A)" : "rgba(212,175,55,0.1)",
+                    border: "none",
+                    color: input.trim() ? "#0F1829" : "#5A4A2A",
+                    cursor: input.trim() ? "pointer" : "default",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 15, flexShrink: 0, transition: "background 0.15s",
+                  }}
+                >↑</button>
+              )}
+            </div>
+            <div style={{ textAlign: "center", color: "#3A2A1A", fontSize: 9, marginTop: 6 }}>
+              {t.chatDisclaimer}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FAB Button */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        title={t.chatFabLabel}
+        style={{
+          position: "fixed",
+          bottom: 24,
+          left: 24,
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          background: open
+            ? "linear-gradient(135deg,#A0821A,#D4AF37)"
+            : "linear-gradient(135deg,#D4AF37,#A0821A)",
+          boxShadow: open
+            ? "0 4px 20px rgba(212,175,55,0.5), 0 0 0 4px rgba(212,175,55,0.15)"
+            : "0 4px 18px rgba(0,0,0,0.5), 0 0 0 0px rgba(212,175,55,0)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          zIndex: 451,
+          transition: "box-shadow 0.2s, background 0.2s, transform 0.15s",
+          animation: open ? "none" : "aiChatFabPulse 3s ease-in-out infinite",
+          transform: open ? "scale(1.05)" : "scale(1)",
+        }}
+        onMouseOver={e => { if (!open) (e.currentTarget as HTMLElement).style.transform = "scale(1.1)"; }}
+        onMouseOut={e => { if (!open) (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+      >
+        <span style={{ fontSize: 24, lineHeight: 1, userSelect: "none", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+          {open ? "✕" : "✡"}
+        </span>
+        {!open && messages.length > 0 && (
+          <span style={{
+            position: "absolute", top: -2, right: -2,
+            background: "#6B46C1", color: "#fff",
+            borderRadius: "50%", minWidth: 18, height: 18,
+            fontSize: 10, fontWeight: 700,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "2px solid #0d1117",
+            padding: "0 3px",
+          }}>{messages.filter(m => m.role === "assistant").length}</span>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes aiChatSlideIn {
+          from { opacity: 0; transform: translateY(20px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0)   scale(1); }
+        }
+        @keyframes aiChatBlink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        @keyframes aiChatFabPulse {
+          0%,100% { box-shadow: 0 4px 18px rgba(0,0,0,0.5), 0 0 0px rgba(212,175,55,0); }
+          50%     { box-shadow: 0 6px 24px rgba(0,0,0,0.55), 0 0 20px rgba(212,175,55,0.35); }
+        }
+      `}</style>
+    </>
   );
 }
 
