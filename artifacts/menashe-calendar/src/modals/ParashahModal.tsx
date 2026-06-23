@@ -255,13 +255,12 @@ export default function ParashahModal({ onClose }: Props) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="popup-overlay" onClick={onClose}>
       <div
-        className="modal-sheet"
+        className="popup-card"
         onClick={e => e.stopPropagation()}
         style={{ maxHeight: "92vh", overflowY: "auto", padding: 0, display: "flex", flexDirection: "column" }}
       >
-        <div className="modal-handle" style={{ margin: "10px auto 0" }} />
 
         {/* ── Header ── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px 0" }}>

@@ -267,9 +267,8 @@ export default function TorahTrackerModal({ onClose }: Props) {
 
   // ── Goal setup view ───────────────────────────────────────────────────────
   if (view === "goal-setup") return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
-        <div className="modal-handle" />
+    <div className="popup-overlay" onClick={onClose}>
+      <div className="popup-card" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <button onClick={() => setView("dashboard")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-muted)" }}>← Back</button>
           <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>🎯 Set Weekly Goal</div>
@@ -334,9 +333,8 @@ export default function TorahTrackerModal({ onClose }: Props) {
 
   // ── Log session ───────────────────────────────────────────────────────────
   if (view === "log") return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
-        <div className="modal-handle" />
+    <div className="popup-overlay" onClick={onClose}>
+      <div className="popup-card" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
           <button onClick={() => { setView("dashboard"); setSaved(false); setForm(emptyForm()); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-muted)" }}>← Back</button>
           <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>📝 Log Study Session</div>
@@ -479,9 +477,8 @@ export default function TorahTrackerModal({ onClose }: Props) {
 
   // ── History view ──────────────────────────────────────────────────────────
   if (view === "history") return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
-        <div className="modal-handle" />
+    <div className="popup-overlay" onClick={onClose}>
+      <div className="popup-card" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <button onClick={() => setView("dashboard")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-muted)" }}>← Dashboard</button>
           <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>📋 Study History</div>
@@ -533,9 +530,8 @@ export default function TorahTrackerModal({ onClose }: Props) {
   const goalOver = goalPct >= 1;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
-        <div className="modal-handle" />
+    <div className="popup-overlay" onClick={onClose}>
+      <div className="popup-card" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>

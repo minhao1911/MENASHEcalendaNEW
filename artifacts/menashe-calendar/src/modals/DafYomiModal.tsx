@@ -198,9 +198,8 @@ export default function DafYomiModal({ onClose }: Props) {
     : `${SEFARIA_BASE}/search#q=${encodeURIComponent(tractate)}%20${dafNum}`;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <div className="modal-handle" />
+    <div className="popup-overlay" onClick={onClose}>
+      <div className="popup-card" onClick={e => e.stopPropagation()} style={{ maxHeight: "90vh", overflowY: "auto" }}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>

@@ -226,9 +226,8 @@ export default function DayModal({ day, month, year, location, onClose }: Props)
   }, [day, month, year]);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <div className="modal-handle" />
+    <div className="popup-overlay" onClick={onClose}>
+      <div className="popup-card" onClick={e => e.stopPropagation()} style={{ maxHeight: "90vh", overflowY: "auto" }}>
 
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.1em", marginBottom: 4 }}>{dayName.toUpperCase()}</div>

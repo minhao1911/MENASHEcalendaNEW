@@ -240,9 +240,9 @@ export default function MussarModal({ onClose }: Props) {
   }, []);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="popup-overlay" onClick={onClose}>
       <div
-        className="modal-sheet"
+        className="popup-card"
         onClick={e => e.stopPropagation()}
         style={{ maxHeight: "90vh", display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}
       >
@@ -252,7 +252,6 @@ export default function MussarModal({ onClose }: Props) {
           padding: "18px 18px 14px",
           flexShrink: 0,
         }}>
-          <div className="modal-handle" style={{ margin: "0 auto 12px", background: "rgba(255,255,255,0.2)" }} />
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", letterSpacing: "-0.3px" }}>

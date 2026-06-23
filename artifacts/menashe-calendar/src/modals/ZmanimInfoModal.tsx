@@ -13,9 +13,8 @@ const INFO = [
 
 export default function ZmanimInfoModal({ onClose }: Props) {
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "88vh", overflowY: "auto" }}>
-        <div className="modal-handle" />
+    <div className="popup-overlay" onClick={onClose}>
+      <div className="popup-card" onClick={e => e.stopPropagation()} style={{ maxHeight: "88vh", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>About Zmanim</div>

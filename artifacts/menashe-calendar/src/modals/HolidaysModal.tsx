@@ -180,13 +180,12 @@ export default function HolidaysModal({ onClose }: Props) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="popup-overlay" onClick={onClose}>
       <div
-        className="modal-sheet"
+        className="popup-card"
         onClick={e => e.stopPropagation()}
         style={{ maxHeight: "92vh", display: "flex", flexDirection: "column" }}
       >
-        <div className="modal-handle" />
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexShrink: 0 }}>

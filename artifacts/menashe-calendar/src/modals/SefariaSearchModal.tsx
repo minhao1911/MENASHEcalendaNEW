@@ -98,15 +98,14 @@ export default function SefariaSearchModal({ onClose }: Props) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="popup-overlay" onClick={onClose}>
       <div
-        className="modal-sheet"
+        className="popup-card"
         onClick={e => e.stopPropagation()}
         style={{ maxHeight: "92vh", display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}
       >
         {/* ── Header ── */}
         <div style={{ padding: "16px 16px 0" }}>
-          <div className="modal-handle" style={{ marginBottom: 14 }} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div>
               <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Torah Search</div>

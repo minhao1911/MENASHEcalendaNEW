@@ -96,15 +96,14 @@ export default function LuachModal({ onClose }: Props) {
   const weekdayAbbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Shabbat"];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="popup-overlay" onClick={onClose}>
       <div
-        className="modal-sheet"
+        className="popup-card"
         onClick={e => e.stopPropagation()}
         style={{ maxHeight: "94vh", display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}
       >
         {/* ── Fixed header ── */}
         <div style={{ padding: "16px 16px 0", flexShrink: 0 }}>
-          <div className="modal-handle" style={{ marginBottom: 14 }} />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div>
