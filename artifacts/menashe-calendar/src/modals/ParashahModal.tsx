@@ -7,7 +7,58 @@ const API_BASE = "/api";
 
 interface Props { onClose: () => void; }
 
-type View = "detail" | "schedule";
+type View = "detail" | "schedule" | "progress";
+
+const TORAH_BOOKS: Array<{ name: string; hebrew: string; color: string; parashiyot: string[] }> = [
+  {
+    name: "Bereishit", hebrew: "בְּרֵאשִׁית", color: "#1a3a1a",
+    parashiyot: ["Bereshit","Noach","Lech-Lecha","Vayeira","Chayei Sara","Toldot","Vayetzei","Vayishlach","Vayeshev","Miketz","Vayigash","Vayechi"],
+  },
+  {
+    name: "Shemot", hebrew: "שְׁמוֹת", color: "#3a1a00",
+    parashiyot: ["Shemot","Vaeira","Bo","Beshalach","Yitro","Mishpatim","Terumah","Tetzaveh","Ki Tisa","Vayakhel","Pekudei"],
+  },
+  {
+    name: "Vayikra", hebrew: "וַיִּקְרָא", color: "#2a1a3a",
+    parashiyot: ["Vayikra","Tzav","Shemini","Tazria","Metzora","Achrei Mot","Kedoshim","Emor","Behar","Bechukotai"],
+  },
+  {
+    name: "Bamidbar", hebrew: "בְּמִדְבַּר", color: "#1a2a3a",
+    parashiyot: ["Bamidbar","Nasso","Beha'alotcha","Shelach","Korach","Chukat","Balak","Pinchas","Matot","Masei"],
+  },
+  {
+    name: "Devarim", hebrew: "דְּבָרִים", color: "#3a2a00",
+    parashiyot: ["Devarim","Vaetchanan","Eikev","Re'eh","Shoftim","Ki Teitzei","Ki Tavo","Nitzavim","Vayeilech","Ha'Azinu","Vezot Haberakhah"],
+  },
+];
+
+const PARASHA_HEBREW: Record<string, string> = {
+  "Bereshit":"בְּרֵאשִׁית","Noach":"נֹחַ","Lech-Lecha":"לֶךְ-לְךָ","Vayeira":"וַיֵּרָא","Chayei Sara":"חַיֵּי שָׂרָה",
+  "Toldot":"תּוֹלְדֹת","Vayetzei":"וַיֵּצֵא","Vayishlach":"וַיִּשְׁלַח","Vayeshev":"וַיֵּשֶׁב","Miketz":"מִקֵּץ",
+  "Vayigash":"וַיִּגַּשׁ","Vayechi":"וַיְחִי","Shemot":"שְׁמוֹת","Vaeira":"וָאֵרָא","Bo":"בֹּא",
+  "Beshalach":"בְּשַׁלַּח","Yitro":"יִתְרוֹ","Mishpatim":"מִּשְׁפָּטִים","Terumah":"תְּרוּמָה","Tetzaveh":"תְּצַוֶּה",
+  "Ki Tisa":"כִּי תִשָּׂא","Vayakhel":"וַיַּקְהֵל","Pekudei":"פְקוּדֵי","Vayikra":"וַיִּקְרָא","Tzav":"צַו",
+  "Shemini":"שְּׁמִינִי","Tazria":"תַזְרִיעַ","Metzora":"מְּצֹרָע","Achrei Mot":"אַחֲרֵי מוֹת","Kedoshim":"קְדֹשִׁים",
+  "Emor":"אֱמֹר","Behar":"בְּהַר","Bechukotai":"בְּחֻקֹּתַי","Bamidbar":"בְּמִדְבַּר","Nasso":"נָשֹׂא",
+  "Beha'alotcha":"בְּהַעֲלֹתְךָ","Shelach":"שְׁלַח","Korach":"קֹרַח","Chukat":"חֻקַּת","Balak":"בָּלָק",
+  "Pinchas":"פִּינְחָס","Matot":"מַּטּוֹת","Masei":"מַסְעֵי","Devarim":"דְּבָרִים","Vaetchanan":"וָאֶתְחַנַּן",
+  "Eikev":"עֵקֶב","Re'eh":"רְאֵה","Shoftim":"שֹׁפְטִים","Ki Teitzei":"כִּי תֵצֵא","Ki Tavo":"כִּי תָבוֹא",
+  "Nitzavim":"נִצָּבִים","Vayeilech":"וַיֵּלֶךְ","Ha'Azinu":"הַאֲזִינוּ","Vezot Haberakhah":"וְזֹאת הַבְּרָכָה",
+};
+
+const PROGRESS_KEY = "parasha-progress";
+
+function loadProgress(): Set<string> {
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch {}
+  return new Set();
+}
+
+function saveProgress(s: Set<string>) {
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify([...s])); } catch {}
+}
 
 const BOOK_COLORS: Record<string, { bg: string; label: string; hebrew: string }> = {
   "Bereishit": { bg: "linear-gradient(135deg,#1a3a1a,#0d2210)", label: "BEREISHIT", hebrew: "בְּרֵאשִׁית" },
@@ -106,6 +157,19 @@ export default function ParashahModal({ onClose }: Props) {
   const parasha = getCurrentParasha(today);
   const upcoming = getUpcomingParashiyot(today, 10);
   const [view, setView] = useState<View>("detail");
+  const [studied, setStudied] = useState<Set<string>>(loadProgress);
+
+  function toggleStudied(name: string) {
+    setStudied(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      saveProgress(next);
+      return next;
+    });
+  }
+
+  const totalStudied = studied.size;
+  const totalParashiyot = 54;
 
   const staticInsights = parasha
     ? getParashaInsights(parasha.name, parasha.book, parasha.summary)
@@ -221,6 +285,25 @@ export default function ParashahModal({ onClose }: Props) {
               }}
             >
               Schedule
+            </button>
+            <button
+              onClick={() => setView("progress")}
+              style={{
+                padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none",
+                background: view === "progress" ? "rgba(212,168,67,0.15)" : "transparent",
+                color: view === "progress" ? "#d4a843" : "var(--text-muted)",
+                position: "relative",
+              }}
+            >
+              Progress
+              {totalStudied > 0 && (
+                <span style={{
+                  position: "absolute", top: 2, right: 2,
+                  background: "#d4a843", color: "#0f1829",
+                  borderRadius: 99, fontSize: 8, fontWeight: 800,
+                  padding: "1px 4px", lineHeight: 1.4,
+                }}>{totalStudied}</span>
+              )}
             </button>
           </div>
           <button className="modal-close-btn" onClick={onClose}>✕</button>
