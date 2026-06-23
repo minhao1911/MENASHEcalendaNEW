@@ -3319,6 +3319,22 @@ function AiChatFAB() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const recognitionRef = useRef<any>(null);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  async function shareMessage(content: string, idx: number) {
+    const text = `✡ Rav Menashe AI\n\n${content}\n\n— Bnei Menashe Calendar`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Rav Menashe AI", text });
+        return;
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    } catch {}
+  }
 
   const voiceSupported = typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
@@ -3666,42 +3682,89 @@ function AiChatFAB() {
             {messages.map((msg, i) => (
               <div key={i} style={{
                 display: "flex",
-                justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-                alignItems: "flex-end",
-                gap: 6,
+                flexDirection: "column",
+                alignItems: msg.role === "user" ? "flex-end" : "flex-start",
+                gap: 4,
               }}>
-                {msg.role === "assistant" && (
-                  <div style={{
-                    width: 24, height: 24, borderRadius: "50%",
-                    background: "linear-gradient(135deg,#D4AF37,#A0821A)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, flexShrink: 0, marginBottom: 2,
-                  }}>✡</div>
-                )}
                 <div style={{
-                  maxWidth: "80%",
-                  padding: "8px 12px",
-                  borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                  background: msg.role === "user"
-                    ? "linear-gradient(135deg,#D4AF37,#A0821A)"
-                    : "rgba(255,255,255,0.06)",
-                  border: msg.role === "user" ? "none" : "1px solid rgba(212,175,55,0.12)",
-                  color: msg.role === "user" ? "#0F1829" : "#E8DCC8",
-                  fontSize: 12,
-                  lineHeight: 1.6,
-                  fontWeight: msg.role === "user" ? 600 : 400,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
+                  display: "flex",
+                  justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                  alignItems: "flex-end",
+                  gap: 6,
+                  width: "100%",
                 }}>
-                  {msg.content}
-                  {msg.streaming && (
-                    <span style={{
-                      display: "inline-block", width: 6, height: 12,
-                      background: "#D4AF37", marginLeft: 2,
-                      borderRadius: 2, animation: "aiChatBlink 1s step-start infinite",
-                    }} />
+                  {msg.role === "assistant" && (
+                    <div style={{
+                      width: 24, height: 24, borderRadius: "50%",
+                      background: "linear-gradient(135deg,#D4AF37,#A0821A)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 11, flexShrink: 0, marginBottom: 2,
+                    }}>✡</div>
                   )}
+                  <div style={{
+                    maxWidth: "80%",
+                    padding: "8px 12px",
+                    borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                    background: msg.role === "user"
+                      ? "linear-gradient(135deg,#D4AF37,#A0821A)"
+                      : "rgba(255,255,255,0.06)",
+                    border: msg.role === "user" ? "none" : "1px solid rgba(212,175,55,0.12)",
+                    color: msg.role === "user" ? "#0F1829" : "#E8DCC8",
+                    fontSize: 12,
+                    lineHeight: 1.6,
+                    fontWeight: msg.role === "user" ? 600 : 400,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}>
+                    {msg.content}
+                    {msg.streaming && (
+                      <span style={{
+                        display: "inline-block", width: 6, height: 12,
+                        background: "#D4AF37", marginLeft: 2,
+                        borderRadius: 2, animation: "aiChatBlink 1s step-start infinite",
+                      }} />
+                    )}
+                  </div>
                 </div>
+                {/* Share button — assistant only, after streaming finishes */}
+                {msg.role === "assistant" && !msg.streaming && msg.content && (
+                  <div style={{ paddingLeft: 30 }}>
+                    <button
+                      onClick={() => shareMessage(msg.content, i)}
+                      title={copiedIdx === i ? t.chatCopied : t.chatShare}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 4,
+                        background: copiedIdx === i ? "rgba(100,200,100,0.12)" : "transparent",
+                        border: copiedIdx === i ? "1px solid rgba(100,200,100,0.3)" : "1px solid rgba(212,175,55,0.12)",
+                        borderRadius: 8,
+                        padding: "3px 8px",
+                        color: copiedIdx === i ? "#6DCF6D" : "#5A4A2A",
+                        fontSize: 10,
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        fontWeight: 500,
+                        letterSpacing: 0.2,
+                      }}
+                      onMouseOver={e => {
+                        if (copiedIdx !== i) {
+                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.3)";
+                          (e.currentTarget as HTMLElement).style.color = "#C8A84B";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(212,175,55,0.07)";
+                        }
+                      }}
+                      onMouseOut={e => {
+                        if (copiedIdx !== i) {
+                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.12)";
+                          (e.currentTarget as HTMLElement).style.color = "#5A4A2A";
+                          (e.currentTarget as HTMLElement).style.background = "transparent";
+                        }
+                      }}
+                    >
+                      <span style={{ fontSize: 11 }}>{copiedIdx === i ? "✓" : "↗"}</span>
+                      {copiedIdx === i ? t.chatCopied : t.chatShare}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
             <div ref={bottomRef} />

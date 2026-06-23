@@ -357,6 +357,8 @@ export interface Translations {
   chatVoiceStart: string;
   chatVoiceStop: string;
   chatVoiceUnsupported: string;
+  chatShare: string;
+  chatCopied: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -696,6 +698,8 @@ export const en: Translations = {
   chatVoiceStart: "Tap to speak",
   chatVoiceStop: "Listening… tap to stop",
   chatVoiceUnsupported: "Voice not supported in this browser",
+  chatShare: "Share",
+  chatCopied: "Copied!",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1035,6 +1039,8 @@ export const tk: Translations = {
   chatVoiceStart: "Thu sawi rawh",
   chatVoiceStop: "Chhiar mek… paih tan rawh",
   chatVoiceUnsupported: "Voice browser-in support lo",
+  chatShare: "Share",
+  chatCopied: "Copy!",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };
