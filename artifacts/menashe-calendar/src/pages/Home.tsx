@@ -3306,7 +3306,14 @@ interface AiMessage { role: "user" | "assistant"; content: string; streaming?: b
 function AiChatFAB() {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<AiMessage[]>([]);
+  const [messages, setMessages] = useState<AiMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem("ai-chat-history");
+      if (!saved) return [];
+      const parsed = JSON.parse(saved) as AiMessage[];
+      return Array.isArray(parsed) ? parsed.filter(m => !m.streaming) : [];
+    } catch { return []; }
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [minimized, setMinimized] = useState<boolean>(() => {
@@ -3392,6 +3399,13 @@ function AiChatFAB() {
   useEffect(() => {
     try { localStorage.setItem("ai-chat-minimized", minimized ? "1" : "0"); } catch {}
   }, [minimized]);
+
+  useEffect(() => {
+    try {
+      const toSave = messages.filter(m => !m.streaming).slice(-60);
+      localStorage.setItem("ai-chat-history", JSON.stringify(toSave));
+    } catch {}
+  }, [messages]);
 
   function minimize() {
     setOpen(false);
@@ -3598,7 +3612,7 @@ function AiChatFAB() {
             </div>
             {messages.length > 0 && (
               <button
-                onClick={() => setMessages([])}
+                onClick={() => { setMessages([]); try { localStorage.removeItem("ai-chat-history"); } catch {} }}
                 title="Clear chat"
                 style={{
                   background: "rgba(255,255,255,0.05)",
