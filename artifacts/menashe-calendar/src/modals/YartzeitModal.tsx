@@ -136,6 +136,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
     setEntries(next);
     saveYahrzeitEntries(next);
     saveYahrzeitEntry(entry).catch(() => {});
+    window.dispatchEvent(new CustomEvent("menashe-yahrzeit-updated"));
     setJustSaved(true);
     setTimeout(() => {
       setShowForm(false);
@@ -148,6 +149,7 @@ export default function YartzeitModal({ onClose, location, onCommunityBoard }: P
     setEntries(next);
     saveYahrzeitEntries(next);
     deleteYahrzeitEntry(id).catch(() => {});
+    window.dispatchEvent(new CustomEvent("menashe-yahrzeit-updated"));
     setDeleteConfirm(null);
   }
 

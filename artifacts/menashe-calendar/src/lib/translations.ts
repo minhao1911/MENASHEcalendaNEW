@@ -334,6 +334,10 @@ export interface Translations {
   birthdayTrackerCardDays: string;
   birthdayTrackerCardSetup: string;
   modalClose: string;
+  yartzeitCardTitle: string;
+  yartzeitCardSetup: string;
+  yartzeitCardToday: string;
+  yartzeitCardDays: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -651,6 +655,10 @@ export const en: Translations = {
   birthdayTrackerCardDays: "days until birthday",
   birthdayTrackerCardSetup: "Tap to set your Hebrew birthday →",
   modalClose: "Close",
+  yartzeitCardTitle: "YAHRZEIT REMINDERS",
+  yartzeitCardSetup: "Tap to add a Yahrzeit reminder →",
+  yartzeitCardToday: "Today's Yahrzeit",
+  yartzeitCardDays: "days away",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -968,6 +976,10 @@ export const tk: Translations = {
   birthdayTrackerCardDays: "ni en nirualna",
   birthdayTrackerCardSetup: "Na nirualna Hebrew set →",
   modalClose: "Khat",
+  yartzeitCardTitle: "YAHRZEIT HLABU",
+  yartzeitCardSetup: "Yahrzeit hlabu en →",
+  yartzeitCardToday: "Ni tawp Yahrzeit",
+  yartzeitCardDays: "ni en",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };
