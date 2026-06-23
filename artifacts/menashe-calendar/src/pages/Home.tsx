@@ -1643,6 +1643,172 @@ function ZmanimTimeline({
   );
 }
 
+// ── Next Holiday Countdown Card ───────────────────────────────────────────────
+const HOLIDAY_THEMES: Record<string, { emoji: string; theme: string }> = {
+  "Rosh Hashanah":   { emoji: "🍎", theme: "Renewal, reflection & divine judgment" },
+  "Yom Kippur":      { emoji: "🕊️", theme: "Day of Atonement — repentance & forgiveness" },
+  "Sukkot":          { emoji: "🌿", theme: "Gratitude, joy & the harvest season" },
+  "Shemini Atzeret": { emoji: "🙏", theme: "Unity — lingering in G-d's presence" },
+  "Simchat Torah":   { emoji: "📜", theme: "Rejoicing in the gift of the Torah" },
+  "Chanukah":        { emoji: "🕎", theme: "Miracles, light & rededication" },
+  "Hanukkah":        { emoji: "🕎", theme: "Miracles, light & rededication" },
+  "Tu BiShvat":      { emoji: "🌳", theme: "New Year of Trees — nature & renewal" },
+  "Purim":           { emoji: "🎭", theme: "G-d's hidden hand & Jewish survival" },
+  "Passover":        { emoji: "🫓", theme: "Exodus, freedom & redemption" },
+  "Pesach":          { emoji: "🫓", theme: "Exodus, freedom & redemption" },
+  "Shavuot":         { emoji: "⚡", theme: "Receiving the Torah at Mount Sinai" },
+  "Tisha B'Av":      { emoji: "🕯️", theme: "Mourning, memory & hope for redemption" },
+  "Rosh Chodesh":    { emoji: "🌙", theme: "New Moon — monthly renewal & fresh start" },
+  "Yom HaShoah":     { emoji: "🕯️", theme: "Holocaust remembrance — never forget" },
+  "Yom HaAtzma'ut":  { emoji: "✡️", theme: "Israeli Independence — a modern miracle" },
+  "Lag BaOmer":      { emoji: "🔥", theme: "Bonfire festival — joy & the light of Rabbi Shimon" },
+  "Tu B'Av":         { emoji: "💛", theme: "Love & unity — the heart of the community" },
+};
+
+function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: Date }> }) {
+  const { t } = useLanguage();
+  const [minimized, setMinimized] = useState<boolean>(() => {
+    try { return localStorage.getItem("menashe-holiday-card-minimized") === "true"; }
+    catch { return false; }
+  });
+
+  function toggle() {
+    setMinimized(prev => {
+      const next = !prev;
+      try { localStorage.setItem("menashe-holiday-card-minimized", String(next)); } catch {}
+      return next;
+    });
+  }
+
+  const next = holidays[0];
+  if (!next) return null;
+
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  const holidayMidnight = new Date(next.date);
+  holidayMidnight.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((holidayMidnight.getTime() - todayMidnight.getTime()) / 86400000);
+
+  const countdownLabel =
+    diffDays === 0 ? t.nextHolidayToday
+    : diffDays === 1 ? t.nextHolidayTomorrow
+    : `${diffDays} ${diffDays === 1 ? t.nextHolidayDaysSingle : t.nextHolidayDaysPlural}`;
+
+  const themeKey = Object.keys(HOLIDAY_THEMES).find(k => next.name.includes(k)) ?? "";
+  const themeInfo = HOLIDAY_THEMES[themeKey] ?? { emoji: "✡️", theme: "A sacred day of observance" };
+
+  const urgentColor = diffDays === 0 ? "#ef4444" : diffDays <= 7 ? "#f0c050" : "#d4a843";
+  const urgentBg   = diffDays === 0 ? "rgba(220,38,38,0.14)" : "rgba(212,168,67,0.12)";
+  const urgentBdr  = diffDays === 0 ? "rgba(220,38,38,0.32)" : "rgba(212,168,67,0.28)";
+
+  if (minimized) {
+    return (
+      <button
+        onClick={toggle}
+        style={{
+          width: "100%", display: "flex", alignItems: "center",
+          justifyContent: "space-between",
+          background: "linear-gradient(135deg, rgba(212,168,67,0.07) 0%, rgba(212,168,67,0.03) 100%)",
+          border: "1px solid rgba(212,168,67,0.18)",
+          borderRadius: 12, padding: "9px 14px",
+          cursor: "pointer", marginBottom: 12,
+          transition: "border-color 0.2s, background 0.2s",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 15 }}>{themeInfo.emoji}</span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#d4a843", letterSpacing: "0.05em" }}>
+            {t.nextHolidayShow}
+          </span>
+          <span style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 500 }}>
+            · {next.name}
+          </span>
+          <span style={{
+            fontSize: 10.5, fontWeight: 800, color: urgentColor,
+            background: urgentBg, border: `1px solid ${urgentBdr}`,
+            borderRadius: 10, padding: "1px 7px",
+          }}>
+            {countdownLabel}
+          </span>
+        </div>
+        <span style={{ fontSize: 16, color: "#d4a843", lineHeight: 1 }}>＋</span>
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="card"
+      style={{ marginBottom: 12, padding: "13px 15px", position: "relative", overflow: "hidden" }}
+    >
+      {/* Radial gold accent */}
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none",
+        background: "radial-gradient(ellipse at 92% 18%, rgba(212,168,67,0.08) 0%, transparent 58%)",
+      }} />
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 12 }}>🗓️</span>
+          <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.13em", color: "var(--text-muted)", textTransform: "uppercase" }}>
+            {t.nextHolidayTitle}
+          </span>
+        </div>
+        <button
+          onClick={toggle}
+          style={{
+            background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 8, padding: "3px 9px",
+            cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+            fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em",
+          }}
+        >
+          <span style={{ fontSize: 12, lineHeight: 1 }}>－</span>
+          {t.nextHolidayHide}
+        </button>
+      </div>
+
+      {/* Body */}
+      <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+        {/* Emoji badge */}
+        <div style={{
+          width: 54, height: 54, borderRadius: 15, flexShrink: 0,
+          background: "linear-gradient(135deg, rgba(212,168,67,0.16) 0%, rgba(212,168,67,0.05) 100%)",
+          border: "1px solid rgba(212,168,67,0.22)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 28,
+          boxShadow: "0 0 20px rgba(212,168,67,0.10)",
+        }}>
+          {themeInfo.emoji}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15.5, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2, lineHeight: 1.2 }}>
+            {next.name}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-secondary)", fontStyle: "italic", marginBottom: 8, lineHeight: 1.4 }}>
+            {themeInfo.theme}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{
+              display: "inline-flex", alignItems: "center",
+              background: urgentBg, border: `1px solid ${urgentBdr}`,
+              borderRadius: 20, padding: "4px 11px",
+              fontSize: 12.5, fontWeight: 800, color: urgentColor, letterSpacing: "0.02em",
+            }}>
+              {countdownLabel}
+            </span>
+            <span style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 500 }}>
+              {next.date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Shabbat Countdown Bar ────────────────────────────────────────────────────
 function ShabbatCountdownBar({
   isPremium, location, onShowPremium,
@@ -2303,6 +2469,9 @@ export default function Home({
 
         {/* ── Today at a Glance — Zmanim Timeline ── */}
         <ZmanimTimeline zmanim={zmanim} location={location} onNavigate={onNavigate} />
+
+        {/* ── Next Holiday Countdown ── */}
+        <NextHolidayCard holidays={holidays} />
 
         {/* ── Daily Spiritual Briefing ── */}
         <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />

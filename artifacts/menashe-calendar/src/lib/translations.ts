@@ -313,6 +313,13 @@ export interface Translations {
   zmanimTimelineNightfall: string;
   zmanimTimelineNow: string;
   zmanimTimelineTap: string;
+  nextHolidayTitle: string;
+  nextHolidayDaysSingle: string;
+  nextHolidayDaysPlural: string;
+  nextHolidayToday: string;
+  nextHolidayTomorrow: string;
+  nextHolidayHide: string;
+  nextHolidayShow: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -609,6 +616,13 @@ export const en: Translations = {
   zmanimTimelineNightfall: "Nightfall",
   zmanimTimelineNow: "Now",
   zmanimTimelineTap: "Full Zmanim →",
+  nextHolidayTitle: "NEXT HOLIDAY",
+  nextHolidayDaysSingle: "day away",
+  nextHolidayDaysPlural: "days away",
+  nextHolidayToday: "Today!",
+  nextHolidayTomorrow: "Tomorrow",
+  nextHolidayHide: "Minimise",
+  nextHolidayShow: "Next Holiday",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -905,6 +919,13 @@ export const tk: Translations = {
   zmanimTimelineNightfall: "Zanin",
   zmanimTimelineNow: "Ni Tawp",
   zmanimTimelineTap: "Zmanim en →",
+  nextHolidayTitle: "NISA THIAMNA",
+  nextHolidayDaysSingle: "ni en",
+  nextHolidayDaysPlural: "ni en",
+  nextHolidayToday: "Ni Tawp!",
+  nextHolidayTomorrow: "Tuni",
+  nextHolidayHide: "Paih",
+  nextHolidayShow: "Nisa Thiamna",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };
