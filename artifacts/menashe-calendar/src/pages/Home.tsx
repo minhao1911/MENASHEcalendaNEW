@@ -3309,9 +3309,26 @@ function AiChatFAB() {
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [minimized, setMinimized] = useState<boolean>(() => {
+    try { return localStorage.getItem("ai-chat-minimized") === "1"; } catch { return false; }
+  });
+  const [fabHovered, setFabHovered] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    try { localStorage.setItem("ai-chat-minimized", minimized ? "1" : "0"); } catch {}
+  }, [minimized]);
+
+  function minimize() {
+    setOpen(false);
+    setMinimized(true);
+  }
+
+  function restore() {
+    setMinimized(false);
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -3401,12 +3418,71 @@ function AiChatFAB() {
     });
   }
 
+  /* ── Minimized: tiny pill ── */
+  if (minimized) {
+    return (
+      <div
+        onClick={restore}
+        title="Restore AI chat"
+        style={{
+          position: "fixed",
+          bottom: 24,
+          left: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          background: "linear-gradient(135deg,rgba(20,16,8,0.95),rgba(30,24,10,0.98))",
+          border: "1px solid rgba(212,175,55,0.35)",
+          borderRadius: 20,
+          padding: "6px 12px 6px 8px",
+          cursor: "pointer",
+          zIndex: 451,
+          boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
+          animation: "aiChatPillIn 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+          transition: "box-shadow 0.15s, border-color 0.15s",
+        }}
+        onMouseOver={e => {
+          (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.65)";
+          (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.6), 0 0 12px rgba(212,175,55,0.2)";
+        }}
+        onMouseOut={e => {
+          (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.35)";
+          (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 12px rgba(0,0,0,0.5)";
+        }}
+      >
+        <div style={{
+          width: 22, height: 22, borderRadius: "50%",
+          background: "linear-gradient(135deg,#D4AF37,#A0821A)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11, flexShrink: 0,
+        }}>✡</div>
+        <span style={{ color: "#C8A84B", fontSize: 11, fontWeight: 600, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
+          {t.chatTitle}
+        </span>
+        {messages.filter(m => m.role === "assistant").length > 0 && (
+          <span style={{
+            background: "#6B46C1", color: "#fff",
+            borderRadius: 10, minWidth: 16, height: 16,
+            fontSize: 9, fontWeight: 700,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "0 3px",
+          }}>{messages.filter(m => m.role === "assistant").length}</span>
+        )}
+        <style>{`
+          @keyframes aiChatPillIn {
+            from { opacity: 0; transform: translateX(-12px) scale(0.9); }
+            to   { opacity: 1; transform: translateX(0) scale(1); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Floating Chat Panel */}
       {open && (
         <div
-          ref={panelRef}
           style={{
             position: "fixed",
             bottom: 96,
@@ -3464,6 +3540,7 @@ function AiChatFAB() {
             )}
             <button
               onClick={() => setOpen(false)}
+              title="Close"
               style={{
                 background: "rgba(255,255,255,0.07)",
                 border: "1px solid rgba(255,255,255,0.1)",
@@ -3473,6 +3550,21 @@ function AiChatFAB() {
                 cursor: "pointer", fontSize: 14, flexShrink: 0,
               }}
             >✕</button>
+            <button
+              onClick={minimize}
+              title="Minimize AI chat"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 8, color: "#6A5A3A",
+                width: 28, height: 28,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", fontSize: 16, flexShrink: 0,
+                lineHeight: 1,
+              }}
+              onMouseOver={e => (e.currentTarget.style.color = "#E05555")}
+              onMouseOut={e => (e.currentTarget.style.color = "#6A5A3A")}
+            >—</button>
           </div>
 
           {/* Messages */}
@@ -3622,49 +3714,84 @@ function AiChatFAB() {
         </div>
       )}
 
-      {/* FAB Button */}
+      {/* FAB wrapper — hover reveals minimize button */}
       <div
-        onClick={() => setOpen(o => !o)}
-        title={t.chatFabLabel}
-        style={{
-          position: "fixed",
-          bottom: 24,
-          left: 24,
-          width: 56,
-          height: 56,
-          borderRadius: "50%",
-          background: open
-            ? "linear-gradient(135deg,#A0821A,#D4AF37)"
-            : "linear-gradient(135deg,#D4AF37,#A0821A)",
-          boxShadow: open
-            ? "0 4px 20px rgba(212,175,55,0.5), 0 0 0 4px rgba(212,175,55,0.15)"
-            : "0 4px 18px rgba(0,0,0,0.5), 0 0 0 0px rgba(212,175,55,0)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          zIndex: 451,
-          transition: "box-shadow 0.2s, background 0.2s, transform 0.15s",
-          animation: open ? "none" : "aiChatFabPulse 3s ease-in-out infinite",
-          transform: open ? "scale(1.05)" : "scale(1)",
-        }}
-        onMouseOver={e => { if (!open) (e.currentTarget as HTMLElement).style.transform = "scale(1.1)"; }}
-        onMouseOut={e => { if (!open) (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+        style={{ position: "fixed", bottom: 24, left: 24, zIndex: 451 }}
+        onMouseEnter={() => setFabHovered(true)}
+        onMouseLeave={() => setFabHovered(false)}
       >
-        <span style={{ fontSize: 24, lineHeight: 1, userSelect: "none", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
-          {open ? "✕" : "✡"}
-        </span>
-        {!open && messages.length > 0 && (
-          <span style={{
-            position: "absolute", top: -2, right: -2,
-            background: "#6B46C1", color: "#fff",
-            borderRadius: "50%", minWidth: 18, height: 18,
-            fontSize: 10, fontWeight: 700,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "2px solid #0d1117",
-            padding: "0 3px",
-          }}>{messages.filter(m => m.role === "assistant").length}</span>
-        )}
+        {/* Minimize (hide) button — appears above FAB on hover */}
+        <div
+          onClick={minimize}
+          title="Minimize AI chat"
+          style={{
+            position: "absolute",
+            bottom: 64,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(10,8,4,0.92)",
+            border: "1px solid rgba(212,175,55,0.3)",
+            borderRadius: 10,
+            padding: "4px 10px",
+            color: "#8A7A5A",
+            fontSize: 10,
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            opacity: fabHovered && !open ? 1 : 0,
+            pointerEvents: fabHovered && !open ? "auto" : "none",
+            transition: "opacity 0.18s ease",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+            letterSpacing: 0.2,
+          }}
+          onMouseOver={e => { (e.currentTarget as HTMLElement).style.color = "#E05555"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(220,60,60,0.4)"; }}
+          onMouseOut={e => { (e.currentTarget as HTMLElement).style.color = "#8A7A5A"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.3)"; }}
+        >
+          <span style={{ fontSize: 11 }}>—</span> Hide AI Chat
+        </div>
+
+        {/* Main FAB */}
+        <div
+          onClick={() => setOpen(o => !o)}
+          title={t.chatFabLabel}
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            background: open
+              ? "linear-gradient(135deg,#A0821A,#D4AF37)"
+              : "linear-gradient(135deg,#D4AF37,#A0821A)",
+            boxShadow: open
+              ? "0 4px 20px rgba(212,175,55,0.5), 0 0 0 4px rgba(212,175,55,0.15)"
+              : "0 4px 18px rgba(0,0,0,0.5), 0 0 0 0px rgba(212,175,55,0)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            position: "relative",
+            transition: "box-shadow 0.2s, background 0.2s, transform 0.15s",
+            animation: open ? "none" : "aiChatFabPulse 3s ease-in-out infinite",
+            transform: fabHovered && !open ? "scale(1.1)" : open ? "scale(1.05)" : "scale(1)",
+          }}
+        >
+          <span style={{ fontSize: 24, lineHeight: 1, userSelect: "none", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+            {open ? "✕" : "✡"}
+          </span>
+          {!open && messages.length > 0 && (
+            <span style={{
+              position: "absolute", top: -2, right: -2,
+              background: "#6B46C1", color: "#fff",
+              borderRadius: "50%", minWidth: 18, height: 18,
+              fontSize: 10, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              border: "2px solid #0d1117",
+              padding: "0 3px",
+            }}>{messages.filter(m => m.role === "assistant").length}</span>
+          )}
+        </div>
       </div>
 
       <style>{`
