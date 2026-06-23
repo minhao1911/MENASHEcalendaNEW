@@ -1,8 +1,36 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { HDate } from "@hebcal/core";
 import { Location } from "../lib/locations";
 import { NotificationPrefs, LeadTime, LEAD_TIME_OPTIONS } from "../hooks/useNotifications";
 import { useLanguage } from "../context/LanguageContext";
+import { hebrewDayNumeral } from "../lib/hebrewCalendar";
 import TranslationEditorModal from "../modals/TranslationEditorModal";
+
+const BIRTHDAY_KEY = "menashe-my-birthday";
+
+function getBirthdayCountdown(dateStr: string): { hebrewDay: number; hebrewMonth: number; hebrewYear: number; nextGreg: Date; diffDays: number } | null {
+  if (!dateStr) return null;
+  try {
+    const d = new Date(dateStr + "T12:00:00");
+    const hd = new HDate(d);
+    const curHYear = new HDate().getFullYear();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let next = new HDate(hd.getDate(), hd.getMonth(), curHYear).greg();
+    next.setHours(0, 0, 0, 0);
+    if (next < today) {
+      next = new HDate(hd.getDate(), hd.getMonth(), curHYear + 1).greg();
+      next.setHours(0, 0, 0, 0);
+    }
+    return {
+      hebrewDay: hd.getDate(),
+      hebrewMonth: hd.getMonth(),
+      hebrewYear: hd.getFullYear(),
+      nextGreg: next,
+      diffDays: Math.round((next.getTime() - today.getTime()) / 86400000),
+    };
+  } catch { return null; }
+}
 
 interface SettingsPageProps {
   theme: string;
@@ -48,6 +76,19 @@ export default function SettingsPage({
   const [showTxEditor, setShowTxEditor] = useState(false);
   const [testSent, setTestSent] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [savedBirthday, setSavedBirthday] = useState(() => {
+    try { return localStorage.getItem(BIRTHDAY_KEY) ?? ""; } catch { return ""; }
+  });
+
+  useEffect(() => {
+    function refresh() {
+      try { setSavedBirthday(localStorage.getItem(BIRTHDAY_KEY) ?? ""); } catch {}
+    }
+    window.addEventListener("menashe-birthday-updated", refresh);
+    return () => window.removeEventListener("menashe-birthday-updated", refresh);
+  }, []);
+
+  const bdCountdown = getBirthdayCountdown(savedBirthday);
 
   const icsUrl = `${window.location.origin}/api/calendar/ics?` + new URLSearchParams({
     lat: String(location.lat),
@@ -648,6 +689,101 @@ export default function SettingsPage({
 
         {/* Tools */}
         <div className="section-header">{t.settingsTools}</div>
+
+        {/* ── Hebrew Birthday Tracker card ── */}
+        {bdCountdown ? (
+          <div
+            onClick={onBirthday}
+            style={{
+              marginBottom: 14, padding: "14px 16px", borderRadius: 14, cursor: "pointer",
+              background: "linear-gradient(135deg, rgba(212,168,67,0.10) 0%, rgba(212,168,67,0.04) 100%)",
+              border: "1px solid rgba(212,168,67,0.25)",
+              position: "relative", overflow: "hidden",
+            }}
+          >
+            {/* Radial accent */}
+            <div style={{
+              position: "absolute", inset: 0, pointerEvents: "none",
+              background: "radial-gradient(ellipse at 90% 15%, rgba(212,168,67,0.10) 0%, transparent 55%)",
+            }} />
+
+            {/* Title row */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 14 }}>🎂</span>
+                <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.13em", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                  {t.birthdayTrackerCardTitle}
+                </span>
+              </div>
+              <span style={{ fontSize: 14, color: "#d4a843" }}>›</span>
+            </div>
+
+            {/* Content row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              {/* Countdown number */}
+              <div style={{
+                width: 60, height: 60, borderRadius: 14, flexShrink: 0,
+                background: "linear-gradient(135deg, rgba(212,168,67,0.18) 0%, rgba(212,168,67,0.06) 100%)",
+                border: "1px solid rgba(212,168,67,0.25)",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                gap: 1,
+              }}>
+                {bdCountdown.diffDays === 0 ? (
+                  <span style={{ fontSize: 22 }}>🎉</span>
+                ) : (
+                  <>
+                    <span style={{
+                      fontSize: bdCountdown.diffDays >= 100 ? 18 : 24,
+                      fontWeight: 900, lineHeight: 1,
+                      color: bdCountdown.diffDays <= 7 ? "#f0c050" : "#d4a843",
+                    }}>
+                      {bdCountdown.diffDays}
+                    </span>
+                    <span style={{ fontSize: 8, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.04em" }}>
+                      {t.nextHolidayDaysPlural.toUpperCase()}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Hebrew date */}
+                <div style={{
+                  fontFamily: "'Noto Serif Hebrew', serif",
+                  fontSize: 20, fontWeight: 700, color: "#d4a843",
+                  direction: "rtl", lineHeight: 1.2, marginBottom: 4,
+                }}>
+                  {hebrewDayNumeral(bdCountdown.hebrewDay)}{" "}
+                  {HDate.getMonthName(bdCountdown.hebrewMonth, bdCountdown.hebrewYear)}
+                </div>
+                {/* Next date */}
+                <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>
+                  {bdCountdown.diffDays === 0
+                    ? t.birthdayTrackerToday
+                    : bdCountdown.nextGreg.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={onBirthday}
+            style={{
+              marginBottom: 14, padding: "12px 16px", borderRadius: 12, cursor: "pointer",
+              background: "rgba(212,168,67,0.04)",
+              border: "1px dashed rgba(212,168,67,0.25)",
+              display: "flex", alignItems: "center", gap: 10,
+            }}
+          >
+            <span style={{ fontSize: 20 }}>🎂</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#d4a843", flex: 1 }}>
+              {t.birthdayTrackerCardSetup}
+            </span>
+            <span style={{ fontSize: 16, color: "#d4a843" }}>›</span>
+          </div>
+        )}
+
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
           {[
             { label: t.settingsTahara, sub: t.settingsTaharaSub, action: onTahara },

@@ -320,6 +320,20 @@ export interface Translations {
   nextHolidayTomorrow: string;
   nextHolidayHide: string;
   nextHolidayShow: string;
+  birthdayTrackerTitle: string;
+  birthdayTrackerSub: string;
+  birthdayTrackerGregorianLabel: string;
+  birthdayTrackerHebrewLabel: string;
+  birthdayTrackerNextLabel: string;
+  birthdayTrackerCalculate: string;
+  birthdayTrackerSave: string;
+  birthdayTrackerSaved: string;
+  birthdayTrackerClear: string;
+  birthdayTrackerToday: string;
+  birthdayTrackerCardTitle: string;
+  birthdayTrackerCardDays: string;
+  birthdayTrackerCardSetup: string;
+  modalClose: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -623,6 +637,20 @@ export const en: Translations = {
   nextHolidayTomorrow: "Tomorrow",
   nextHolidayHide: "Minimise",
   nextHolidayShow: "Next Holiday",
+  birthdayTrackerTitle: "Hebrew Birthday Tracker",
+  birthdayTrackerSub: "Find & save your Jewish birthday",
+  birthdayTrackerGregorianLabel: "Date of birth (Gregorian)",
+  birthdayTrackerHebrewLabel: "YOUR HEBREW BIRTHDAY",
+  birthdayTrackerNextLabel: "NEXT CELEBRATION",
+  birthdayTrackerCalculate: "Calculate",
+  birthdayTrackerSave: "Save My Birthday",
+  birthdayTrackerSaved: "Birthday saved!",
+  birthdayTrackerClear: "Clear",
+  birthdayTrackerToday: "Today is your Hebrew Birthday! 🎂",
+  birthdayTrackerCardTitle: "MY HEBREW BIRTHDAY",
+  birthdayTrackerCardDays: "days until birthday",
+  birthdayTrackerCardSetup: "Tap to set your Hebrew birthday →",
+  modalClose: "Close",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -926,6 +954,20 @@ export const tk: Translations = {
   nextHolidayTomorrow: "Tuni",
   nextHolidayHide: "Paih",
   nextHolidayShow: "Nisa Thiamna",
+  birthdayTrackerTitle: "Hebrew Nirualna Tracker",
+  birthdayTrackerSub: "Na nirualna Jewish en sou",
+  birthdayTrackerGregorianLabel: "Nirualna ni (Gregorian)",
+  birthdayTrackerHebrewLabel: "NA NIRUALNA HEBREW",
+  birthdayTrackerNextLabel: "NISA SUANGKHOL",
+  birthdayTrackerCalculate: "Kalkulet",
+  birthdayTrackerSave: "Na Nirualna Sou",
+  birthdayTrackerSaved: "Nirualna sou!",
+  birthdayTrackerClear: "Paih",
+  birthdayTrackerToday: "Ni tawp na nirualna Hebrew! 🎂",
+  birthdayTrackerCardTitle: "NA NIRUALNA HEBREW",
+  birthdayTrackerCardDays: "ni en nirualna",
+  birthdayTrackerCardSetup: "Na nirualna Hebrew set →",
+  modalClose: "Khat",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };
