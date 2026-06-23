@@ -354,6 +354,9 @@ export interface Translations {
   chatDisclaimer: string;
   chatError: string;
   chatFabLabel: string;
+  chatVoiceStart: string;
+  chatVoiceStop: string;
+  chatVoiceUnsupported: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -690,6 +693,9 @@ export const en: Translations = {
   chatDisclaimer: "For practical halachic decisions, consult your rabbi.",
   chatError: "Sorry, I couldn't respond. Please try again.",
   chatFabLabel: "Ask Rabbi AI",
+  chatVoiceStart: "Tap to speak",
+  chatVoiceStop: "Listening… tap to stop",
+  chatVoiceUnsupported: "Voice not supported in this browser",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1026,6 +1032,9 @@ export const tk: Translations = {
   chatDisclaimer: "Thu halacha dik tak tan, Rabbi-a din rawh.",
   chatError: "Thlen theih lo. Chhiar dan hrang hmang.",
   chatFabLabel: "Rabbi AI Zawng",
+  chatVoiceStart: "Thu sawi rawh",
+  chatVoiceStop: "Chhiar mek… paih tan rawh",
+  chatVoiceUnsupported: "Voice browser-in support lo",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

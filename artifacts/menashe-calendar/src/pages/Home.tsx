@@ -3313,9 +3313,65 @@ function AiChatFAB() {
     try { return localStorage.getItem("ai-chat-minimized") === "1"; } catch { return false; }
   });
   const [fabHovered, setFabHovered] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const voiceSupported = typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  function toggleVoice() {
+    if (!voiceSupported) {
+      setVoiceError(t.chatVoiceUnsupported);
+      setTimeout(() => setVoiceError(null), 3000);
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    setVoiceError(null);
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    recognitionRef.current = rec;
+
+    let finalTranscript = "";
+
+    rec.onstart = () => setIsListening(true);
+    rec.onend = () => {
+      setIsListening(false);
+      if (finalTranscript.trim()) {
+        setInput(prev => {
+          const joined = prev.trim() ? prev.trim() + " " + finalTranscript.trim() : finalTranscript.trim();
+          return joined;
+        });
+        setTimeout(() => inputRef.current?.focus(), 80);
+      }
+    };
+    rec.onerror = (e: any) => {
+      setIsListening(false);
+      if (e.error !== "aborted" && e.error !== "no-speech") {
+        setVoiceError(t.chatVoiceUnsupported);
+        setTimeout(() => setVoiceError(null), 3000);
+      }
+    };
+    rec.onresult = (e: any) => {
+      let interim = "";
+      finalTranscript = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      setInput(interim || finalTranscript);
+    };
+    rec.start();
+  }
 
   useEffect(() => {
     try { localStorage.setItem("ai-chat-minimized", minimized ? "1" : "0"); } catch {}
@@ -3658,24 +3714,45 @@ function AiChatFAB() {
             background: "rgba(0,0,0,0.2)",
             flexShrink: 0,
           }}>
+            {/* Listening banner */}
+            {isListening && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: "rgba(220,60,60,0.08)",
+                border: "1px solid rgba(220,60,60,0.25)",
+                borderRadius: 8, padding: "5px 10px",
+                marginBottom: 6,
+              }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#E05555", flexShrink: 0, animation: "aiVoiceDot 1s ease-in-out infinite" }} />
+                <span style={{ color: "#E08080", fontSize: 10, flex: 1 }}>{t.chatVoiceStop}</span>
+                <button onClick={toggleVoice} style={{ background: "none", border: "none", color: "#E05555", cursor: "pointer", fontSize: 11, padding: 0 }}>✕</button>
+              </div>
+            )}
+            {/* Voice error */}
+            {voiceError && (
+              <div style={{ color: "#E08080", fontSize: 10, marginBottom: 5, padding: "3px 4px" }}>{voiceError}</div>
+            )}
             <div style={{
-              display: "flex", gap: 8, alignItems: "flex-end",
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(212,175,55,0.2)",
+              display: "flex", gap: 6, alignItems: "flex-end",
+              background: isListening ? "rgba(220,60,60,0.06)" : "rgba(255,255,255,0.05)",
+              border: isListening ? "1px solid rgba(220,60,60,0.3)" : "1px solid rgba(212,175,55,0.2)",
               borderRadius: 14, padding: "8px 10px",
+              transition: "border-color 0.2s, background 0.2s",
             }}>
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-                placeholder={t.chatPlaceholder}
+                placeholder={isListening ? t.chatVoiceStop : t.chatPlaceholder}
                 rows={1}
                 disabled={loading}
                 style={{
                   flex: 1, background: "transparent", border: "none", outline: "none",
-                  color: "#F5F0E8", fontSize: 13, lineHeight: 1.5,
+                  color: isListening ? "#F0C0C0" : "#F5F0E8",
+                  fontSize: 13, lineHeight: 1.5,
                   resize: "none", maxHeight: 80, overflowY: "auto", fontFamily: "inherit",
+                  transition: "color 0.2s",
                 }}
                 onInput={e => {
                   const el = e.target as HTMLTextAreaElement;
@@ -3683,6 +3760,28 @@ function AiChatFAB() {
                   el.style.height = Math.min(el.scrollHeight, 80) + "px";
                 }}
               />
+              {/* Mic button */}
+              <button
+                onClick={toggleVoice}
+                title={isListening ? t.chatVoiceStop : t.chatVoiceStart}
+                disabled={loading}
+                style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: isListening
+                    ? "rgba(220,60,60,0.25)"
+                    : "rgba(255,255,255,0.06)",
+                  border: isListening
+                    ? "1px solid rgba(220,60,60,0.5)"
+                    : "1px solid rgba(255,255,255,0.1)",
+                  color: isListening ? "#E05555" : "#7A6A4A",
+                  cursor: loading ? "default" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 15, flexShrink: 0,
+                  animation: isListening ? "aiVoicePulse 1.2s ease-in-out infinite" : "none",
+                  transition: "background 0.2s, border-color 0.2s, color 0.2s",
+                }}
+              >🎙</button>
+              {/* Send / Stop */}
               {loading ? (
                 <button onClick={handleStop} style={{
                   width: 32, height: 32, borderRadius: "50%",
@@ -3806,6 +3905,14 @@ function AiChatFAB() {
         @keyframes aiChatFabPulse {
           0%,100% { box-shadow: 0 4px 18px rgba(0,0,0,0.5), 0 0 0px rgba(212,175,55,0); }
           50%     { box-shadow: 0 6px 24px rgba(0,0,0,0.55), 0 0 20px rgba(212,175,55,0.35); }
+        }
+        @keyframes aiVoiceDot {
+          0%,100% { opacity: 1; transform: scale(1); }
+          50%     { opacity: 0.4; transform: scale(0.7); }
+        }
+        @keyframes aiVoicePulse {
+          0%,100% { box-shadow: 0 0 0 0px rgba(220,60,60,0.35); }
+          50%     { box-shadow: 0 0 0 5px rgba(220,60,60,0); }
         }
       `}</style>
     </>
