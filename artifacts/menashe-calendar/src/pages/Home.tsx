@@ -2268,7 +2268,30 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
   const [showHalacha, setShowHalacha] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
+  const [countdown, setCountdown] = useState<string>("");
   const halachaFetchedFor = useRef<string>("");
+
+  const next0 = holidays[0];
+  useEffect(() => {
+    if (!next0) return;
+    const target = new Date(next0.date);
+    target.setHours(0, 0, 0, 0);
+    function tick() {
+      const now = new Date();
+      const diff = target.getTime() - now.getTime();
+      if (diff <= 0) { setCountdown("00:00:00"); return; }
+      if (diff > 86400000) { setCountdown(""); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown(
+        `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+      );
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [next0?.date.getTime()]);
 
   const checklistKey = `menashe-checklist-${holidays[0]?.name ?? ""}-${holidays[0]?.date.getFullYear() ?? 0}`;
   const [checklist, setChecklist] = useState<Record<number, boolean>>(() => {
@@ -2518,6 +2541,18 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
             <span style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 500 }}>
               {next.date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
             </span>
+            {countdown && (
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)",
+                borderRadius: 20, padding: "4px 11px",
+                fontSize: 13, fontWeight: 900, color: "#ef4444",
+                fontVariantNumeric: "tabular-nums", letterSpacing: "0.06em",
+                fontFamily: "monospace",
+              }}>
+                ⏱ {countdown}
+              </span>
+            )}
           </div>
         </div>
       </div>
