@@ -17,14 +17,6 @@ async function getAuthToken(): Promise<string | null> {
   return (await (window as any).Clerk?.session?.getToken()) ?? null;
 }
 
-const SUGGESTED_QUESTIONS = [
-  "What is today's Parasha about?",
-  "When is Shabbat this week?",
-  "Explain Mussar and character refinement",
-  "What is Daf Yomi?",
-  "Tell me about the Bnei Menashe community",
-  "What are the Zmanim for prayer?",
-];
 
 export default function ChatModal({ onClose }: Props) {
   const { t } = useLanguage();

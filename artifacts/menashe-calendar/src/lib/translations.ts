@@ -394,6 +394,7 @@ export interface Translations {
   chatShare: string;
   chatCopied: string;
   chatSuggestLabel: string;
+  chatSuggestedQuestions: string[];
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -769,6 +770,14 @@ export const en: Translations = {
   chatShare: "Share",
   chatCopied: "Copied!",
   chatSuggestLabel: "Ask more",
+  chatSuggestedQuestions: [
+    "What is today's Parasha about?",
+    "When is Shabbat this week?",
+    "Explain Mussar and character refinement",
+    "What is Daf Yomi?",
+    "Tell me about the Bnei Menashe community",
+    "What are the Zmanim for prayer?",
+  ],
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1144,6 +1153,14 @@ export const tk: Translations = {
   chatShare: "Share",
   chatCopied: "Copy!",
   chatSuggestLabel: "Zawk hran",
+  chatSuggestedQuestions: [
+    "Tuni Parasha eng nge a ni?",
+    "Tui kum Shabbat engtia lo nge?",
+    "Mussar leh character refinement explain rawh",
+    "Daf Yomi eng nge a ni?",
+    "Bnei Menashe chanchin sawi rawh",
+    "Thu dawt Zmanim zawng zawng en rawh",
+  ],
 };
 
 const translations: Record<Lang, Translations> = { en, tk };
