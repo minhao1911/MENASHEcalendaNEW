@@ -3598,12 +3598,12 @@ export default function Home({
             TODAY CARD — Hebrew Date + Zmanim
         ══════════════════════════════════════════ */}
         <CompassCard
-          gradient="linear-gradient(160deg, #0c1128 0%, #080d1e 45%, #130a1a 100%)"
-          accentColor="#d4a843"
-          shimmerColor="#f0c050"
+          gradient="linear-gradient(160deg, #0d0c1a 0%, #08070f 55%, #0f0e1c 100%)"
+          accentColor="#c9a227"
+          shimmerColor="#e8c84a"
           category="TODAY"
           icon={
-            <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 40, color: "#d4a843", lineHeight: 1, display: "block" }}>
+            <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 40, color: "#c9a227", lineHeight: 1, display: "block", filter: "drop-shadow(0 0 10px rgba(201,162,39,0.5))" }}>
               {hebrewDay}
             </span>
           }
@@ -3618,11 +3618,11 @@ export default function Home({
               ].map(({ label, time }) => (
                 <div key={label} style={{
                   flex: 1, textAlign: "center",
-                  background: "rgba(255,255,255,0.06)", borderRadius: 10,
+                  background: "rgba(201,162,39,0.07)", borderRadius: 10,
                   padding: "7px 4px",
-                  border: "1px solid rgba(212,168,67,0.12)",
+                  border: "1px solid rgba(201,162,39,0.18)",
                 }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(212,168,67,0.7)", letterSpacing: "0.1em", marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(201,162,39,0.75)", letterSpacing: "0.1em", marginBottom: 3 }}>{label}</div>
                   <div style={{ fontSize: 13, fontWeight: 800, color: "white" }}>{time ? formatTime(time) : "—"}</div>
                 </div>
               ))}
@@ -3630,6 +3630,7 @@ export default function Home({
           }
           expandedTitle="Today's Calendar"
           expandedSubtitle={`${dayName} · ${monthStr} ${today.getDate()}, ${yearStr}`}
+          watermarkSrc={torahScrollWatermark}
         >
           <div style={{ padding: "16px 16px 0" }}>
             <ShabbatCountdownBar isPremium={isPremium} location={location} onShowPremium={onShowPremium} />
@@ -3663,12 +3664,12 @@ export default function Home({
         ══════════════════════════════════════════ */}
         {parasha && (
           <CompassCard
-            gradient="linear-gradient(160deg, #071a10 0%, #041410 55%, #0a1a14 100%)"
-            accentColor="#4ade80"
-            shimmerColor="#86efac"
+            gradient="linear-gradient(160deg, #0d0c1a 0%, #08070f 55%, #0f0e1c 100%)"
+            accentColor="#c9a227"
+            shimmerColor="#e8c84a"
             category="THIS WEEK'S PARASHA"
             icon={
-              <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 42, color: "#4ade80", lineHeight: 1, display: "block", filter: "drop-shadow(0 0 12px rgba(74,222,128,0.5))" }}>
+              <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 42, color: "#c9a227", lineHeight: 1, display: "block", filter: "drop-shadow(0 0 14px rgba(201,162,39,0.55))" }}>
                 פ
               </span>
             }
@@ -3676,8 +3677,8 @@ export default function Home({
             subtitle={`${parasha.book} · ${parasha.verses}`}
             badge={
               <span style={{
-                fontSize: 10, fontWeight: 800, color: "#4ade80", letterSpacing: "0.08em",
-                background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)",
+                fontSize: 10, fontWeight: 800, color: "#c9a227", letterSpacing: "0.08em",
+                background: "rgba(201,162,39,0.12)", border: "1px solid rgba(201,162,39,0.32)",
                 padding: "3px 9px", borderRadius: 20,
               }}>
                 SHABBAT {nextShabbat.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}
@@ -3695,15 +3696,15 @@ export default function Home({
         ══════════════════════════════════════════ */}
         {omerDay !== null && (
           <CompassCard
-            gradient="linear-gradient(160deg, #1a1000 0%, #120c00 55%, #1a1500 100%)"
-            accentColor="#f0c050"
-            shimmerColor="#fde68a"
+            gradient="linear-gradient(160deg, #0d0c1a 0%, #08070f 55%, #0f0e1c 100%)"
+            accentColor="#c9a227"
+            shimmerColor="#e8c84a"
             category="SEFIRAT HA-OMER"
             icon={
               <div style={{ position: "relative", display: "inline-block", width: 48, height: 48 }}>
                 <svg width="48" height="48" viewBox="0 0 52 52">
-                  <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(240,192,80,0.15)" strokeWidth="5" />
-                  <circle cx="26" cy="26" r="21" fill="none" stroke="#f0c050" strokeWidth="5"
+                  <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(201,162,39,0.15)" strokeWidth="5" />
+                  <circle cx="26" cy="26" r="21" fill="none" stroke="#c9a227" strokeWidth="5"
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 21}
                     strokeDashoffset={2 * Math.PI * 21 - (omerDay / 49) * 2 * Math.PI * 21}
@@ -3711,7 +3712,7 @@ export default function Home({
                   />
                 </svg>
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: 14, fontWeight: 900, color: "#f0c050" }}>{omerDay}</span>
+                  <span style={{ fontSize: 14, fontWeight: 900, color: "#c9a227" }}>{omerDay}</span>
                 </div>
               </div>
             }
@@ -3719,6 +3720,7 @@ export default function Home({
             subtitle={`${t.omerDayCount.replace("{day}", String(omerDay))} · ${(49 - omerDay === 1 ? t.omerDayLeft : t.omerDaysLeft).replace("{days}", String(49 - omerDay))}`}
             onTap={onShowOmer}
             minHeight={170}
+            watermarkSrc={torahScrollWatermark}
           />
         )}
 
@@ -3730,11 +3732,11 @@ export default function Home({
           const thought = TORAH_THOUGHTS[dayIdx];
           return (
             <CompassCard
-              gradient="linear-gradient(160deg, #1a0e00 0%, #120900 55%, #1a1000 100%)"
-              accentColor="#fb923c"
-              shimmerColor="#fbbf24"
+              gradient="linear-gradient(160deg, #0d0c1a 0%, #08070f 55%, #0f0e1c 100%)"
+              accentColor="#c9a227"
+              shimmerColor="#e8c84a"
               category="DAILY WISDOM"
-              icon={<span style={{ fontSize: 38 }}>✡</span>}
+              icon={<span style={{ fontSize: 38, filter: "drop-shadow(0 0 8px rgba(201,162,39,0.4))" }}>✡</span>}
               title={`"${thought.quote.length > 60 ? thought.quote.slice(0, 60) + "…" : thought.quote}"`}
               subtitle={thought.source}
               expandedTitle="Daily Wisdom"
@@ -3752,11 +3754,11 @@ export default function Home({
             SIDDUR LIBRARY CARD
         ══════════════════════════════════════════ */}
         <CompassCard
-          gradient="linear-gradient(160deg, #0a1630 0%, #06101e 55%, #0f1838 100%)"
-          accentColor="#d4a843"
-          shimmerColor="#f0c050"
+          gradient="linear-gradient(160deg, #0d0c1a 0%, #08070f 55%, #0f0e1c 100%)"
+          accentColor="#c9a227"
+          shimmerColor="#e8c84a"
           category="SIDDUR LIBRARY"
-          icon={<span style={{ fontSize: 42 }}>📚</span>}
+          icon={<span style={{ fontSize: 42, filter: "drop-shadow(0 0 8px rgba(201,162,39,0.4))" }}>📚</span>}
           title="Sacred Texts & Prayers"
           subtitle="Siddurim, Tehillim, Torah & Kuki Books"
           previewContent={
@@ -3764,10 +3766,10 @@ export default function Home({
               {["Siddur", "Tehillim", "Torah", "Kuki Books"].map(cat => (
                 <div key={cat} style={{
                   flex: 1, textAlign: "center",
-                  background: "rgba(212,168,67,0.07)",
-                  border: "1px solid rgba(212,168,67,0.14)",
+                  background: "rgba(201,162,39,0.07)",
+                  border: "1px solid rgba(201,162,39,0.2)",
                   borderRadius: 8, padding: "5px 2px",
-                  fontSize: 9, fontWeight: 700, color: "rgba(212,168,67,0.7)",
+                  fontSize: 9, fontWeight: 700, color: "rgba(201,162,39,0.75)",
                   letterSpacing: "0.05em",
                 }}>{cat}</div>
               ))}

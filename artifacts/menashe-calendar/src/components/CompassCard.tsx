@@ -273,8 +273,8 @@ export default function CompassCard({
         className={`compass-card-root${pressed ? " pressed" : ""}`}
         style={{
           background: gradient,
-          boxShadow: "0 6px 28px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)",
-          border: `1px solid ${accentColor}30`,
+          boxShadow: `0 8px 32px rgba(0,0,0,0.72), inset 0 1px 0 ${accentColor}22`,
+          border: `1px solid ${accentColor}40`,
           minHeight,
           ...style,
         }}
