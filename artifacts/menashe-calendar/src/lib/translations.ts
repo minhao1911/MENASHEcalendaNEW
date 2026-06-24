@@ -371,6 +371,14 @@ export interface Translations {
   yartzeitCardPushOff: string;
   yartzeitCardPushOn: string;
 
+  /* ── Parasha Anniversaries ── */
+  parashaAnnivTitle: string;
+  parashaAnnivYahrzeit: string;
+  parashaAnnivBirthday: string;
+  parashaAnnivEvent: string;
+  parashaAnnivEmpty: string;
+  parashaAnnivExpand: string;
+
   /* ── AI Chat Assistant ── */
   chatTitle: string;
   chatSubtitle: string;
@@ -740,6 +748,13 @@ export const en: Translations = {
   yartzeitCardPushOff: "Day-of reminder",
   yartzeitCardPushOn: "Reminder set ✓",
 
+  parashaAnnivTitle: "NOTABLE ANNIVERSARIES",
+  parashaAnnivYahrzeit: "Yahrzeit",
+  parashaAnnivBirthday: "Birthday",
+  parashaAnnivEvent: "Historical Event",
+  parashaAnnivEmpty: "No anniversaries recorded for this Parasha",
+  parashaAnnivExpand: "This week's anniversaries",
+
   chatTitle: "Rav Menashe AI",
   chatSubtitle: "Your Jewish calendar & Torah companion",
   chatWelcomeTitle: "Shalom! How can I help you?",
@@ -1107,6 +1122,13 @@ export const tk: Translations = {
   yartzeitCardDay: "ni",
   yartzeitCardPushOff: "Ni reminder",
   yartzeitCardPushOn: "Reminder dawn ✓",
+
+  parashaAnnivTitle: "ANNI TANGKHOL",
+  parashaAnnivYahrzeit: "Yahrzeit",
+  parashaAnnivBirthday: "Nirualna",
+  parashaAnnivEvent: "Histori Thu",
+  parashaAnnivEmpty: "Anni tangkhol adang om lo",
+  parashaAnnivExpand: "Tuni anni tangkhol",
 
   chatTitle: "Rav Menashe AI",
   chatSubtitle: "Jewish kolam & Torah thu ropui",

@@ -16,6 +16,8 @@ import type { ServerAnnouncement } from "../lib/announcementsApi";
 import { useTrialStatus } from "../hooks/useTrialStatus";
 import { getYahrzeitEntries, getNextYahrzeit, hebrewDayLabel } from "../lib/yahrzeit";
 import type { YartzeitEntry } from "../lib/yahrzeit";
+import { getParashaAnniversaries } from "../lib/parashaAnniversaries";
+import type { ParashaAnniversary } from "../lib/parashaAnniversaries";
 
 const API_BASE = "/api";
 
