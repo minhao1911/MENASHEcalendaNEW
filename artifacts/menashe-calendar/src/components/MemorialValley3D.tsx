@@ -1,12 +1,15 @@
-import { useRef, useMemo, useEffect, Suspense, useCallback } from "react";
-import { Canvas, useFrame, useThree, extend } from "@react-three/fiber";
-import {
-  OrbitControls, Sky, Instances, Instance, Text, Environment,
-} from "@react-three/drei";
-import { EffectComposer, Bloom, SMAA } from "@react-three/postprocessing";
-import { BlendFunction } from "postprocessing";
+import { useRef, useMemo, useEffect } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls, Instances, Instance, Text } from "@react-three/drei";
 import * as THREE from "three";
 import type { CommunityYahrzeitEntry } from "../lib/userApi";
+import {
+  SceneFoundation,
+  GoldenHourLighting,
+  PostProcessingPipeline,
+  SceneEnvironment,
+  ScenePerf,
+} from "../scene";
 
 /* ── LCG seeded deterministic random ──────────────────────────────────────── */
 function makeLCG(seed = 42) {
@@ -143,37 +146,7 @@ function buildEntryPositions() {
 }
 const ENTRY_POSITIONS = buildEntryPositions();
 
-/* ══════════════════════════════════════════════════════════════════════════
-   AAA LIGHTING — Golden hour with warm hemisphere + moving sun
-══════════════════════════════════════════════════════════════════════════ */
-function AAALighting() {
-  const sunRef  = useRef<THREE.DirectionalLight>(null!);
-  const fillRef = useRef<THREE.DirectionalLight>(null!);
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime() * 0.025;
-    if (sunRef.current) {
-      sunRef.current.position.set(Math.cos(t) * 40, 22 + Math.sin(t * 0.7) * 6, Math.sin(t) * 22);
-      const warm = 0.78 + Math.sin(t * 2.2) * 0.12;
-      sunRef.current.color.setRGB(1.0, warm * 0.78, warm * 0.52);
-      sunRef.current.intensity = 1.8 + Math.sin(t * 1.4) * 0.3;
-    }
-  });
-  return (
-    <>
-      <hemisphereLight args={["#ffd5a0", "#2d4a22", 0.65]} />
-      <directionalLight
-        ref={sunRef} color="#ffcc77" intensity={2.2}
-        position={[28, 24, 14]} castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={120} shadow-camera-left={-55}
-        shadow-camera-right={55} shadow-camera-top={55} shadow-camera-bottom={-55}
-        shadow-bias={-0.0005}
-      />
-      <directionalLight ref={fillRef} color="#7ab8d4" intensity={0.35} position={[-20, 10, -15]} />
-      <pointLight color="#ff9944" intensity={0.6} position={[0, -0.5, 0]} distance={70} />
-    </>
-  );
-}
+/* AAALighting replaced by scene/lighting/GoldenHourLighting — see AAAValleyScene */
 
 /* ══════════════════════════════════════════════════════════════════════════
    AAA TERRAIN — Terraced Jerusalem hills
@@ -942,24 +915,6 @@ function GroundClickPlane({ onGroundClick }: { onGroundClick: (pos: [number, num
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   POST-PROCESSING
-══════════════════════════════════════════════════════════════════════════ */
-function AAAPostProcessing() {
-  return (
-    <EffectComposer multisampling={0}>
-      <SMAA />
-      <Bloom
-        intensity={1.6}
-        luminanceThreshold={0.28}
-        luminanceSmoothing={0.85}
-        mipmapBlur
-        blendFunction={BlendFunction.ADD}
-      />
-    </EffectComposer>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
    FULL SCENE
 ══════════════════════════════════════════════════════════════════════════ */
 interface SceneProps {
@@ -976,20 +931,11 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
   return (
     <>
       <AAACamera />
-      <AAALighting />
 
-      {/* Atmospheric golden-hour sky */}
-      <Sky distance={450} sunPosition={[0.72, 0.28, 0.12]}
-        turbidity={5.5} rayleigh={1.2}
-        mieCoefficient={0.008} mieDirectionalG={0.88}
-        inclination={0.51} azimuth={0.24}
-      />
-
-      {/* Exp2 fog for depth/atmosphere */}
-      <fog attach="fog" args={["#e8c880", 55, 110]} />
-
-      {/* Environment light for ambient PBR reflections */}
-      <Environment preset="sunset" background={false} />
+      {/* ── Phase 1 Foundation: lighting + environment + perf ── */}
+      <GoldenHourLighting animate shadowMapSize={2048} shadows />
+      <SceneEnvironment fogColor="#ddc480" fogDensity={0.0055} envIntensity={0.45} />
+      <ScenePerf position="top-left" />
 
       {/* Ground & terrain */}
       <AAATerrain />
@@ -1056,8 +1002,14 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
         target={[0, 0, 4]}
       />
 
-      {/* Post-processing */}
-      <AAAPostProcessing />
+      {/* ── Phase 1 Foundation: post-processing pipeline ── */}
+      <PostProcessingPipeline
+        enableSMAA
+        enableBloom
+        enableSSAO={false}
+        bloomIntensity={1.4}
+        bloomThreshold={0.28}
+      />
     </>
   );
 }
@@ -1075,22 +1027,8 @@ export interface MemorialValley3DProps {
 
 export default function MemorialValley3D(props: MemorialValley3DProps) {
   return (
-    <Canvas
-      shadows={{ type: THREE.PCFSoftShadowMap }}
-      camera={{ fov: 44, near: 0.3, far: 250 }}
-      gl={{
-        antialias: false,
-        alpha: false,
-        powerPreference: "high-performance",
-        toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.15,
-      }}
-      dpr={[1, 1.5]}
-      style={{ width: "100%", height: "100%", touchAction: "none" }}
-    >
-      <Suspense fallback={null}>
-        <AAAValleyScene {...props} />
-      </Suspense>
-    </Canvas>
+    <SceneFoundation fov={44}>
+      <AAAValleyScene {...props} />
+    </SceneFoundation>
   );
 }
