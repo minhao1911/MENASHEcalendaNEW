@@ -2024,6 +2024,27 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
   const [pushLoading, setPushLoading] = useState(false);
   const halachaFetchedFor = useRef<string>("");
 
+  const checklistKey = `menashe-checklist-${holidays[0]?.name ?? ""}-${holidays[0]?.date.getFullYear() ?? 0}`;
+  const [checklist, setChecklist] = useState<Record<number, boolean>>(() => {
+    try {
+      const raw = localStorage.getItem(checklistKey);
+      return raw ? (JSON.parse(raw) as Record<number, boolean>) : {};
+    } catch { return {}; }
+  });
+
+  function toggleCheck(i: number) {
+    setChecklist(prev => {
+      const updated = { ...prev, [i]: !prev[i] };
+      try { localStorage.setItem(checklistKey, JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }
+
+  function resetChecklist() {
+    setChecklist({});
+    try { localStorage.removeItem(checklistKey); } catch {}
+  }
+
   function toggle() {
     setMinimized(prev => {
       const next = !prev;
@@ -2257,30 +2278,108 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
               {t.nextHolidayHalachaError}
             </div>
           )}
-          {halacha && (
-            <>
-              <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.1em", color: "rgba(212,168,67,0.6)", marginBottom: 10, textTransform: "uppercase" }}>
-                {t.nextHolidayHalachaSource}: {halacha.source}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                {halacha.preparations.map((prep, i) => (
-                  <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
-                    <div style={{
-                      flexShrink: 0, width: 20, height: 20, borderRadius: "50%",
-                      background: "rgba(212,168,67,0.14)", border: "1px solid rgba(212,168,67,0.25)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 10, fontWeight: 800, color: "#d4a843", marginTop: 1,
-                    }}>
-                      {i + 1}
-                    </div>
-                    <p style={{ margin: 0, fontSize: 11.5, color: "var(--text-secondary)", lineHeight: 1.6, flex: 1 }}>
-                      {prep}
-                    </p>
+          {halacha && (() => {
+            const total = halacha.preparations.length;
+            const checked = Object.values(checklist).filter(Boolean).length;
+            const allDone = checked === total && total > 0;
+            return (
+              <>
+                {/* Source + progress row */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.1em", color: "rgba(212,168,67,0.6)", textTransform: "uppercase" }}>
+                    {t.nextHolidayHalachaSource}: {halacha.source}
                   </div>
-                ))}
-              </div>
-            </>
-          )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    {checked > 0 && (
+                      <button
+                        onClick={resetChecklist}
+                        style={{
+                          background: "none", border: "1px solid rgba(255,255,255,0.1)",
+                          borderRadius: 6, padding: "1px 7px",
+                          cursor: "pointer", fontSize: 9.5, color: "var(--text-muted)",
+                        }}
+                      >
+                        {t.nextHolidayChecklistReset}
+                      </button>
+                    )}
+                    <div style={{
+                      fontSize: 10, fontWeight: 700,
+                      color: allDone ? "#4ade80" : "#d4a843",
+                      background: allDone ? "rgba(74,222,128,0.12)" : "rgba(212,168,67,0.12)",
+                      border: `1px solid ${allDone ? "rgba(74,222,128,0.3)" : "rgba(212,168,67,0.25)"}`,
+                      borderRadius: 10, padding: "2px 8px",
+                    }}>
+                      {checked} / {total} {t.nextHolidayChecklistProgress}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.07)", marginBottom: 12, overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%", borderRadius: 2,
+                    background: allDone ? "#4ade80" : "linear-gradient(90deg, #d4a843, #f0c050)",
+                    width: `${total > 0 ? (checked / total) * 100 : 0}%`,
+                    transition: "width 0.35s ease, background 0.3s",
+                  }} />
+                </div>
+
+                {/* All-done banner */}
+                {allDone && (
+                  <div style={{
+                    marginBottom: 10, padding: "7px 11px",
+                    background: "rgba(74,222,128,0.10)", border: "1px solid rgba(74,222,128,0.25)",
+                    borderRadius: 8, fontSize: 11.5, fontWeight: 700,
+                    color: "#4ade80", textAlign: "center",
+                  }}>
+                    {t.nextHolidayChecklistAllDone}
+                  </div>
+                )}
+
+                {/* Steps */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {halacha.preparations.map((prep, i) => {
+                    const done = !!checklist[i];
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => toggleCheck(i)}
+                        style={{
+                          display: "flex", gap: 9, alignItems: "flex-start",
+                          background: done ? "rgba(74,222,128,0.07)" : "transparent",
+                          border: `1px solid ${done ? "rgba(74,222,128,0.20)" : "transparent"}`,
+                          borderRadius: 8, padding: "5px 7px",
+                          cursor: "pointer", textAlign: "left", width: "100%",
+                          transition: "background 0.2s, border-color 0.2s",
+                        }}
+                      >
+                        {/* Checkbox circle */}
+                        <div style={{
+                          flexShrink: 0, width: 20, height: 20, borderRadius: "50%",
+                          background: done ? "rgba(74,222,128,0.20)" : "rgba(212,168,67,0.10)",
+                          border: `1.5px solid ${done ? "rgba(74,222,128,0.55)" : "rgba(212,168,67,0.30)"}`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 11, fontWeight: 800,
+                          color: done ? "#4ade80" : "#d4a843",
+                          marginTop: 1, transition: "all 0.2s",
+                        }}>
+                          {done ? "✓" : i + 1}
+                        </div>
+                        <p style={{
+                          margin: 0, fontSize: 11.5, lineHeight: 1.6, flex: 1,
+                          color: done ? "var(--text-muted)" : "var(--text-secondary)",
+                          textDecoration: done ? "line-through" : "none",
+                          transition: "color 0.2s",
+                        }}>
+                          {prep}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
     </div>
