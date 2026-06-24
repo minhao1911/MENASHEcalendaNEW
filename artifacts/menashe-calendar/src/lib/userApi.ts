@@ -118,6 +118,7 @@ export interface PublicProfile {
   city: string;
   country: string;
   avatarEmoji: string;
+  profilePhotoUrl?: string | null;
 }
 
 export async function fetchPublicProfile(): Promise<PublicProfile | null> {

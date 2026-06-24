@@ -200,6 +200,11 @@ export async function runMigrations(): Promise<void> {
       ALTER TABLE books ADD COLUMN IF NOT EXISTS cover_image_url TEXT
     `);
 
+    // Add profile_photo_url to user_public_profiles (idempotent)
+    await client.query(`
+      ALTER TABLE user_public_profiles ADD COLUMN IF NOT EXISTS profile_photo_url TEXT
+    `);
+
     // Add user_id to push_subscriptions (idempotent)
     await client.query(`
       ALTER TABLE push_subscriptions ADD COLUMN IF NOT EXISTS user_id TEXT

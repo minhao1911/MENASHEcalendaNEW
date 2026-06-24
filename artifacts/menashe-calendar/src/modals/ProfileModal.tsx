@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/react";
 import {
   fetchPublicProfile,
   savePublicProfile,
   type PublicProfile,
 } from "../lib/userApi";
+import { useLanguage } from "../context/LanguageContext";
 
 interface Props {
   onClose: () => void;
@@ -14,6 +15,8 @@ interface Props {
 const ROLES = ["Member", "Community Leader", "Rabbi", "Cantor", "Youth Leader", "Women's Group", "Student", "Elder", "Admin"];
 const COUNTRIES = ["India", "Israel", "United States", "United Kingdom", "Australia", "Canada", "Other"];
 const AVATAR_EMOJIS = ["👤","🧑","👨","👩","🧔","👴","👵","🧕","👳","🎓","✡","🌟","🙏","📖","🕍","🌿"];
+
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB raw file limit
 
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "10px 12px", borderRadius: 10,
@@ -38,13 +41,41 @@ function avatarBg(name: string): string {
   return colors[h];
 }
 
+function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 400;
+      let { width, height } = img;
+      if (width > height) {
+        if (width > MAX) { height = Math.round(height * MAX / width); width = MAX; }
+      } else {
+        if (height > MAX) { width = Math.round(width * MAX / height); height = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 export default function ProfileModal({ onClose, onSaved }: Props) {
   const { user } = useUser();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<PublicProfile>({
     displayName: "",
@@ -54,6 +85,7 @@ export default function ProfileModal({ onClose, onSaved }: Props) {
     city: "",
     country: "India",
     avatarEmoji: "👤",
+    profilePhotoUrl: null,
   });
 
   useEffect(() => {
@@ -70,9 +102,34 @@ export default function ProfileModal({ onClose, onSaved }: Props) {
     }).catch(() => setLoading(false));
   }, [user?.id]);
 
-  function set(key: keyof PublicProfile, val: string) {
+  function set(key: keyof PublicProfile, val: string | null) {
     setForm(f => ({ ...f, [key]: val }));
     setSaved(false);
+  }
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError(t.profilePhotoTooBig);
+      return;
+    }
+    setError("");
+    setPhotoUploading(true);
+    try {
+      const dataUrl = await compressImage(file);
+      set("profilePhotoUrl", dataUrl);
+    } catch {
+      setError("Failed to process image. Please try another.");
+    } finally {
+      setPhotoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function handleRemovePhoto() {
+    set("profilePhotoUrl", null);
+    setShowEmojiPicker(false);
   }
 
   async function handleSave() {
@@ -92,6 +149,7 @@ export default function ProfileModal({ onClose, onSaved }: Props) {
   }
 
   const avatarName = form.displayName || "?";
+  const hasPhoto = !!form.profilePhotoUrl;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -112,37 +170,92 @@ export default function ProfileModal({ onClose, onSaved }: Props) {
           <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)", fontSize: 13 }}>Loading…</div>
         ) : (
           <>
-            {/* Avatar preview */}
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}>
+            {/* Avatar / Photo section */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 22, gap: 10 }}>
+              {/* Avatar circle */}
               <div style={{ position: "relative" }}>
                 <div
                   style={{
-                    width: 80, height: 80, borderRadius: "50%",
-                    background: avatarBg(avatarName),
-                    border: "2px solid rgba(212,168,67,0.3)",
+                    width: 88, height: 88, borderRadius: "50%",
+                    background: hasPhoto ? "transparent" : avatarBg(avatarName),
+                    border: "2.5px solid rgba(212,168,67,0.4)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: form.avatarEmoji === "👤" ? 28 : 38,
-                    cursor: "pointer",
+                    overflow: "hidden", cursor: "pointer",
+                    boxShadow: "0 2px 16px rgba(0,0,0,0.35)",
                   }}
-                  onClick={() => setShowEmojiPicker(v => !v)}
-                  title="Change avatar"
+                  onClick={() => hasPhoto ? setShowEmojiPicker(v => !v) : fileInputRef.current?.click()}
+                  title={hasPhoto ? "Change avatar" : t.profileUploadPhoto}
                 >
-                  {form.avatarEmoji === "👤"
-                    ? <span style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}>{initials(avatarName)}</span>
-                    : form.avatarEmoji}
+                  {photoUploading ? (
+                    <div style={{ fontSize: 13, color: "var(--text-muted)" }}>…</div>
+                  ) : hasPhoto ? (
+                    <img
+                      src={form.profilePhotoUrl!}
+                      alt="Profile"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : form.avatarEmoji === "👤" ? (
+                    <span style={{ fontSize: 30, fontWeight: 800, color: "var(--text-primary)" }}>{initials(avatarName)}</span>
+                  ) : (
+                    <span style={{ fontSize: 40 }}>{form.avatarEmoji}</span>
+                  )}
                 </div>
+
+                {/* Edit badge */}
                 <div style={{
-                  position: "absolute", bottom: 0, right: 0,
-                  width: 24, height: 24, borderRadius: "50%",
+                  position: "absolute", bottom: 2, right: 2,
+                  width: 26, height: 26, borderRadius: "50%",
                   background: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 11, cursor: "pointer", border: "2px solid var(--bg-primary)",
-                }} onClick={() => setShowEmojiPicker(v => !v)}>✏️</div>
+                  fontSize: 12, cursor: "pointer", border: "2px solid var(--bg-primary)",
+                  boxShadow: "0 1px 6px rgba(0,0,0,0.4)",
+                }} onClick={() => hasPhoto ? setShowEmojiPicker(v => !v) : fileInputRef.current?.click()}>
+                  {hasPhoto ? "✏️" : "📷"}
+                </div>
               </div>
+
+              {/* Upload / action buttons */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={photoUploading}
+                  style={{
+                    fontSize: 12, fontWeight: 600, padding: "6px 14px", borderRadius: 20,
+                    background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.3)",
+                    color: "var(--gold)", cursor: "pointer", opacity: photoUploading ? 0.6 : 1,
+                  }}
+                >
+                  {photoUploading ? "Processing…" : hasPhoto ? t.profileChangePhoto : t.profileUploadPhoto}
+                </button>
+                {hasPhoto && (
+                  <button
+                    onClick={handleRemovePhoto}
+                    style={{
+                      fontSize: 12, fontWeight: 600, padding: "6px 14px", borderRadius: 20,
+                      background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+                      color: "#ef4444", cursor: "pointer",
+                    }}
+                  >
+                    {t.profileRemovePhoto}
+                  </button>
+                )}
+              </div>
+
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.profilePhotoHint}</div>
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handlePhotoChange}
+              />
             </div>
 
-            {showEmojiPicker && (
+            {/* Emoji picker (only shown when no photo or clicking edit on photo) */}
+            {!hasPhoto && showEmojiPicker && (
               <div style={{ marginBottom: 16, padding: 12, borderRadius: 12, background: "var(--elevated)", border: "1px solid var(--border)" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.1em", marginBottom: 8 }}>CHOOSE AVATAR</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.1em", marginBottom: 8 }}>CHOOSE AVATAR EMOJI</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {AVATAR_EMOJIS.map(e => (
                     <button key={e} onClick={() => { set("avatarEmoji", e); setShowEmojiPicker(false); }}
@@ -161,6 +274,22 @@ export default function ProfileModal({ onClose, onSaved }: Props) {
                       color: "var(--text-muted)",
                     }}>Initials</button>
                 </div>
+              </div>
+            )}
+
+            {hasPhoto && showEmojiPicker && (
+              <div style={{ marginBottom: 16, padding: 12, borderRadius: 12, background: "var(--elevated)", border: "1px solid var(--border)" }}>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>
+                  Remove your photo to use an emoji avatar instead.
+                </div>
+                <button onClick={handleRemovePhoto}
+                  style={{
+                    fontSize: 12, fontWeight: 600, padding: "7px 16px", borderRadius: 20,
+                    background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+                    color: "#ef4444", cursor: "pointer",
+                  }}>
+                  {t.profileRemovePhoto}
+                </button>
               </div>
             )}
 

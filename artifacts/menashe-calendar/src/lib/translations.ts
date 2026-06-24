@@ -229,6 +229,13 @@ export interface Translations {
   installBtn: string;
   installDismiss: string;
 
+  /* ── Profile photo upload ── */
+  profileUploadPhoto: string;
+  profileChangePhoto: string;
+  profileRemovePhoto: string;
+  profilePhotoHint: string;
+  profilePhotoTooBig: string;
+
   /* ── Tahara Modal ── */
   taharaTitle: string;
   taharaSub: string;
@@ -621,6 +628,12 @@ export const en: Translations = {
   installBtn: "Install",
   installDismiss: "Not now",
 
+  profileUploadPhoto: "Upload Photo",
+  profileChangePhoto: "Change Photo",
+  profileRemovePhoto: "Remove Photo",
+  profilePhotoHint: "Tap to upload a profile picture",
+  profilePhotoTooBig: "Image too large. Please choose one under 5MB.",
+
   taharaTitle: "💧 Tahara Calculator",
   taharaSub: "Purity & Mikveh timing",
   taharaPeriodLabel: "Start of period (vesset)",
@@ -1008,6 +1021,12 @@ export const tk: Translations = {
   installBody: "Menashe Calendar install siam la a hun zel.",
   installBtn: "Install",
   installDismiss: "Hun dang ah",
+
+  profileUploadPhoto: "Photo Upload Siam",
+  profileChangePhoto: "Photo Hlovar",
+  profileRemovePhoto: "Photo Hawn",
+  profilePhotoHint: "Profile picture upload nan dap la",
+  profilePhotoTooBig: "Image a lian em em. 5MB hnuaiah mi la siam rawh.",
 
   taharaTitle: "💧 Tahara Chhiar",
   taharaSub: "Ropui leh Mikveh hun",

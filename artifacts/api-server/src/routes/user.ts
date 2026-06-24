@@ -257,6 +257,7 @@ router.get("/user/public-profile", requireAuth, async (req, res) => {
       city: r.city,
       country: r.country,
       avatarEmoji: r.avatar_emoji,
+      profilePhotoUrl: r.profile_photo_url ?? null,
     });
   } finally {
     client.release();
@@ -265,13 +266,13 @@ router.get("/user/public-profile", requireAuth, async (req, res) => {
 
 router.put("/user/public-profile", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { displayName, congregation, bio, role, city, country, avatarEmoji } = req.body;
+  const { displayName, congregation, bio, role, city, country, avatarEmoji, profilePhotoUrl } = req.body;
   if (!displayName?.trim()) return res.status(400).json({ error: "displayName required" });
   const client = await pool.connect();
   try {
     await client.query(
-      `INSERT INTO user_public_profiles (user_id, display_name, congregation, bio, role, city, country, avatar_emoji, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+      `INSERT INTO user_public_profiles (user_id, display_name, congregation, bio, role, city, country, avatar_emoji, profile_photo_url, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
        ON CONFLICT (user_id) DO UPDATE SET
          display_name = EXCLUDED.display_name,
          congregation = EXCLUDED.congregation,
@@ -280,8 +281,9 @@ router.put("/user/public-profile", requireAuth, async (req, res) => {
          city = EXCLUDED.city,
          country = EXCLUDED.country,
          avatar_emoji = EXCLUDED.avatar_emoji,
+         profile_photo_url = EXCLUDED.profile_photo_url,
          updated_at = NOW()`,
-      [userId, displayName.trim(), congregation ?? "", bio ?? "", role ?? "Member", city ?? "", country ?? "", avatarEmoji ?? "👤"],
+      [userId, displayName.trim(), congregation ?? "", bio ?? "", role ?? "Member", city ?? "", country ?? "", avatarEmoji ?? "👤", profilePhotoUrl ?? null],
     );
     return res.json({ ok: true });
   } finally {
