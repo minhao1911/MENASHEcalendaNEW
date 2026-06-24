@@ -3652,38 +3652,6 @@ export default function Home({
           />
         )}
 
-        {/* ══════════════════════════════════════════
-            HOLIDAYS CARD — Upcoming Jewish Calendar
-        ══════════════════════════════════════════ */}
-        {holidays.length > 0 && (() => {
-          const next = holidays[0];
-          const todayM = new Date(); todayM.setHours(0,0,0,0);
-          const holM = new Date(next.date); holM.setHours(0,0,0,0);
-          const diffD = Math.round((holM.getTime() - todayM.getTime()) / 86400000);
-          const holEmoji = getHolidayEmoji(next.name);
-          const countLbl = diffD === 0 ? "TODAY" : diffD === 1 ? "TOMORROW" : `IN ${diffD} DAYS`;
-          const urgColor = diffD === 0 ? "#ef4444" : diffD <= 7 ? "#fbbf24" : "#d4a843";
-          return (
-            <CompassCard
-              gradient="linear-gradient(160deg, #130820 0%, #0c0518 55%, #180a28 100%)"
-              accentColor="#a78bfa"
-              shimmerColor="#c4b5fd"
-              category="UPCOMING HOLIDAY"
-              icon={<span style={{ fontSize: 42, filter: "drop-shadow(0 0 10px rgba(167,139,250,0.4))" }}>{holEmoji}</span>}
-              title={next.name}
-              subtitle={next.date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-              badge={
-                <span style={{
-                  fontSize: 10, fontWeight: 900, letterSpacing: "0.1em",
-                  color: urgColor, background: `${urgColor}22`, border: `1px solid ${urgColor}44`,
-                  padding: "3px 10px", borderRadius: 20,
-                }}>{countLbl}</span>
-              }
-              onTap={onShowHolidays}
-              minHeight={180}
-            />
-          );
-        })()}
 
         {/* ══════════════════════════════════════════
             OMER COUNTER (during 49-day period)
