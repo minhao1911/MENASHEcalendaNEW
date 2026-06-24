@@ -7,6 +7,7 @@ import CompassCard from "../components/CompassCard";
 import TimeAwareBackground from "../components/TimeAwareBackground";
 import ShabbatMode from "../components/ShabbatMode";
 import torahScrollWatermark from "@assets/afc3e4a8-094b-4933-9d08-f8fb899140c9_1782276994801.png";
+import dailyWisdomBg from "@assets/ChatGPT_Image_Jun_24,_2026,_12_01_34_PM_1782300946792.png";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import type { ZmanimTimes } from "../lib/zmanim";
@@ -3752,7 +3753,7 @@ export default function Home({
               subtitle={thought.source}
               expandedTitle="Daily Wisdom"
               expandedSubtitle="Sacred teachings for today"
-              watermarkSrc={torahScrollWatermark}
+              watermarkSrc={dailyWisdomBg}
             >
               <div style={{ padding: "20px 20px 0" }}>
                 <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
