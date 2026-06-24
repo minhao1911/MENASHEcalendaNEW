@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense, Component, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HDate } from "@hebcal/core";
 import {
@@ -9,6 +9,26 @@ import {
 } from "../lib/userApi";
 
 const MemorialValley3D = lazy(() => import("../components/MemorialValley3D"));
+
+/* ═══════════════════ R3F ERROR BOUNDARY ════════════════════════════════════
+ * R3F v9 + React 19 Strict Mode: the Zustand canvas-store context is briefly
+ * null on the first (discarded) double-render pass, causing a destructuring
+ * error.  This boundary catches that transient error, shows the loading screen
+ * for one tick, then re-renders — at which point the store is fully ready.
+ * ════════════════════════════════════════════════════════════════════════════ */
+interface EBState { err: boolean }
+class R3FErrorBoundary extends Component<{ children: ReactNode }, EBState> {
+  state: EBState = { err: false };
+  static getDerivedStateFromError(): EBState { return { err: true }; }
+  componentDidCatch() {
+    // Give React / R3F one event-loop tick to finish Canvas initialisation,
+    // then clear the error so children re-render successfully.
+    setTimeout(() => this.setState({ err: false }), 80);
+  }
+  render() {
+    return this.state.err ? <ValleyLoading /> : this.props.children;
+  }
+}
 
 /* ═══════════════════ TYPES ═════════════════════════════════════════════════ */
 interface Props {
@@ -925,17 +945,19 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
     >
       <style>{STYLES}</style>
 
-      {/* ── 3D CANVAS ── */}
+      {/* ── 3D CANVAS (wrapped in error boundary to survive R3F + React 19 strict-mode init race) ── */}
       <div style={{ position: "absolute", inset: 0 }}>
-        <Suspense fallback={<ValleyLoading />}>
-          <MemorialValley3D
-            entries={entries}
-            placedCandles={placedCandles}
-            onCandleClick={handleCandleClick}
-            onGroundClick={handleGroundClick}
-            selectedId={selectedEntry?.id ?? null}
-          />
-        </Suspense>
+        <R3FErrorBoundary>
+          <Suspense fallback={<ValleyLoading />}>
+            <MemorialValley3D
+              entries={entries}
+              placedCandles={placedCandles}
+              onCandleClick={handleCandleClick}
+              onGroundClick={handleGroundClick}
+              selectedId={selectedEntry?.id ?? null}
+            />
+          </Suspense>
+        </R3FErrorBoundary>
       </div>
 
       {/* ── TOP HEADER ── */}
