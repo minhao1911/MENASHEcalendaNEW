@@ -1086,32 +1086,6 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         )}
       </AnimatePresence>
 
-      {/* ── FLOATING "LIGHT A CANDLE" FAB ── */}
-      {!panelOpen && !searchQuery && (
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
-          onClick={() => { setPendingPos([0, 0.15, 0]); setShowForm(true); }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          style={{
-            position: "absolute", bottom: 70, left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 20,
-            background: "linear-gradient(135deg,#D4AF37 0%,#8a6000 100%)",
-            border: "1px solid rgba(255,220,100,0.3)",
-            borderRadius: 50, padding: "13px 28px",
-            fontSize: 13, fontWeight: 800, color: "#0F1829",
-            cursor: "pointer", letterSpacing: "0.04em",
-            boxShadow: "0 8px 32px rgba(212,175,55,0.5), 0 2px 10px rgba(0,0,0,0.4)",
-            display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap",
-          }}
-        >
-          <span style={{ fontSize: 16, animation: "ms-flicker 2s ease-in-out infinite" }}>🕯</span>
-          Light a Candle
-        </motion.button>
-      )}
     </div>
   );
 }
