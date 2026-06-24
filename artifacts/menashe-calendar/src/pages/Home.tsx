@@ -2005,12 +2005,24 @@ const HOLIDAY_THEMES: Record<string, { emoji: string; theme: string }> = {
   "Tu B'Av":         { emoji: "💛", theme: "Love & unity — the heart of the community" },
 };
 
+interface HolidayHalacha {
+  source: string;
+  preparations: string[];
+}
+
 function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: Date }> }) {
   const { t } = useLanguage();
   const [minimized, setMinimized] = useState<boolean>(() => {
     try { return localStorage.getItem("menashe-holiday-card-minimized") === "true"; }
     catch { return false; }
   });
+  const [halacha, setHalacha] = useState<HolidayHalacha | null>(null);
+  const [halachaLoading, setHalachaLoading] = useState(false);
+  const [halachaError, setHalachaError] = useState(false);
+  const [showHalacha, setShowHalacha] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const halachaFetchedFor = useRef<string>("");
 
   function toggle() {
     setMinimized(prev => {
@@ -2040,6 +2052,49 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
   const urgentColor = diffDays === 0 ? "#ef4444" : diffDays <= 7 ? "#f0c050" : "#d4a843";
   const urgentBg   = diffDays === 0 ? "rgba(220,38,38,0.14)" : "rgba(212,168,67,0.12)";
   const urgentBdr  = diffDays === 0 ? "rgba(220,38,38,0.32)" : "rgba(212,168,67,0.28)";
+
+  function fetchHalacha() {
+    if (halachaFetchedFor.current === next.name) return;
+    halachaFetchedFor.current = next.name;
+    setHalachaLoading(true);
+    setHalachaError(false);
+    fetch(`${API_BASE}/holiday-halacha?name=${encodeURIComponent(next.name)}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then((data: HolidayHalacha) => { setHalacha(data); setHalachaLoading(false); })
+      .catch(() => { setHalachaError(true); setHalachaLoading(false); });
+  }
+
+  function toggleHalacha() {
+    const next_ = !showHalacha;
+    setShowHalacha(next_);
+    if (next_) fetchHalacha();
+  }
+
+  async function togglePush() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    setPushLoading(true);
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { setPushLoading(false); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const keyRes = await fetch(`${API_BASE}/push/vapid-public-key`);
+      if (!keyRes.ok) { setPushLoading(false); return; }
+      const { publicKey } = await keyRes.json() as { publicKey: string };
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: publicKey,
+      });
+      await fetch(`${API_BASE}/push/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub, schedule: [] }),
+      });
+      setPushEnabled(true);
+    } catch {
+      // silently ignore
+    }
+    setPushLoading(false);
+  }
 
   if (minimized) {
     return (
@@ -2095,18 +2150,36 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
             {t.nextHolidayTitle}
           </span>
         </div>
-        <button
-          onClick={toggle}
-          style={{
-            background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 8, padding: "3px 9px",
-            cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
-            fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em",
-          }}
-        >
-          <span style={{ fontSize: 12, lineHeight: 1 }}>－</span>
-          {t.nextHolidayHide}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {/* Push bell */}
+          <button
+            onClick={togglePush}
+            disabled={pushLoading || pushEnabled}
+            title={pushEnabled ? "Reminders on" : "Remind me 1 day before"}
+            style={{
+              background: pushEnabled ? "rgba(212,168,67,0.15)" : "rgba(255,255,255,0.04)",
+              border: `1px solid ${pushEnabled ? "rgba(212,168,67,0.4)" : "rgba(255,255,255,0.08)"}`,
+              borderRadius: 8, padding: "3px 8px", cursor: pushEnabled ? "default" : "pointer",
+              display: "flex", alignItems: "center", gap: 4,
+              fontSize: 11, color: pushEnabled ? "#d4a843" : "var(--text-muted)",
+              opacity: pushLoading ? 0.6 : 1, transition: "all 0.2s",
+            }}
+          >
+            <span style={{ fontSize: 13 }}>{pushEnabled ? "🔔" : "🔕"}</span>
+          </button>
+          <button
+            onClick={toggle}
+            style={{
+              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 8, padding: "3px 9px",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+              fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em",
+            }}
+          >
+            <span style={{ fontSize: 12, lineHeight: 1 }}>－</span>
+            {t.nextHolidayHide}
+          </button>
+        </div>
       </div>
 
       {/* Body */}
@@ -2130,7 +2203,7 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
           <div style={{ fontSize: 11, color: "var(--text-secondary)", fontStyle: "italic", marginBottom: 8, lineHeight: 1.4 }}>
             {themeInfo.theme}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{
               display: "inline-flex", alignItems: "center",
               background: urgentBg, border: `1px solid ${urgentBdr}`,
@@ -2145,6 +2218,71 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
           </div>
         </div>
       </div>
+
+      {/* ── Halacha Toggle ── */}
+      <button
+        onClick={toggleHalacha}
+        style={{
+          width: "100%", marginTop: 12,
+          background: showHalacha ? "rgba(212,168,67,0.10)" : "rgba(255,255,255,0.03)",
+          border: `1px solid ${showHalacha ? "rgba(212,168,67,0.28)" : "rgba(255,255,255,0.07)"}`,
+          borderRadius: 10, padding: "8px 12px",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between",
+          transition: "all 0.2s",
+        }}
+      >
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: showHalacha ? "#d4a843" : "var(--text-muted)", letterSpacing: "0.04em" }}>
+          {t.nextHolidayHalachaTitle}
+        </span>
+        <span style={{ fontSize: 13, color: "#d4a843", lineHeight: 1, transform: showHalacha ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+          ▾
+        </span>
+      </button>
+
+      {/* ── Halacha Content ── */}
+      {showHalacha && (
+        <div style={{
+          marginTop: 10, padding: "12px 13px",
+          background: "linear-gradient(135deg, rgba(212,168,67,0.05) 0%, rgba(212,168,67,0.02) 100%)",
+          border: "1px solid rgba(212,168,67,0.14)",
+          borderRadius: 10,
+        }}>
+          {halachaLoading && (
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>
+              {t.nextHolidayHalachaLoading}
+            </div>
+          )}
+          {halachaError && (
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>
+              {t.nextHolidayHalachaError}
+            </div>
+          )}
+          {halacha && (
+            <>
+              <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.1em", color: "rgba(212,168,67,0.6)", marginBottom: 10, textTransform: "uppercase" }}>
+                {t.nextHolidayHalachaSource}: {halacha.source}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {halacha.preparations.map((prep, i) => (
+                  <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
+                    <div style={{
+                      flexShrink: 0, width: 20, height: 20, borderRadius: "50%",
+                      background: "rgba(212,168,67,0.14)", border: "1px solid rgba(212,168,67,0.25)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 10, fontWeight: 800, color: "#d4a843", marginTop: 1,
+                    }}>
+                      {i + 1}
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11.5, color: "var(--text-secondary)", lineHeight: 1.6, flex: 1 }}>
+                      {prep}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

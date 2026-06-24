@@ -326,6 +326,12 @@ export interface Translations {
   nextHolidayTomorrow: string;
   nextHolidayHide: string;
   nextHolidayShow: string;
+  nextHolidayHalachaTitle: string;
+  nextHolidayHalachaSource: string;
+  nextHolidayHalachaLoading: string;
+  nextHolidayHalachaError: string;
+  nextHolidayPushTitle: string;
+  nextHolidayPushBody: string;
   birthdayTrackerTitle: string;
   birthdayTrackerSub: string;
   birthdayTrackerGregorianLabel: string;
@@ -669,6 +675,12 @@ export const en: Translations = {
   nextHolidayTomorrow: "Tomorrow",
   nextHolidayHide: "Minimise",
   nextHolidayShow: "Next Holiday",
+  nextHolidayHalachaTitle: "📖 How to Prepare · Yalkut Yosef",
+  nextHolidayHalachaSource: "Source",
+  nextHolidayHalachaLoading: "Loading halachot…",
+  nextHolidayHalachaError: "Could not load halachot",
+  nextHolidayPushTitle: "Holiday Reminder",
+  nextHolidayPushBody: "begins tomorrow. Chag Sameach from Bnei Menashe!",
   birthdayTrackerTitle: "Hebrew Birthday Tracker",
   birthdayTrackerSub: "Find & save your Jewish birthday",
   birthdayTrackerGregorianLabel: "Date of birth (Gregorian)",
@@ -1011,6 +1023,12 @@ export const tk: Translations = {
   nextHolidayTomorrow: "Tuni",
   nextHolidayHide: "Paih",
   nextHolidayShow: "Nisa Thiamna",
+  nextHolidayHalachaTitle: "📖 Zang Dinga · Yalkut Yosef",
+  nextHolidayHalachaSource: "Chun",
+  nextHolidayHalachaLoading: "Halachot lak in…",
+  nextHolidayHalachaError: "Halachot lak theih nahi",
+  nextHolidayPushTitle: "Nisa Suangkhol",
+  nextHolidayPushBody: "tuni khata suak. Chag Sameach Bnei Menashe sung!",
   birthdayTrackerTitle: "Hebrew Nirualna Tracker",
   birthdayTrackerSub: "Na nirualna Jewish en sou",
   birthdayTrackerGregorianLabel: "Nirualna ni (Gregorian)",

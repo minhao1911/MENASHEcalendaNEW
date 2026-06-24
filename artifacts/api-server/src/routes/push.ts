@@ -508,6 +508,79 @@ router.post("/push/expo-send-test", requireAuth, async (req, res) => {
   }
 });
 
+// ── Holiday Web Push Scheduler ───────────────────────────────────────────────
+// Fires at 9am every day and sends a web push to ALL subscribers the day before a holiday.
+
+let _holidayPushLastFiredDate = "";
+
+export function startHolidayWebPushScheduler() {
+  setInterval(async () => {
+    if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
+
+    const now = new Date();
+    if (now.getHours() !== 9 || now.getMinutes() >= 5) return;
+
+    const dateKey = now.toDateString();
+    if (_holidayPushLastFiredDate === dateKey) return;
+    _holidayPushLastFiredDate = dateKey;
+
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    const tomorrowEnd = new Date(tomorrow);
+    tomorrowEnd.setHours(23, 59, 59, 999);
+
+    const events = HebrewCalendar.calendar({
+      start: tomorrow,
+      end: tomorrowEnd,
+      il: true,
+      isHebrewYear: false,
+      mask: flags.CHAG | flags.MODERN_HOLIDAY | flags.ROSH_CHODESH | flags.MINOR_FAST | flags.MAJOR_FAST,
+    });
+
+    if (events.length === 0) return;
+
+    let webRows: Array<{ id: string; endpoint: string; p256dh: string; auth: string }> = [];
+    try {
+      const r = await pool.query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
+        "SELECT id, endpoint, p256dh, auth FROM push_subscriptions"
+      );
+      webRows = r.rows;
+    } catch (err) {
+      logger.error({ err }, "holiday-web-push: failed to load subscriptions");
+      return;
+    }
+
+    if (webRows.length === 0) return;
+
+    for (const ev of events) {
+      const name = ev.render("en");
+      const dateStr = tomorrow.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+      const payload = JSON.stringify({
+        title: `✡ ${name} Begins Tomorrow`,
+        body: `${name} starts tomorrow, ${dateStr}. Chag Sameach from Bnei Menashe!`,
+        tag: `holiday-web-${name.replace(/\s+/g, "-").toLowerCase()}-${dateKey}`,
+        icon: "/favicon.svg",
+      });
+
+      for (const row of webRows) {
+        try {
+          await webpush.sendNotification(
+            { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+            payload,
+          );
+        } catch (err: any) {
+          if (err?.statusCode === 410 || err?.statusCode === 404) {
+            await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [row.id]).catch(() => {});
+          }
+        }
+      }
+      logger.info({ name, subscribers: webRows.length }, "holiday-web-push: sent");
+    }
+  }, 60_000); // check every minute
+}
+
 // ── Expo Push Scheduler ──────────────────────────────────────────────────────
 
 function nextShabbatCandles(from: Date = new Date()): Date {
