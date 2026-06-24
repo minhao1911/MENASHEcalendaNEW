@@ -11,22 +11,31 @@ import {
 const MemorialValley3D = lazy(() => import("../components/MemorialValley3D"));
 
 /* ═══════════════════ R3F ERROR BOUNDARY ════════════════════════════════════
- * R3F v9 + React 19 Strict Mode: the Zustand canvas-store context is briefly
- * null on the first (discarded) double-render pass, causing a destructuring
- * error.  This boundary catches that transient error, shows the loading screen
- * for one tick, then re-renders — at which point the store is fully ready.
+ * Safety net for any surviving R3F / Three.js render errors.
+ *
+ * The canRender3D mount guard (below) prevents the Zustand store null-context
+ * error from ever occurring in the first place.  This boundary is a last-
+ * resort catch that shows a retry button — it must NOT auto-reset via a timer
+ * because that creates an infinite error loop that fires ~300 ms apart.
  * ════════════════════════════════════════════════════════════════════════════ */
 interface EBState { err: boolean }
 class R3FErrorBoundary extends Component<{ children: ReactNode }, EBState> {
   state: EBState = { err: false };
   static getDerivedStateFromError(): EBState { return { err: true }; }
-  componentDidCatch() {
-    // Give React / R3F one event-loop tick to finish Canvas initialisation,
-    // then clear the error so children re-render successfully.
-    setTimeout(() => this.setState({ err: false }), 80);
-  }
+  retry = () => this.setState({ err: false });
   render() {
-    return this.state.err ? <ValleyLoading /> : this.props.children;
+    if (this.state.err) {
+      return (
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(5,3,2,0.92)", color: "#d4a843", gap: 16 }}>
+          <div style={{ fontSize: 36 }}>🕯️</div>
+          <div style={{ fontSize: 14, opacity: 0.8 }}>3D scene could not be loaded</div>
+          <button onClick={this.retry} style={{ marginTop: 8, padding: "8px 22px", borderRadius: 20, border: "1px solid #d4a843", background: "transparent", color: "#d4a843", cursor: "pointer", fontSize: 13 }}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
   }
 }
 
@@ -865,8 +874,25 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const [saving, setSaving]                 = useState(false);
   const [dedicateForm, setDedicateForm]     = useState({ learnerName: "", studySubject: "" });
   const [dedicateSaving, setDedicateSaving] = useState(false);
+  /**
+   * canRender3D — mount guard for R3F v9 + React 19 Strict Mode.
+   *
+   * React 19 Strict Mode intentionally discards the first render pass to
+   * surface side-effects. During that discarded pass the R3F Canvas hasn't
+   * run its initialisation effect yet, so its internal Zustand store context
+   * is null. Any scene child that calls useFrame / useThree then tries to
+   * destructure { subscribe } from null → TypeError.
+   *
+   * By keeping canRender3D=false until after the first useEffect flush we
+   * guarantee the Canvas is never mounted during the discarded pass. The
+   * Replit runtime-error overlay therefore never fires.
+   */
+  const [canRender3D, setCanRender3D] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null!);
+
+  // Mount guard — runs after the real (non-discarded) first commit
+  useEffect(() => { setCanRender3D(true); }, []);
 
   useEffect(() => { const t = setTimeout(() => setShowHints(false), 7000); return () => clearTimeout(t); }, []);
 
@@ -945,19 +971,27 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
     >
       <style>{STYLES}</style>
 
-      {/* ── 3D CANVAS (wrapped in error boundary to survive R3F + React 19 strict-mode init race) ── */}
+      {/* ── 3D CANVAS ──
+           canRender3D guard: Canvas is held back until after React 19 Strict
+           Mode's discarded first-render pass so the R3F Zustand store context
+           is never accessed while null.  The error boundary provides a
+           secondary safety net for any surviving transient issues. ── */}
       <div style={{ position: "absolute", inset: 0 }}>
-        <R3FErrorBoundary>
-          <Suspense fallback={<ValleyLoading />}>
-            <MemorialValley3D
-              entries={entries}
-              placedCandles={placedCandles}
-              onCandleClick={handleCandleClick}
-              onGroundClick={handleGroundClick}
-              selectedId={selectedEntry?.id ?? null}
-            />
-          </Suspense>
-        </R3FErrorBoundary>
+        {canRender3D ? (
+          <R3FErrorBoundary>
+            <Suspense fallback={<ValleyLoading />}>
+              <MemorialValley3D
+                entries={entries}
+                placedCandles={placedCandles}
+                onCandleClick={handleCandleClick}
+                onGroundClick={handleGroundClick}
+                selectedId={selectedEntry?.id ?? null}
+              />
+            </Suspense>
+          </R3FErrorBoundary>
+        ) : (
+          <ValleyLoading />
+        )}
       </div>
 
       {/* ── TOP HEADER ── */}
