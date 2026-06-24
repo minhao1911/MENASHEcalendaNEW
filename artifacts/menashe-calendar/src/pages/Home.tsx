@@ -3739,6 +3739,7 @@ export default function Home({
               subtitle={thought.source}
               expandedTitle="Daily Wisdom"
               expandedSubtitle="Sacred teachings for today"
+              watermarkSrc={torahScrollWatermark}
             >
               <div style={{ padding: "20px 20px 0" }}>
                 <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
@@ -3774,6 +3775,7 @@ export default function Home({
           }
           onTap={onOpenSiddur}
           minHeight={200}
+          watermarkSrc={torahScrollWatermark}
         />
 
         {/* ── Quick Actions ── */}

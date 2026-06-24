@@ -311,9 +311,9 @@ export default function CompassCard({
             <div style={{
               position: "absolute", inset: 0,
               background: `
-                radial-gradient(ellipse at 20% 50%, transparent 30%, rgba(4,20,16,0.72) 75%),
-                linear-gradient(to right, rgba(4,20,16,0.9) 0%, transparent 45%),
-                linear-gradient(to top, rgba(4,20,16,0.6) 0%, transparent 50%)
+                radial-gradient(ellipse at 20% 50%, transparent 30%, rgba(0,0,0,0.72) 75%),
+                linear-gradient(to right, rgba(0,0,0,0.88) 0%, transparent 45%),
+                linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)
               `,
             }} />
           </div>
