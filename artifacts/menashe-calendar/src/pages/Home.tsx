@@ -2045,6 +2045,40 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
     try { localStorage.removeItem(checklistKey); } catch {}
   }
 
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  function buildShareText(preparations: string[], total: number, checkedCount: number) {
+    const dateStr = next
+      ? next.date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+      : "";
+    const lines: string[] = [
+      `✡ My ${next?.name ?? "Holiday"} Preparation (${dateStr})`,
+      `📋 ${checkedCount} / ${total} steps complete`,
+      "",
+    ];
+    preparations.forEach((prep, i) => {
+      lines.push(`${checklist[i] ? "✅" : "⬜"} ${prep}`);
+    });
+    lines.push("", "— Bnei Menashe Calendar");
+    return lines.join("\n");
+  }
+
+  async function handleShare(preparations: string[], total: number, checkedCount: number) {
+    const text = buildShareText(preparations, total, checkedCount);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${next?.name ?? "Holiday"} Preparation`, text });
+        return;
+      } catch { /* fall through to clipboard */ }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch { /* ignore */ }
+  }
+
   function toggle() {
     setMinimized(prev => {
       const next = !prev;
@@ -2131,6 +2165,7 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
           transition: "border-color 0.2s, background 0.2s",
         }}
       >
+
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 15 }}>{themeInfo.emoji}</span>
           <span style={{ fontSize: 11.5, fontWeight: 700, color: "#d4a843", letterSpacing: "0.05em" }}>
@@ -2153,6 +2188,7 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
   }
 
   return (
+    <>
     <div
       className="card"
       style={{ marginBottom: 12, padding: "13px 15px", position: "relative", overflow: "hidden" }}
@@ -2289,18 +2325,32 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
                   <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.1em", color: "rgba(212,168,67,0.6)", textTransform: "uppercase" }}>
                     {t.nextHolidayHalachaSource}: {halacha.source}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {checked > 0 && (
-                      <button
-                        onClick={resetChecklist}
-                        style={{
-                          background: "none", border: "1px solid rgba(255,255,255,0.1)",
-                          borderRadius: 6, padding: "1px 7px",
-                          cursor: "pointer", fontSize: 9.5, color: "var(--text-muted)",
-                        }}
-                      >
-                        {t.nextHolidayChecklistReset}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setShowShareCard(true)}
+                          style={{
+                            background: "rgba(212,168,67,0.10)", border: "1px solid rgba(212,168,67,0.28)",
+                            borderRadius: 6, padding: "2px 9px",
+                            cursor: "pointer", fontSize: 10, fontWeight: 700,
+                            color: "#d4a843", display: "flex", alignItems: "center", gap: 4,
+                          }}
+                        >
+                          <span style={{ fontSize: 11 }}>📤</span>
+                          {t.nextHolidayShareBtn}
+                        </button>
+                        <button
+                          onClick={resetChecklist}
+                          style={{
+                            background: "none", border: "1px solid rgba(255,255,255,0.1)",
+                            borderRadius: 6, padding: "2px 7px",
+                            cursor: "pointer", fontSize: 9.5, color: "var(--text-muted)",
+                          }}
+                        >
+                          {t.nextHolidayChecklistReset}
+                        </button>
+                      </>
                     )}
                     <div style={{
                       fontSize: 10, fontWeight: 700,
@@ -2383,6 +2433,156 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
         </div>
       )}
     </div>
+
+    {/* ── Share Card Overlay ── */}
+    {showShareCard && halacha && (() => {
+      const total = halacha.preparations.length;
+      const checkedCount = Object.values(checklist).filter(Boolean).length;
+      const allDone = checkedCount === total && total > 0;
+      const dateStr = next.date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      return (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 9000,
+            background: "rgba(0,0,0,0.82)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "20px 16px",
+          }}
+          onClick={() => setShowShareCard(false)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: "100%", maxWidth: 400,
+              background: "linear-gradient(160deg, #0f0c1a 0%, #12091e 60%, #0a0814 100%)",
+              border: "1px solid rgba(212,168,67,0.3)",
+              borderRadius: 20, overflow: "hidden",
+              boxShadow: "0 0 60px rgba(212,168,67,0.15), 0 24px 60px rgba(0,0,0,0.7)",
+            }}
+          >
+            {/* Card header */}
+            <div style={{
+              background: "linear-gradient(135deg, rgba(212,168,67,0.18) 0%, rgba(212,168,67,0.06) 100%)",
+              borderBottom: "1px solid rgba(212,168,67,0.18)",
+              padding: "18px 20px 16px",
+              textAlign: "center",
+            }}>
+              <div style={{ fontSize: 36, marginBottom: 6 }}>{themeInfo.emoji}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: "#f0c050", letterSpacing: "0.02em", marginBottom: 3 }}>
+                {next.name}
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(212,168,67,0.65)", fontWeight: 600 }}>
+                {dateStr}
+              </div>
+              <div style={{ fontSize: 10.5, color: "var(--text-muted)", marginTop: 4, fontStyle: "italic" }}>
+                {t.nextHolidayShareCardTitle}
+              </div>
+            </div>
+
+            {/* Progress section */}
+            <div style={{ padding: "14px 20px 10px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  {t.nextHolidayShareCardProgress}
+                </span>
+                <span style={{
+                  fontSize: 11, fontWeight: 800,
+                  color: allDone ? "#4ade80" : "#d4a843",
+                  background: allDone ? "rgba(74,222,128,0.12)" : "rgba(212,168,67,0.12)",
+                  border: `1px solid ${allDone ? "rgba(74,222,128,0.3)" : "rgba(212,168,67,0.28)"}`,
+                  borderRadius: 10, padding: "2px 9px",
+                }}>
+                  {checkedCount} {t.nextHolidayShareCardOf} {total}
+                </span>
+              </div>
+              {/* Progress bar */}
+              <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.07)", overflow: "hidden", marginBottom: 14 }}>
+                <div style={{
+                  height: "100%", borderRadius: 3,
+                  background: allDone ? "#4ade80" : "linear-gradient(90deg, #d4a843, #f0c050)",
+                  width: `${total > 0 ? (checkedCount / total) * 100 : 0}%`,
+                }} />
+              </div>
+
+              {/* Checked steps */}
+              {halacha.preparations.some((_, i) => checklist[i]) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 8 }}>
+                  {halacha.preparations.map((prep, i) => checklist[i] ? (
+                    <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                      <span style={{ flexShrink: 0, fontSize: 13, lineHeight: "1.5", color: "#4ade80" }}>✅</span>
+                      <p style={{ margin: 0, fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.5, flex: 1 }}>
+                        {prep}
+                      </p>
+                    </div>
+                  ) : null)}
+                </div>
+              )}
+
+              {/* Unchecked steps */}
+              {halacha.preparations.some((_, i) => !checklist[i]) && (
+                <>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>
+                    {t.nextHolidayShareCardUnchecked}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 8 }}>
+                    {halacha.preparations.map((prep, i) => !checklist[i] ? (
+                      <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", opacity: 0.5 }}>
+                        <span style={{ flexShrink: 0, fontSize: 13, lineHeight: "1.5" }}>⬜</span>
+                        <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5, flex: 1 }}>
+                          {prep}
+                        </p>
+                      </div>
+                    ) : null)}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Branding footer */}
+            <div style={{
+              borderTop: "1px solid rgba(212,168,67,0.12)",
+              padding: "10px 20px",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}>
+              <span style={{ fontSize: 14 }}>✡</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(212,168,67,0.55)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                {t.nextHolidayShareCardBrand}
+              </span>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: "flex", gap: 8, padding: "0 20px 18px" }}>
+              <button
+                onClick={() => handleShare(halacha.preparations, total, checkedCount)}
+                style={{
+                  flex: 1, padding: "10px 0",
+                  background: "linear-gradient(135deg, #d4a843 0%, #f0c050 100%)",
+                  border: "none", borderRadius: 10,
+                  cursor: "pointer", fontSize: 12.5, fontWeight: 800,
+                  color: "#0a0814", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  transition: "opacity 0.2s",
+                }}
+              >
+                <span style={{ fontSize: 14 }}>📤</span>
+                {shareCopied ? t.nextHolidayShareCopied : t.nextHolidayShareAction}
+              </button>
+              <button
+                onClick={() => setShowShareCard(false)}
+                style={{
+                  flex: 1, padding: "10px 0",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)",
+                  borderRadius: 10, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+                  color: "var(--text-secondary)",
+                }}
+              >
+                {t.nextHolidayShareClose}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+    </>
   );
 }
 

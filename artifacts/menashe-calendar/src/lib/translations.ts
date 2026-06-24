@@ -335,6 +335,16 @@ export interface Translations {
   nextHolidayChecklistProgress: string;
   nextHolidayChecklistReset: string;
   nextHolidayChecklistAllDone: string;
+  nextHolidayShareBtn: string;
+  nextHolidayShareCardTitle: string;
+  nextHolidayShareCardBrand: string;
+  nextHolidayShareCardProgress: string;
+  nextHolidayShareCardOf: string;
+  nextHolidayShareCardStepsComplete: string;
+  nextHolidayShareCardUnchecked: string;
+  nextHolidayShareAction: string;
+  nextHolidayShareCopied: string;
+  nextHolidayShareClose: string;
   birthdayTrackerTitle: string;
   birthdayTrackerSub: string;
   birthdayTrackerGregorianLabel: string;
@@ -687,6 +697,16 @@ export const en: Translations = {
   nextHolidayChecklistProgress: "prepared",
   nextHolidayChecklistReset: "Reset",
   nextHolidayChecklistAllDone: "All steps complete! ✓",
+  nextHolidayShareBtn: "Share",
+  nextHolidayShareCardTitle: "My Holiday Preparation",
+  nextHolidayShareCardBrand: "Bnei Menashe Calendar",
+  nextHolidayShareCardProgress: "Preparation Progress",
+  nextHolidayShareCardOf: "of",
+  nextHolidayShareCardStepsComplete: "steps complete",
+  nextHolidayShareCardUnchecked: "Remaining",
+  nextHolidayShareAction: "Share",
+  nextHolidayShareCopied: "Copied!",
+  nextHolidayShareClose: "Close",
   birthdayTrackerTitle: "Hebrew Birthday Tracker",
   birthdayTrackerSub: "Find & save your Jewish birthday",
   birthdayTrackerGregorianLabel: "Date of birth (Gregorian)",
@@ -1038,6 +1058,16 @@ export const tk: Translations = {
   nextHolidayChecklistProgress: "bawl",
   nextHolidayChecklistReset: "Reset",
   nextHolidayChecklistAllDone: "Tangkhul dawn! ✓",
+  nextHolidayShareBtn: "Sawi Chhuak",
+  nextHolidayShareCardTitle: "Ka Nisa Zang Dinga",
+  nextHolidayShareCardBrand: "Bnei Menashe Luangthar",
+  nextHolidayShareCardProgress: "Zang Dinga Progress",
+  nextHolidayShareCardOf: "in",
+  nextHolidayShareCardStepsComplete: "zangkhol dawn",
+  nextHolidayShareCardUnchecked: "Lak kik",
+  nextHolidayShareAction: "Sawi Chhuak",
+  nextHolidayShareCopied: "Copy dawn!",
+  nextHolidayShareClose: "Hawl",
   birthdayTrackerTitle: "Hebrew Nirualna Tracker",
   birthdayTrackerSub: "Na nirualna Jewish en sou",
   birthdayTrackerGregorianLabel: "Nirualna ni (Gregorian)",
