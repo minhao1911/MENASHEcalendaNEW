@@ -19,6 +19,7 @@ export interface CompassCardProps {
   shimmerColor?: string;
   popupMaxWidth?: number;
   watermarkSrc?: string;
+  backgroundLayer?: React.ReactNode;
 }
 
 /* ─────────────────────────────────────────────
