@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { HDate } from "@hebcal/core";
 import BurningCandle from "../components/BurningCandle";
+import yishaiMemorialBg from "@assets/YISHAI_1782279066718.png";
 import {
   fetchCommunityYahrzeit,
   createCommunityYahrzeit,
@@ -152,8 +153,50 @@ export default function CommunityYahrzeitModal({ onClose, userName }: Props) {
       <div
         className="modal-sheet"
         onClick={e => e.stopPropagation()}
-        style={{ maxHeight: "95dvh", overflowY: "auto", background: "var(--card)" }}
+        style={{ maxHeight: "95dvh", overflowY: "auto", background: "var(--card)", position: "relative" }}
       >
+        {/* Yishai Memorial watermark */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "sticky",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 0,
+            overflow: "visible",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        >
+          <img
+            src={yishaiMemorialBg}
+            alt=""
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "auto",
+              minHeight: "100%",
+              objectFit: "cover",
+              objectPosition: "center top",
+              opacity: 0.09,
+              mixBlendMode: "luminosity",
+              borderRadius: "inherit",
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          />
+          {/* Subtle vignette so content stays readable */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(180deg, rgba(0,0,0,0.18) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.12) 100%)",
+            borderRadius: "inherit",
+            pointerEvents: "none",
+          }} />
+        </div>
+
         <style>{`
           .cy-board-grid {
             display: grid;
