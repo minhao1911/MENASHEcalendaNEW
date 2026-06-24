@@ -1,19 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-// ─── Israel daylight scenes ───────────────────────────────────────────────────
+// ─── Israel daylight scenes (verified working URLs) ───────────────────────────
 const DAY_IMAGES = [
-  "https://images.unsplash.com/photo-1523531294919-4bcd7c65d2b4?auto=format&w=900&q=82",
-  "https://images.unsplash.com/photo-1537956095612-4a5b98b0b76d?auto=format&w=900&q=82",
-  "https://images.unsplash.com/photo-1469481573231-4d3f2f486cb6?auto=format&w=900&q=82",
-  "https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&w=900&q=82",
+  // Dome of the Rock / Temple Mount — Jerusalem holy city
+  "https://p1.hippopx.com/preview/477/140/925/israel-jerusalem-holy-city-city-royalty-free-thumbnail.jpg",
+  // Jerusalem Old City — panoramic view from above
+  "https://p1.hippopx.com/preview/626/67/758/jerusalem-holy-land-old-city-religion-royalty-free-thumbnail.jpg",
+  // Jerusalem stone walls and cityscape
+  "https://p1.hippopx.com/preview/830/624/915/city-landscape-wall-cityscape-royalty-free-thumbnail.jpg",
+  // Golden hour over Jerusalem
+  "https://t4.ftcdn.net/jpg/02/67/24/77/360_F_267247778_tnDQ73R9yHwkDOEYZxKeGbmmPSCNFQpz.jpg",
 ];
 
-// ─── Israel religious night scenes ───────────────────────────────────────────
+// ─── Israel religious night scenes (verified working URLs) ────────────────────
 const NIGHT_IMAGES = [
-  "https://images.unsplash.com/photo-1528360983277-13d401cdc186?auto=format&w=900&q=82",
-  "https://images.unsplash.com/photo-1551415923-a2297c7fda79?auto=format&w=900&q=82",
-  "https://images.unsplash.com/photo-1504214208698-ea1916a2195a?auto=format&w=900&q=82",
-  "https://images.unsplash.com/photo-1519677100203-a0e668c92439?auto=format&w=900&q=82",
+  // Western Wall & Dome of the Rock — night (Wikimedia Commons)
+  "https://upload.wikimedia.org/wikipedia/commons/2/2b/The_Western_Wall_and_Dome_of_the_rock_in_the_old_city_of_Jerusalem.jpg",
+  // Western Wall close-up — Britannica CDN
+  "https://cdn.britannica.com/59/91859-004-7439A10F/Western-Wall-Old-City-of-Jerusalem-Second.jpg",
+  // Jerusalem night panorama from hills
+  "https://thumbs.dreamstime.com/b/night-city-lights-over-jerusalem-hills-park-overlooking-city-israel-jerusalem-israel-december-night-panorama-lit-428151388.jpg",
+  // Jerusalem night skyline — Old City
+  "https://thumbs.dreamstime.com/b/night-jerusalem-israel-skyline-jerusalem-night-old-sity-132290102.jpg",
 ];
 
 // ─── Future theme overrides (plug in image sets as needed) ───────────────────
