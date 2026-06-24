@@ -2933,6 +2933,9 @@ export default function Home({
           <TodayHolidayCard key={name} name={name} />
         ))}
 
+        {/* ── Next Holiday Countdown ── */}
+        <NextHolidayCard holidays={holidays} />
+
         {/* ══════════════════════════════════════════
             PARASHA CARD — Weekly Torah Portion
         ══════════════════════════════════════════ */}
