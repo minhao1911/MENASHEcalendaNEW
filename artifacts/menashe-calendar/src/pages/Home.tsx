@@ -14,6 +14,8 @@ import { useLanguage } from "../context/LanguageContext";
 import { fetchCommunityYahrzeit } from "../lib/userApi";
 import type { ServerAnnouncement } from "../lib/announcementsApi";
 import { useTrialStatus } from "../hooks/useTrialStatus";
+import { getYahrzeitEntries, getNextYahrzeit, hebrewDayLabel } from "../lib/yahrzeit";
+import type { YartzeitEntry } from "../lib/yahrzeit";
 
 const API_BASE = "/api";
 
@@ -1651,6 +1653,7 @@ interface HomeProps {
   onShowAnnouncements: () => void;
   onShowEvents: () => void;
   onShowCommunityYahrzeit: () => void;
+  onShowYartzeit: () => void;
   onShowMussar: () => void;
   onShowPrayerBoard: () => void;
   onShowTorahTracker: () => void;
@@ -2008,6 +2011,247 @@ const HOLIDAY_THEMES: Record<string, { emoji: string; theme: string }> = {
 interface HolidayHalacha {
   source: string;
   preparations: string[];
+}
+
+// ── Yahrzeit Reminder Card ────────────────────────────────────────────────────
+function YahrzeitReminderCard({ onShowYartzeit }: { onShowYartzeit: () => void }) {
+  const { t } = useLanguage();
+  const [entries, setEntries] = useState<YartzeitEntry[]>(() => getYahrzeitEntries());
+  const [minimized, setMinimized] = useState<boolean>(() => {
+    try { return localStorage.getItem("menashe-yahrzeit-card-minimized") === "true"; } catch { return false; }
+  });
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+
+  useEffect(() => {
+    function onUpdate() { setEntries(getYahrzeitEntries()); }
+    window.addEventListener("menashe-yahrzeit-updated", onUpdate);
+    return () => window.removeEventListener("menashe-yahrzeit-updated", onUpdate);
+  }, []);
+
+  function toggleMinimized() {
+    setMinimized(prev => {
+      const next = !prev;
+      try { localStorage.setItem("menashe-yahrzeit-card-minimized", String(next)); } catch {}
+      return next;
+    });
+  }
+
+  async function togglePush() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    setPushLoading(true);
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { setPushLoading(false); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const keyRes = await fetch(`${API_BASE}/push/vapid-public-key`);
+      if (!keyRes.ok) { setPushLoading(false); return; }
+      const { publicKey } = await keyRes.json() as { publicKey: string };
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: publicKey });
+      await fetch(`${API_BASE}/push/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub, schedule: [] }),
+      });
+      setPushEnabled(true);
+    } catch { /* silently ignore */ }
+    setPushLoading(false);
+  }
+
+  // Find the soonest upcoming Yahrzeit
+  const withNext = entries
+    .map(e => ({ entry: e, next: getNextYahrzeit(e.hebrewDay, e.hebrewMonth) }))
+    .filter(x => x.next !== null)
+    .sort((a, b) => (a.next!.daysAway) - (b.next!.daysAway));
+
+  const todayEntries = withNext.filter(x => x.next!.isToday);
+  const nearest = withNext[0] ?? null;
+
+  // Minimized pill
+  if (minimized) {
+    return (
+      <button
+        onClick={toggleMinimized}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          background: "linear-gradient(135deg, rgba(212,168,67,0.07) 0%, rgba(212,168,67,0.03) 100%)",
+          border: "1px solid rgba(212,168,67,0.18)", borderRadius: 12, padding: "9px 14px",
+          cursor: "pointer", marginBottom: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 15 }}>🕯</span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#d4a843", letterSpacing: "0.05em" }}>
+            {t.yartzeitCardTitle}
+          </span>
+          {nearest && (
+            <span style={{
+              fontSize: 10.5, fontWeight: 800,
+              color: nearest.next!.isToday ? "#ef4444" : "#d4a843",
+              background: nearest.next!.isToday ? "rgba(220,38,38,0.14)" : "rgba(212,168,67,0.12)",
+              border: `1px solid ${nearest.next!.isToday ? "rgba(220,38,38,0.32)" : "rgba(212,168,67,0.28)"}`,
+              borderRadius: 10, padding: "1px 7px",
+            }}>
+              {nearest.next!.isToday ? t.yartzeitCardToday : `${nearest.next!.daysAway} ${t.yartzeitCardDays}`}
+            </span>
+          )}
+        </div>
+        <span style={{ fontSize: 16, color: "#d4a843", lineHeight: 1 }}>＋</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="card" style={{ marginBottom: 12, padding: "13px 15px", position: "relative", overflow: "hidden" }}>
+      {/* Gold accent */}
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none",
+        background: "radial-gradient(ellipse at 8% 20%, rgba(212,168,67,0.07) 0%, transparent 55%)",
+      }} />
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 13 }}>🕯</span>
+          <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.13em", color: "var(--text-muted)", textTransform: "uppercase" }}>
+            {t.yartzeitCardTitle}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {entries.length > 0 && (
+            <button
+              onClick={togglePush}
+              disabled={pushLoading || pushEnabled}
+              title={pushEnabled ? t.yartzeitCardPushOn : t.yartzeitCardPushOff}
+              style={{
+                background: pushEnabled ? "rgba(212,168,67,0.15)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${pushEnabled ? "rgba(212,168,67,0.4)" : "rgba(255,255,255,0.08)"}`,
+                borderRadius: 8, padding: "3px 8px", cursor: pushEnabled ? "default" : "pointer",
+                display: "flex", alignItems: "center", gap: 4,
+                fontSize: 10, color: pushEnabled ? "#d4a843" : "var(--text-muted)",
+                opacity: pushLoading ? 0.6 : 1, transition: "all 0.2s",
+              }}
+            >
+              <span style={{ fontSize: 13 }}>{pushEnabled ? "🔔" : "🔕"}</span>
+              {pushEnabled ? t.yartzeitCardPushOn : t.yartzeitCardPushOff}
+            </button>
+          )}
+          <button
+            onClick={toggleMinimized}
+            style={{
+              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 8, padding: "3px 9px", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 4,
+              fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)",
+            }}
+          >
+            <span style={{ fontSize: 12, lineHeight: 1 }}>－</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Empty state */}
+      {entries.length === 0 && (
+        <button
+          onClick={onShowYartzeit}
+          style={{
+            width: "100%", padding: "14px 16px",
+            background: "rgba(212,168,67,0.06)", border: "1.5px dashed rgba(212,168,67,0.25)",
+            borderRadius: 11, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+          }}
+        >
+          <span style={{ fontSize: 20 }}>🕯</span>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#d4a843" }}>{t.yartzeitCardSetup}</span>
+        </button>
+      )}
+
+      {/* TODAY entries */}
+      {todayEntries.map(({ entry }) => (
+        <div key={entry.id} style={{
+          marginBottom: 10, borderRadius: 12, padding: "11px 13px",
+          background: "linear-gradient(135deg, rgba(212,168,67,0.18) 0%, rgba(212,168,67,0.06) 100%)",
+          border: "1.5px solid rgba(212,168,67,0.5)",
+          boxShadow: "0 0 24px rgba(212,168,67,0.12)",
+        }}>
+          <div style={{
+            display: "inline-flex", gap: 4, alignItems: "center",
+            background: "rgba(212,168,67,0.18)", borderRadius: 99, padding: "2px 10px", marginBottom: 7,
+          }}>
+            <span style={{ fontSize: 9, fontWeight: 900, color: "#f0c050", letterSpacing: "0.12em" }}>✦ {t.yartzeitCardToday.toUpperCase()}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "var(--text-primary)", marginBottom: 2 }}>{entry.name}</div>
+              <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 13, color: "#d4a843" }}>
+                {hebrewDayLabel(entry.hebrewDay, entry.hebrewMonth)}
+              </div>
+            </div>
+            <span style={{ fontSize: 30, flexShrink: 0 }}>🕯</span>
+          </div>
+          <div style={{
+            marginTop: 9, padding: "8px 10px", borderRadius: 9,
+            background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)",
+          }}>
+            <div style={{ fontSize: 11, color: "#d4a843", fontWeight: 700, marginBottom: 3 }}>{t.yartzeitCardObservances}</div>
+            <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.7 }}>{t.yartzeitCardObservanceText}</div>
+          </div>
+        </div>
+      ))}
+
+      {/* Upcoming (non-today nearest entries, up to 2) */}
+      {withNext.filter(x => !x.next!.isToday).slice(0, 2).map(({ entry, next }) => (
+        <div key={entry.id} style={{
+          marginBottom: 8, borderRadius: 11, padding: "10px 12px",
+          background: "var(--elevated)", border: "1px solid var(--border)",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 9.5, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.1em", marginBottom: 3, textTransform: "uppercase" }}>
+              {t.yartzeitCardUpcoming}
+            </div>
+            <div style={{ fontSize: 14.5, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2 }}>{entry.name}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 12, color: "#d4a843" }}>
+                {hebrewDayLabel(entry.hebrewDay, entry.hebrewMonth)}
+              </span>
+              <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--text-muted)", display: "inline-block" }} />
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                {next!.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </span>
+            </div>
+          </div>
+          <div style={{
+            flexShrink: 0, textAlign: "center",
+            background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.18)",
+            borderRadius: 9, padding: "5px 10px", minWidth: 44,
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: "#d4a843", lineHeight: 1 }}>{next!.daysAway}</div>
+            <div style={{ fontSize: 8, color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.06em", marginTop: 1 }}>
+              {next!.daysAway === 1 ? t.yartzeitCardDay.toUpperCase() : t.yartzeitCardDays.toUpperCase()}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Manage button */}
+      {entries.length > 0 && (
+        <button
+          onClick={onShowYartzeit}
+          style={{
+            width: "100%", marginTop: 6, padding: "8px 12px",
+            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: 9, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            fontSize: 11.5, fontWeight: 700, color: "var(--text-muted)",
+          }}
+        >
+          <span style={{ fontSize: 13 }}>⚙️</span>
+          {t.yartzeitCardManage}
+        </button>
+      )}
+    </div>
+  );
 }
 
 function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: Date }> }) {
@@ -2985,7 +3229,7 @@ export default function Home({
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
   onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus, onShowMembers,
   onNotifBell, notifActive, announcementCount,
-  onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
+  onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowYartzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
   unreadAnnouncements = [],
   profileName,
 }: HomeProps) {
@@ -3372,6 +3616,9 @@ export default function Home({
 
         {/* ── Next Holiday Countdown ── */}
         <NextHolidayCard holidays={holidays} />
+
+        {/* ── Yahrzeit Reminders ── */}
+        <YahrzeitReminderCard onShowYartzeit={onShowYartzeit} />
 
         {/* ══════════════════════════════════════════
             PARASHA CARD — Weekly Torah Portion

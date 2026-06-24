@@ -533,6 +533,7 @@ function AppShell() {
             onShowAnnouncements={() => setModal("announcements")}
             onShowEvents={() => setModal("events")}
             onShowCommunityYahrzeit={() => setModal("community-yahrzeit")}
+            onShowYartzeit={() => setModal("yartzeit")}
             onShowMussar={() => setModal("mussar")}
             onShowPrayerBoard={() => setModal("prayers-board")}
             onShowTorahTracker={() => setModal("torah-tracker")}

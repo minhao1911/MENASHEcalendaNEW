@@ -363,6 +363,13 @@ export interface Translations {
   yartzeitCardSetup: string;
   yartzeitCardToday: string;
   yartzeitCardDays: string;
+  yartzeitCardUpcoming: string;
+  yartzeitCardManage: string;
+  yartzeitCardObservances: string;
+  yartzeitCardObservanceText: string;
+  yartzeitCardDay: string;
+  yartzeitCardPushOff: string;
+  yartzeitCardPushOn: string;
 
   /* ── AI Chat Assistant ── */
   chatTitle: string;
@@ -725,6 +732,13 @@ export const en: Translations = {
   yartzeitCardSetup: "Tap to add a Yahrzeit reminder →",
   yartzeitCardToday: "Today's Yahrzeit",
   yartzeitCardDays: "days away",
+  yartzeitCardUpcoming: "UPCOMING YAHRZEIT",
+  yartzeitCardManage: "Manage Yahrzeits",
+  yartzeitCardObservances: "Today's observances:",
+  yartzeitCardObservanceText: "🕯 Light a memorial candle · 🙏 Recite Kaddish · 📖 Study Torah in their memory",
+  yartzeitCardDay: "day",
+  yartzeitCardPushOff: "Day-of reminder",
+  yartzeitCardPushOn: "Reminder set ✓",
 
   chatTitle: "Rav Menashe AI",
   chatSubtitle: "Your Jewish calendar & Torah companion",
@@ -1086,6 +1100,13 @@ export const tk: Translations = {
   yartzeitCardSetup: "Yahrzeit hlabu en →",
   yartzeitCardToday: "Ni tawp Yahrzeit",
   yartzeitCardDays: "ni en",
+  yartzeitCardUpcoming: "YAHRZEIT ZANG",
+  yartzeitCardManage: "Yahrzeit hlabu en",
+  yartzeitCardObservances: "Ni tangkhol:",
+  yartzeitCardObservanceText: "🕯 Ni memorial theilawk · 🙏 Kaddish hel · 📖 Torah en dawt",
+  yartzeitCardDay: "ni",
+  yartzeitCardPushOff: "Ni reminder",
+  yartzeitCardPushOn: "Reminder dawn ✓",
 
   chatTitle: "Rav Menashe AI",
   chatSubtitle: "Jewish kolam & Torah thu ropui",

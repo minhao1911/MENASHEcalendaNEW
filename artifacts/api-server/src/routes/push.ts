@@ -581,6 +581,56 @@ export function startHolidayWebPushScheduler() {
   }, 60_000); // check every minute
 }
 
+// ── Yahrzeit Push Scheduler ──────────────────────────────────────────────────
+
+let _yahrzeitPushLastFiredDate = "";
+
+export function startYahrzeitPushScheduler() {
+  setInterval(async () => {
+    if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
+
+    const now = new Date();
+    if (now.getHours() !== 8 || now.getMinutes() >= 5) return;
+
+    const dateKey = now.toDateString();
+    if (_yahrzeitPushLastFiredDate === dateKey) return;
+    _yahrzeitPushLastFiredDate = dateKey;
+
+    const hToday = new HDate(now);
+    const hDay = hToday.getDate();
+    const hMonth = hToday.getMonth();
+
+    let entries: Array<{ user_id: string; name: string }> = [];
+    try {
+      const r = await pool.query<{ user_id: string; name: string }>(
+        "SELECT user_id, name FROM yahrzeit_entries WHERE hebrew_day = $1 AND hebrew_month = $2",
+        [hDay, hMonth],
+      );
+      entries = r.rows;
+    } catch (err) {
+      logger.error({ err }, "yahrzeit-push: failed to query entries");
+      return;
+    }
+
+    if (entries.length === 0) return;
+
+    for (const entry of entries) {
+      try {
+        await sendPushToUser(entry.user_id, {
+          title: `🕯 Yahrzeit Today: ${entry.name}`,
+          body: `Today is the Yahrzeit of ${entry.name}. May their memory be a blessing. Light a candle and recite Kaddish.`,
+          tag: `yahrzeit-${entry.user_id}-${dateKey}`,
+          icon: "/favicon.svg",
+        });
+      } catch (err) {
+        logger.error({ err, name: entry.name }, "yahrzeit-push: failed to send notification");
+      }
+    }
+
+    logger.info({ count: entries.length, hDay, hMonth }, "yahrzeit-push: sent reminders");
+  }, 60_000);
+}
+
 // ── Expo Push Scheduler ──────────────────────────────────────────────────────
 
 function nextShabbatCandles(from: Date = new Date()): Date {
