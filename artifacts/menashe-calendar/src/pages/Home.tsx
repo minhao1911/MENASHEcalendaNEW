@@ -4,6 +4,7 @@ import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 import { getOmerDay, buildHebrewText } from "../modals/OmerModal";
 import RoshChodeshBanner from "../components/RoshChodeshBanner";
 import CompassCard from "../components/CompassCard";
+import torahScrollWatermark from "@assets/afc3e4a8-094b-4933-9d08-f8fb899140c9_1782276994801.png";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import type { ZmanimTimes } from "../lib/zmanim";
@@ -3684,6 +3685,7 @@ export default function Home({
             }
             onTap={onShowParashah}
             minHeight={180}
+            watermarkSrc={torahScrollWatermark}
           />
         )}
 

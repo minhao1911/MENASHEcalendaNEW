@@ -18,6 +18,7 @@ export interface CompassCardProps {
   style?: React.CSSProperties;
   shimmerColor?: string;
   popupMaxWidth?: number;
+  watermarkSrc?: string;
 }
 
 /* ─────────────────────────────────────────────
@@ -222,6 +223,7 @@ export default function CompassCard({
   style,
   shimmerColor,
   popupMaxWidth = 420,
+  watermarkSrc,
 }: CompassCardProps) {
   const [open, setOpen] = useState(false);
   const [pressed, setPressed] = useState(false);
@@ -281,6 +283,42 @@ export default function CompassCard({
         onPointerLeave={() => setPressed(false)}
         onPointerCancel={() => setPressed(false)}
       >
+        {/* Watermark background image */}
+        {watermarkSrc && (
+          <div style={{
+            position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, borderRadius: 22,
+            overflow: "hidden",
+          }}>
+            <img
+              src={watermarkSrc}
+              alt=""
+              style={{
+                position: "absolute",
+                bottom: -10,
+                right: -16,
+                width: "82%",
+                height: "140%",
+                objectFit: "cover",
+                objectPosition: "left center",
+                opacity: 0.13,
+                mixBlendMode: "luminosity",
+                filter: "grayscale(30%) contrast(1.1)",
+                transform: "scaleX(-1)",
+                borderRadius: 12,
+              }}
+            />
+            {/* Vignette to fade the image into the card edges */}
+            <div style={{
+              position: "absolute", inset: 0,
+              background: `
+                radial-gradient(ellipse at 20% 50%, transparent 30%, rgba(4,20,16,0.72) 75%),
+                linear-gradient(to right, rgba(4,20,16,0.9) 0%, transparent 45%),
+                linear-gradient(to top, rgba(4,20,16,0.6) 0%, transparent 50%)
+              `,
+            }} />
+          </div>
+        )}
+
         {/* Shimmer sweep */}
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, borderRadius: 22,
