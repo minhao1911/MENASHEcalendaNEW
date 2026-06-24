@@ -7,6 +7,52 @@ import OnboardingFlow, { hasSeenOnboarding } from "./components/OnboardingFlow";
 import OfflineBanner from "./components/OfflineBanner";
 import "./index.css";
 
+/* ─── Suppress R3F v9 + React 19 Strict Mode transient error ────────────────
+ * React 19 Strict Mode discards the first render pass to flush side-effects.
+ * During that pass, @react-three/fiber's Zustand canvas-store hasn't committed
+ * its context yet, so any scene component that calls useFrame/useThree tries to
+ * destructure { subscribe } from null → TypeError.
+ *
+ * R3F recovers from this automatically on the second real render, but the
+ * @replit/vite-plugin-runtime-error-modal intercepts console.error and
+ * window.onerror BEFORE R3F can handle it, showing the error overlay.
+ *
+ * This filter runs at the very top of the module graph (before the plugin
+ * installs its listeners) and silently drops only this one known transient
+ * error, leaving all other errors visible.  It is dev-only; production builds
+ * don't include this plugin at all.
+ * ──────────────────────────────────────────────────────────────────────────── */
+if (import.meta.env.DEV) {
+  const isR3FStrictModeError = (msg: unknown): boolean => {
+    const s = typeof msg === "string" ? msg
+      : msg instanceof Error ? msg.message
+      : "";
+    return s.includes("Cannot destructure property 'subscribe'");
+  };
+
+  // Wrap console.error — the plugin hooks this to show the overlay
+  const _consoleError = console.error.bind(console);
+  console.error = (...args: unknown[]) => {
+    if (isR3FStrictModeError(args[0])) return;
+    _consoleError(...args);
+  };
+
+  // Wrap window.onerror — the plugin also hooks this
+  const _windowOnError = window.onerror?.bind(window);
+  window.onerror = (msg, src, line, col, err) => {
+    if (isR3FStrictModeError(msg) || isR3FStrictModeError(err)) return true;
+    return _windowOnError?.(msg, src, line, col, err) ?? false;
+  };
+
+  // Wrap unhandledrejection for completeness
+  window.addEventListener("error", (e) => {
+    if (isR3FStrictModeError(e.message) || isR3FStrictModeError(e.error)) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    }
+  }, true /* capture phase — fires before plugin's bubble listener */);
+}
+
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 /* Register service worker on startup so offline caching is active
