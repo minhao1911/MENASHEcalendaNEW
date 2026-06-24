@@ -1,13 +1,13 @@
 import { Router } from "express";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import { requireAuth } from "../lib/requireAuth";
 
 const router = Router();
 
-function getOpenAI(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
-  return new OpenAI({ apiKey });
+function getGenAI(): GoogleGenAI {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) throw new Error("GOOGLE_API_KEY is not configured");
+  return new GoogleGenAI({ apiKey });
 }
 
 const SYSTEM_PROMPT = `You are Rav Menashe, a warm, knowledgeable AI spiritual companion for the Bnei Menashe Jewish community — descendants of the lost tribe of Menashe from Northeast India (Manipur and Mizoram), many of whom have made aliyah to Israel.
@@ -38,9 +38,9 @@ router.post("/chat", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "messages array is required" });
   }
 
-  let openai: OpenAI;
+  let genai: GoogleGenAI;
   try {
-    openai = getOpenAI();
+    genai = getGenAI();
   } catch {
     return res.status(503).json({ error: "AI service not configured" });
   }
@@ -51,20 +51,27 @@ router.post("/chat", requireAuth, async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
 
   try {
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_completion_tokens: 800,
-      stream: true,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...messages.slice(-10),
-      ],
+    const history = messages.slice(-10);
+    const lastMessage = history[history.length - 1];
+    const priorMessages = history.slice(0, -1);
+
+    const contents = priorMessages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
+    const chat = genai.chats.create({
+      model: "gemini-2.5-flash",
+      config: { systemInstruction: SYSTEM_PROMPT },
+      history: contents,
     });
 
+    const stream = await chat.sendMessageStream({ message: lastMessage.content });
+
     for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        res.write(`data: ${JSON.stringify({ text: delta })}\n\n`);
+      const text = chunk.text;
+      if (text) {
+        res.write(`data: ${JSON.stringify({ text })}\n\n`);
       }
     }
 

@@ -1,13 +1,13 @@
 import { Router } from "express";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import { requireAuth } from "../lib/requireAuth";
 
 const router = Router();
 
-function getOpenAI(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
-  return new OpenAI({ apiKey });
+function getGenAI(): GoogleGenAI {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) throw new Error("GOOGLE_API_KEY is not configured");
+  return new GoogleGenAI({ apiKey });
 }
 
 interface HolidayInsight {
@@ -38,9 +38,9 @@ router.post("/holiday-insights", requireAuth, async (req, res) => {
     return res.json(cache.get(cacheKey));
   }
 
-  let openai: OpenAI;
+  let genai: GoogleGenAI;
   try {
-    openai = getOpenAI();
+    genai = getGenAI();
   } catch {
     return res.status(503).json({ error: "AI service not configured" });
   }
@@ -59,13 +59,12 @@ Respond with a JSON object with exactly these fields:
 Return only valid JSON, no markdown fences.`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_completion_tokens: 1200,
-      messages: [{ role: "user", content: prompt }],
+    const response = await genai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
-    const content = response.choices[0]?.message?.content ?? "{}";
+    const content = response.text ?? "{}";
     const jsonMatch =
       content.match(/```json\s*([\s\S]*?)```/) ??
       content.match(/```\s*([\s\S]*?)```/);
