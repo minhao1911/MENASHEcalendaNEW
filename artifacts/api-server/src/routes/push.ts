@@ -581,6 +581,87 @@ export function startHolidayWebPushScheduler() {
   }, 60_000); // check every minute
 }
 
+// ── Holiday 1-Hour Reminder Scheduler ────────────────────────────────────────
+// Fires every minute; when a holiday midnight is 55–65 minutes away, sends a
+// "starts in ~1 hour" push to all web-push subscribers. Deduped per holiday.
+
+const _holidayHourReminderFired = new Set<string>();
+
+export function startHolidayHourReminderScheduler() {
+  setInterval(async () => {
+    if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
+
+    const now = new Date();
+    const nowMs = now.getTime();
+
+    // Look for any holiday whose midnight falls 55–65 min from now
+    const windowStart = nowMs + 55 * 60_000;
+    const windowEnd   = nowMs + 65 * 60_000;
+
+    // Check today and tomorrow
+    for (let dayOffset = 0; dayOffset <= 1; dayOffset++) {
+      const candidate = new Date(now);
+      candidate.setDate(candidate.getDate() + dayOffset);
+      candidate.setHours(0, 0, 0, 0);
+      const candidateMs = candidate.getTime();
+      if (candidateMs < windowStart || candidateMs > windowEnd) continue;
+
+      // We're in the window — find the holiday
+      const dayStart = new Date(candidate);
+      const dayEnd   = new Date(candidate);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const events = HebrewCalendar.calendar({
+        start: dayStart,
+        end: dayEnd,
+        il: true,
+        isHebrewYear: false,
+        mask: flags.CHAG | flags.MODERN_HOLIDAY | flags.MINOR_FAST | flags.MAJOR_FAST,
+      });
+
+      for (const ev of events) {
+        const name    = ev.render("en");
+        const dedupKey = `${name}-${candidate.toDateString()}`;
+        if (_holidayHourReminderFired.has(dedupKey)) continue;
+        _holidayHourReminderFired.add(dedupKey);
+
+        const dateStr = candidate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+        const payload = JSON.stringify({
+          title: `⏱ ${name} Begins in ~1 Hour`,
+          body: `${name} starts at midnight tonight (${dateStr}). Make your final preparations!`,
+          tag: `holiday-hour-${name.replace(/\s+/g, "-").toLowerCase()}-${candidate.toDateString()}`,
+          icon: "/favicon.svg",
+        });
+
+        let webRows: Array<{ id: string; endpoint: string; p256dh: string; auth: string }> = [];
+        try {
+          const r = await pool.query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
+            "SELECT id, endpoint, p256dh, auth FROM push_subscriptions"
+          );
+          webRows = r.rows;
+        } catch (err) {
+          logger.error({ err }, "holiday-hour-reminder: failed to load subscriptions");
+          continue;
+        }
+
+        for (const row of webRows) {
+          try {
+            await webpush.sendNotification(
+              { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+              payload,
+            );
+          } catch (err: any) {
+            if (err?.statusCode === 410 || err?.statusCode === 404) {
+              await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [row.id]).catch(() => {});
+            }
+          }
+        }
+        logger.info({ name, subscribers: webRows.length }, "holiday-hour-reminder: sent");
+      }
+    }
+  }, 60_000); // check every minute
+}
+
 // ── Yahrzeit Push Scheduler ──────────────────────────────────────────────────
 
 let _yahrzeitPushLastFiredDate = "";

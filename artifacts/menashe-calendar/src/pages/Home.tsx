@@ -2481,7 +2481,7 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
           <button
             onClick={togglePush}
             disabled={pushLoading || pushEnabled}
-            title={pushEnabled ? "Reminders on" : "Remind me 1 day before"}
+            title={pushEnabled ? "Reminders on (1 day + 1 hour before)" : "Remind me 1 day & 1 hour before"}
             style={{
               background: pushEnabled ? "rgba(212,168,67,0.15)" : "rgba(255,255,255,0.04)",
               border: `1px solid ${pushEnabled ? "rgba(212,168,67,0.4)" : "rgba(255,255,255,0.08)"}`,
