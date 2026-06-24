@@ -186,6 +186,11 @@ export interface Translations {
   shabbatCandleLighting: string;
   shabbatHavdalah: string;
   shabbatMinutes: string;
+  shabbatModeActive: string;
+  shabbatModeHavdalahIn: string;
+  shabbatModeCandleLightingIn: string;
+  shabbatModeShavuaTov: string;
+  shabbatModeDismiss: string;
 
   /* ── Settings: What's New entry ── */
   settingsWhatsNew: string;
@@ -578,6 +583,11 @@ export const en: Translations = {
   shabbatCandleLighting: "Candle lighting",
   shabbatHavdalah: "Havdalah",
   shabbatMinutes: "min away",
+  shabbatModeActive: "Shabbat is in progress",
+  shabbatModeHavdalahIn: "Havdalah in",
+  shabbatModeCandleLightingIn: "Candle lighting in",
+  shabbatModeShavuaTov: "Shavua Tov — have a wonderful week!",
+  shabbatModeDismiss: "Continue in the spirit of Shabbat",
 
   settingsWhatsNew: "Release Notes",
   settingsWhatsNewSub: "See what changed in this version",
@@ -961,6 +971,11 @@ export const tk: Translations = {
   shabbatCandleLighting: "Kerhi hun",
   shabbatHavdalah: "Havdalah",
   shabbatMinutes: "min chhung",
+  shabbatModeActive: "Ni Thianghlim a lo thleng ta",
+  shabbatModeHavdalahIn: "Havdalah chhung",
+  shabbatModeCandleLightingIn: "Kerhi hun chhung",
+  shabbatModeShavuaTov: "Shavua Tov — Ni tha zawng hriat se!",
+  shabbatModeDismiss: "Shabbat nun-zia chu pawm rawh",
 
   settingsWhatsNew: "Release Notes",
   settingsWhatsNewSub: "Version thar-ah thil thar zawng en",
