@@ -4,6 +4,7 @@ import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 import { getOmerDay, buildHebrewText } from "../modals/OmerModal";
 import RoshChodeshBanner from "../components/RoshChodeshBanner";
 import CompassCard from "../components/CompassCard";
+import TimeAwareBackground from "../components/TimeAwareBackground";
 import ShabbatMode from "../components/ShabbatMode";
 import torahScrollWatermark from "@assets/afc3e4a8-094b-4933-9d08-f8fb899140c9_1782276994801.png";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
@@ -3611,6 +3612,7 @@ export default function Home({
           accentColor="#c9a227"
           shimmerColor="#e8c84a"
           category="TODAY"
+          backgroundLayer={<TimeAwareBackground sunrise={zmanim.sunrise} sunset={zmanim.sunset} />}
           icon={
             <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 40, color: "#c9a227", lineHeight: 1, display: "block", filter: "drop-shadow(0 0 10px rgba(201,162,39,0.5))" }}>
               {hebrewDay}

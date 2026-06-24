@@ -225,6 +225,7 @@ export default function CompassCard({
   shimmerColor,
   popupMaxWidth = 420,
   watermarkSrc,
+  backgroundLayer,
 }: CompassCardProps) {
   const [open, setOpen] = useState(false);
   const [pressed, setPressed] = useState(false);
@@ -273,7 +274,7 @@ export default function CompassCard({
       <div
         className={`compass-card-root${pressed ? " pressed" : ""}`}
         style={{
-          background: gradient,
+          background: backgroundLayer ? "transparent" : gradient,
           boxShadow: `0 8px 32px rgba(0,0,0,0.72), inset 0 1px 0 ${accentColor}22`,
           border: `1px solid ${accentColor}40`,
           minHeight,
@@ -284,6 +285,13 @@ export default function CompassCard({
         onPointerLeave={() => setPressed(false)}
         onPointerCancel={() => setPressed(false)}
       >
+        {/* Dynamic background layer (e.g. TimeAwareBackground) */}
+        {backgroundLayer && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "hidden", borderRadius: 22 }}>
+            {backgroundLayer}
+          </div>
+        )}
+
         {/* Watermark background image */}
         {watermarkSrc && (
           <div style={{
