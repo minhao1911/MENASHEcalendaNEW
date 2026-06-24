@@ -400,13 +400,6 @@ function FlowerClusters() {
 
   return (
     <>
-      {flowerPositions.map(([x, z], fi) => (
-        <group key={fi} position={[x, 0.1, z]}>
-          {Array.from({ length: 5 }, (_, pi) => (
-            <Instance key={pi} />
-          ))}
-        </group>
-      ))}
       {[0, 1, 2].map(ci => (
         <Instances key={ci} geometry={petalGeo} limit={80}>
           <meshLambertMaterial color={colors[ci % colors.length]} />
