@@ -29,7 +29,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/api-server run dev & pnpm --filter @workspace/menashe-calendar run dev"
+args = "pkill -f 'node.*dist/index.mjs' 2>/dev/null; pkill -f 'vite' 2>/dev/null; sleep 1; pnpm --filter @workspace/api-server run dev & pnpm --filter @workspace/menashe-calendar run dev"
 waitForPort = 5000
 
 [agent]
