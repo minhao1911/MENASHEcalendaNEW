@@ -3,6 +3,7 @@ import { HDate } from "@hebcal/core";
 import {
   fetchCommunityYahrzeit,
   createCommunityYahrzeit,
+  dedicateLearning,
   type CommunityYahrzeitEntry,
 } from "../lib/userApi";
 
@@ -162,12 +163,14 @@ function EternalFlame({ col, row }: { col: number; row: number }) {
   );
 }
 
-function Candle({ col, row, name, animOffset }: { col: number; row: number; name: string; animOffset: number }) {
+function Candle({ col, row, name, animOffset, onClick }: { col: number; row: number; name: string; animOffset: number; onClick?: () => void }) {
   const { x, y } = gridToSVG(col, row);
   const cx = x, cy = y + TH / 2 - 2;
   const d = animOffset;
   return (
-    <g filter="url(#candle-glow)" style={{ cursor: "pointer" }}>
+    <g filter="url(#candle-glow)" style={{ cursor: "pointer" }} onClick={onClick}>
+      {/* Invisible hit area (larger than visual for easy tapping) */}
+      <ellipse cx={cx} cy={cy} rx={24} ry={36} fill="transparent" />
       <ellipse cx={cx} cy={cy + 16} rx={10} ry={4} fill="rgba(255,160,40,0.18)" />
       <rect x={cx - 3.5} y={cy - 12} width={7} height={17} rx={1.5} fill="#f5eed8" />
       <rect x={cx - 4.5} y={cy + 3} width={9} height={4} rx={1.5} fill="#e8e0c8" opacity={0.9} />
@@ -222,6 +225,13 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   /* ── zone info ── */
   const [zoneLabel, setZoneLabel] = useState<string | null>(null);
   const zoneLabelTimer = useRef<number>(0);
+
+  /* ── candle detail + dedicate learning ── */
+  const [selectedCandle, setSelectedCandle] = useState<CommunityYahrzeitEntry | null>(null);
+  const [showDedicate, setShowDedicate] = useState(false);
+  const [dedicateForm, setDedicateForm] = useState({ learnerName: "", studySubject: "" });
+  const [dedicateSaving, setDedicateSaving] = useState(false);
+  const [dedicateSuccess, setDedicateSuccess] = useState(false);
 
   /* ── camera ── */
   const panX = useRef(195);
@@ -304,6 +314,34 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
     setZoneLabel(name);
     clearTimeout(zoneLabelTimer.current);
     zoneLabelTimer.current = window.setTimeout(() => setZoneLabel(null), 2500);
+  }
+
+  /* ── candle tap ── */
+  function handleCandleClick(entry: CommunityYahrzeitEntry) {
+    if (moved.current) return;
+    setSelectedCandle(entry);
+    setShowDedicate(false);
+    setDedicateForm({ learnerName: "", studySubject: "" });
+    setDedicateSuccess(false);
+  }
+
+  /* ── dedicate learning ── */
+  async function handleDedicate() {
+    if (!selectedCandle || !dedicateForm.learnerName.trim() || !dedicateForm.studySubject.trim()) return;
+    setDedicateSaving(true);
+    try {
+      await dedicateLearning(selectedCandle.id, dedicateForm.learnerName.trim(), dedicateForm.studySubject.trim());
+      setDedicateSuccess(true);
+      await load();
+      // Refresh selected candle from new entries
+      setTimeout(() => {
+        setDedicateSuccess(false);
+        setShowDedicate(false);
+        setDedicateForm({ learnerName: "", studySubject: "" });
+      }, 2500);
+    } finally {
+      setDedicateSaving(false);
+    }
   }
 
   /* ── submit candle ── */
@@ -513,6 +551,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
               row={CANDLE_SPOTS[i].row}
               name={e.deceasedName.split("·")[0].trim()}
               animOffset={(i % 5) * 0.18}
+              onClick={() => handleCandleClick(e)}
             />
           ))}
 
@@ -601,7 +640,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
       {/* ═══════════════════════════════════════════════════
           LIGHT CANDLE CTA BUTTON
       ═══════════════════════════════════════════════════ */}
-      {!showForm && !success && (
+      {!showForm && !success && !selectedCandle && (
         <div style={{ position: "absolute", bottom: 32, left: "50%", transform: "translateX(-50%)" }}>
           <button
             onClick={() => setShowForm(true)}
@@ -743,6 +782,243 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
               <>🕯 Light Candle in the Sanctuary</>
             )}
           </button>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════
+          CANDLE INFO PANEL (slides up when candle tapped)
+      ═══════════════════════════════════════════════════ */}
+      {selectedCandle && !showForm && !success && (
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            borderRadius: "24px 24px 0 0",
+            background: "rgba(6,4,14,0.97)",
+            backdropFilter: "blur(24px)",
+            border: "1px solid rgba(212,175,55,0.25)",
+            borderBottom: "none",
+            animation: "ms-form-slide 0.32s cubic-bezier(0.34,1.56,0.64,1) both",
+            maxHeight: "72dvh", overflowY: "auto",
+          }}
+        >
+          {/* Handle */}
+          <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.12)" }} />
+          </div>
+
+          <div style={{ padding: "8px 20px 32px" }}>
+
+            {/* Panel header */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                {/* Candle icon */}
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                  background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.25)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 22, filter: "drop-shadow(0 0 6px rgba(255,165,40,0.5))",
+                }}>🕯</div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>
+                    {selectedCandle.deceasedName.split("·")[0].trim()}
+                  </div>
+                  {selectedCandle.deceasedName.includes("·") && (
+                    <div style={{
+                      fontSize: 13, fontFamily: "'Noto Serif Hebrew', serif",
+                      color: "rgba(212,175,55,0.8)", marginTop: 2,
+                    }}>
+                      {selectedCandle.deceasedName.split("·")[1]?.trim()}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => { setSelectedCandle(null); setShowDedicate(false); }}
+                style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: "rgba(255,255,255,0.08)", border: "none", color: "rgba(255,255,255,0.55)", cursor: "pointer", fontSize: 13 }}
+              >✕</button>
+            </div>
+
+            {/* Date + donor info */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+              {selectedCandle.displayDate && (
+                <div style={{
+                  padding: "4px 12px", borderRadius: 20,
+                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                  fontSize: 11, color: "rgba(255,255,255,0.6)",
+                }}>
+                  📅 {selectedCandle.displayDate}
+                </div>
+              )}
+              {selectedCandle.donorDisplayName && (
+                <div style={{
+                  padding: "4px 12px", borderRadius: 20,
+                  background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.2)",
+                  fontSize: 11, color: "rgba(212,175,55,0.7)",
+                }}>
+                  🕯 Lit by {selectedCandle.donorDisplayName}
+                </div>
+              )}
+            </div>
+
+            {/* Memorial message */}
+            {selectedCandle.message && (
+              <div style={{
+                padding: "12px 14px", marginBottom: 16,
+                background: "rgba(255,255,255,0.04)", borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.08)",
+                fontSize: 13, color: "rgba(255,255,255,0.65)", fontStyle: "italic", lineHeight: 1.6,
+              }}>
+                "{selectedCandle.message}"
+              </div>
+            )}
+
+            {/* Divider */}
+            <div style={{ height: 1, background: "rgba(212,175,55,0.12)", marginBottom: 14 }} />
+
+            {/* Existing dedications */}
+            {selectedCandle.learners.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.65)", marginBottom: 10 }}>
+                  📖 LEARNING DEDICATIONS ({selectedCandle.learners.length})
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {selectedCandle.learners.map(l => (
+                    <div key={l.id} style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "8px 12px", borderRadius: 10,
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)",
+                    }}>
+                      <div style={{ fontSize: 16, flexShrink: 0 }}>📖</div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>{l.learnerName}</div>
+                        <div style={{ fontSize: 11, color: "rgba(212,175,55,0.65)", marginTop: 1 }}>{l.studySubject}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Dedicate Learning ── */}
+            {!showDedicate && !dedicateSuccess && (
+              <button
+                onClick={() => setShowDedicate(true)}
+                style={{
+                  width: "100%", padding: "13px 0",
+                  background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.35)",
+                  borderRadius: 14, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  color: "rgba(212,175,55,0.9)", fontSize: 13, fontWeight: 800, letterSpacing: "0.04em",
+                }}
+              >
+                <span style={{ fontSize: 16 }}>📖</span>
+                Dedicate Learning in Their Memory
+              </button>
+            )}
+
+            {/* Dedicate form */}
+            {showDedicate && !dedicateSuccess && (
+              <div style={{ animation: "ms-form-slide 0.28s ease-out both" }}>
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.7)", marginBottom: 8 }}>
+                  DEDICATE TORAH STUDY
+                </div>
+
+                <div style={{ marginBottom: 10 }}>
+                  <input
+                    type="text"
+                    placeholder="Your name"
+                    value={dedicateForm.learnerName}
+                    onChange={e => setDedicateForm(p => ({ ...p, learnerName: e.target.value }))}
+                    style={{
+                      width: "100%", padding: "11px 14px", boxSizing: "border-box",
+                      background: "rgba(255,255,255,0.05)", border: "1px solid rgba(212,175,55,0.2)",
+                      borderRadius: 12, color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 6 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", marginBottom: 6 }}>
+                    WHAT ARE YOU STUDYING?
+                  </div>
+                  {/* Quick-select chips */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    {["Mishnah", "Tehillim", "Talmud Bavli", "Daf Yomi", "Torah Portion", "Mishnah Avot", "Gemara", "Sefer Tehillim"].map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setDedicateForm(p => ({ ...p, studySubject: s }))}
+                        style={{
+                          padding: "5px 12px", borderRadius: 16,
+                          background: dedicateForm.studySubject === s ? "rgba(212,175,55,0.3)" : "rgba(255,255,255,0.05)",
+                          border: dedicateForm.studySubject === s ? "1px solid rgba(212,175,55,0.6)" : "1px solid rgba(255,255,255,0.1)",
+                          color: dedicateForm.studySubject === s ? "rgba(212,175,55,0.9)" : "rgba(255,255,255,0.5)",
+                          fontSize: 11, cursor: "pointer", fontFamily: "inherit",
+                        }}
+                      >{s}</button>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Or type a custom subject…"
+                    value={dedicateForm.studySubject}
+                    onChange={e => setDedicateForm(p => ({ ...p, studySubject: e.target.value }))}
+                    style={{
+                      width: "100%", padding: "10px 14px", boxSizing: "border-box",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.15)",
+                      borderRadius: 10, color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                  <button
+                    onClick={() => setShowDedicate(false)}
+                    style={{
+                      flex: 1, padding: "12px 0",
+                      background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 12, color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+                    }}
+                  >Cancel</button>
+                  <button
+                    onClick={handleDedicate}
+                    disabled={dedicateSaving || !dedicateForm.learnerName.trim() || !dedicateForm.studySubject.trim()}
+                    style={{
+                      flex: 2, padding: "12px 0",
+                      background: dedicateSaving || !dedicateForm.learnerName.trim() || !dedicateForm.studySubject.trim()
+                        ? "rgba(212,175,55,0.2)" : "linear-gradient(135deg, #D4AF37, #c9a227)",
+                      border: "none", borderRadius: 12,
+                      fontSize: 13, fontWeight: 900, color: "#1a0f00",
+                      cursor: "pointer", fontFamily: "inherit",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    }}
+                  >
+                    {dedicateSaving ? (
+                      <>
+                        <div style={{ width: 14, height: 14, border: "2px solid rgba(0,0,0,0.2)", borderTop: "2px solid #1a0f00", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                        Dedicating…
+                      </>
+                    ) : <>📖 Dedicate Learning</>}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Dedicate success */}
+            {dedicateSuccess && (
+              <div style={{
+                textAlign: "center", padding: "16px 0",
+                animation: "ms-success-appear 0.5s cubic-bezier(0.34,1.56,0.64,1) both",
+              }}>
+                <div style={{ fontSize: 36, marginBottom: 8 }}>📖</div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: "#D4AF37", marginBottom: 4 }}>Learning Dedicated!</div>
+                <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 16, color: "rgba(212,175,55,0.75)" }}>
+                  יהי זכרם ברוך
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
       )}
 
