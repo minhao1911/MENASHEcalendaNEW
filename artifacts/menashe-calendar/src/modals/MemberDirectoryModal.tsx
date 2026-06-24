@@ -20,6 +20,8 @@ export interface Member {
   aliyahDate?: string;
   status: "pending" | "approved" | "hidden";
   joinedAt: string;
+  avatarEmoji?: string;
+  profilePhotoUrl?: string | null;
 }
 
 const STORAGE_KEY = "menashe-member-directory";
@@ -52,6 +54,30 @@ function avatarBg(name: string): string {
   const colors = ["#1a3050","#2a1a40","#1a2a20","#30200a","#1a1a30","#2a1030","#0f2030","#301020"];
   let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % colors.length;
   return colors[h];
+}
+
+function MemberAvatar({ member, size = 48, radius = 14 }: { member: Member; size?: number; radius?: number }) {
+  const hasPhoto = !!member.profilePhotoUrl;
+  const hasEmoji = member.avatarEmoji && member.avatarEmoji !== "👤";
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: radius, flexShrink: 0,
+      background: hasPhoto || hasEmoji ? "transparent" : avatarBg(member.name),
+      display: "flex", alignItems: "center", justifyContent: "center",
+      overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)",
+    }}>
+      {hasPhoto ? (
+        <img src={member.profilePhotoUrl!} alt={member.name}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : hasEmoji ? (
+        <span style={{ fontSize: size * 0.5 }}>{member.avatarEmoji}</span>
+      ) : (
+        <span style={{ fontSize: size * 0.33, fontWeight: 800, color: "rgba(255,255,255,0.85)", fontFamily: "serif" }}>
+          {initials(member.name)}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function fmtDate(iso: string): string {
@@ -370,9 +396,7 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
               return (
                 <div key={m.id} style={{ padding: 12, borderRadius: 14, background: "var(--card)", border: "1px solid var(--border)" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: avatarBg(m.name), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "rgba(255,255,255,0.85)", fontFamily: "serif" }}>
-                      {initials(m.name)}
-                    </div>
+                    <MemberAvatar member={m} size={40} radius={12} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
                         <span style={{ fontSize: 9, fontWeight: 900, color: statusColor, letterSpacing: ".08em" }}>{m.status.toUpperCase()}</span>
@@ -510,14 +534,7 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
                 }}>
                   {/* Card header */}
                   <div style={{ padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
-                    <div style={{
-                      width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-                      background: avatarBg(m.name), display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 17, fontWeight: 800, color: "rgba(255,255,255,0.85)", fontFamily: "serif",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                    }}>
-                      {initials(m.name)}
-                    </div>
+                    <MemberAvatar member={m} size={48} radius={14} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
                         <span style={{
