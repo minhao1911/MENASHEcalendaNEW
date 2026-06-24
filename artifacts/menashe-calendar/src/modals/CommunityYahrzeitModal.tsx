@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { HDate } from "@hebcal/core";
 import BurningCandle from "../components/BurningCandle";
 import yishaiMemorialBg from "@assets/YISHAI_1782279066718.png";
+import MemorialSanctuaryModal from "./MemorialSanctuaryModal";
 import {
   fetchCommunityYahrzeit,
   createCommunityYahrzeit,
@@ -80,6 +81,7 @@ export default function CommunityYahrzeitModal({ onClose, userName }: Props) {
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showSanctuary, setShowSanctuary] = useState(false);
 
   const [myEntries, setMyEntries] = useState<YartzeitEntryApi[]>([]);
   const [loadingMy, setLoadingMy] = useState(false);
@@ -471,9 +473,9 @@ export default function CommunityYahrzeitModal({ onClose, userName }: Props) {
           ══════════════════════════════════════════════════════════════════ */}
           {view === "board" && (
             <>
-              {/* CTA button */}
+              {/* CTA button — opens sanctuary */}
               <button
-                onClick={() => setView("form")}
+                onClick={() => setShowSanctuary(true)}
                 style={{
                   width: "100%", padding: "16px 20px", marginBottom: 22,
                   background: "linear-gradient(135deg, #D4AF37 0%, #c9a227 40%, #e8c84a 100%)",
@@ -492,7 +494,7 @@ export default function CommunityYahrzeitModal({ onClose, userName }: Props) {
                 }} />
                 <span style={{ fontSize: 20, position: "relative" }}>🕯</span>
                 <span style={{ fontSize: 15, fontWeight: 900, color: "#1a0f00", letterSpacing: "0.04em", position: "relative" }}>
-                  Light Memorial Candle
+                  Enter Memorial Sanctuary
                 </span>
               </button>
 
@@ -809,6 +811,15 @@ export default function CommunityYahrzeitModal({ onClose, userName }: Props) {
 
         </div>
       </div>
+
+      {/* ── Memorial Sanctuary full-screen experience ── */}
+      {showSanctuary && (
+        <MemorialSanctuaryModal
+          onClose={() => { setShowSanctuary(false); load(); }}
+          userName={userName}
+          initialEntries={entries}
+        />
+      )}
     </div>
   );
 }
