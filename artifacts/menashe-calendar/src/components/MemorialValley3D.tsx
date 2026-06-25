@@ -1917,10 +1917,12 @@ interface SceneProps {
 
 function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, selectedId }: SceneProps) {
   const litEntries = useMemo(() => entries.slice(0, ENTRY_POSITIONS.length), [entries]);
+  const ctrlsRef   = useRef<any>(null);
 
   return (
     <>
       <AAACamera />
+      <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlsRef} />
 
       {/* ── Phase 3: Day/night sky dome (renders behind everything) ── */}
       <AAASkyDome />
@@ -2007,6 +2009,7 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
 
       {/* Camera controls — cinematic damping for premium feel */}
       <OrbitControls
+        ref={ctrlsRef}
         enableRotate={false} enablePan={true} enableZoom={true}
         enableDamping dampingFactor={0.06}
         panSpeed={1.2} zoomSpeed={0.85}
@@ -2027,6 +2030,54 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
       />
     </>
   );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: CAMERA FOCUS — smooth pan to selected candle, returns home
+══════════════════════════════════════════════════════════════════════════ */
+const HOME_TARGET = new THREE.Vector3(0, 0, 4);
+
+function AAAFocusCamera({ selectedId, entries, ctrlRef }: {
+  selectedId: string | null;
+  entries: CommunityYahrzeitEntry[];
+  ctrlRef: React.MutableRefObject<any>;
+}) {
+  const animating  = useRef(false);
+  const progress   = useRef(0);
+  const fromTarget = useRef(new THREE.Vector3(0, 0, 4));
+  const toTarget   = useRef(new THREE.Vector3(0, 0, 4));
+
+  useEffect(() => {
+    const ctrl = ctrlRef.current;
+    if (!ctrl) return;
+
+    /* Capture the current target as the start of the animation */
+    fromTarget.current.copy(ctrl.target);
+
+    if (selectedId) {
+      const idx = entries.findIndex(e => e.id === selectedId);
+      if (idx >= 0 && idx < ENTRY_POSITIONS.length) {
+        const [cx, cy, cz] = ENTRY_POSITIONS[idx];
+        toTarget.current.set(cx, cy + 0.5, cz);
+      }
+    } else {
+      toTarget.current.copy(HOME_TARGET);
+    }
+    progress.current = 0;
+    animating.current = true;
+  }, [selectedId, entries, ctrlRef]);
+
+  useFrame((_, delta) => {
+    if (!animating.current || !ctrlRef.current) return;
+    /* Advance progress ~1.4 units/second — full pan in ~0.7 s */
+    progress.current = Math.min(1, progress.current + delta * 1.4);
+    /* Smoothstep: starts slow, accelerates, decelerates */
+    const t = progress.current * progress.current * (3 - 2 * progress.current);
+    ctrlRef.current.target.lerpVectors(fromTarget.current, toTarget.current, t);
+    if (progress.current >= 1) animating.current = false;
+  });
+
+  return null;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
