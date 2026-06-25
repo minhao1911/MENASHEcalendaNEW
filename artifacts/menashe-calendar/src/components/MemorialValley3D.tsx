@@ -45,17 +45,41 @@ const WATER_FRAG = /* glsl */`
   varying vec2  vUv;
   varying vec3  vNormal;
   varying vec3  vWorldPos;
+
+  /* Cheap caustics — overlapping sine grid */
+  float caustics(vec2 uv, float t) {
+    vec2 p  = uv * 14.0;
+    float c = sin(p.x * 1.1 + t * 1.8) * sin(p.y * 0.9 + t * 1.4)
+            + sin((p.x + p.y) * 0.8 + t * 2.1) * 0.5
+            + sin((p.x - p.y) * 1.3 + t * 1.6) * 0.35;
+    return smoothstep(0.6, 1.1, c + 1.0);
+  }
+
   void main() {
     vec3 viewDir = normalize(cameraPosition - vWorldPos);
     float fresnel = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 2.5);
-    vec3 sky = mix(vec3(0.55, 0.72, 0.92), vec3(0.98, 0.75, 0.35), 0.35);
-    vec2 flow = vUv + vec2(uTime * 0.04, uTime * 0.02);
-    float pattern = sin(flow.x * 12.0) * sin(flow.y * 8.0) * 0.03;
-    vec3 col = mix(uDeep, uShallow, fresnel + pattern);
-    col = mix(col, sky, fresnel * 0.55);
-    float foam = smoothstep(0.88, 1.0, abs(sin(vUv.x * 22.0 + uTime) * sin(vUv.y * 18.0 + uTime * 0.7)));
-    col = mix(col, vec3(0.92, 0.96, 1.0), foam * 0.18);
-    gl_FragColor = vec4(col, 0.86 + fresnel * 0.12);
+
+    /* Golden-hour sky colour blended into water surface */
+    vec3 sky = mix(vec3(0.50, 0.68, 0.90), vec3(1.0, 0.72, 0.28), 0.42);
+
+    /* Animated flow pattern */
+    vec2 flow1 = vUv + vec2(uTime * 0.038, uTime * 0.022);
+    vec2 flow2 = vUv - vec2(uTime * 0.024, uTime * 0.018);
+    float pattern = sin(flow1.x * 13.0) * sin(flow1.y * 9.0) * 0.025
+                  + sin(flow2.x * 8.0)  * sin(flow2.y * 11.0) * 0.018;
+
+    /* Caustic shimmer in shallow zones */
+    float caus = caustics(vUv, uTime) * 0.12 * (1.0 - fresnel);
+
+    vec3 col = mix(uDeep, uShallow, fresnel + pattern + caus);
+    col = mix(col, sky, fresnel * 0.58);
+    col += vec3(0.9, 0.75, 0.3) * caus * 0.22; /* warm caustic tint */
+
+    /* Edge foam */
+    float foam = smoothstep(0.85, 1.0, abs(sin(vUv.x * 24.0 + uTime) * sin(vUv.y * 19.0 + uTime * 0.8)));
+    col = mix(col, vec3(0.94, 0.97, 1.0), foam * 0.22);
+
+    gl_FragColor = vec4(col, 0.88 + fresnel * 0.10);
   }
 `;
 
@@ -149,57 +173,122 @@ const ENTRY_POSITIONS = buildEntryPositions();
 /* AAALighting replaced by scene/lighting/GoldenHourLighting — see AAAValleyScene */
 
 /* ══════════════════════════════════════════════════════════════════════════
-   AAA TERRAIN — Terraced Jerusalem hills
+   PHASE 2 TERRAIN — Sculpted valley with vertex colours + natural zones
 ══════════════════════════════════════════════════════════════════════════ */
 function AAATerrain() {
   const mainGeo = useMemo(() => {
-    const g = new THREE.PlaneGeometry(100, 100, 128, 128);
+    const g = new THREE.PlaneGeometry(100, 100, 160, 160);
     g.rotateX(-Math.PI / 2);
     const pos = g.attributes.position!;
-    const r = makeLCG(3);
+    const nr  = makeLCG(3);
+    const cr  = makeLCG(91);
+
+    const colors = new Float32Array(pos.count * 3);
+
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), z = pos.getZ(i);
       const d = Math.sqrt(x * x + z * z);
-      // terraced hills
-      const terrace = Math.floor(d / 8) * 0.55;
-      const blend = (d / 8 - Math.floor(d / 8));
+
+      // Terraced hills + broader rim mountains
+      const terrace    = Math.floor(d / 8) * 0.55;
+      const blend      = d / 8 - Math.floor(d / 8);
       const smoothStep = blend * blend * (3 - 2 * blend);
-      const rim = Math.max(0, (d - 18) / 14);
-      const noise = Math.sin(x * 0.11) * 0.6 + Math.cos(z * 0.15) * 0.5
-                  + Math.sin(x * 0.33 + z * 0.25) * 0.3
-                  + Math.sin(x * 0.72 - z * 0.58) * 0.15;
-      const h = terrace + smoothStep * 0.55 + rim * 5.5 + noise * 0.4 + r() * 0.12;
-      // river valley cut
+      const rim        = Math.max(0, (d - 18) / 14);
+
+      // Layered noise for natural feel
+      const noise =
+        Math.sin(x * 0.11) * 0.65 + Math.cos(z * 0.15) * 0.55
+        + Math.sin(x * 0.33 + z * 0.25) * 0.28
+        + Math.sin(x * 0.72 - z * 0.58) * 0.14
+        + Math.sin(x * 1.4  + z * 0.9)  * 0.07
+        + nr() * 0.1;
+
+      // Cliff faces on north-east rim
+      const cliffAngle = Math.atan2(z, x);
+      const cliffBoost = Math.max(0, Math.sin(cliffAngle + 0.8)) * Math.max(0, (d - 32) / 10) * 2.5;
+
+      const h = terrace + smoothStep * 0.55 + rim * 6.0 + noise * 0.4 + cliffBoost;
+
+      // River valley + natural depression
       const riverDist = Math.abs(x + 4) < 3.5 ? (3.5 - Math.abs(x + 4)) / 3.5 : 0;
-      pos.setY(i, h - riverDist * 1.2);
+      // Secondary depression south-east (garden hollow)
+      const depressionDist = Math.max(0, 1 - Math.sqrt((x - 18) ** 2 + (z - 14) ** 2) / 7) * 0.9;
+      const finalH = h - riverDist * 1.3 - depressionDist;
+      pos.setY(i, finalH);
+
+      // Vertex colours — grass / stone / soil / riverbank
+      const t  = cr();
+      const hN = Math.min(1, Math.max(0, finalH / 4));
+      const cN = Math.max(0, 1 - d / 28);
+
+      // Grass (low, outer)
+      const gR = 0.38 + t * 0.04, gG = 0.54 + t * 0.03, gB = 0.24;
+      // Limestone stone (high)
+      const sR = 0.76, sG = 0.70, sB = 0.58;
+      // Rich soil / garden centre
+      const oR = 0.46, oG = 0.37, oB = 0.25;
+      // River bank (dark moist soil)
+      const rR = 0.28, rG = 0.26, rB = 0.18;
+
+      const riverBlend = riverDist * 0.85;
+      const bf = 1 - riverBlend;
+      const r0 = gR * (1 - hN) * (1 - cN) * bf + sR * hN * bf + oR * cN * bf + rR * riverBlend;
+      const g0 = gG * (1 - hN) * (1 - cN) * bf + sG * hN * bf + oG * cN * bf + rG * riverBlend;
+      const b0 = gB * (1 - hN) * (1 - cN) * bf + sB * hN * bf + oB * cN * bf + rB * riverBlend;
+
+      colors[i * 3]     = r0;
+      colors[i * 3 + 1] = g0;
+      colors[i * 3 + 2] = b0;
     }
+
+    g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     g.computeVertexNormals();
     return g;
   }, []);
 
   return (
     <>
-      {/* Main terrain */}
+      {/* Main terrain — vertex-coloured */}
       <mesh geometry={mainGeo} receiveShadow>
-        <meshStandardMaterial color="#7a8c5a" roughness={0.92} metalness={0.0} />
+        <meshStandardMaterial vertexColors roughness={0.92} metalness={0.0} />
       </mesh>
-      {/* Center sacred ground — lighter stone */}
+
+      {/* Sacred courtyard — pale Jerusalem limestone */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 4]} receiveShadow>
-        <circleGeometry args={[22, 64]} />
-        <meshStandardMaterial color="#a09070" roughness={0.88} metalness={0.02} />
+        <circleGeometry args={[22, 72]} />
+        <meshStandardMaterial color="#b8aa88" roughness={0.84} metalness={0.04} />
       </mesh>
-      {/* Inner grass terrace */}
+
+      {/* Inner garden lawn — lush green */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 4]} receiveShadow>
-        <circleGeometry args={[15, 48]} />
-        <meshStandardMaterial color="#8aaa60" roughness={0.85} metalness={0.0} />
+        <circleGeometry args={[15, 56]} />
+        <meshStandardMaterial color="#6a9448" roughness={0.88} metalness={0.0} />
       </mesh>
-      {/* Terrace walls */}
-      {[8, 14, 20].map((r, i) => (
-        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01 + i * 0.55, 4]}>
-          <ringGeometry args={[r, r + 0.5, 64]} />
-          <meshStandardMaterial color="#c8b890" roughness={0.82} metalness={0.05} />
+
+      {/* Terrace platform caps — broad limestone ledges */}
+      {[8, 14, 20].map((rad, i) => (
+        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02 + i * 0.55, 4]}>
+          <ringGeometry args={[rad, rad + 0.8, 72]} />
+          <meshStandardMaterial color="#ccc0a0" roughness={0.80} metalness={0.05} />
         </mesh>
       ))}
+
+      {/* Stone retaining walls — vertical faces below each terrace */}
+      {[8, 14, 20].map((rad, i) =>
+        Array.from({ length: 48 }, (_, j) => {
+          const a  = (j / 48) * Math.PI * 2;
+          const wx = Math.cos(a) * rad + 0;
+          const wz = Math.sin(a) * rad + 4;
+          return (
+            <mesh key={`${i}-${j}`} position={[wx, 0.28 + i * 0.55, wz]}
+              rotation={[0, a + Math.PI / 2, 0]} castShadow receiveShadow>
+              <boxGeometry args={[0.68, 0.58 + i * 0.08, 0.32]} />
+              <meshStandardMaterial color={i === 0 ? "#c4b898" : i === 1 ? "#bdb0900" : "#b8ac8c"}
+                roughness={0.88} metalness={0.04} />
+            </mesh>
+          );
+        })
+      )}
     </>
   );
 }
@@ -472,33 +561,281 @@ function AAAArchitecture() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   OLIVE TREES — mature, multi-layered canopy
+   PHASE 2 OLIVE TREES — twisted trunks, dense canopy, wind animation
 ══════════════════════════════════════════════════════════════════════════ */
+const TREE_PHASES = TREE_POS.map((_, i) => ((i * 137.5) % 360) * (Math.PI / 180));
+const TREE_SCALES = TREE_POS.map((_, i) => 0.82 + (i % 7) * 0.065);
+
 function AAAOliveTrees() {
-  const trunkGeo = useMemo(() => new THREE.CylinderGeometry(0.12, 0.26, 2.8, 8), []);
-  const canopy1  = useMemo(() => new THREE.SphereGeometry(1.5, 9, 7), []);
-  const canopy2  = useMemo(() => new THREE.SphereGeometry(1.2, 9, 6), []);
-  const canopy3  = useMemo(() => new THREE.SphereGeometry(0.9, 8, 6), []);
+  /* Trunk geometry — 10-sided for a rounder, more natural silhouette */
+  const trunkGeo = useMemo(() => {
+    const g = new THREE.CylinderGeometry(0.10, 0.28, 3.2, 10, 4);
+    /* Twist each vertex to simulate gnarled old-growth trunk */
+    const pos = g.attributes.position!;
+    for (let i = 0; i < pos.count; i++) {
+      const y  = pos.getY(i);
+      const tN = (y + 1.6) / 3.2;
+      const tw = Math.sin(tN * Math.PI * 2.5) * 0.18;
+      pos.setX(i, pos.getX(i) + tw);
+      pos.setZ(i, pos.getZ(i) + Math.cos(tN * Math.PI * 1.8) * 0.12);
+    }
+    g.computeVertexNormals();
+    return g;
+  }, []);
+
+  /* Three canopy tiers — ellipsoid shapes for olive density */
+  const canopyA = useMemo(() => new THREE.SphereGeometry(1.55, 11, 8), []);
+  const canopyB = useMemo(() => new THREE.SphereGeometry(1.25, 10, 7), []);
+  const canopyC = useMemo(() => new THREE.SphereGeometry(0.95, 9,  7), []);
+  const canopyD = useMemo(() => new THREE.SphereGeometry(0.72, 8,  6), []);
+
+  /* Wind refs — animate the three canopy instance groups */
+  const grpA = useRef<THREE.Group>(null!);
+  const grpB = useRef<THREE.Group>(null!);
+  const grpC = useRef<THREE.Group>(null!);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    /* Gentle sway — primary wind direction + small perpendicular gust */
+    const swayX = Math.sin(t * 0.55) * 0.022 + Math.sin(t * 1.3) * 0.008;
+    const swayZ = Math.cos(t * 0.48) * 0.016 + Math.cos(t * 1.1) * 0.006;
+    if (grpA.current) { grpA.current.rotation.x = swayX; grpA.current.rotation.z = swayZ; }
+    if (grpB.current) { grpB.current.rotation.x = swayX * 1.15; grpB.current.rotation.z = swayZ * 1.1; }
+    if (grpC.current) { grpC.current.rotation.x = swayX * 1.3;  grpC.current.rotation.z = swayZ * 1.25; }
+  });
 
   return (
     <>
+      {/* Trunks — static, receive/cast shadows */}
       <Instances geometry={trunkGeo} limit={TREE_POS.length}>
-        <meshStandardMaterial color="#4a3018" roughness={0.95} metalness={0.02} />
-        {TREE_POS.map(([x, z], i) => <Instance key={i} position={[x, 1.4, z]} />)}
+        <meshStandardMaterial color="#3e2a12" roughness={0.96} metalness={0.01} />
+        {TREE_POS.map(([x, z], i) => (
+          <Instance key={i} position={[x, 1.6, z]} scale={TREE_SCALES[i]}
+            rotation={[0, TREE_PHASES[i] * 0.3, 0]} />
+        ))}
       </Instances>
-      <Instances geometry={canopy1} limit={TREE_POS.length}>
-        <meshStandardMaterial color="#3d5e28" roughness={0.88} metalness={0.0} />
-        {TREE_POS.map(([x, z], i) => <Instance key={i} position={[x, 3.8 + (i % 3) * 0.2, z]} />)}
+
+      {/* Canopy tier A — dark base */}
+      <group ref={grpA}>
+        <Instances geometry={canopyA} limit={TREE_POS.length}>
+          <meshStandardMaterial color="#304e1c" roughness={0.90} metalness={0.0} />
+          {TREE_POS.map(([x, z], i) => (
+            <Instance key={i} position={[x, 3.9 + (i % 3) * 0.22, z]}
+              scale={[TREE_SCALES[i], TREE_SCALES[i] * 0.82, TREE_SCALES[i]]}
+              rotation={[0, TREE_PHASES[i], 0]} />
+          ))}
+        </Instances>
+      </group>
+
+      {/* Canopy tier B — mid-green */}
+      <group ref={grpB}>
+        <Instances geometry={canopyB} limit={TREE_POS.length}>
+          <meshStandardMaterial color="#476e2a" roughness={0.87} metalness={0.0} />
+          {TREE_POS.map(([x, z], i) => (
+            <Instance key={i}
+              position={[x + Math.sin(TREE_PHASES[i]) * 0.55, 4.8 + (i % 4) * 0.18, z + Math.cos(TREE_PHASES[i]) * 0.55]}
+              scale={TREE_SCALES[i]}
+              rotation={[0, TREE_PHASES[i] + 0.8, 0]} />
+          ))}
+        </Instances>
+      </group>
+
+      {/* Canopy tier C — bright highlights */}
+      <group ref={grpC}>
+        <Instances geometry={canopyC} limit={TREE_POS.length}>
+          <meshStandardMaterial color="#5d8836" roughness={0.84} metalness={0.0} />
+          {TREE_POS.map(([x, z], i) => (
+            <Instance key={i}
+              position={[x + Math.cos(TREE_PHASES[i] * 1.3) * 0.7, 5.5 + (i % 3) * 0.2, z + Math.sin(TREE_PHASES[i] * 1.3) * 0.7]}
+              scale={TREE_SCALES[i] * 0.9}
+              rotation={[0, TREE_PHASES[i] + 1.6, 0]} />
+          ))}
+        </Instances>
+        {/* Sparse silvery-green top leaves */}
+        <Instances geometry={canopyD} limit={TREE_POS.length}>
+          <meshStandardMaterial color="#7aaa52" roughness={0.82} metalness={0.0} />
+          {TREE_POS.map(([x, z], i) => (
+            <Instance key={i}
+              position={[x + Math.sin(TREE_PHASES[i] * 0.7) * 0.4, 6.2 + (i % 4) * 0.15, z + Math.cos(TREE_PHASES[i] * 0.7) * 0.4]}
+              scale={TREE_SCALES[i] * 0.75}
+              rotation={[0, TREE_PHASES[i] + 2.4, 0]} />
+          ))}
+        </Instances>
+      </group>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 2 MEDITERRANEAN VEGETATION — cypress, lavender, flowers, shrubs
+══════════════════════════════════════════════════════════════════════════ */
+const R_VEG = makeLCG(53);
+const CYPRESS_POS = Array.from({ length: 22 }, () => {
+  const a = R_VEG() * Math.PI * 2, r = 16 + R_VEG() * 18;
+  return [Math.cos(a) * r, Math.sin(a) * r] as [number, number];
+});
+const LAVENDER_BEDS = [
+  { cx: -9, cz: -8,  count: 28, radius: 3.2 },
+  { cx:  9, cz: 12,  count: 28, radius: 3.0 },
+  { cx: -14, cz: 10, count: 22, radius: 2.6 },
+  { cx:  14, cz: -8, count: 22, radius: 2.6 },
+  { cx:  0,  cz: -16, count: 18, radius: 2.2 },
+];
+const R_LAV = makeLCG(61);
+const LAVENDER_PTS = LAVENDER_BEDS.flatMap(bed =>
+  Array.from({ length: bed.count }, () => {
+    const a = R_LAV() * Math.PI * 2, r = R_LAV() * bed.radius;
+    return [bed.cx + Math.cos(a) * r, bed.cz + Math.sin(a) * r] as [number, number];
+  })
+);
+const R_FLOW = makeLCG(79);
+const FLOWER_PTS = Array.from({ length: 90 }, () => {
+  const a = R_FLOW() * Math.PI * 2, r = 6 + R_FLOW() * 22;
+  return [Math.cos(a) * r, Math.sin(a) * r] as [number, number];
+});
+const R_SHRUB = makeLCG(41);
+const SHRUB_POS = Array.from({ length: 35 }, () => {
+  const a = R_SHRUB() * Math.PI * 2, r = 12 + R_SHRUB() * 20;
+  return [Math.cos(a) * r, Math.sin(a) * r] as [number, number];
+});
+
+function AAAMediterraneanVegetation() {
+  /* Cypress tree geometry — tall narrow cone */
+  const cypressBodyGeo = useMemo(() => new THREE.ConeGeometry(0.85, 7.5, 8, 4), []);
+  const cypressTipGeo  = useMemo(() => new THREE.ConeGeometry(0.4,  3.5, 7, 3), []);
+  const cypressRefA    = useRef<THREE.Group>(null!);
+  const cypressRefB    = useRef<THREE.Group>(null!);
+
+  /* Lavender stem geometry — slim elongated lollipop */
+  const lavStemGeo = useMemo(() => new THREE.CylinderGeometry(0.022, 0.03, 0.6, 5), []);
+  const lavHeadGeo = useMemo(() => new THREE.SphereGeometry(0.14, 6, 5), []);
+
+  /* Flower geometry — simple low-poly blooms */
+  const flowerGeo = useMemo(() => new THREE.SphereGeometry(0.18, 6, 5), []);
+
+  /* Shrub geometry — flattened hemisphere */
+  const shrubGeo = useMemo(() => new THREE.SphereGeometry(0.9, 8, 6), []);
+
+  /* Gentle cypress wind sway */
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const sw = Math.sin(t * 0.4) * 0.012 + Math.sin(t * 1.1) * 0.005;
+    if (cypressRefA.current) cypressRefA.current.rotation.z = sw;
+    if (cypressRefB.current) cypressRefB.current.rotation.x = sw * 0.7;
+  });
+
+  return (
+    <>
+      {/* Cypress trees — tall dark sentinels */}
+      <group ref={cypressRefA}>
+        <Instances geometry={cypressBodyGeo} limit={CYPRESS_POS.length}>
+          <meshStandardMaterial color="#1e3a1a" roughness={0.92} metalness={0.0} />
+          {CYPRESS_POS.map(([x, z], i) => (
+            <Instance key={i} position={[x, 3.75, z]}
+              scale={[0.7 + (i % 5) * 0.08, 0.85 + (i % 4) * 0.07, 0.7 + (i % 3) * 0.06]}
+              rotation={[0, (i * 47) * Math.PI / 180, 0]} />
+          ))}
+        </Instances>
+      </group>
+      <group ref={cypressRefB}>
+        <Instances geometry={cypressTipGeo} limit={CYPRESS_POS.length}>
+          <meshStandardMaterial color="#264a20" roughness={0.90} metalness={0.0} />
+          {CYPRESS_POS.map(([x, z], i) => (
+            <Instance key={i} position={[x, 7.5 + (i % 3) * 0.3, z]}
+              scale={[0.6 + (i % 5) * 0.07, 0.9 + (i % 4) * 0.06, 0.6 + (i % 3) * 0.06]}
+              rotation={[0, (i * 47 + 20) * Math.PI / 180, 0]} />
+          ))}
+        </Instances>
+      </group>
+
+      {/* Lavender stems */}
+      <Instances geometry={lavStemGeo} limit={LAVENDER_PTS.length}>
+        <meshStandardMaterial color="#6b8040" roughness={0.9} metalness={0.0} />
+        {LAVENDER_PTS.map(([x, z], i) => (
+          <Instance key={i} position={[x + (i % 3 - 1) * 0.12, 0.3, z + (i % 2 - 0.5) * 0.1]} />
+        ))}
       </Instances>
-      <Instances geometry={canopy2} limit={TREE_POS.length}>
-        <meshStandardMaterial color="#4d7032" roughness={0.85} metalness={0.0} />
-        {TREE_POS.map(([x, z], i) => <Instance key={i} position={[x + (i % 3 - 1) * 0.6, 4.6 + (i % 4) * 0.15, z + (i % 2 - 0.5) * 0.6]} />)}
+      {/* Lavender flower heads — purple */}
+      <Instances geometry={lavHeadGeo} limit={LAVENDER_PTS.length}>
+        <meshStandardMaterial color="#8868b0" roughness={0.82} metalness={0.0}
+          emissive={new THREE.Color("#3a2560")} emissiveIntensity={0.18} />
+        {LAVENDER_PTS.map(([x, z], i) => (
+          <Instance key={i} position={[x + (i % 3 - 1) * 0.12, 0.65, z + (i % 2 - 0.5) * 0.1]}
+            scale={[1, 1.6, 1]} />
+        ))}
       </Instances>
-      <Instances geometry={canopy3} limit={TREE_POS.length}>
-        <meshStandardMaterial color="#5e8240" roughness={0.84} metalness={0.0} />
-        {TREE_POS.map(([x, z], i) => <Instance key={i} position={[x + (i % 2 - 0.5) * 0.8, 5.3 + (i % 3) * 0.2, z + (i % 3 - 1) * 0.5]} />)}
+
+      {/* White flowers — scattered across garden zones */}
+      <Instances geometry={flowerGeo} limit={FLOWER_PTS.length}>
+        <meshStandardMaterial color="#f0ede8" roughness={0.75} metalness={0.0}
+          emissive={new THREE.Color("#e8d8b8")} emissiveIntensity={0.12} />
+        {FLOWER_PTS.map(([x, z], i) => (
+          <Instance key={i} position={[x, 0.22 + (i % 3) * 0.04, z]}
+            scale={0.6 + (i % 5) * 0.08}
+            rotation={[0, (i * 83) * Math.PI / 180, 0]} />
+        ))}
+      </Instances>
+
+      {/* Mediterranean shrubs — low rounded bushes */}
+      <Instances geometry={shrubGeo} limit={SHRUB_POS.length}>
+        <meshStandardMaterial color="#4a6830" roughness={0.88} metalness={0.0} />
+        {SHRUB_POS.map(([x, z], i) => (
+          <Instance key={i} position={[x, 0.45, z]}
+            scale={[0.9 + (i % 4) * 0.14, 0.58 + (i % 3) * 0.06, 0.9 + (i % 5) * 0.1]}
+            rotation={[0, (i * 61) * Math.PI / 180, 0]} />
+        ))}
       </Instances>
     </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 2 POLLEN PARTICLES — floating Mediterranean pollen + dust motes
+══════════════════════════════════════════════════════════════════════════ */
+function AAAPollenParticles() {
+  const N       = 220;
+  const ref     = useRef<THREE.InstancedMesh>(null!);
+  const dum     = useMemo(() => new THREE.Object3D(), []);
+  const pts     = useMemo(() => {
+    const rp = makeLCG(33);
+    return Array.from({ length: N }, () => ({
+      x:   (rp() - 0.5) * 52,
+      y:   rp() * 10 + 0.4,
+      z:   (rp() - 0.5) * 52,
+      sp:  0.08 + rp() * 0.18,
+      ph:  rp() * Math.PI * 2,
+      dr:  (rp() - 0.5) * 0.6,   // horizontal drift speed
+      sc:  0.018 + rp() * 0.025, // size
+    }));
+  }, []);
+
+  useFrame(({ clock }, delta) => {
+    const t = clock.getElapsedTime();
+    pts.forEach((p, i) => {
+      /* Lazy upward drift with gentle horizontal swirl */
+      const yPos = ((p.y + t * p.sp) % 12) + 0.3;
+      const xPos = p.x + Math.sin(t * 0.22 + p.ph) * 2.2 + p.dr * delta * 18;
+      const zPos = p.z + Math.cos(t * 0.18 + p.ph * 1.3) * 1.8;
+      dum.position.set(xPos, yPos, zPos);
+      const sc = p.sc * (0.85 + Math.sin(t * p.sp * 3 + p.ph) * 0.15);
+      dum.scale.setScalar(sc);
+      dum.updateMatrix();
+      ref.current.setMatrixAt(i, dum.matrix);
+    });
+    ref.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, N]}>
+      <sphereGeometry args={[1, 4, 3]} />
+      <meshStandardMaterial
+        color="#f0e060"
+        emissive={new THREE.Color("#b89800")}
+        emissiveIntensity={1.4}
+        transparent opacity={0.52}
+        depthWrite={false}
+      />
+    </instancedMesh>
   );
 }
 
@@ -934,7 +1271,8 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
 
       {/* ── Phase 1 Foundation: lighting + environment + perf ── */}
       <GoldenHourLighting animate shadowMapSize={2048} shadows />
-      <SceneEnvironment fogColor="#ddc480" fogDensity={0.0055} envIntensity={0.45} />
+      {/* Phase 2 atmosphere: denser warm haze, richer IBL */}
+      <SceneEnvironment fogColor="#d4a85a" fogDensity={0.0068} envIntensity={0.55} />
       <ScenePerf position="top-left" />
 
       {/* Ground & terrain */}
@@ -958,6 +1296,9 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
 
       {/* Trees */}
       <AAAOliveTrees />
+
+      {/* Phase 2: Mediterranean vegetation */}
+      <AAAMediterraneanVegetation />
 
       {/* Benches */}
       <AAAStoneBenches />
@@ -987,6 +1328,9 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
       <AAAFloatingLanterns />
       <AAAGoldenDust />
       <AAAMovingClouds />
+
+      {/* Phase 2: Pollen + dust motes */}
+      <AAAPollenParticles />
 
       {/* Ground click */}
       <GroundClickPlane onGroundClick={onGroundClick} />
