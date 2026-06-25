@@ -407,6 +407,43 @@ export interface Translations {
   chatCopied: string;
   chatSuggestLabel: string;
   chatSuggestedQuestions: string[];
+
+  /* ── Memorial Sanctuary ── */
+  memTitle: string;
+  memSubtitle: string;
+  memEnteringSanctuary: string;
+  memSearchPlaceholder: string;
+  memGoldenHour: string;
+  memCandlesLit: string;
+  memInLovingMemory: string;
+  memNavHome: string;
+  memNavMemorials: string;
+  memHintDrag: string;
+  memHintPinch: string;
+  memHintTap: string;
+  memLightCandle: string;
+  memLightCandleSub: string;
+  memFullName: string;
+  memFullNamePlaceholder: string;
+  memHebrewName: string;
+  memDateOfPassing: string;
+  memMemorialMessage: string;
+  memMessagePlaceholder: string;
+  memLightingCandle: string;
+  memLightTheCandle: string;
+  memCandleLit: string;
+  memMemoryBlessing: string;
+  memDedicatedLearning: string;
+  memLeaveTribute: string;
+  memYourName: string;
+  memStudySubject: string;
+  memSubmitting: string;
+  memDedicate: string;
+  memTributeRecorded: string;
+  memNoResults: string;
+  memClearSearch: string;
+  memCandlesCount: string;
+  memLitBy: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -801,6 +838,43 @@ export const en: Translations = {
     "Tell me about the Bnei Menashe community",
     "What are the Zmanim for prayer?",
   ],
+
+  /* ── Memorial Sanctuary ── */
+  memTitle: "COMMUNITY MEMORIAL",
+  memSubtitle: "A Valley of Remembrance & Love",
+  memEnteringSanctuary: "Entering the Sanctuary",
+  memSearchPlaceholder: "Search for a loved one...",
+  memGoldenHour: "Golden Hour",
+  memCandlesLit: "Candles Lit",
+  memInLovingMemory: "In Loving Memory",
+  memNavHome: "Home",
+  memNavMemorials: "Memorials",
+  memHintDrag: "Drag to pan",
+  memHintPinch: "Pinch to zoom",
+  memHintTap: "Tap to light candle",
+  memLightCandle: "Light a Candle",
+  memLightCandleSub: "Honor a loved one in the sanctuary",
+  memFullName: "FULL NAME",
+  memFullNamePlaceholder: "Name of the departed",
+  memHebrewName: "HEBREW NAME",
+  memDateOfPassing: "DATE OF PASSING",
+  memMemorialMessage: "MEMORIAL MESSAGE",
+  memMessagePlaceholder: "Share a memory or blessing...",
+  memLightingCandle: "Lighting candle…",
+  memLightTheCandle: "Light the Candle",
+  memCandleLit: "Candle Lit",
+  memMemoryBlessing: "May their memory be a blessing",
+  memDedicatedLearning: "DEDICATED LEARNING",
+  memLeaveTribute: "Leave a Tribute",
+  memYourName: "YOUR NAME",
+  memStudySubject: "SUBJECT OF STUDY",
+  memSubmitting: "Submitting…",
+  memDedicate: "Dedicate",
+  memTributeRecorded: "Tribute recorded — may it be for a blessing",
+  memNoResults: "No memorials found",
+  memClearSearch: "Clear search",
+  memCandlesCount: "candles",
+  memLitBy: "LIT BY",
 };
 
 /* ──────────────────────────────────────────────────────────────
