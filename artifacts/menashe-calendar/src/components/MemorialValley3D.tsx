@@ -189,6 +189,40 @@ function interpCycleColor(t: number, kfs: ColorKF[]) {
   return { r: lo.r + (hi.r - lo.r) * s, g: lo.g + (hi.g - lo.g) * s, b: lo.b + (hi.b - lo.b) * s };
 }
 
+/* ── Phase 3 seeded data ──────────────────────────────────────────────────── */
+const R_BIRD  = makeLCG(83);
+const BIRDS   = Array.from({ length: 7 }, () => ({
+  radius: 22 + R_BIRD() * 18, height: 28 + R_BIRD() * 12,
+  speed:  0.050 + R_BIRD() * 0.040, phase: R_BIRD() * Math.PI * 2,
+  flapSp: 2.0 + R_BIRD() * 1.4,    flapAm: 0.38 + R_BIRD() * 0.18,
+  zOff:   (R_BIRD() - 0.5) * 10,
+}));
+
+const R_BUTT  = makeLCG(59);
+const BFLIES  = Array.from({ length: 10 }, () => {
+  const v = R_BUTT();
+  return {
+    x: (R_BUTT() - 0.5) * 24, z: (R_BUTT() - 0.5) * 24, y: 0.55 + R_BUTT() * 1.0,
+    speed: 0.22 + R_BUTT() * 0.28, radius: 0.9 + R_BUTT() * 1.6,
+    phase: R_BUTT() * Math.PI * 2,  flapSp: 5.5 + R_BUTT() * 4.5,
+    col: v > 0.62 ? "#f0b030" : v > 0.32 ? "#cc58c0" : "#58a0e0",
+  };
+});
+
+const R_LEAF  = makeLCG(73);
+const LEAF_D  = Array.from({ length: 55 }, () => ({
+  x: (R_LEAF() - 0.5) * 46, y: 3 + R_LEAF() * 9, z: (R_LEAF() - 0.5) * 46,
+  sp: 0.18 + R_LEAF() * 0.34, dr: (R_LEAF() - 0.5) * 0.45,
+  sn: (R_LEAF() - 0.5) * 2.2, ph: R_LEAF() * Math.PI * 2, sc: 0.10 + R_LEAF() * 0.11,
+}));
+
+const R_GRASS = makeLCG(89);
+const GRASS   = Array.from({ length: 200 }, () => ({
+  x: (R_GRASS() - 0.5) * 22, z: (R_GRASS() - 0.5) * 22,
+  h: 0.22 + R_GRASS() * 0.18, w: 0.045 + R_GRASS() * 0.04,
+  ph: R_GRASS() * Math.PI * 2, tilt: (R_GRASS() - 0.5) * 0.35,
+}));
+
 /* ── Position generators ──────────────────────────────────────────────────── */
 const R_TREE   = makeLCG(17);
 const TREE_POS = Array.from({ length: 70 }, () => {
@@ -1075,33 +1109,72 @@ function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted }: 
   animOffset: number; onCandleClick: (e: CommunityYahrzeitEntry) => void; highlighted: boolean;
 }) {
   const flameUniforms = useRef({ uTime: { value: 0 }, uOffset: { value: animOffset } });
-  const lightRef = useRef<THREE.PointLight>(null!);
-  const grpRef   = useRef<THREE.Group>(null!);
+  const lightRef  = useRef<THREE.PointLight>(null!);
+  const grpRef    = useRef<THREE.Group>(null!);
+  const ring1Ref  = useRef<THREE.Mesh>(null!);
+  const ring2Ref  = useRef<THREE.Mesh>(null!);
+  const ring1Mat  = useRef<THREE.MeshStandardMaterial>(null!);
+  const ring2Mat  = useRef<THREE.MeshStandardMaterial>(null!);
 
   useFrame(({ clock }) => {
-    flameUniforms.current.uTime.value = clock.getElapsedTime();
-    if (lightRef.current) lightRef.current.intensity = 1.2 + Math.sin(clock.getElapsedTime() * 5.5 + animOffset) * 0.55;
-    if (grpRef.current && highlighted) grpRef.current.position.y = pos[1] + Math.sin(clock.getElapsedTime() * 2.1) * 0.05;
+    const t = clock.getElapsedTime();
+    flameUniforms.current.uTime.value = t;
+    /* Candle flicker */
+    if (lightRef.current) {
+      lightRef.current.intensity = (highlighted ? 3.2 : 1.4) + Math.sin(t * 5.5 + animOffset) * 0.6
+        + Math.sin(t * 12.3 + animOffset * 0.7) * 0.2;
+    }
+    /* Vertical float when highlighted */
+    if (grpRef.current && highlighted) {
+      grpRef.current.position.y = pos[1] + Math.sin(t * 2.0) * 0.06;
+    }
+    /* Pulsing rings — two rings at different phases */
+    if (highlighted && ring1Ref.current && ring2Ref.current) {
+      const p1 = (t * 0.9 + animOffset) % 1;
+      const p2 = (t * 0.9 + animOffset + 0.5) % 1;
+      const s1 = 0.8 + p1 * 0.9, s2 = 0.8 + p2 * 0.9;
+      ring1Ref.current.scale.setScalar(s1);
+      ring2Ref.current.scale.setScalar(s2);
+      if (ring1Mat.current) ring1Mat.current.opacity = (1 - p1) * 0.75;
+      if (ring2Mat.current) ring2Mat.current.opacity = (1 - p2) * 0.75;
+    }
   });
 
   const shortName = entry.deceasedName.split("·")[0].trim();
 
   return (
     <group ref={grpRef} position={pos} onClick={e => { e.stopPropagation(); onCandleClick(entry); }}>
+      {/* Invisible click target */}
       <mesh>
         <cylinderGeometry args={[0.7, 0.7, 1.8, 8]} />
         <meshStandardMaterial transparent opacity={0} />
       </mesh>
+
+      {/* Pulsing golden rings when highlighted */}
       {highlighted && (
-        <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.4, 0.6, 24]} />
-          <meshStandardMaterial color="#D4AF37" emissive={new THREE.Color("#D4AF37")} emissiveIntensity={2.5} transparent opacity={0.8} />
-        </mesh>
+        <>
+          <mesh ref={ring1Ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+            <ringGeometry args={[0.36, 0.52, 28]} />
+            <meshStandardMaterial ref={ring1Mat} color="#D4AF37"
+              emissive={new THREE.Color("#D4AF37")} emissiveIntensity={2.8}
+              transparent opacity={0.8} depthWrite={false} />
+          </mesh>
+          <mesh ref={ring2Ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+            <ringGeometry args={[0.36, 0.52, 28]} />
+            <meshStandardMaterial ref={ring2Mat} color="#ffcc44"
+              emissive={new THREE.Color("#ffcc44")} emissiveIntensity={2.2}
+              transparent opacity={0.5} depthWrite={false} />
+          </mesh>
+        </>
       )}
+
+      {/* Wax body */}
       <mesh position={[0, 0.28, 0]} castShadow>
         <cylinderGeometry args={[0.12, 0.15, 0.56, 10]} />
-        <meshStandardMaterial color="#f5edd0" roughness={0.55} metalness={0} />
+        <meshStandardMaterial color="#f5edd0" roughness={0.52} metalness={0.02} />
       </mesh>
+
+      {/* Shader flame */}
       <mesh position={[0, 0.68, 0]}>
         <coneGeometry args={[0.1, 0.28, 10, 1, true]} />
         <shaderMaterial
@@ -1111,7 +1184,9 @@ function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted }: 
           transparent depthWrite={false} side={THREE.DoubleSide}
         />
       </mesh>
+
       <pointLight ref={lightRef} color="#ff9933" intensity={1.4} distance={5} decay={2} />
+
       <Text position={[0, 1.08, 0]} fontSize={0.13} color="#ffd988" anchorX="center" maxWidth={2.2}>
         {shortName.length > 16 ? shortName.slice(0, 15) + "…" : shortName}
       </Text>
@@ -1309,6 +1384,253 @@ function AAACamera() {
   const { camera } = useThree();
   useEffect(() => { camera.position.set(22, 28, 22); camera.lookAt(0, 0, 4); }, [camera]);
   return null;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: BIRD FLOCK — 7 birds soaring, lazy circles, flapping wings
+══════════════════════════════════════════════════════════════════════════ */
+function AAABirdFlock() {
+  const groupRef = useRef<THREE.Group>(null!);
+  const wingGeo  = useMemo(() => {
+    const g = new THREE.PlaneGeometry(1.15, 0.30, 2, 1);
+    const pos = g.attributes.position!;
+    for (let i = 0; i < pos.count; i++) {
+      /* Dihedral — outer edge tilts up */
+      pos.setY(i, pos.getY(i) + Math.abs(pos.getX(i)) * 0.18);
+    }
+    g.computeVertexNormals();
+    return g;
+  }, []);
+  const bodyGeo = useMemo(() => new THREE.SphereGeometry(0.09, 6, 4), []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    BIRDS.forEach((b, i) => {
+      const g = groupRef.current?.children[i] as THREE.Group;
+      if (!g) return;
+      const a = b.phase + t * b.speed;
+      g.position.set(
+        Math.cos(a) * b.radius,
+        b.height + Math.sin(t * 0.14 + b.phase) * 1.8,
+        Math.sin(a) * b.radius + b.zOff,
+      );
+      g.rotation.y = -a - Math.PI / 2 + Math.sin(t * 0.36 + b.phase) * 0.1;
+      g.rotation.z = Math.sin(t * 0.32 + b.phase) * 0.07; // banking
+      const flap = Math.sin(t * b.flapSp + b.phase) * b.flapAm;
+      const lw = g.children[0] as THREE.Mesh, rw = g.children[1] as THREE.Mesh;
+      if (lw) lw.rotation.z =  flap;
+      if (rw) rw.rotation.z = -flap;
+    });
+  });
+
+  return (
+    <group ref={groupRef}>
+      {BIRDS.map((_, i) => (
+        <group key={i}>
+          <mesh geometry={wingGeo} position={[-0.62, 0, 0]}>
+            <meshStandardMaterial color="#28200e" roughness={0.9} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh geometry={wingGeo} position={[0.62, 0, 0]} scale={[-1, 1, 1]}>
+            <meshStandardMaterial color="#28200e" roughness={0.9} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh geometry={bodyGeo}>
+            <meshStandardMaterial color="#221a0a" roughness={0.9} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: BUTTERFLIES — 10 wing-flapping creatures near the flowers
+══════════════════════════════════════════════════════════════════════════ */
+function AAAButterflies() {
+  const groupRef = useRef<THREE.Group>(null!);
+  const wingGeo  = useMemo(() => new THREE.PlaneGeometry(0.20, 0.15), []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    BFLIES.forEach((bf, i) => {
+      const g = groupRef.current?.children[i] as THREE.Group;
+      if (!g) return;
+      g.position.set(
+        bf.x + Math.sin(t * bf.speed + bf.phase) * bf.radius,
+        bf.y + Math.sin(t * 0.85 + bf.phase * 1.3) * 0.22,
+        bf.z + Math.cos(t * bf.speed * 0.65 + bf.phase) * bf.radius * 0.55,
+      );
+      g.rotation.y = t * bf.speed * 0.4 + bf.phase;
+      const flap = Math.sin(t * bf.flapSp) * 0.78;
+      const lw = g.children[0] as THREE.Mesh, rw = g.children[1] as THREE.Mesh;
+      if (lw) lw.rotation.y =  flap;
+      if (rw) rw.rotation.y = -flap;
+    });
+  });
+
+  return (
+    <group ref={groupRef}>
+      {BFLIES.map((bf, i) => (
+        <group key={i}>
+          <mesh geometry={wingGeo} position={[-0.11, 0, 0]}>
+            <meshStandardMaterial color={bf.col} transparent opacity={0.76}
+              side={THREE.DoubleSide} roughness={0.62}
+              emissive={new THREE.Color(bf.col)} emissiveIntensity={0.18} />
+          </mesh>
+          <mesh geometry={wingGeo} position={[0.11, 0, 0]}>
+            <meshStandardMaterial color={bf.col} transparent opacity={0.76}
+              side={THREE.DoubleSide} roughness={0.62}
+              emissive={new THREE.Color(bf.col)} emissiveIntensity={0.18} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: DRIFTING LEAVES — 55 autumn leaves falling and spinning
+══════════════════════════════════════════════════════════════════════════ */
+function AAADriftingLeaves() {
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  const dum = useMemo(() => new THREE.Object3D(), []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    LEAF_D.forEach((lf, i) => {
+      const yRaw = ((lf.y - t * lf.sp) % 11) + 0.1;
+      const yPos = yRaw < 0 ? yRaw + 11 : yRaw;
+      dum.position.set(
+        lf.x + Math.sin(t * 0.26 + lf.ph) * 1.8 + lf.dr * t * 0.3,
+        Math.max(0.08, yPos),
+        lf.z + Math.cos(t * 0.20 + lf.ph * 1.1) * 1.5,
+      );
+      dum.rotation.set(
+        Math.sin(t * lf.sn + lf.ph) * Math.PI,
+        t * lf.sn * 0.55,
+        Math.cos(t * lf.sn * 0.6) * Math.PI,
+      );
+      dum.scale.setScalar(lf.sc);
+      dum.updateMatrix();
+      ref.current.setMatrixAt(i, dum.matrix);
+    });
+    ref.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, 55]}>
+      <planeGeometry args={[1, 1.15]} />
+      <meshStandardMaterial color="#b04c20" roughness={0.88} side={THREE.DoubleSide}
+        transparent opacity={0.84} depthWrite={false} />
+    </instancedMesh>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: WATERFALL MIST — floating mist particles at waterfall bases
+══════════════════════════════════════════════════════════════════════════ */
+function AAAWaterfallMist({ position }: { position: [number, number, number] }) {
+  const N   = 20;
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  const dum = useMemo(() => new THREE.Object3D(), []);
+  const pts = useMemo(() => {
+    const r = makeLCG(71 + Math.round(position[0] * 7 + position[2] * 3));
+    return Array.from({ length: N }, () => ({
+      dx: (r() - 0.5) * 2.6, dz: (r() - 0.5) * 1.8,
+      sp: 0.32 + r() * 0.42,  ph: r() * Math.PI * 2, sc: 0.32 + r() * 0.72,
+    }));
+  }, [position]);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    pts.forEach((p, i) => {
+      const y = ((p.ph + t * p.sp) % 3.2);
+      dum.position.set(
+        position[0] + p.dx + Math.sin(t * 0.5 + p.ph) * 0.35,
+        position[1] + y * 0.45,
+        position[2] + p.dz + Math.cos(t * 0.42 + p.ph) * 0.3,
+      );
+      dum.scale.setScalar(p.sc * (1 + y * 0.55));
+      dum.updateMatrix();
+      ref.current.setMatrixAt(i, dum.matrix);
+    });
+    ref.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, N]}>
+      <sphereGeometry args={[0.36, 5, 4]} />
+      <meshStandardMaterial color="#d8eef8" transparent opacity={0.11} depthWrite={false} />
+    </instancedMesh>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: GRASS BLADES — 200 wind-swaying grass blades
+══════════════════════════════════════════════════════════════════════════ */
+function AAAGrassBlades() {
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  const dum = useMemo(() => new THREE.Object3D(), []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    GRASS.forEach((g, i) => {
+      const sway = Math.sin(t * 0.75 + g.ph) * 0.18 + Math.sin(t * 1.35 + g.ph * 1.4) * 0.07;
+      dum.position.set(g.x, g.h * 0.5, g.z);
+      dum.rotation.set(0, g.ph, sway + g.tilt);
+      dum.scale.set(g.w, g.h, g.w);
+      dum.updateMatrix();
+      ref.current.setMatrixAt(i, dum.matrix);
+    });
+    ref.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, 200]}>
+      <planeGeometry args={[1, 1]} />
+      <meshStandardMaterial color="#548030" roughness={0.88} side={THREE.DoubleSide}
+        transparent opacity={0.88} />
+    </instancedMesh>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: CANDLE SMOKE — subtle wisps drifting above flame clusters
+══════════════════════════════════════════════════════════════════════════ */
+function AAACandleSmoke() {
+  /* Sample positions near entry candles + altar area */
+  const smkPos = useMemo(() => {
+    const pts: [number, number, number][] = [];
+    /* Altar area */
+    const ra = makeLCG(19);
+    for (let i = 0; i < 6; i++) pts.push([(ra() - 0.5) * 3.5, 3.6, (ra() - 0.5) * 3]);
+    /* First 28 entry candle positions */
+    ENTRY_POSITIONS.slice(0, 28).forEach(([x, y, z]) => pts.push([x, y + 0.9, z]));
+    return pts;
+  }, []);
+  const N   = smkPos.length;
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  const dum = useMemo(() => new THREE.Object3D(), []);
+  const ph  = useMemo(() => smkPos.map((_, i) => (i * 0.41) % (Math.PI * 2)), [smkPos]);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    smkPos.forEach(([x, y, z], i) => {
+      const rise = ((ph[i] + t * 0.38) % 2.0);
+      const drift = Math.sin(t * 0.28 + ph[i]) * 0.12;
+      dum.position.set(x + drift, y + rise * 0.7, z + drift * 0.6);
+      dum.scale.setScalar(0.07 + rise * 0.10);
+      dum.updateMatrix();
+      ref.current.setMatrixAt(i, dum.matrix);
+    });
+    ref.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, N]}>
+      <sphereGeometry args={[1, 5, 4]} />
+      <meshStandardMaterial color="#c8c0b8" transparent opacity={0.055} depthWrite={false} />
+    </instancedMesh>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1668,13 +1990,26 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
       {/* Phase 2: Pollen + dust motes */}
       <AAAPollenParticles />
 
+      {/* ── Phase 3: Living sanctuary elements ── */}
+      <AAABirdFlock />
+      <AAAButterflies />
+      <AAADriftingLeaves />
+      <AAAGrassBlades />
+      <AAACandleSmoke />
+
+      {/* Phase 3: Waterfall mist at each waterfall base */}
+      <AAAWaterfallMist position={[-18, 3.8, -8]} />
+      <AAAWaterfallMist position={[16, 3.2, 14]} />
+      <AAAWaterfallMist position={[-4, 2.8, -20]} />
+
       {/* Ground click */}
       <GroundClickPlane onGroundClick={onGroundClick} />
 
-      {/* Camera controls */}
+      {/* Camera controls — cinematic damping for premium feel */}
       <OrbitControls
         enableRotate={false} enablePan={true} enableZoom={true}
-        panSpeed={1.4} zoomSpeed={0.9}
+        enableDamping dampingFactor={0.06}
+        panSpeed={1.2} zoomSpeed={0.85}
         minDistance={8} maxDistance={65}
         mouseButtons={{ LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
         touches={{ ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN }}
