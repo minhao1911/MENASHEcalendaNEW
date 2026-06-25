@@ -6,3 +6,4 @@
 - [Mobile metro @/ alias](mobile-metro-alias.md) — Expo SDK 54 getDefaultConfig() handles tsconfig @/* paths; do NOT add resolver.alias (breaks require.context)
 - [Mobile auth guard pattern](mobile-auth-guard.md) — never gate tabs on custom AsyncStorage keys; Clerk isSignedIn in _layout.tsx is the single auth gate
 - [Clerk web native stubs](clerk-web-native-stubs.md) — Metro resolveRequest must intercept by RESOLVED file path, not module name, when unstable_enablePackageExports is on
+- [r3f-perf crashes R3F canvas](r3f-perf-crash.md) — ScenePerf / r3f-perf Perf component breaks R3F reconciler every frame; never use it in MemorialValley3D

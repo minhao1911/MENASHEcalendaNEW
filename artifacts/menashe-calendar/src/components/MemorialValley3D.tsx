@@ -8,7 +8,7 @@ import {
   GoldenHourLighting,
   PostProcessingPipeline,
   SceneEnvironment,
-  ScenePerf,
+
 } from "../scene";
 
 /* ── LCG seeded deterministic random ──────────────────────────────────────── */
@@ -1933,7 +1933,6 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
       <DayNightLighting />
       {/* SceneEnvironment sets initial fog + env map; AAASkyDome overrides fog each frame */}
       <SceneEnvironment fogColor="#d4a85a" fogDensity={0.007} envIntensity={0.55} />
-      <ScenePerf position="top-left" />
 
       {/* Ground & terrain */}
       <AAATerrain />
