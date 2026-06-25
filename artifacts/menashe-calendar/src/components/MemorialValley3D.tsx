@@ -116,6 +116,79 @@ const FLAME_FRAG = /* glsl */`
   }
 `;
 
+/* ── Sky dome shaders ─────────────────────────────────────────────────────── */
+const SKY_VERT = /* glsl */`
+  varying vec3 vWorldDir;
+  void main() {
+    vWorldDir = normalize((modelMatrix * vec4(position, 0.0)).xyz);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+const SKY_FRAG = /* glsl */`
+  uniform vec3  uZenith;
+  uniform vec3  uHorizon;
+  uniform vec3  uSunGlow;
+  uniform vec3  uSunDir;
+  uniform float uSunStr;
+  varying vec3  vWorldDir;
+  void main() {
+    vec3 d  = normalize(vWorldDir);
+    float h = max(0.0, d.y);
+    vec3  sky = mix(uHorizon, uZenith, pow(h, 0.52));
+    /* Sun disc + halo */
+    float sd   = dot(d, normalize(uSunDir));
+    float disc = smoothstep(0.994, 0.999, sd) * uSunStr;
+    float halo = smoothstep(0.60,  0.994, sd) * uSunStr * 0.28;
+    sky = mix(sky, uSunGlow, disc + halo);
+    gl_FragColor = vec4(sky, 1.0);
+  }
+`;
+
+/* ── Day/night cycle constants ────────────────────────────────────────────── */
+const CYCLE_DURATION = 120; // seconds per full day/night loop
+
+interface ColorKF { t: number; r: number; g: number; b: number }
+
+/* Keyframe stops:  0=golden  0.20=sunset  0.35=dusk  0.50=night  0.70=predawn  0.85=dawn  1.0=golden */
+const FOG_KF: ColorKF[] = [
+  { t: 0.00, r: 0.831, g: 0.659, b: 0.353 },
+  { t: 0.20, r: 0.752, g: 0.376, b: 0.157 },
+  { t: 0.35, r: 0.188, g: 0.094, b: 0.282 },
+  { t: 0.50, r: 0.039, g: 0.039, b: 0.118 },
+  { t: 0.70, r: 0.063, g: 0.094, b: 0.196 },
+  { t: 0.85, r: 0.545, g: 0.251, b: 0.118 },
+  { t: 1.00, r: 0.831, g: 0.659, b: 0.353 },
+];
+const SKY_ZENITH_KF: ColorKF[] = [
+  { t: 0.00, r: 0.29, g: 0.49, b: 0.82 },
+  { t: 0.20, r: 0.20, g: 0.12, b: 0.38 },
+  { t: 0.35, r: 0.07, g: 0.04, b: 0.18 },
+  { t: 0.50, r: 0.01, g: 0.01, b: 0.06 },
+  { t: 0.70, r: 0.02, g: 0.03, b: 0.10 },
+  { t: 0.85, r: 0.14, g: 0.07, b: 0.24 },
+  { t: 1.00, r: 0.29, g: 0.49, b: 0.82 },
+];
+const SKY_HORIZON_KF: ColorKF[] = [
+  { t: 0.00, r: 0.98, g: 0.75, b: 0.42 },
+  { t: 0.20, r: 0.96, g: 0.35, b: 0.10 },
+  { t: 0.35, r: 0.35, g: 0.15, b: 0.42 },
+  { t: 0.50, r: 0.05, g: 0.05, b: 0.12 },
+  { t: 0.70, r: 0.08, g: 0.08, b: 0.18 },
+  { t: 0.85, r: 0.95, g: 0.45, b: 0.20 },
+  { t: 1.00, r: 0.98, g: 0.75, b: 0.42 },
+];
+
+function interpCycleColor(t: number, kfs: ColorKF[]) {
+  let lo = kfs[kfs.length - 1], hi = kfs[0];
+  for (let i = 0; i < kfs.length - 1; i++) {
+    if (t >= kfs[i].t && t <= kfs[i + 1].t) { lo = kfs[i]; hi = kfs[i + 1]; break; }
+  }
+  const span = hi.t - lo.t;
+  const f = span > 0 ? (t - lo.t) / span : 0;
+  const s = f * f * (3 - 2 * f); // smoothstep
+  return { r: lo.r + (hi.r - lo.r) * s, g: lo.g + (hi.g - lo.g) * s, b: lo.b + (hi.b - lo.b) * s };
+}
+
 /* ── Position generators ──────────────────────────────────────────────────── */
 const R_TREE   = makeLCG(17);
 const TREE_POS = Array.from({ length: 70 }, () => {
@@ -1239,6 +1312,264 @@ function AAACamera() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   DAY/NIGHT: SKY DOME — animated horizon/zenith gradient with sun disc
+══════════════════════════════════════════════════════════════════════════ */
+function AAASkyDome() {
+  const matRef = useRef<THREE.ShaderMaterial>(null!);
+  const { scene } = useThree();
+
+  const uniforms = useMemo(() => ({
+    uZenith:  { value: new THREE.Color(0.29, 0.49, 0.82) },
+    uHorizon: { value: new THREE.Color(0.98, 0.75, 0.42) },
+    uSunGlow: { value: new THREE.Color(1.0,  0.95, 0.72) },
+    uSunDir:  { value: new THREE.Vector3(0.5, 0.3, 0.4).normalize() },
+    uSunStr:  { value: 1.0 },
+  }), []);
+
+  useFrame(({ clock }) => {
+    const t = (clock.getElapsedTime() % CYCLE_DURATION) / CYCLE_DURATION;
+
+    const zenith  = interpCycleColor(t, SKY_ZENITH_KF);
+    const horizon = interpCycleColor(t, SKY_HORIZON_KF);
+    const fog     = interpCycleColor(t, FOG_KF);
+
+    const u = matRef.current.uniforms;
+    u.uZenith.value.setRGB(zenith.r,  zenith.g,  zenith.b);
+    u.uHorizon.value.setRGB(horizon.r, horizon.g, horizon.b);
+
+    /* Sun glow colour */
+    if      (t < 0.15 || t > 0.90) u.uSunGlow.value.setRGB(1.0, 0.95, 0.72);
+    else if (t < 0.28)              u.uSunGlow.value.setRGB(1.0, 0.40, 0.14);
+    else if (t > 0.78)              u.uSunGlow.value.setRGB(1.0, 0.62, 0.32);
+    else                            u.uSunGlow.value.setRGB(0.0, 0.0,  0.0);
+
+    /* Sun position arc */
+    const cyc   = t * Math.PI * 2;
+    const elev  = Math.sin(cyc - Math.PI * 0.28) * 0.85;
+    u.uSunDir.value.set(Math.cos(cyc) * 0.7, Math.max(-0.3, elev), Math.sin(cyc) * 0.5).normalize();
+    u.uSunStr.value = Math.max(0, elev + 0.1) * 1.4;
+
+    /* Update scene fog live */
+    if (scene.fog instanceof THREE.FogExp2) {
+      scene.fog.color.setRGB(fog.r, fog.g, fog.b);
+      const isDeepNight = t > 0.42 && t < 0.70;
+      scene.fog.density = isDeepNight ? 0.009 : 0.007;
+    }
+  });
+
+  return (
+    <mesh scale={[1, 1, 1]}>
+      <sphereGeometry args={[88, 32, 16]} />
+      <shaderMaterial
+        ref={matRef}
+        vertexShader={SKY_VERT}
+        fragmentShader={SKY_FRAG}
+        uniforms={uniforms}
+        side={THREE.BackSide}
+        depthWrite={false}
+      />
+    </mesh>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DAY/NIGHT: STAR FIELD — points fade in at dusk, out at dawn
+══════════════════════════════════════════════════════════════════════════ */
+function AAAStarField() {
+  const { positions, sizes } = useMemo(() => {
+    const r  = makeLCG(77);
+    const N  = 1400;
+    const positions = new Float32Array(N * 3);
+    const sizes     = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const theta = r() * Math.PI * 2;
+      const phi   = Math.acos(r() * 0.86 + 0.14); // upper dome only
+      const rad   = 80 + r() * 6;
+      positions[i * 3]     = Math.sin(phi) * Math.cos(theta) * rad;
+      positions[i * 3 + 1] = Math.cos(phi) * rad;
+      positions[i * 3 + 2] = Math.sin(phi) * Math.sin(theta) * rad;
+      sizes[i] = 0.28 + r() * 1.1;
+    }
+    return { positions, sizes };
+  }, []);
+
+  const matRef = useRef<THREE.PointsMaterial>(null!);
+
+  useFrame(({ clock }) => {
+    const t = (clock.getElapsedTime() % CYCLE_DURATION) / CYCLE_DURATION;
+    /* Fade in at dusk (0.30), full at night (0.45–0.70), fade out at dawn (0.82) */
+    let alpha = 0;
+    if (t > 0.28 && t < 0.86) {
+      const fadeIn  = Math.min(1, (t - 0.28) / 0.10);
+      const fadeOut = Math.min(1, (0.86 - t)  / 0.09);
+      alpha = Math.min(fadeIn, fadeOut);
+    }
+    if (matRef.current) matRef.current.opacity = alpha;
+  });
+
+  return (
+    <points>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        ref={matRef}
+        color="#dde8ff"
+        size={0.55}
+        transparent
+        opacity={0}
+        depthWrite={false}
+        sizeAttenuation
+      />
+    </points>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DAY/NIGHT: MOON — glowing disc arcs across the night sky
+══════════════════════════════════════════════════════════════════════════ */
+function AAAMoon() {
+  const groupRef = useRef<THREE.Group>(null!);
+  const discRef  = useRef<THREE.MeshBasicMaterial>(null!);
+  const haloRef  = useRef<THREE.MeshBasicMaterial>(null!);
+
+  useFrame(({ clock }) => {
+    const t = (clock.getElapsedTime() % CYCLE_DURATION) / CYCLE_DURATION;
+    /* Moon visible during dusk → dawn (0.33 → 0.82) */
+    let alpha = 0;
+    if (t > 0.30 && t < 0.84) {
+      const fadeIn  = Math.min(1, (t - 0.30) / 0.07);
+      const fadeOut = Math.min(1, (0.84 - t)  / 0.07);
+      alpha = Math.min(fadeIn, fadeOut);
+    }
+    if (discRef.current)  discRef.current.opacity  = alpha * 0.96;
+    if (haloRef.current)  haloRef.current.opacity   = alpha * 0.26;
+
+    /* Slow arc: rises in east, peaks overhead, sets in west */
+    if (groupRef.current && alpha > 0) {
+      const ang = (t - 0.5) * Math.PI * 1.4; // arc angle during night
+      const r   = 58, peak = 50;
+      groupRef.current.position.set(
+        Math.cos(ang) * r,
+        peak * Math.max(0, Math.sin((t - 0.33) / 0.51 * Math.PI)),
+        Math.sin(ang) * 30 - 22,
+      );
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[0, 48, -25]}>
+      {/* Soft halo */}
+      <mesh>
+        <circleGeometry args={[9, 32]} />
+        <meshBasicMaterial ref={haloRef} color="#c8dcf0" transparent opacity={0} depthWrite={false} />
+      </mesh>
+      {/* Moon disc */}
+      <mesh>
+        <circleGeometry args={[4.5, 32]} />
+        <meshBasicMaterial ref={discRef} color="#e8e2d8" transparent opacity={0} />
+      </mesh>
+      {/* Subtle crater texture */}
+      <mesh position={[1.2, 0.8, 0.01]}>
+        <circleGeometry args={[0.9, 16]} />
+        <meshBasicMaterial color="#d0cac0" transparent opacity={0.18} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DAY/NIGHT: LIGHTING — sun, fill, ambient all driven by cycle clock
+   (replaces static GoldenHourLighting so everything stays in sync)
+══════════════════════════════════════════════════════════════════════════ */
+function DayNightLighting() {
+  const sunRef  = useRef<THREE.DirectionalLight>(null!);
+  const fillRef = useRef<THREE.DirectionalLight>(null!);
+  const ambRef  = useRef<THREE.AmbientLight>(null!);
+
+  useFrame(({ clock }) => {
+    const raw = clock.getElapsedTime();
+    const t   = (raw % CYCLE_DURATION) / CYCLE_DURATION;
+
+    /* Sun arc — full sine curve across the sky */
+    const cyc    = t * Math.PI * 2;
+    const elevR  = Math.sin(cyc - Math.PI * 0.28) * 0.85;
+    const azR    = cyc;
+    const dist   = 55;
+    sunRef.current.position.set(
+      Math.cos(elevR) * Math.cos(azR) * dist,
+      Math.sin(elevR) * dist,
+      Math.cos(elevR) * Math.sin(azR) * dist,
+    );
+
+    /* Sun intensity: 0 below horizon, max 2.2 at peak, flicker at golden hour */
+    const sunI = Math.max(0, elevR + 0.08) / 0.93;
+    const flick = 1 + Math.sin(raw * 1.8) * 0.07 * Math.min(1, sunI * 4);
+    sunRef.current.intensity = Math.min(2.2, sunI * 2.2 * flick);
+
+    /* Sun colour: golden → sunset red → off → dawn pink → golden */
+    if      (t < 0.12 || t > 0.92) sunRef.current.color.setRGB(1.0, 0.74, 0.42); // golden
+    else if (t < 0.28)              sunRef.current.color.setRGB(1.0, 0.40, 0.14); // sunset
+    else if (t > 0.80)              sunRef.current.color.setRGB(1.0, 0.55, 0.28); // dawn
+    else                            sunRef.current.color.setRGB(0.05, 0.05, 0.1); // night
+
+    /* Fill light (sky fill, opposite sun) */
+    fillRef.current.position.set(
+      -sunRef.current.position.x * 0.6, 14, -sunRef.current.position.z * 0.6,
+    );
+    fillRef.current.intensity = Math.max(0, sunI * 0.40);
+
+    /* Ambient: warm day → deep cool night */
+    const isNight = t > 0.38 && t < 0.78;
+    const nightT  = isNight
+      ? Math.min(1, Math.min((t - 0.38) / 0.09, (0.78 - t) / 0.07))
+      : 0;
+    ambRef.current.intensity = 0.52 * (1 - nightT) + 0.055 * nightT;
+    ambRef.current.color.setRGB(
+      1.0  * (1 - nightT) + 0.18 * nightT,
+      0.72 * (1 - nightT) + 0.22 * nightT,
+      0.45 * (1 - nightT) + 0.62 * nightT,
+    );
+  });
+
+  return (
+    <>
+      <hemisphereLight args={["#ffd4a0", "#2e4a1e", 0.62]} position={[0, 50, 0]} />
+      <directionalLight
+        ref={sunRef}
+        color="#ffbb66"
+        intensity={2.2}
+        position={[38, 22, 28]}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-near={1}
+        shadow-camera-far={140}
+        shadow-camera-left={-60}
+        shadow-camera-right={60}
+        shadow-camera-top={60}
+        shadow-camera-bottom={-60}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.04}
+      />
+      <directionalLight
+        ref={fillRef}
+        color="#8ab8d8"
+        intensity={0.38}
+        position={[-22, 14, -18]}
+        castShadow={false}
+      />
+      {/* Ground bounce — static warm fill from limestone */}
+      <directionalLight color="#d49a50" intensity={0.20} position={[0, -8, 0]} castShadow={false} />
+      <ambientLight ref={ambRef} color="#ffaa66" intensity={0.52} />
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    GROUND CLICK PLANE
 ══════════════════════════════════════════════════════════════════════════ */
 function GroundClickPlane({ onGroundClick }: { onGroundClick: (pos: [number, number, number]) => void }) {
@@ -1269,10 +1600,15 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
     <>
       <AAACamera />
 
-      {/* ── Phase 1 Foundation: lighting + environment + perf ── */}
-      <GoldenHourLighting animate shadowMapSize={2048} shadows />
-      {/* Phase 2 atmosphere: denser warm haze, richer IBL */}
-      <SceneEnvironment fogColor="#d4a85a" fogDensity={0.0068} envIntensity={0.55} />
+      {/* ── Phase 3: Day/night sky dome (renders behind everything) ── */}
+      <AAASkyDome />
+      <AAAStarField />
+      <AAAMoon />
+
+      {/* ── Day/night lighting (replaces static GoldenHourLighting) ── */}
+      <DayNightLighting />
+      {/* SceneEnvironment sets initial fog + env map; AAASkyDome overrides fog each frame */}
+      <SceneEnvironment fogColor="#d4a85a" fogDensity={0.007} envIntensity={0.55} />
       <ScenePerf position="top-left" />
 
       {/* Ground & terrain */}
