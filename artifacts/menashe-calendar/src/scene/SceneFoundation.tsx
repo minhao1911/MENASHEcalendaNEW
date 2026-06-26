@@ -40,7 +40,7 @@ function RendererConfig() {
 
     /* HDR color pipeline */
     gl.toneMapping         = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.15;
+    gl.toneMappingExposure = 1.28;
     gl.outputColorSpace    = THREE.SRGBColorSpace;
 
     /* Encoding for generated env maps */

@@ -130,16 +130,72 @@ const SKY_FRAG = /* glsl */`
   uniform vec3  uSunGlow;
   uniform vec3  uSunDir;
   uniform float uSunStr;
+  uniform float uTime;
   varying vec3  vWorldDir;
+
+  /* Cheap hash for cloud turbulence */
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float noise2(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash(i), b = hash(i + vec2(1,0));
+    float c = hash(i + vec2(0,1)), d = hash(i + vec2(1,1));
+    return mix(mix(a,b,f.x), mix(c,d,f.x), f.y);
+  }
+  float fbm(vec2 p) {
+    float v = 0.0, a = 0.5;
+    for (int i = 0; i < 4; i++) { v += a * noise2(p); p *= 2.1; a *= 0.5; }
+    return v;
+  }
+
   void main() {
-    vec3 d  = normalize(vWorldDir);
-    float h = max(0.0, d.y);
-    vec3  sky = mix(uHorizon, uZenith, pow(h, 0.52));
-    /* Sun disc + halo */
+    vec3 d = normalize(vWorldDir);
+
+    /* Atmospheric gradient: horizon warm, zenith deep blue */
+    vec3 sky = mix(uHorizon, uZenith, pow(max(0.0, d.y), 0.42));
+
+    /* Horizon haze band — extra warm glow where sky meets earth */
+    float horizBand = exp(-d.y * 5.5) * 0.72;
+    sky = mix(sky, uHorizon * 1.35, horizBand);
+
+    /* Rayleigh-like scattering: blue shift toward zenith */
+    float rayleigh = pow(max(0.0, d.y), 0.6) * 0.18 * uSunStr;
+    sky += vec3(0.05, 0.12, 0.28) * rayleigh;
+
+    /* Mie forward scattering: warm halo toward sun */
     float sd   = dot(d, normalize(uSunDir));
-    float disc = smoothstep(0.994, 0.999, sd) * uSunStr;
-    float halo = smoothstep(0.60,  0.994, sd) * uSunStr * 0.28;
-    sky = mix(sky, uSunGlow, disc + halo);
+    float mie  = pow(max(0.0, sd * 0.5 + 0.5), 10.0) * 0.55 * uSunStr;
+    sky += uSunGlow * mie;
+
+    /* Sun corona + disc */
+    float disc  = smoothstep(0.9945, 0.9985, sd) * uSunStr;
+    float halo  = smoothstep(0.55,   0.9945, sd) * uSunStr * 0.40;
+    sky = mix(sky, uSunGlow * 1.6, disc);
+    sky += uSunGlow * halo * 0.38;
+
+    /* Procedural cloud layer — only above horizon, driven by uTime */
+    float cloudElevation = smoothstep(0.08, 0.50, d.y);
+    if (cloudElevation > 0.01 && uSunStr > 0.05) {
+      /* Project sky dir onto a flat cloud plane */
+      vec2 cUV = d.xz / max(d.y, 0.05) * 1.8;
+      cUV.x += uTime * 0.006;   /* slow drift */
+      cUV.y += uTime * 0.003;
+
+      float cloud = fbm(cUV * 1.4) - 0.38;
+      cloud = smoothstep(0.0, 0.42, cloud) * cloudElevation;
+      cloud *= (1.0 - horizBand * 1.4);  /* clouds fade at horizon */
+
+      /* Cloud colour: lit side warm white, shadow side grey-blue */
+      float cloudShadow = dot(vec3(cUV * 0.5, 0.8), normalize(uSunDir)) * 0.5 + 0.5;
+      vec3 cloudLit   = mix(vec3(0.85, 0.78, 0.70), vec3(1.0, 0.98, 0.94), cloudShadow) * uSunStr;
+      vec3 cloudDark  = mix(uZenith * 0.55, vec3(0.60, 0.65, 0.72), 0.5);
+      vec3 cloudCol   = mix(cloudDark, cloudLit, cloudShadow * uSunStr);
+
+      sky = mix(sky, cloudCol, clamp(cloud * 0.88, 0.0, 0.8));
+    }
+
     gl_FragColor = vec4(sky, 1.0);
   }
 `;
@@ -807,90 +863,190 @@ const SHRUB_POS = Array.from({ length: 35 }, () => {
 });
 
 function AAAMediterraneanVegetation() {
-  /* Cypress tree geometry — tall narrow cone */
-  const cypressBodyGeo = useMemo(() => new THREE.ConeGeometry(0.85, 7.5, 8, 4), []);
-  const cypressTipGeo  = useMemo(() => new THREE.ConeGeometry(0.4,  3.5, 7, 3), []);
-  const cypressRefA    = useRef<THREE.Group>(null!);
-  const cypressRefB    = useRef<THREE.Group>(null!);
+  /* ── Cypress tree: 4 stacked layered cones create the classic narrow-columnar silhouette */
+  const cyp1Geo = useMemo(() => new THREE.ConeGeometry(0.95, 3.2, 11, 3), []);  // base tier
+  const cyp2Geo = useMemo(() => new THREE.ConeGeometry(0.76, 2.9, 10, 3), []);  // mid-low
+  const cyp3Geo = useMemo(() => new THREE.ConeGeometry(0.54, 2.5,  9, 3), []);  // mid-high
+  const cyp4Geo = useMemo(() => new THREE.ConeGeometry(0.30, 2.1,  8, 2), []);  // tip
+  const cypTrunkGeo = useMemo(() => new THREE.CylinderGeometry(0.10, 0.15, 1.8, 7), []);
 
-  /* Lavender stem geometry — slim elongated lollipop */
+  /* ── Olive/broad-leafed tree: 3 overlapping sphere clusters form a rounded canopy */
+  const oliveCanopy1 = useMemo(() => new THREE.SphereGeometry(1.55, 9, 7), []);  // main crown
+  const oliveCanopy2 = useMemo(() => new THREE.SphereGeometry(1.10, 8, 6), []);  // side lobe
+  const oliveTrunkGeo = useMemo(() => new THREE.CylinderGeometry(0.13, 0.18, 3.5, 7), []);
+
+  /* ── Lavender geometry */
   const lavStemGeo = useMemo(() => new THREE.CylinderGeometry(0.022, 0.03, 0.6, 5), []);
   const lavHeadGeo = useMemo(() => new THREE.SphereGeometry(0.14, 6, 5), []);
 
-  /* Flower geometry — simple low-poly blooms */
-  const flowerGeo = useMemo(() => new THREE.SphereGeometry(0.18, 6, 5), []);
+  /* ── Flower geometry */
+  const flowerGeo = useMemo(() => new THREE.SphereGeometry(0.18, 7, 5), []);
 
-  /* Shrub geometry — flattened hemisphere */
-  const shrubGeo = useMemo(() => new THREE.SphereGeometry(0.9, 8, 6), []);
+  /* ── Shrub: two overlapping spheres for irregular lumpy silhouette */
+  const shrubMainGeo = useMemo(() => new THREE.SphereGeometry(0.88, 9, 7), []);
+  const shrubLobeGeo = useMemo(() => new THREE.SphereGeometry(0.62, 8, 6), []);
 
-  /* Gentle cypress wind sway */
+  /* Wind sway refs */
+  const swayRootRef  = useRef<THREE.Group>(null!);
+  const swayRootRef2 = useRef<THREE.Group>(null!);
+
   useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    const sw = Math.sin(t * 0.4) * 0.012 + Math.sin(t * 1.1) * 0.005;
-    if (cypressRefA.current) cypressRefA.current.rotation.z = sw;
-    if (cypressRefB.current) cypressRefB.current.rotation.x = sw * 0.7;
+    const t  = clock.getElapsedTime();
+    const sw = Math.sin(t * 0.38) * 0.013 + Math.sin(t * 1.07) * 0.005 + Math.sin(t * 2.3) * 0.002;
+    if (swayRootRef.current)  swayRootRef.current.rotation.z  = sw;
+    if (swayRootRef2.current) swayRootRef2.current.rotation.x = sw * 0.65;
   });
+
+  /* Cypress foliage — dark green, slightly varied */
+  const cypDark   = "#1c3818";
+  const cypMid    = "#254d1e";
+  const cypLight  = "#2e5e24";
+  const cypBright = "#38712c";
 
   return (
     <>
-      {/* Cypress trees — tall dark sentinels */}
-      <group ref={cypressRefA}>
-        <Instances geometry={cypressBodyGeo} limit={CYPRESS_POS.length}>
-          <meshStandardMaterial color="#1e3a1a" roughness={0.92} metalness={0.0} />
+      {/* ── CYPRESS TREES (4-layer stacked for realistic columnar silhouette) ── */}
+      <group ref={swayRootRef}>
+        {/* Layer 1: base — widest, darkest */}
+        <Instances geometry={cyp1Geo} limit={CYPRESS_POS.length}>
+          <meshStandardMaterial color={cypDark} roughness={0.88} metalness={0.0}
+            envMapIntensity={0.3} />
           {CYPRESS_POS.map(([x, z], i) => (
-            <Instance key={i} position={[x, 3.75, z]}
-              scale={[0.7 + (i % 5) * 0.08, 0.85 + (i % 4) * 0.07, 0.7 + (i % 3) * 0.06]}
-              rotation={[0, (i * 47) * Math.PI / 180, 0]} />
+            <Instance key={i}
+              position={[x, 1.6 + (i % 3) * 0.15, z]}
+              scale={[0.72 + (i % 5) * 0.07, 0.88 + (i % 4) * 0.06, 0.72 + (i % 3) * 0.07]}
+              rotation={[0, (i * 53) * Math.PI / 180, 0]} />
           ))}
         </Instances>
-      </group>
-      <group ref={cypressRefB}>
-        <Instances geometry={cypressTipGeo} limit={CYPRESS_POS.length}>
-          <meshStandardMaterial color="#264a20" roughness={0.90} metalness={0.0} />
+        {/* Layer 2: mid-low */}
+        <Instances geometry={cyp2Geo} limit={CYPRESS_POS.length}>
+          <meshStandardMaterial color={cypMid} roughness={0.86} metalness={0.0}
+            envMapIntensity={0.3} />
           {CYPRESS_POS.map(([x, z], i) => (
-            <Instance key={i} position={[x, 7.5 + (i % 3) * 0.3, z]}
-              scale={[0.6 + (i % 5) * 0.07, 0.9 + (i % 4) * 0.06, 0.6 + (i % 3) * 0.06]}
-              rotation={[0, (i * 47 + 20) * Math.PI / 180, 0]} />
+            <Instance key={i}
+              position={[x, 3.8 + (i % 3) * 0.12, z]}
+              scale={[0.68 + (i % 4) * 0.08, 0.92 + (i % 5) * 0.05, 0.68 + (i % 3) * 0.07]}
+              rotation={[0, (i * 53 + 15) * Math.PI / 180, 0]} />
+          ))}
+        </Instances>
+        {/* Layer 3: mid-high — brighter as light hits top */}
+        <Instances geometry={cyp3Geo} limit={CYPRESS_POS.length}>
+          <meshStandardMaterial color={cypLight} roughness={0.84} metalness={0.0}
+            envMapIntensity={0.35} />
+          {CYPRESS_POS.map(([x, z], i) => (
+            <Instance key={i}
+              position={[x, 5.8 + (i % 3) * 0.12, z]}
+              scale={[0.62 + (i % 5) * 0.06, 0.95 + (i % 4) * 0.04, 0.62 + (i % 3) * 0.07]}
+              rotation={[0, (i * 53 + 30) * Math.PI / 180, 0]} />
+          ))}
+        </Instances>
+        {/* Layer 4: tip — narrowest, slightly brighter */}
+        <Instances geometry={cyp4Geo} limit={CYPRESS_POS.length}>
+          <meshStandardMaterial color={cypBright} roughness={0.82} metalness={0.0}
+            envMapIntensity={0.4} />
+          {CYPRESS_POS.map(([x, z], i) => (
+            <Instance key={i}
+              position={[x, 7.55 + (i % 3) * 0.15, z]}
+              scale={[0.55 + (i % 5) * 0.05, 0.95 + (i % 4) * 0.05, 0.55 + (i % 3) * 0.06]}
+              rotation={[0, (i * 53 + 45) * Math.PI / 180, 0]} />
+          ))}
+        </Instances>
+        {/* Trunks */}
+        <Instances geometry={cypTrunkGeo} limit={CYPRESS_POS.length}>
+          <meshStandardMaterial color="#3d2c1a" roughness={0.94} metalness={0.0} />
+          {CYPRESS_POS.map(([x, z], i) => (
+            <Instance key={i} position={[x, 0.9, z]}
+              scale={[1, 1 + (i % 3) * 0.08, 1]} />
           ))}
         </Instances>
       </group>
 
-      {/* Lavender stems */}
+      {/* ── OLIVE / BROAD-LEAFED TREES — rounded silver-green canopy ── */}
+      <group ref={swayRootRef2}>
+        {/* Main crown */}
+        <Instances geometry={oliveCanopy1} limit={SHRUB_POS.length}>
+          <meshStandardMaterial color="#4e7234" roughness={0.84} metalness={0.0}
+            envMapIntensity={0.4} />
+          {SHRUB_POS.map(([x, z], i) => (
+            <Instance key={i}
+              position={[x, 2.8 + (i % 4) * 0.28, z]}
+              scale={[0.9 + (i % 5) * 0.16, 0.8 + (i % 3) * 0.12, 0.9 + (i % 4) * 0.13]}
+              rotation={[0, (i * 67) * Math.PI / 180, 0]} />
+          ))}
+        </Instances>
+        {/* Side lobe (offset canopy cluster for irregular silhouette) */}
+        <Instances geometry={oliveCanopy2} limit={SHRUB_POS.length}>
+          <meshStandardMaterial color="#3d6228" roughness={0.86} metalness={0.0}
+            envMapIntensity={0.35} />
+          {SHRUB_POS.map(([x, z], i) => {
+            const off = ((i % 6) - 2.5) * 0.55;
+            return (
+              <Instance key={i}
+                position={[x + off * 0.7, 2.4 + (i % 3) * 0.22, z + off * 0.3]}
+                scale={[0.85 + (i % 4) * 0.14, 0.72 + (i % 5) * 0.10, 0.85 + (i % 3) * 0.12]}
+                rotation={[0, (i * 67 + 30) * Math.PI / 180, 0]} />
+            );
+          })}
+        </Instances>
+        {/* Trunks */}
+        <Instances geometry={oliveTrunkGeo} limit={SHRUB_POS.length}>
+          <meshStandardMaterial color="#4a3520" roughness={0.96} metalness={0.0} />
+          {SHRUB_POS.map(([x, z], i) => (
+            <Instance key={i} position={[x, 1.75, z]}
+              scale={[1 + (i % 3) * 0.08, 1, 1 + (i % 4) * 0.06]}
+              rotation={[0, (i * 67) * Math.PI / 180, 0]} />
+          ))}
+        </Instances>
+      </group>
+
+      {/* ── LAVENDER STEMS ── */}
       <Instances geometry={lavStemGeo} limit={LAVENDER_PTS.length}>
         <meshStandardMaterial color="#6b8040" roughness={0.9} metalness={0.0} />
         {LAVENDER_PTS.map(([x, z], i) => (
           <Instance key={i} position={[x + (i % 3 - 1) * 0.12, 0.3, z + (i % 2 - 0.5) * 0.1]} />
         ))}
       </Instances>
-      {/* Lavender flower heads — purple */}
+      {/* Lavender heads */}
       <Instances geometry={lavHeadGeo} limit={LAVENDER_PTS.length}>
         <meshStandardMaterial color="#8868b0" roughness={0.82} metalness={0.0}
-          emissive={new THREE.Color("#3a2560")} emissiveIntensity={0.18} />
+          emissive={new THREE.Color("#3a2560")} emissiveIntensity={0.22} />
         {LAVENDER_PTS.map(([x, z], i) => (
           <Instance key={i} position={[x + (i % 3 - 1) * 0.12, 0.65, z + (i % 2 - 0.5) * 0.1]}
             scale={[1, 1.6, 1]} />
         ))}
       </Instances>
 
-      {/* White flowers — scattered across garden zones */}
+      {/* ── FLOWERS ── */}
       <Instances geometry={flowerGeo} limit={FLOWER_PTS.length}>
-        <meshStandardMaterial color="#f0ede8" roughness={0.75} metalness={0.0}
-          emissive={new THREE.Color("#e8d8b8")} emissiveIntensity={0.12} />
+        <meshStandardMaterial color="#f0ede8" roughness={0.72} metalness={0.0}
+          emissive={new THREE.Color("#ecdfc0")} emissiveIntensity={0.16} />
         {FLOWER_PTS.map(([x, z], i) => (
           <Instance key={i} position={[x, 0.22 + (i % 3) * 0.04, z]}
-            scale={0.6 + (i % 5) * 0.08}
+            scale={0.62 + (i % 5) * 0.08}
             rotation={[0, (i * 83) * Math.PI / 180, 0]} />
         ))}
       </Instances>
 
-      {/* Mediterranean shrubs — low rounded bushes */}
-      <Instances geometry={shrubGeo} limit={SHRUB_POS.length}>
-        <meshStandardMaterial color="#4a6830" roughness={0.88} metalness={0.0} />
-        {SHRUB_POS.map(([x, z], i) => (
-          <Instance key={i} position={[x, 0.45, z]}
-            scale={[0.9 + (i % 4) * 0.14, 0.58 + (i % 3) * 0.06, 0.9 + (i % 5) * 0.1]}
+      {/* ── LOW GROUND SHRUBS (smaller scale, using flower bed positions) ── */}
+      <Instances geometry={shrubMainGeo} limit={FLOWER_PTS.length}>
+        <meshStandardMaterial color="#4a6830" roughness={0.88} metalness={0.0}
+          envMapIntensity={0.3} />
+        {FLOWER_PTS.map(([x, z], i) => (
+          <Instance key={i} position={[x, 0.5, z]}
+            scale={[0.8 + (i % 4) * 0.13, 0.55 + (i % 3) * 0.07, 0.8 + (i % 5) * 0.10]}
             rotation={[0, (i * 61) * Math.PI / 180, 0]} />
         ))}
+      </Instances>
+      <Instances geometry={shrubLobeGeo} limit={FLOWER_PTS.length}>
+        <meshStandardMaterial color="#3d5828" roughness={0.90} metalness={0.0} />
+        {FLOWER_PTS.map(([x, z], i) => {
+          const lx = ((i % 3) - 1) * 0.42;
+          return (
+            <Instance key={i} position={[x + lx, 0.45, z + lx * 0.3]}
+              scale={[0.72 + (i % 5) * 0.10, 0.48 + (i % 4) * 0.06, 0.72 + (i % 3) * 0.09]}
+              rotation={[0, (i * 61 + 22) * Math.PI / 180, 0]} />
+          );
+        })}
       </Instances>
     </>
   );
@@ -1646,10 +1802,12 @@ function AAASkyDome() {
     uSunGlow: { value: new THREE.Color(1.0,  0.95, 0.72) },
     uSunDir:  { value: new THREE.Vector3(0.5, 0.3, 0.4).normalize() },
     uSunStr:  { value: 1.0 },
+    uTime:    { value: 0.0 },
   }), []);
 
   useFrame(({ clock }) => {
-    const t = (clock.getElapsedTime() % CYCLE_DURATION) / CYCLE_DURATION;
+    const raw = clock.getElapsedTime();
+    const t = (raw % CYCLE_DURATION) / CYCLE_DURATION;
 
     const zenith  = interpCycleColor(t, SKY_ZENITH_KF);
     const horizon = interpCycleColor(t, SKY_HORIZON_KF);
@@ -1658,6 +1816,7 @@ function AAASkyDome() {
     const u = matRef.current.uniforms;
     u.uZenith.value.setRGB(zenith.r,  zenith.g,  zenith.b);
     u.uHorizon.value.setRGB(horizon.r, horizon.g, horizon.b);
+    u.uTime.value = raw;
 
     /* Sun glow colour */
     if      (t < 0.15 || t > 0.90) u.uSunGlow.value.setRGB(1.0, 0.95, 0.72);
@@ -1866,8 +2025,8 @@ function DayNightLighting() {
         intensity={2.2}
         position={[38, 22, 28]}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={4096}
+        shadow-mapSize-height={4096}
         shadow-camera-near={1}
         shadow-camera-far={140}
         shadow-camera-left={-60}
@@ -1931,8 +2090,8 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
 
       {/* ── Day/night lighting (replaces static GoldenHourLighting) ── */}
       <DayNightLighting />
-      {/* SceneEnvironment sets initial fog + env map; AAASkyDome overrides fog each frame */}
-      <SceneEnvironment fogColor="#d4a85a" fogDensity={0.007} envIntensity={0.55} />
+      {/* SceneEnvironment: env map IBL only — AAASkyDome handles the sky visuals */}
+      <SceneEnvironment fogColor="#d4a85a" fogDensity={0.007} envIntensity={0.55} showSky={false} />
 
       {/* Ground & terrain */}
       <AAATerrain />
