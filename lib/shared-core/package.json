@@ -8,7 +8,10 @@
     "./calendar": "./src/calendar/hebrewCalendar.ts",
     "./zmanim": "./src/zmanim/zmanim.ts",
     "./locations": "./src/locations/locations.ts",
-    "./utils": "./src/utils/lang.ts"
+    "./utils": "./src/utils/lang.ts",
+    "./translations": "./src/translations/translations.ts",
+    "./parasha": "./src/parasha/parasha.ts",
+    "./aliyot": "./src/parasha/aliyot.ts"
   },
   "dependencies": {
     "@hebcal/core": "^6.5.2",

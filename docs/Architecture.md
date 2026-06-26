@@ -1,7 +1,7 @@
 # Architecture Overview
 
 > Purpose: High-level system architecture, component boundaries, data flow, and design decisions for the Menashe Platform.
-> Last updated: 2026-06-26 (SPR-001)
+> Last updated: 2026-06-26 (SPR-003)
 
 ---
 
@@ -109,13 +109,52 @@ See `docs/ProjectStructure.md` for full list. Critical hotspots:
 
 ---
 
-## Duplicate Logic
+## Shared Core Package (`lib/shared-core`)
 
-See `docs/ProjectStructure.md` Task 4 for full registry.
+Centralised business logic shared by both web and mobile apps. All new cross-platform logic must go here first.
 
-Core duplication: `zmanim.ts`, `hebrewCalendar.ts`, `translations.ts`, `locations.ts`, and `announcementsApi.ts` are all manually duplicated between `artifacts/menashe-calendar/src/lib/` and `artifacts/menashe-mobile/lib/`.
+### What moved (SPR-003)
 
-**Resolution path:** Extract to `packages/shared/` (see proposed structure in `docs/ProjectStructure.md`).
+| Module | Shared-core path | Export sub-path |
+|---|---|---|
+| Hebrew calendar (HDate, Parasha, Holidays) | `src/calendar/hebrewCalendar.ts` | `@workspace/shared-core/calendar` |
+| Zmanim (prayer-times calculation) | `src/zmanim/zmanim.ts` | `@workspace/shared-core/zmanim` |
+| Location database (cities + coords) | `src/locations/locations.ts` | `@workspace/shared-core/locations` |
+| Language type (`"en" \| "tk"`) | `src/utils/lang.ts` | `@workspace/shared-core/utils` |
+| Shared translations (EN + TK strings) | `src/translations/translations.ts` | `@workspace/shared-core/translations` |
+| Parasha data + rich ParashaInfo lookup | `src/parasha/parasha.ts` | `@workspace/shared-core/parasha` |
+| Aliyot verse ranges (54 parashiyot) | `src/parasha/aliyot.ts` | `@workspace/shared-core/aliyot` |
+
+### How apps consume shared-core
+
+App-level `lib/` files are thin re-export shims that preserve backward-compatible local import paths:
+
+```
+artifacts/menashe-calendar/src/lib/hebrewCalendar.ts  →  @workspace/shared-core/calendar
+artifacts/menashe-calendar/src/lib/zmanim.ts           →  @workspace/shared-core/zmanim
+artifacts/menashe-calendar/src/lib/locations.ts        →  @workspace/shared-core/locations
+artifacts/menashe-calendar/src/lib/parasha.ts          →  @workspace/shared-core/parasha
+artifacts/menashe-calendar/src/lib/aliyot.ts           →  @workspace/shared-core/aliyot
+artifacts/menashe-mobile/lib/hebrewCalendar.ts         →  @workspace/shared-core/calendar
+artifacts/menashe-mobile/lib/zmanim.ts                 →  @workspace/shared-core/zmanim
+artifacts/menashe-mobile/lib/locations.ts              →  @workspace/shared-core/locations
+artifacts/menashe-mobile/lib/translations.ts           →  @workspace/shared-core/translations
+```
+
+### Remaining duplication (deferred to SPR-004)
+
+| Item | Location | Notes |
+|---|---|---|
+| Web translations | `artifacts/menashe-calendar/src/lib/translations.ts` | 1,293 lines; web-specific keys (landing page, PWA, 3D scene). Extend `SharedTranslations` in SPR-004. |
+| `announcementsApi.ts` | Both apps | Fetch base-URL differs (relative `/api` vs absolute `https://$DOMAIN/api`); needs an API-client abstraction layer. |
+| `communityApi.ts` | Mobile only | No web equivalent yet; add when web gets community tab. |
+
+### Guidelines for future shared logic
+
+1. If a function has no UI dependency and runs on both platforms → put it in `lib/shared-core`.
+2. If it references `window`, `document`, or React hooks → it stays in the app.
+3. New translation keys must be added to `SharedTranslations` first; app-specific keys are extended locally.
+4. Never import directly from `lib/shared-core/src/…` — always use the package export paths (`@workspace/shared-core/…`).
 
 ---
 
