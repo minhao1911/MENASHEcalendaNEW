@@ -2017,11 +2017,10 @@ function AAASkyDome() {
    DAY/NIGHT: STAR FIELD — points fade in at dusk, out at dawn
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAStarField() {
-  const { positions, sizes } = useMemo(() => {
+  const starGeo = useMemo(() => {
     const r  = makeLCG(77);
     const N  = 1400;
     const positions = new Float32Array(N * 3);
-    const sizes     = new Float32Array(N);
     for (let i = 0; i < N; i++) {
       const theta = r() * Math.PI * 2;
       const phi   = Math.acos(r() * 0.86 + 0.14); // upper dome only
@@ -2029,9 +2028,10 @@ function AAAStarField() {
       positions[i * 3]     = Math.sin(phi) * Math.cos(theta) * rad;
       positions[i * 3 + 1] = Math.cos(phi) * rad;
       positions[i * 3 + 2] = Math.sin(phi) * Math.sin(theta) * rad;
-      sizes[i] = 0.28 + r() * 1.1;
     }
-    return { positions, sizes };
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return geo;
   }, []);
 
   const matRef = useRef<THREE.PointsMaterial>(null!);
@@ -2049,13 +2049,7 @@ function AAAStarField() {
   });
 
   return (
-    <points>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-      </bufferGeometry>
+    <points geometry={starGeo}>
       <pointsMaterial
         ref={matRef}
         color="#dde8ff"
