@@ -4841,6 +4841,16 @@ function CommunityFAB({
   });
   const drag = useRef({ active: false, startX: 0, startY: 0, initX: 0, initY: 0, moved: false });
 
+  const HINT_KEY = "menashe-fab-hint-seen";
+  const [showHint, setShowHint] = useState(() => {
+    try { return !localStorage.getItem(HINT_KEY); } catch { return false; }
+  });
+  useEffect(() => {
+    if (!showHint) return;
+    const t = setTimeout(() => setShowHint(false), 3500);
+    return () => clearTimeout(t);
+  }, [showHint]);
+
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (open) return;
     drag.current = { active: true, startX: e.clientX, startY: e.clientY, initX: pos.x, initY: pos.y, moved: false };
@@ -4852,6 +4862,7 @@ function CommunityFAB({
     const dy = e.clientY - drag.current.startY;
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) drag.current.moved = true;
     if (!drag.current.moved) return;
+    if (showHint) { setShowHint(false); try { localStorage.setItem(HINT_KEY, "1"); } catch {} }
     setPos({
       x: Math.max(0, Math.min(window.innerWidth - 80, drag.current.initX + dx)),
       y: Math.max(0, Math.min(window.innerHeight - 110, drag.current.initY + dy)),
@@ -4861,6 +4872,7 @@ function CommunityFAB({
     if (!drag.current.active) return;
     drag.current.active = false;
     if (drag.current.moved) {
+      try { localStorage.setItem(HINT_KEY, "1"); } catch {}
       setPos(p => { try { localStorage.setItem(FAB_POS_KEY, JSON.stringify(p)); } catch {} return p; });
     }
   }
@@ -5015,6 +5027,47 @@ function CommunityFAB({
           animation: announcementCount > 0 && !open ? "fabBounce 2.8s ease-in-out infinite" : undefined,
           cursor: "grab",
         }}>
+          {/* ── Drag hint tooltip ── */}
+          {showHint && (
+            <div className="fab-drag-hint" style={{
+              position: "absolute",
+              bottom: "108%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "rgba(20,22,42,0.94)",
+              border: "1px solid rgba(212,175,55,0.45)",
+              borderRadius: 10,
+              padding: "6px 11px",
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              boxShadow: "0 4px 18px rgba(0,0,0,0.45)",
+              animation: "fabHintIn 0.5s ease-out both",
+            }}>
+              {/* Grip dots */}
+              <span style={{ display: "grid", gridTemplateColumns: "repeat(2,5px)", gap: 3, opacity: 0.75 }}>
+                {[...Array(6)].map((_, i) => (
+                  <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: "#d4af37", display: "block" }} />
+                ))}
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#f0ece0", letterSpacing: "0.02em" }}>
+                drag to move
+              </span>
+              {/* Downward arrow */}
+              <span style={{
+                position: "absolute",
+                bottom: -6,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 0, height: 0,
+                borderLeft: "6px solid transparent",
+                borderRight: "6px solid transparent",
+                borderTop: "6px solid rgba(20,22,42,0.94)",
+              }} />
+            </div>
+          )}
           <button
             onClick={handleMainClick}
             title={t.fabTitle}
@@ -5195,6 +5248,14 @@ function CommunityFAB({
           border-color: rgba(255,255,255,0.5) !important;
           transform: scale(1.03);
           transition: background 0.15s ease, transform 0.15s ease;
+        }
+        @keyframes fabHintIn {
+          0%   { opacity: 0; transform: translateX(-50%) translateY(6px); }
+          100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .fab-drag-hint {
+          animation: fabHintIn 0.5s ease-out both;
+          transition: opacity 0.4s ease;
         }
         @keyframes fabBounce {
           0%, 55%, 100% { transform: translateY(0); }
