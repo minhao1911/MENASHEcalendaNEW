@@ -106,6 +106,7 @@ ADMIN_USER_ID = "user_3FY97P9A6kElvpsVl74YZxr1giS"
 GEMINI_API_KEY = "AQ.Ab8RN6I2rocu0W7omABPl8rkrCA4ulB8K9SJiZ-94W7AzQaxoA"
 GOOGLE_API_KEY = "AQ.Ab8RN6I2rocu0W7omABPl8rkrCA4ulB8K9SJiZ-94W7AzQaxoA"
 VITE_ADMIN_USER_ID = "user_3FY97P9A6kElvpsVl74YZxr1giS"
+CLERK_SECRET_KEY = "sk_test_O4HdH2jIETJ5dc37SEPW9p3qhTiEjuTzxsjyq3QJht"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-c5b161bf-7380-4234-b117-63cabc6e63ee"
