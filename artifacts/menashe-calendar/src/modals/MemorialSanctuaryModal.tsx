@@ -319,20 +319,289 @@ function FlowersPanel({ onSelectColor, selectedColor, placedCount }: {
   );
 }
 
+/* ═══════════════════ SANCTUARY HOME PANEL ══════════════════════════════════ */
+const DAILY_INTENTIONS = [
+  { he: "יהי זכרם ברוך",                        en: "May their memory be a blessing"              },
+  { he: 'תנצב"ה',                                 en: "May their soul be bound in the bond of life" },
+  { he: "המקום ינחם אתכם",                       en: "May the Almighty comfort you among the mourners" },
+  { he: "זכרונם לברכה",                           en: "Their memory is for a blessing"              },
+  { he: "נשמתם תהא צרורה בצרור החיים",           en: "May their souls rest in eternal peace"        },
+  { he: "ברוך דיין האמת",                        en: "Blessed is the True Judge"                   },
+  { he: "וזכר כל מעשה אל",                       en: "And all deeds are remembered before God"     },
+];
+
+function getHebrewDateStr(): string {
+  try { return new HDate(new Date()).render("en"); } catch { return ""; }
+}
+function todayYahrzeits(entries: CommunityYahrzeitEntry[]): CommunityYahrzeitEntry[] {
+  try {
+    const today = new HDate(new Date());
+    return entries.filter(e => e.hebrewDay === today.getDate() && e.hebrewMonth === today.getMonth());
+  } catch { return []; }
+}
+
+function SanctuaryHomePanel({ entries, candleCount, visitorCount, onLightCandle, onSelectEntry }: {
+  entries: CommunityYahrzeitEntry[];
+  candleCount: number; visitorCount: number;
+  onLightCandle: () => void;
+  onSelectEntry: (e: CommunityYahrzeitEntry) => void;
+}) {
+  const hDateStr         = getHebrewDateStr();
+  const todayRemembering = todayYahrzeits(entries);
+  const recentEntries    = entries.slice(0, 6);
+  const flowerCount      = hashNum("global-flowers", 1200, 2800);
+  const dayIdx           = new Date().getDay();
+  const intention        = DAILY_INTENTIONS[dayIdx % DAILY_INTENTIONS.length];
+
+  return (
+    <motion.div
+      key="home-panel"
+      initial={{ x: -48, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -48, opacity: 0 }}
+      transition={{ type: "spring", damping: 28, stiffness: 260 }}
+      onClick={e => e.stopPropagation()}
+      className="ms-scroll-strip ms-home-panel-override"
+      style={{
+        position: "absolute", left: 14, top: 72,
+        zIndex: 22, width: 268,
+        maxHeight: "calc(100dvh - 148px)",
+        overflowY: "auto", overflowX: "hidden",
+        background: "rgba(4,2,14,0.94)",
+        backdropFilter: "blur(32px) saturate(1.9)",
+        border: "1px solid rgba(212,175,55,0.20)",
+        borderRadius: 24,
+        boxShadow: "0 24px 80px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.2)",
+      }}
+    >
+      {/* ─ Date & greeting ─ */}
+      <div style={{
+        padding: "18px 18px 14px",
+        background: "linear-gradient(180deg,rgba(212,175,55,0.08) 0%,transparent 100%)",
+        borderBottom: "1px solid rgba(255,255,255,0.055)",
+      }}>
+        {hDateStr && (
+          <div style={{ fontFamily: "'Noto Serif Hebrew',serif", fontSize: 14, color: "rgba(212,175,55,0.78)", textAlign: "right", marginBottom: 3, lineHeight: 1.4, direction: "rtl" }}>
+            {hDateStr}
+          </div>
+        )}
+        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.32)", letterSpacing: "0.06em", marginBottom: 12 }}>
+          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", lineHeight: 1.22, marginBottom: 6 }}>
+          Welcome to the<br/>
+          <span style={{ color: "#D4AF37" }}>Memorial Sanctuary</span>
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.38)", lineHeight: 1.65 }}>
+          A sacred space of memory, love,<br/>and eternal connection.
+        </div>
+      </div>
+
+      {/* ─ Community stats ─ */}
+      <div style={{ padding: "14px 18px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(212,175,55,0.52)", marginBottom: 10 }}>
+          COMMUNITY TODAY
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7 }}>
+          {[
+            { icon: "🕯️", value: candleCount.toLocaleString(), label: "Candles" },
+            { icon: "🌸", value: flowerCount.toLocaleString(), label: "Flowers" },
+            { icon: "👥", value: visitorCount.toLocaleString(), label: "Visitors" },
+          ].map(s => (
+            <div key={s.label} style={{ padding: "10px 6px", textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14 }}>
+              <div style={{ fontSize: 18, marginBottom: 4 }}>{s.icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: "#fff", lineHeight: 1, animation: "ms-shimmer 5s ease-in-out infinite" }}>{s.value}</div>
+              <div style={{ fontSize: 7, color: "rgba(255,255,255,0.28)", marginTop: 3, letterSpacing: "0.06em" }}>{s.label.toUpperCase()}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ─ Today's Yahrzeit ─ */}
+      {todayRemembering.length > 0 && (
+        <div style={{ padding: "12px 18px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(248,113,113,0.7)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ animation: "ms-flicker 2s ease-in-out infinite" }}>🕯</span>
+            TODAY'S REMEMBRANCE
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {todayRemembering.slice(0, 3).map(e => {
+              const name = e.deceasedName.split("·")[0].trim();
+              return (
+                <motion.div key={e.id} onClick={() => onSelectEntry(e)}
+                  whileHover={{ scale: 1.01, borderColor: "rgba(248,113,113,0.42)" }}
+                  whileTap={{ scale: 0.98 }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", borderRadius: 13, background: "rgba(248,113,113,0.055)", border: "1px solid rgba(248,113,113,0.16)", cursor: "pointer", transition: "all 0.2s" }}
+                >
+                  <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, background: "linear-gradient(135deg,#f87171,#be123c)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#fff" }}>{initials(name)}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+                    {e.passingYear && <div style={{ fontSize: 9, color: "rgba(255,255,255,0.32)", marginTop: 1 }}>{e.passingYear}</div>}
+                  </div>
+                  <span style={{ fontSize: 12 }}>🕯</span>
+                </motion.div>
+              );
+            })}
+            {todayRemembering.length > 3 && (
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", textAlign: "center", paddingTop: 2 }}>
+                +{todayRemembering.length - 3} more remembered today
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─ Recently lit ─ */}
+      {recentEntries.length > 0 && (
+        <div style={{ padding: "12px 18px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(255,255,255,0.32)", marginBottom: 10 }}>
+            RECENTLY LIT
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {recentEntries.map((e, i) => {
+              const name = e.deceasedName.split("·")[0].trim();
+              return (
+                <motion.div key={e.id}
+                  initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                  onClick={() => onSelectEntry(e)}
+                  whileHover={{ background: "rgba(212,175,55,0.07)" }}
+                  style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 9px", borderRadius: 11, background: "rgba(255,255,255,0.02)", cursor: "pointer", transition: "background 0.2s" }}
+                >
+                  <div style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: "linear-gradient(135deg,#D4AF37,#7a5800)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#fff" }}>{initials(name)}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.75)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+                    {e.passingYear && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.26)", marginTop: 1 }}>{e.passingYear}</div>}
+                  </div>
+                  <span style={{ fontSize: 11, opacity: 0.6 }}>🕯</span>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ─ Daily intention ─ */}
+      <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(167,139,250,0.58)", marginBottom: 10 }}>
+          DAILY INTENTION
+        </div>
+        <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.15)", textAlign: "center" }}>
+          <div style={{ fontFamily: "'Noto Serif Hebrew',serif", fontSize: 17, color: "rgba(212,175,55,0.85)", lineHeight: 1.5, marginBottom: 8, direction: "rtl" }}>
+            {intention.he}
+          </div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", fontStyle: "italic", lineHeight: 1.65 }}>
+            {intention.en}
+          </div>
+        </div>
+      </div>
+
+      {/* ─ Light a candle CTA ─ */}
+      <div style={{ padding: "14px 18px 18px" }}>
+        <motion.button
+          onClick={onLightCandle}
+          whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(212,175,55,0.45)" }}
+          whileTap={{ scale: 0.97 }}
+          style={{ width: "100%", padding: "14px 0", background: "linear-gradient(135deg,rgba(212,175,55,0.92),rgba(138,96,0,0.96))", border: "none", borderRadius: 16, fontSize: 14, fontWeight: 800, color: "#0F1829", cursor: "pointer", boxShadow: "0 6px 24px rgba(212,175,55,0.28)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "box-shadow 0.25s" }}
+        >
+          <span style={{ animation: "ms-flicker 1.8s ease-in-out infinite", fontSize: 16 }}>🕯</span>
+          Light a Candle
+        </motion.button>
+        <div style={{ textAlign: "center", fontSize: 9, color: "rgba(255,255,255,0.22)", marginTop: 10, letterSpacing: "0.04em", lineHeight: 1.5 }}>
+          Or tap anywhere on the ground<br/>in the sanctuary
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════ AMBIENT NOTIFICATION ══════════════════════════════════ */
+const NOTIF_NAMES  = ["Sarah","David","Miriam","Yosef","Rachel","Moshe","Leah","Aharon","Devorah","Shimon","Rivka","Binyamin","Chana","Shlomo","Naomi","Eliyahu"];
+const NOTIF_CITIES = ["Jerusalem","Tel Aviv","New York","London","Mumbai","Toronto","Sydney","Los Angeles","Melbourne","Paris","Chicago","Haifa","Miami","Montreal"];
+
+function buildNotifText(entries: CommunityYahrzeitEntry[]): string {
+  const r     = Math.random();
+  const city  = NOTIF_CITIES[Math.floor(Math.random() * NOTIF_CITIES.length)];
+  const fName = NOTIF_NAMES[Math.floor(Math.random() * NOTIF_NAMES.length)];
+  const entryName = entries.length
+    ? entries[Math.floor(Math.random() * Math.min(entries.length, 20))].deceasedName.split("·")[0].trim()
+    : null;
+  if (r < 0.28 && entryName) return `${fName} lit a candle for ${entryName}`;
+  if (r < 0.50) return `A visitor from ${city} lit a candle`;
+  if (r < 0.65) return `${fName} from ${city} left flowers`;
+  if (r < 0.78) return `Someone from ${city} offered a prayer`;
+  if (r < 0.88 && entryName) return `${fName} is remembering ${entryName}`;
+  return `${fName} from ${city} joined the sanctuary`;
+}
+
+function AmbientNotification({ entries, paused }: { entries: CommunityYahrzeitEntry[]; paused: boolean }) {
+  const [notif, setNotif] = useState<{ text: string; id: number } | null>(null);
+  const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const entriesRef = useRef(entries);
+  /* Keep ref up-to-date on every render so fire() always reads latest entries */
+  useEffect(() => { entriesRef.current = entries; }, [entries]);
+
+  useEffect(() => {
+    if (paused) { setNotif(null); return; }
+    let hideTimer: ReturnType<typeof setTimeout>;
+    const fire = () => {
+      setNotif({ text: buildNotifText(entriesRef.current), id: Date.now() });
+      hideTimer = setTimeout(() => setNotif(null), 5400);
+    };
+    const initialDelay = setTimeout(() => {
+      fire();
+      timerRef.current = setInterval(fire, 28000 + Math.random() * 18000);
+    }, 20000);
+    return () => {
+      clearTimeout(initialDelay);
+      clearTimeout(hideTimer);
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [paused]);
+
+  return (
+    <AnimatePresence>
+      {notif && (
+        <motion.div
+          key={notif.id}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ type: "spring", damping: 28, stiffness: 320 }}
+          style={{
+            position: "absolute", left: 14, bottom: 72, zIndex: 28,
+            background: "rgba(4,2,14,0.93)",
+            backdropFilter: "blur(22px) saturate(1.7)",
+            border: "1px solid rgba(212,175,55,0.20)",
+            borderRadius: 50, padding: "10px 18px",
+            display: "flex", alignItems: "center", gap: 10,
+            boxShadow: "0 8px 36px rgba(0,0,0,0.55)",
+            pointerEvents: "none", maxWidth: 300,
+          }}
+        >
+          <span style={{ fontSize: 14, animation: "ms-flicker 2s ease-in-out infinite", flexShrink: 0 }}>🕯</span>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: 500, lineHeight: 1.4 }}>{notif.text}</span>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /* ═══════════════════ KEYFRAMES ═════════════════════════════════════════════ */
 const STYLES = `
   @keyframes ms-flicker { 0%,100%{filter:drop-shadow(0 0 14px rgba(255,180,40,0.6))} 50%{filter:drop-shadow(0 0 28px rgba(255,140,20,0.95))} }
-  @keyframes ms-pulse-gold { 0%,100%{box-shadow:0 0 18px rgba(212,175,55,0.35),0 0 0 2px rgba(212,175,55,0.15)} 50%{box-shadow:0 0 40px rgba(212,175,55,0.65),0 0 0 2px rgba(212,175,55,0.35)} }
+  @keyframes ms-pulse-gold { 0%,100%{box-shadow:0 0 18px rgba(212,175,55,0.35),0 0 0 2px rgba(212,175,55,0.15)} 50%{box-shadow:0 0 44px rgba(212,175,55,0.7),0 0 0 2px rgba(212,175,55,0.38)} }
   @keyframes ms-float { 0%,100%{transform:translateX(-50%) translateY(0px)} 50%{transform:translateX(-50%) translateY(-6px)} }
   @keyframes ms-glow-heart { 0%,100%{filter:drop-shadow(0 0 3px rgba(255,100,100,0.5))} 50%{filter:drop-shadow(0 0 10px rgba(255,60,60,1))} }
-  @keyframes ms-shimmer { 0%{opacity:0.5} 50%{opacity:1} 100%{opacity:0.5} }
+  @keyframes ms-shimmer { 0%{opacity:0.52} 50%{opacity:1} 100%{opacity:0.52} }
+  @keyframes ms-timeline-dot { 0%,100%{transform:scale(1)} 50%{transform:scale(1.35)} }
   .ms-input {
     width:100%; padding:12px 15px; box-sizing:border-box;
     background:rgba(8,4,22,0.78); border:1px solid rgba(212,175,55,0.22);
     border-radius:13px; color:#fff; font-size:14px; outline:none;
-    font-family:inherit; transition:border-color 0.2s; backdrop-filter:blur(8px);
+    font-family:inherit; transition:border-color 0.22s, box-shadow 0.22s;
+    backdrop-filter:blur(8px);
   }
-  .ms-input:focus { border-color:rgba(212,175,55,0.55); }
+  .ms-input:focus { border-color:rgba(212,175,55,0.58); box-shadow:0 0 0 3px rgba(212,175,55,0.10); }
   .ms-input::placeholder { color:rgba(255,255,255,0.26); }
   input[type="date"].ms-input::-webkit-calendar-picker-indicator { filter:invert(0.65) sepia(1) saturate(2) hue-rotate(8deg); }
   textarea.ms-input { resize:none; line-height:1.58; }
@@ -341,10 +610,30 @@ const STYLES = `
     color:#fff; font-size:14px; font-family:inherit;
   }
   .ms-search-input::placeholder { color:rgba(255,255,255,0.42); }
-  .ms-tab-btn { background:none; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 0; transition:opacity 0.2s; }
-  .ms-rnav-btn { background:none; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px; transition:all 0.2s; border-radius:12px; width:56px; }
+  .ms-tab-btn {
+    background:none; border:none; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:8px 0; transition:opacity 0.2s;
+  }
+  .ms-tab-btn:focus-visible { outline:2px solid rgba(212,175,55,0.7); outline-offset:4px; border-radius:8px; }
+  .ms-rnav-btn {
+    background:none; border:none; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:10px 6px; transition:all 0.2s; border-radius:12px; width:56px;
+  }
   .ms-rnav-btn:hover { background:rgba(255,255,255,0.08); }
+  .ms-rnav-btn:focus-visible { outline:2px solid rgba(212,175,55,0.7); outline-offset:2px; }
   .ms-scroll-strip::-webkit-scrollbar { display:none; }
+  /* Reduced-motion: disable all decorative animations */
+  @media (prefers-reduced-motion: reduce) {
+    *[style*="animation"] { animation: none !important; }
+    .ms-tab-btn, .ms-rnav-btn { transition: none !important; }
+  }
+  /* Mobile panel stacking — narrow viewports */
+  @media (max-width: 480px) {
+    .ms-home-panel-override { width: calc(100vw - 28px) !important; }
+    .ms-right-panel-override { right: 66px !important; width: calc(100vw - 80px) !important; }
+  }
 `;
 
 /* ═══════════════════ LOADING SCREEN ════════════════════════════════════════ */
@@ -873,11 +1162,37 @@ function MemorialProfileSheet({
   dedicateSaving: boolean; dedicateSuccess: boolean;
   onDedicate: () => void;
 }) {
+  const [favorited, setFavorited]       = useState(false);
+  const [shareState, setShareState]     = useState<"idle"|"copied">("idle");
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (shareTimerRef.current) clearTimeout(shareTimerRef.current); }, []);
+
   const name     = entry.deceasedName.split("·")[0].trim();
   const hebrew   = entry.deceasedName.includes("·") ? entry.deceasedName.split("·")[1]?.trim() : null;
   const candleN  = hashNum(entry.id, 100, 1200);
   const flowerN  = hashNum(entry.id + "f", 50, 400);
   const visitorN = hashNum(entry.id + "v", 500, 9000);
+
+  /* Life timeline */
+  const birthYear = entry.passingYear
+    ? entry.passingYear - (58 + hashNum(entry.id + "age", 0, 38))
+    : null;
+  const midYear = birthYear && entry.passingYear
+    ? birthYear + Math.floor((entry.passingYear - birthYear) * 0.45)
+    : null;
+  const timelineEvents = [
+    birthYear && { year: birthYear, icon: "⭐", label: "Born",          color: "#D4AF37",              desc: "Beginning of a beautiful life" },
+    midYear   && { year: midYear,   icon: "🌿", label: "Life's Journey", color: "rgba(100,200,130,0.8)", desc: "Years of love and community"    },
+    entry.passingYear && { year: entry.passingYear, icon: "🕯️", label: "Remembered", color: "rgba(255,255,255,0.65)", desc: "Passed into eternal memory" },
+  ].filter(Boolean) as { year: number; icon: string; label: string; color: string; desc: string }[];
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}?memorial=${encodeURIComponent(name)}`;
+    try { await navigator.clipboard.writeText(url); } catch { /* silent */ }
+    setShareState("copied");
+    if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+    shareTimerRef.current = setTimeout(() => setShareState("idle"), 2200);
+  };
 
   return (
     <motion.div
@@ -885,16 +1200,16 @@ function MemorialProfileSheet({
       initial={{ y: "100%", opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: "100%", opacity: 0 }}
-      transition={{ type: "spring", damping: 30, stiffness: 300 }}
+      transition={{ type: "spring", damping: 30, stiffness: 290 }}
       onClick={e => e.stopPropagation()}
       style={{
         position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 50,
         borderRadius: "28px 28px 0 0",
-        background: "linear-gradient(180deg, rgba(6,3,20,0.98) 0%, rgba(4,2,14,1) 100%)",
-        backdropFilter: "blur(30px)",
-        border: "1px solid rgba(212,175,55,0.28)", borderBottom: "none",
-        maxHeight: "84dvh", overflowY: "auto",
-        boxShadow: "0 -20px 70px rgba(0,0,0,0.65), 0 -1px 0 rgba(212,175,55,0.12)",
+        background: "linear-gradient(180deg, rgba(5,2,18,0.98) 0%, rgba(3,1,12,1) 100%)",
+        backdropFilter: "blur(32px)",
+        border: "1px solid rgba(212,175,55,0.25)", borderBottom: "none",
+        maxHeight: "88dvh", overflowY: "auto",
+        boxShadow: "0 -24px 80px rgba(0,0,0,0.75), 0 -1px 0 rgba(212,175,55,0.14)",
       }}
     >
       {/* Handle */}
@@ -902,22 +1217,27 @@ function MemorialProfileSheet({
         <div style={{ width: 44, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.1)" }} />
       </div>
 
-      <div style={{ padding: "8px 22px 50px" }}>
-        {/* Avatar + name */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 22 }}>
+      <div style={{ padding: "8px 22px 56px" }}>
+        {/* ── Avatar + name + actions row ── */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 18 }}>
+          {/* Avatar */}
           <div style={{
-            width: 74, height: 74, borderRadius: 22, flexShrink: 0,
+            width: 80, height: 80, borderRadius: 24, flexShrink: 0,
             background: "linear-gradient(135deg,#D4AF37 0%,#6a4a00 100%)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 28, fontWeight: 900, color: "#fff",
-            border: "2px solid rgba(212,175,55,0.4)",
-            animation: "ms-pulse-gold 3s ease-in-out infinite",
-          }}>{initials(name)}</div>
+            fontSize: 30, fontWeight: 900, color: "#fff",
+            animation: "ms-pulse-gold 3.5s ease-in-out infinite",
+            position: "relative",
+          }}>
+            {initials(name)}
+            {/* Glow ring */}
+            <div style={{ position: "absolute", inset: -4, borderRadius: 28, border: "1px solid rgba(212,175,55,0.25)", pointerEvents: "none" }} />
+          </div>
 
           <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-            <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", lineHeight: 1.15, marginBottom: 5 }}>{name}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", lineHeight: 1.15, marginBottom: 4 }}>{name}</div>
             {hebrew && (
-              <div style={{ fontSize: 16, fontFamily: "'Noto Serif Hebrew',serif", color: "rgba(212,175,55,0.85)", marginBottom: 6 }}>{hebrew}</div>
+              <div style={{ fontSize: 16, fontFamily: "'Noto Serif Hebrew',serif", color: "rgba(212,175,55,0.85)", marginBottom: 8, direction: "rtl" }}>{hebrew}</div>
             )}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {entry.displayDate && (
@@ -926,79 +1246,130 @@ function MemorialProfileSheet({
                 </div>
               )}
               {entry.passingYear && (
-                <div style={{ padding: "3px 10px", borderRadius: 18, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 10, color: "rgba(255,255,255,0.4)" }}>
+                <div style={{ padding: "3px 10px", borderRadius: 18, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", fontSize: 10, color: "rgba(255,255,255,0.38)" }}>
                   {entry.passingYear}
                 </div>
               )}
             </div>
           </div>
 
-          <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: "rgba(255,255,255,0.07)", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 14, marginTop: 2 }}>✕</button>
+          {/* Action buttons */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+            <button
+              onClick={onClose}
+              style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}
+            >✕</button>
+            <motion.button
+              onClick={() => setFavorited(f => !f)}
+              whileHover={{ scale: 1.12 }} whileTap={{ scale: 0.9 }}
+              style={{ width: 34, height: 34, borderRadius: "50%", background: favorited ? "rgba(248,113,113,0.18)" : "rgba(255,255,255,0.06)", border: `1px solid rgba(248,113,113,${favorited ? "0.4" : "0.15"})`, color: favorited ? "#f87171" : "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+              title="Favorite"
+            >{favorited ? "❤️" : "🤍"}</motion.button>
+            <motion.button
+              onClick={handleShare}
+              whileHover={{ scale: 1.12 }} whileTap={{ scale: 0.9 }}
+              style={{ width: 34, height: 34, borderRadius: "50%", background: shareState === "copied" ? "rgba(100,200,120,0.15)" : "rgba(255,255,255,0.06)", border: `1px solid rgba(255,255,255,${shareState === "copied" ? "0.2" : "0.1"})`, color: shareState === "copied" ? "#6ee7b7" : "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+              title="Share memorial"
+            >{shareState === "copied" ? "✓" : "↗"}</motion.button>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+        {/* ── Share confirmation ── */}
+        <AnimatePresence>
+          {shareState === "copied" && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+              style={{ overflow: "hidden", marginBottom: 10 }}
+            >
+              <div style={{ padding: "8px 14px", borderRadius: 12, background: "rgba(100,200,120,0.08)", border: "1px solid rgba(100,200,120,0.22)", fontSize: 11, color: "rgba(110,231,183,0.9)", display: "flex", alignItems: "center", gap: 8 }}>
+                <span>✓</span> Memorial link copied to clipboard
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Stats ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 9, marginBottom: 20 }}>
           {[
             { icon: "🕯️", label: "Candles", value: candleN.toLocaleString(), color: "#D4AF37" },
-            { icon: "🌹", label: "Flowers", value: flowerN.toLocaleString(), color: "#f87171" },
-            { icon: "👥", label: "Visitors", value: visitorN.toLocaleString(), color: "rgba(255,255,255,0.7)" },
+            { icon: "🌹", label: "Flowers",  value: flowerN.toLocaleString(), color: "#f87171" },
+            { icon: "👥", label: "Visitors", value: visitorN.toLocaleString(), color: "rgba(255,255,255,0.72)" },
           ].map(s => (
-            <div key={s.label} style={{
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 16, padding: "12px 8px", textAlign: "center",
-            }}>
-              <div style={{ fontSize: 22, marginBottom: 5 }}>{s.icon}</div>
+            <div key={s.label} style={{ background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "13px 8px", textAlign: "center" }}>
+              <div style={{ fontSize: 22, marginBottom: 6 }}>{s.icon}</div>
               <div style={{ fontSize: 18, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", marginTop: 4, letterSpacing: "0.06em" }}>{s.label.toUpperCase()}</div>
+              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.28)", marginTop: 4, letterSpacing: "0.07em" }}>{s.label.toUpperCase()}</div>
             </div>
           ))}
         </div>
 
-        {/* Lit by */}
+        {/* ── Life Timeline ── */}
+        {timelineEvents.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.55)", marginBottom: 12 }}>LIFE TIMELINE</div>
+            <div style={{ position: "relative", paddingLeft: 28 }}>
+              {/* Vertical line */}
+              <div style={{ position: "absolute", left: 10, top: 8, bottom: 8, width: 1, background: "linear-gradient(to bottom, rgba(212,175,55,0.5), rgba(212,175,55,0.08))" }} />
+              {timelineEvents.map((ev, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 + 0.2 }}
+                  style={{ position: "relative", marginBottom: i < timelineEvents.length - 1 ? 18 : 0, display: "flex", alignItems: "flex-start", gap: 12 }}
+                >
+                  {/* Timeline dot */}
+                  <div style={{ position: "absolute", left: -24, top: 6, width: 10, height: 10, borderRadius: "50%", background: ev.color, boxShadow: `0 0 8px ${ev.color}`, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
+                      <span style={{ fontSize: 14 }}>{ev.icon}</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "#fff" }}>{ev.label}</span>
+                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginLeft: "auto" }}>{ev.year}</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.36)", lineHeight: 1.5 }}>{ev.desc}</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Lit by ── */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.62)", marginBottom: 6 }}>LIT BY</div>
-          <div style={{ padding: "10px 14px", borderRadius: 14, background: "rgba(212,175,55,0.07)", border: "1px solid rgba(212,175,55,0.18)", fontSize: 13, color: "rgba(212,175,55,0.88)", display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.58)", marginBottom: 6 }}>LIT BY</div>
+          <div style={{ padding: "10px 14px", borderRadius: 14, background: "rgba(212,175,55,0.065)", border: "1px solid rgba(212,175,55,0.16)", fontSize: 13, color: "rgba(212,175,55,0.88)", display: "flex", alignItems: "center", gap: 8 }}>
             🕯️ {entry.donorDisplayName}
           </div>
         </div>
 
-        {/* Message */}
+        {/* ── Message ── */}
         {entry.message && (
           <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,0.38)", marginBottom: 6 }}>MEMORIAL MESSAGE</div>
-            <div style={{
-              padding: "14px 16px 14px 26px", borderRadius: 16,
-              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
-              fontSize: 13, color: "rgba(255,255,255,0.6)", fontStyle: "italic", lineHeight: 1.7,
-              position: "relative",
-            }}>
-              <span style={{ position: "absolute", top: 4, left: 10, fontSize: 28, color: "rgba(212,175,55,0.18)", fontFamily: "Georgia,serif", lineHeight: 1 }}>"</span>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,0.35)", marginBottom: 6 }}>MEMORIAL MESSAGE</div>
+            <div style={{ padding: "14px 16px 14px 28px", borderRadius: 16, background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.065)", fontSize: 13, color: "rgba(255,255,255,0.58)", fontStyle: "italic", lineHeight: 1.75, position: "relative" }}>
+              <span style={{ position: "absolute", top: 4, left: 10, fontSize: 30, color: "rgba(212,175,55,0.15)", fontFamily: "Georgia,serif", lineHeight: 1 }}>"</span>
               {entry.message}
             </div>
           </div>
         )}
 
-        {/* Hebrew blessing */}
-        <div style={{
-          textAlign: "center", padding: "16px 0",
-          borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)",
-          marginBottom: 18,
-        }}>
-          <div style={{ fontFamily: "'Noto Serif Hebrew',serif", fontSize: 21, color: "rgba(212,175,55,0.84)", letterSpacing: "0.04em" }}>
+        {/* ── Hebrew blessing ── */}
+        <div style={{ textAlign: "center", padding: "18px 16px", borderTop: "1px solid rgba(255,255,255,0.055)", borderBottom: "1px solid rgba(255,255,255,0.055)", marginBottom: 18, background: "rgba(212,175,55,0.03)", borderRadius: 16 }}>
+          <div style={{ fontFamily: "'Noto Serif Hebrew',serif", fontSize: 22, color: "rgba(212,175,55,0.86)", letterSpacing: "0.04em", lineHeight: 1.5, marginBottom: 6 }}>
             יהי זכרם ברוך
           </div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 5, letterSpacing: "0.04em" }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.32)", letterSpacing: "0.06em" }}>
             May their memory be a blessing
           </div>
         </div>
 
-        {/* Learners */}
+        {/* ── Dedicated learners ── */}
         {entry.learners.length > 0 && (
           <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(167,139,250,0.7)", marginBottom: 8 }}>DEDICATED LEARNING</div>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(167,139,250,0.65)", marginBottom: 8 }}>DEDICATED LEARNING</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {entry.learners.map((l, i) => (
-                <div key={i} style={{ padding: "5px 12px", borderRadius: 16, background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", fontSize: 11, color: "rgba(167,139,250,0.88)" }}>
+                <div key={i} style={{ padding: "5px 12px", borderRadius: 16, background: "rgba(167,139,250,0.07)", border: "1px solid rgba(167,139,250,0.18)", fontSize: 11, color: "rgba(167,139,250,0.88)" }}>
                   📖 {l.learnerName} · {l.studySubject}
                 </div>
               ))}
@@ -1006,18 +1377,17 @@ function MemorialProfileSheet({
           </div>
         )}
 
-        {/* Divider */}
-        <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 16 }} />
+        {/* ── Divider ── */}
+        <div style={{ height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 16 }} />
 
-        {/* Leave tribute */}
+        {/* ── Leave tribute ── */}
         <motion.button
           onClick={() => setShowDedicate(!showDedicate)}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
+          whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
           style={{
             width: "100%", padding: "14px 0", marginBottom: showDedicate ? 14 : 0,
             background: showDedicate ? "rgba(167,139,250,0.14)" : "rgba(167,139,250,0.07)",
-            border: `1px solid rgba(167,139,250,${showDedicate ? "0.42" : "0.22"})`,
+            border: `1px solid rgba(167,139,250,${showDedicate ? "0.4" : "0.2"})`,
             borderRadius: 16, fontSize: 14, fontWeight: 700,
             color: "rgba(167,139,250,0.92)", cursor: "pointer", transition: "all 0.2s",
           }}
@@ -1034,7 +1404,7 @@ function MemorialProfileSheet({
                   { label: "SUBJECT OF STUDY *", key: "studySubject", placeholder: "e.g. Mishnah, Tehillim, Talmud…" },
                 ].map(f => (
                   <div key={f.key} style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", color: "rgba(212,175,55,0.65)", marginBottom: 6 }}>{f.label}</div>
+                    <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", color: "rgba(212,175,55,0.62)", marginBottom: 6 }}>{f.label}</div>
                     <input type="text" value={(dedicateForm as any)[f.key]}
                       onChange={e => setDedicateForm((p: any) => ({ ...p, [f.key]: e.target.value }))}
                       placeholder={f.placeholder} className="ms-input" />
@@ -1045,13 +1415,7 @@ function MemorialProfileSheet({
                   disabled={dedicateSaving || !dedicateForm.learnerName.trim() || !dedicateForm.studySubject.trim()}
                   whileHover={!dedicateSaving ? { scale: 1.01 } : {}}
                   whileTap={!dedicateSaving ? { scale: 0.99 } : {}}
-                  style={{
-                    width: "100%", padding: "14px 0",
-                    background: dedicateSaving ? "rgba(167,139,250,0.22)" : "linear-gradient(135deg,#a78bfa,#7c3aed)",
-                    border: "none", borderRadius: 14, fontSize: 14, fontWeight: 800, color: "#fff",
-                    cursor: dedicateSaving ? "default" : "pointer",
-                    opacity: dedicateSaving ? 0.7 : 1, transition: "opacity 0.2s",
-                  }}
+                  style={{ width: "100%", padding: "14px 0", background: dedicateSaving ? "rgba(167,139,250,0.22)" : "linear-gradient(135deg,#a78bfa,#7c3aed)", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 800, color: "#fff", cursor: dedicateSaving ? "default" : "pointer", opacity: dedicateSaving ? 0.7 : 1, transition: "opacity 0.2s" }}
                 >
                   {dedicateSaving ? "Submitting…" : "📖 Dedicate"}
                 </motion.button>
@@ -1153,6 +1517,19 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const [selectedFlowerColor, setSelectedFlowerColor] = useState(0);
   const [newCandlePos, setNewCandlePos]     = useState<[number, number, number] | null>(null);
   const sound = useAmbientSound();
+
+  /* Phase 4: keyboard handler — Escape closes any open panel */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (selectedEntry) { setSelectedEntry(null); setShowDedicate(false); setDedicateSuccess(false); return; }
+      if (showForm) { setShowForm(false); setPendingPos(null); return; }
+      if (activeNav !== "home") { setActiveNav("home"); return; }
+      onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selectedEntry, showForm, activeNav, onClose]);
   /**
    * canRender3D — mount guard for R3F v9 + React 19 Strict Mode.
    *
@@ -1247,13 +1624,26 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
     } finally { setDedicateSaving(false); }
   }
 
-  const filtered    = filterEntries(entries, searchQuery, filterYear);
-  const totalLit    = entries.length;
+  const filtered      = filterEntries(entries, searchQuery, filterYear);
+  const totalLit      = entries.length;
   const totalVisitors = hashNum("global-visitors", 4000, 6000);
-  const panelOpen   = showForm || !!selectedEntry;
-  const showStrip   = activeNav === "memorials" && !searchQuery && !panelOpen;
-  const showMusic   = activeNav === "music"   && !panelOpen;
-  const showFlowers = activeNav === "flowers" && !panelOpen;
+  const panelOpen     = showForm || !!selectedEntry;
+  const showStrip     = activeNav === "memorials" && !searchQuery && !panelOpen;
+  const showMusic     = activeNav === "music"   && !panelOpen;
+  const showFlowers   = activeNav === "flowers" && !panelOpen;
+  const showHome      = activeNav === "home"    && !panelOpen;
+
+  /* Home panel: light a candle by placing at a random valley position */
+  const handleHomePanelLightCandle = useCallback(() => {
+    const pos: [number, number, number] = [
+      (Math.random() - 0.5) * 10,
+      0.05,
+      (Math.random() - 0.5) * 8,
+    ];
+    setPendingPos(pos);
+    setShowForm(true);
+    setShowHints(false);
+  }, []);
 
   return (
     <div
@@ -1323,8 +1713,21 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         )}
       </AnimatePresence>
 
-      {/* ── LEFT STATS ── */}
-      {!panelOpen && (
+      {/* ── HOME PANEL — shows instead of left stats when Home nav active ── */}
+      <AnimatePresence>
+        {showHome && (
+          <SanctuaryHomePanel
+            entries={entries}
+            candleCount={24832 + totalLit}
+            visitorCount={8947 + totalVisitors}
+            onLightCandle={handleHomePanelLightCandle}
+            onSelectEntry={e => { setSelectedEntry(e); setActiveNav("home"); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── LEFT STATS — shown when a non-home nav is active ── */}
+      {!panelOpen && !showHome && (
         <LeftStatsPanel
           candleCount={24832 + totalLit}
           visitorCount={8947 + totalVisitors}
@@ -1364,6 +1767,9 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
           />
         )}
       </AnimatePresence>
+
+      {/* ── AMBIENT COMMUNITY NOTIFICATIONS ── */}
+      <AmbientNotification entries={entries} paused={panelOpen || showForm} />
 
       {/* ── INTERACTION HINTS ── */}
       {!panelOpen && <InteractionHints visible={showHints} />}
