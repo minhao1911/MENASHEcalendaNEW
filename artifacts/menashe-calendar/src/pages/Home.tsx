@@ -42,6 +42,14 @@ import {
   haversineDistKm,
   padZero,
 } from "./home/utils";
+import {
+  useHomeGreeting,
+  useHomeCalendar,
+  useHomeLocation,
+  useHomeNotifications,
+  useHomeAI,
+  useHomeCommunity,
+} from "./home/hooks";
 
 interface HolidayInsight {
   overview: string;
@@ -3141,107 +3149,22 @@ export default function Home({
   profileName,
 }: HomeProps) {
   const { t } = useLanguage();
-  const { user } = useUser();
-  const today = new Date();
-  const hour = today.getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
-  const displayName = profileName?.trim() || user?.firstName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || null;
-  const firstName = displayName;
-  const hdate = getHebrewDate(today);
-  const zmanim = calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes);
-  const parasha = getCurrentParasha(today);
-  const holidays = getUpcomingHolidays(today, 3);
-
-  const hebrewDay = hebrewDayNumeral(hdate.getDate());
-  const hebrewMonth = getHebrewMonthName(hdate);
-  const hebrewYear = hdate.getFullYear();
-
-  const isFriday = today.getDay() === 5;
-  const isShabbat = today.getDay() === 6;
-  const showCandleLighting = isFriday || isShabbat;
+  const { greeting, displayName, firstName, user } = useHomeGreeting({ profileName });
+  const {
+    today, hdate, zmanim, parasha, holidays,
+    hebrewDay, hebrewMonth, hebrewYear,
+    isFriday, isShabbat, showCandleLighting,
+    todayHolidays, omerDay,
+    nextShabbat, dayName, monthStr, yearStr,
+  } = useHomeCalendar(location);
   const isLight = theme === "light";
-  const todayHolidays = getTodayHolidays();
-  const omerDay = getOmerDay(today);
-
-  const mapCardRef = useRef<HTMLDivElement>(null);
-  const [mapForceExpand, setMapForceExpand] = useState(false);
-  const [showCompassCard, setShowCompassCard] = useState(false);
-
-  function onShowMap() {
-    setMapForceExpand(true);
-    setTimeout(() => setMapForceExpand(false), 200);
-  }
-
-  function onShowCompass() { setShowCompassCard(true); }
-
-  const [candleCountdown, setCandleCountdown] = useState("");
-  const [showShabbatBanner, setShowShabbatBanner] = useState(false);
-  const candleNotifFiredRef = useRef<string>("");
-
-  useEffect(() => {
-    if (!isPremium || !candleEnabled) return;
-
-    // Request notification permission silently for premium users
-    if (isNotifSupported() && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
-    }
-
-    function getNextCandleLighting(): Date | null {
-      const now = new Date();
-      let daysUntilFriday = (5 - now.getDay() + 7) % 7;
-      if (daysUntilFriday === 0 && zmanim.candleLighting && now >= zmanim.candleLighting) {
-        daysUntilFriday = 7;
-      }
-      const fridayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilFriday);
-      const fridayZmanim = calculateZmanim(fridayDate, location.lat, location.lng, location.candleLightingMinutes);
-      return fridayZmanim.candleLighting;
-    }
-
-    function tick() {
-      const target = getNextCandleLighting();
-      if (!target) { setCandleCountdown(""); return; }
-      const now = new Date();
-      const diff = target.getTime() - now.getTime();
-      if (diff <= 0) {
-        setCandleCountdown("Now!");
-        // Fire once per candle lighting time
-        const key = target.toISOString();
-        if (candleNotifFiredRef.current !== key) {
-          candleNotifFiredRef.current = key;
-          // In-app banner (always)
-          setShowShabbatBanner(true);
-          // Push notification (if permission granted)
-          sendNotification(
-            "🕯 Shabbat Candle Lighting",
-            `It's time to light candles in ${location.name}! Shabbat Shalom — שַׁבָּת שָׁלוֹם`,
-            "candle-lighting-premium"
-          );
-        }
-        return;
-      }
-      const totalSecs = Math.floor(diff / 1000);
-      const d = Math.floor(totalSecs / 86400);
-      const h = Math.floor((totalSecs % 86400) / 3600);
-      const m = Math.floor((totalSecs % 3600) / 60);
-      const s = totalSecs % 60;
-      if (d > 0) {
-        setCandleCountdown(`${d}d ${h}h`);
-      } else if (h > 0) {
-        setCandleCountdown(`${h}h ${m}m`);
-      } else {
-        setCandleCountdown(`${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
-      }
-    }
-
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [isPremium, candleEnabled, location]);
-
-  const nextShabbat = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (6 - today.getDay()));
-  const dayName = getDayOfWeek(today);
-  const monthStr = today.toLocaleDateString("en-US", { month: "long" });
-  const yearStr = today.getFullYear();
+  const { mapForceExpand, showCompassCard, setShowCompassCard, onShowMap, onShowCompass } = useHomeLocation();
+  const { candleCountdown, showShabbatBanner, setShowShabbatBanner } = useHomeNotifications({
+    isPremium,
+    candleEnabled,
+    location,
+    zmanim,
+  });
 
   return (
     <div style={{ padding: "0 0 4px" }}>
@@ -3893,212 +3816,28 @@ export default function Home({
    AI Chat Floating Widget
 ───────────────────────────────────────────────────────────────────── */
 
-async function getAiToken(): Promise<string | null> {
-  return (await (window as any).Clerk?.session?.getToken()) ?? null;
-}
-
-interface AiMessage { role: "user" | "assistant"; content: string; streaming?: boolean; }
-
 function AiChatFAB() {
   const { t, lang } = useLanguage();
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<AiMessage[]>(() => {
-    try {
-      const saved = localStorage.getItem(AI_CHAT_HISTORY_KEY);
-      if (!saved) return [];
-      const parsed = JSON.parse(saved) as AiMessage[];
-      return Array.isArray(parsed) ? parsed.filter(m => !m.streaming) : [];
-    } catch { return []; }
-  });
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [minimized, setMinimized] = useState<boolean>(() => {
-    try { return localStorage.getItem(AI_CHAT_MINIMIZED_KEY) === "1"; } catch { return false; }
-  });
-  const [fabHovered, setFabHovered] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const recognitionRef = useRef<any>(null);
-  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-
-  async function shareMessage(content: string, idx: number) {
-    const text = `✡ Rav Menashe AI\n\n${content}\n\n— Bnei Menashe Calendar`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Rav Menashe AI", text });
-        return;
-      } catch {}
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedIdx(idx);
-      setTimeout(() => setCopiedIdx(null), 2000);
-    } catch {}
-  }
-
-  const voiceSupported = typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
-
-  function toggleVoice() {
-    if (!voiceSupported) {
-      setVoiceError(t.chatVoiceUnsupported);
-      setTimeout(() => setVoiceError(null), 3000);
-      return;
-    }
-    if (isListening) {
-      recognitionRef.current?.stop();
-      return;
-    }
-    setVoiceError(null);
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const rec = new SR();
-    rec.lang = "en-US";
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
-    recognitionRef.current = rec;
-
-    let finalTranscript = "";
-
-    rec.onstart = () => setIsListening(true);
-    rec.onend = () => {
-      setIsListening(false);
-      if (finalTranscript.trim()) {
-        setInput(prev => {
-          const joined = prev.trim() ? prev.trim() + " " + finalTranscript.trim() : finalTranscript.trim();
-          return joined;
-        });
-        setTimeout(() => inputRef.current?.focus(), 80);
-      }
-    };
-    rec.onerror = (e: any) => {
-      setIsListening(false);
-      if (e.error !== "aborted" && e.error !== "no-speech") {
-        setVoiceError(t.chatVoiceUnsupported);
-        setTimeout(() => setVoiceError(null), 3000);
-      }
-    };
-    rec.onresult = (e: any) => {
-      let interim = "";
-      finalTranscript = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
-        else interim += e.results[i][0].transcript;
-      }
-      setInput(interim || finalTranscript);
-    };
-    rec.start();
-  }
-
-  useEffect(() => {
-    try { localStorage.setItem(AI_CHAT_MINIMIZED_KEY, minimized ? "1" : "0"); } catch {}
-  }, [minimized]);
-
-  useEffect(() => {
-    try {
-      const toSave = messages.filter(m => !m.streaming).slice(-60);
-      localStorage.setItem(AI_CHAT_HISTORY_KEY, JSON.stringify(toSave));
-    } catch {}
-  }, [messages]);
-
-  function minimize() {
-    setOpen(false);
-    setMinimized(true);
-  }
-
-  function restore() {
-    setMinimized(false);
-  }
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 120);
-  }, [open]);
-
-  async function sendMessage(text: string) {
-    if (!text.trim() || loading) return;
-    const userMsg: AiMessage = { role: "user", content: text.trim() };
-    const nextMsgs = [...messages, userMsg];
-    setMessages(nextMsgs);
-    setInput("");
-    setLoading(true);
-
-    const assistant: AiMessage = { role: "assistant", content: "", streaming: true };
-    setMessages([...nextMsgs, assistant]);
-
-    const token = await getAiToken();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        credentials: "include",
-        signal: ctrl.signal,
-        body: JSON.stringify({ messages: nextMsgs.map(({ role, content }) => ({ role, content })) }),
-      });
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
-
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let acc = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        for (const line of dec.decode(value, { stream: true }).split("\n")) {
-          if (!line.startsWith("data: ")) continue;
-          const payload = line.slice(6).trim();
-          if (payload === "[DONE]") break;
-          try {
-            const p = JSON.parse(payload);
-            if (p.error) acc = p.error;
-            else if (p.text) acc += p.text;
-            setMessages(prev => {
-              const u = [...prev];
-              u[u.length - 1] = { role: "assistant", content: acc, streaming: true };
-              return u;
-            });
-          } catch {}
-        }
-      }
-      setMessages(prev => {
-        const u = [...prev];
-        u[u.length - 1] = { role: "assistant", content: acc || t.chatError, streaming: false };
-        return u;
-      });
-    } catch (err: any) {
-      if (err.name === "AbortError") return;
-      setMessages(prev => {
-        const u = [...prev];
-        u[u.length - 1] = { role: "assistant", content: t.chatError, streaming: false };
-        return u;
-      });
-    } finally {
-      setLoading(false);
-      abortRef.current = null;
-    }
-  }
-
-  function handleStop() {
-    abortRef.current?.abort();
-    setLoading(false);
-    setMessages(prev => {
-      const u = [...prev];
-      const last = u[u.length - 1];
-      if (last?.streaming) u[u.length - 1] = { ...last, streaming: false };
-      return u;
-    });
-  }
+  const {
+    open, setOpen,
+    messages, setMessages,
+    input, setInput,
+    loading,
+    minimized,
+    fabHovered, setFabHovered,
+    isListening,
+    voiceError,
+    copiedIdx,
+    bottomRef,
+    inputRef,
+    voiceSupported,
+    sendMessage,
+    handleStop,
+    shareMessage,
+    toggleVoice,
+    minimize,
+    restore,
+  } = useHomeAI();
 
   /* ── Minimized: tiny pill ── */
   if (minimized) {
@@ -4645,116 +4384,22 @@ function CommunityFAB({
   onShowCompass: () => void;
   announcementCount: number;
 }) {
-  const [open, setOpen] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useLanguage();
-
-  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
-    try {
-      const s = localStorage.getItem(FAB_POS_KEY);
-      if (s) { const p = JSON.parse(s); if (typeof p.x === "number" && typeof p.y === "number") return p; }
-    } catch {}
-    return { x: window.innerWidth - 92, y: window.innerHeight - 188 };
-  });
-  const drag = useRef({ active: false, startX: 0, startY: 0, initX: 0, initY: 0, moved: false });
-
-  const [showHint, setShowHint] = useState(() => {
-    try { return !localStorage.getItem(FAB_HINT_KEY); } catch { return false; }
-  });
-  useEffect(() => {
-    if (!showHint) return;
-    const t = setTimeout(() => setShowHint(false), 3500);
-    return () => clearTimeout(t);
-  }, [showHint]);
-
-  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (open) return;
-    drag.current = { active: true, startX: e.clientX, startY: e.clientY, initX: pos.x, initY: pos.y, moved: false };
-    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-  }
-  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!drag.current.active) return;
-    const dx = e.clientX - drag.current.startX;
-    const dy = e.clientY - drag.current.startY;
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) drag.current.moved = true;
-    if (!drag.current.moved) return;
-    if (showHint) { setShowHint(false); try { localStorage.setItem(FAB_HINT_KEY, "1"); } catch {} }
-    setPos({
-      x: Math.max(0, Math.min(window.innerWidth - 80, drag.current.initX + dx)),
-      y: Math.max(0, Math.min(window.innerHeight - 110, drag.current.initY + dy)),
-    });
-  }
-  function onPointerUp() {
-    if (!drag.current.active) return;
-    drag.current.active = false;
-    if (drag.current.moved) {
-      try { localStorage.setItem(FAB_HINT_KEY, "1"); } catch {}
-      setPos(p => { try { localStorage.setItem(FAB_POS_KEY, JSON.stringify(p)); } catch {} return p; });
-    }
-  }
-  function handleMainClick() {
-    if (drag.current.moved) return;
-    if (open && !isClosing) triggerClose();
-    else if (!isClosing) setOpen(true);
-  }
-
-  function triggerClose() {
-    setIsClosing(true);
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    // 8 items × 70ms stagger + 400ms animation = 960ms; wait 990ms
-    closeTimer.current = setTimeout(() => {
-      setOpen(false);
-      setIsClosing(false);
-    }, 990);
-  }
-
-  const [upcomingEventCount, setUpcomingEventCount] = useState(0);
-  const [upcomingYahrzeitCount, setUpcomingYahrzeitCount] = useState(0);
-
-  useEffect(() => {
-    fetchCommunityYahrzeit().then(entries => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const in30 = new Date(today);
-      in30.setDate(in30.getDate() + 30);
-      const curHYear = new HDate(today).getFullYear();
-
-      let count = 0;
-      for (const e of entries) {
-        for (const yr of [curHYear, curHYear + 1]) {
-          try {
-            const greg = new HDate(e.hebrewDay, e.hebrewMonth, yr).greg();
-            greg.setHours(0, 0, 0, 0);
-            if (greg >= today && greg <= in30) { count++; break; }
-            if (greg > in30) break;
-          } catch { /* skip invalid hebrew dates */ }
-        }
-      }
-      setUpcomingYahrzeitCount(count);
-    }).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    function countUpcoming() {
-      try {
-        const raw = localStorage.getItem("menashe-community-events");
-        const events: Array<{ date: string }> = raw ? JSON.parse(raw) : [];
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const count = events.filter(e => {
-          const d = new Date(e.date + "T00:00:00");
-          return d >= today;
-        }).length;
-        setUpcomingEventCount(count);
-      } catch {
-        setUpcomingEventCount(0);
-      }
-    }
-    countUpcoming();
-    window.addEventListener("storage", countUpcoming);
-    return () => window.removeEventListener("storage", countUpcoming);
-  }, []);
+  const {
+    open, setOpen,
+    isClosing,
+    pos,
+    showHint,
+    upcomingEventCount,
+    upcomingYahrzeitCount,
+    drag,
+    triggerClose,
+    handleMainClick,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    handleItem,
+  } = useHomeCommunity();
 
   const items = [
     { label: t.fabAnnouncements, icon: "📢", action: onShowAnnouncements, count: announcementCount },
@@ -4766,11 +4411,6 @@ function CommunityFAB({
     { label: t.fabLocationMap, icon: "🗺️", action: onShowMap },
     { label: t.fabCompass, icon: "🧭", action: onShowCompass },
   ];
-
-  function handleItem(action: () => void) {
-    triggerClose();
-    action();
-  }
 
   return (
     <>

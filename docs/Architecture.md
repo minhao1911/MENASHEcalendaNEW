@@ -645,9 +645,107 @@ The geo utilities (`haversineDistKm`, `getBearingToJerusalem`) and date helpers 
 |---|---|---|
 | H-001 | Extract static data into `src/pages/home/data/` | ✓ Complete |
 | H-002 | Extract pure utility functions into `src/pages/home/utils/` | ✓ Complete |
-| H-003 | Extract sub-components (cards, widgets, strips) into `src/pages/home/components/` | Pending review |
-| H-004 | Extract hooks (state management, data fetching) into `src/pages/home/hooks/` | Pending |
+| H-003 | Extract reusable business logic into `src/pages/home/hooks/` | ✓ Complete |
+| H-004 | Extract sub-components (cards, widgets, strips) into `src/pages/home/components/` | Pending |
 | H-005 | Extract types and interfaces into `src/pages/home/types.ts` | Pending |
 | H-006 | Slim `Home.tsx` to an orchestration-only shell | Pending |
 
-**Stop after H-002 — awaiting Chief Architect review before H-003.**
+**Stop after H-003 — awaiting Chief Architect review before H-004.**
+
+---
+
+## SPR-007 — H-003: Business Logic Hook Extraction
+
+> Status: Complete | Date: 2026-06-26
+
+### Objective
+
+Extract all stateful business logic and side-effecting behaviour from `Home.tsx` into dedicated custom React hooks under `src/pages/home/hooks/`. No JSX was moved, no components were extracted, no APIs were modified, and no rendering changed.
+
+### Hooks Created
+
+| Hook | State Owned | Effects |
+|---|---|---|
+| `useHomeGreeting.ts` | `greeting`, `displayName`, `firstName`, `user` | None — pure derivations from Clerk `useUser()` + `profileName` prop |
+| `useHomeCalendar.ts` | `today`, `hdate`, `zmanim`, `parasha`, `holidays`, `hebrewDay/Month/Year`, `isFriday`, `isShabbat`, `showCandleLighting`, `todayHolidays`, `omerDay`, `nextShabbat`, `dayName`, `monthStr`, `yearStr` | None — synchronous derivations from `@hebcal/core` + lib functions |
+| `useHomeLocation.ts` | `mapForceExpand`, `showCompassCard` | None — `setMapForceExpand` uses `setTimeout` (not a React effect) |
+| `useHomeNotifications.ts` | `candleCountdown`, `showShabbatBanner` | `setInterval` countdown ticker; one-shot push notification + in-app banner on candle lighting time |
+| `useHomeAI.ts` | `open`, `messages`, `input`, `loading`, `minimized`, `fabHovered`, `isListening`, `voiceError`, `copiedIdx`; refs: `bottomRef`, `inputRef`, `abortRef`, `recognitionRef` | localStorage persistence (minimized + chat history); scroll-to-bottom on messages; focus input on open |
+| `useHomeCommunity.ts` | `open`, `isClosing`, `pos`, `showHint`, `upcomingEventCount`, `upcomingYahrzeitCount`; refs: `closeTimer`, `drag` | hint auto-dismiss timer; community yahrzeit count fetch; community events localStorage count + storage event listener |
+
+### Responsibilities Moved
+
+| Responsibility | From | To |
+|---|---|---|
+| Greeting string + display name derivation | `Home()` body | `useHomeGreeting` |
+| Hebrew date / zmanim / parasha / holidays / omer | `Home()` body | `useHomeCalendar` |
+| Map force-expand + compass card open state | `Home()` body | `useHomeLocation` |
+| Candle countdown interval + Shabbat banner + push notification | `Home()` body (large `useEffect`) | `useHomeNotifications` |
+| AI chat open/messages/streaming/voice/history persistence | `AiChatFAB()` body | `useHomeAI` |
+| Community FAB drag/position/open/hint/event counts | `CommunityFAB()` body | `useHomeCommunity` |
+
+### State Ownership Summary
+
+```
+Home()
+├── calls useHomeGreeting     → { greeting, displayName, firstName, user }
+├── calls useHomeCalendar     → { today, hdate, zmanim, parasha, holidays, … }
+├── calls useHomeLocation     → { mapForceExpand, showCompassCard, onShowMap, onShowCompass, … }
+├── calls useHomeNotifications → { candleCountdown, showShabbatBanner, setShowShabbatBanner }
+└── renders (JSX unchanged)
+
+AiChatFAB()
+└── calls useHomeAI           → all chat state + refs + handlers
+
+CommunityFAB()
+└── calls useHomeCommunity    → all FAB state + drag handlers + event counts
+```
+
+### Files Created
+
+```
+src/pages/home/
+└── hooks/
+    ├── index.ts                 — barrel re-export of all 6 hooks
+    ├── useHomeGreeting.ts       — greeting + user display name
+    ├── useHomeCalendar.ts       — Hebrew calendar derivations
+    ├── useHomeLocation.ts       — map/compass UI state
+    ├── useHomeNotifications.ts  — candle countdown + banner + push notification
+    ├── useHomeAI.ts             — AI chat state, streaming, voice, history
+    └── useHomeCommunity.ts      — community FAB state, drag, event counts
+```
+
+### Files Modified
+
+| File | Change |
+|---|---|
+| `src/pages/Home.tsx` | Added `./home/hooks` import; `Home()` body replaced with hook calls; `AiChatFAB()` state+effects replaced with `useHomeAI()`; `CommunityFAB()` state+effects replaced with `useHomeCommunity()`; removed orphaned `getAiToken()` function and `AiMessage` interface |
+
+### Line Count
+
+| | Lines |
+|---|---|
+| Before H-003 (after H-002) | 5,143 |
+| After H-003 | ~4,788 |
+| **H-003 Reduction** | **~355 lines** |
+| **Total reduction (H-001 + H-002 + H-003)** | **~539 lines** |
+
+### Verification
+
+- ✓ UI identical (confirmed via screenshot — landing/splash screen intact, Vite HMR applied cleanly)
+- ✓ Hook outputs identical to prior inline logic (faithful lift, no logic changes)
+- ✓ No TypeScript errors introduced in new hook files or Home.tsx
+- ✓ No runtime errors in browser console
+- ✓ No API regressions (API server running, all endpoints intact)
+- ✓ No JSX moved, no components extracted, no routes or database code touched
+
+### Remaining Migration Phases
+
+| Phase | Description | Status |
+|---|---|---|
+| H-001 | Extract static data into `src/pages/home/data/` | ✓ Complete |
+| H-002 | Extract pure utility functions into `src/pages/home/utils/` | ✓ Complete |
+| H-003 | Extract business logic into `src/pages/home/hooks/` | ✓ Complete |
+| H-004 | Extract sub-components (cards, widgets, strips) into `src/pages/home/components/` | Pending |
+| H-005 | Extract types and interfaces into `src/pages/home/types.ts` | Pending |
+| H-006 | Slim `Home.tsx` to an orchestration-only shell | Pending |
