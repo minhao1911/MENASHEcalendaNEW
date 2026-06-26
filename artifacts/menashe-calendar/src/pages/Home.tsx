@@ -33,6 +33,15 @@ import {
   TORAH_THOUGHTS,
   AI_SUGGESTED, AI_FOLLOWUPS_EN, AI_FOLLOWUPS_TK,
 } from "./home/data";
+import {
+  daysUntilAnniversary,
+  getTodaySpecialStatus,
+  getTodayHolidays,
+  getBearingToJerusalem,
+  getDistToJerusalemKm,
+  haversineDistKm,
+  padZero,
+} from "./home/utils";
 
 interface HolidayInsight {
   overview: string;
@@ -187,33 +196,6 @@ function TodayHolidayCard({ name }: { name: string }) {
   );
 }
 
-
-function getTodaySpecialStatus(today: Date): { label: string; emoji: string; type: string } | null {
-  try {
-    const fastEvents = HebrewCalendar.calendar({
-      start: today, end: today, il: true, isHebrewYear: false,
-      mask: flags.MINOR_FAST | flags.MAJOR_FAST,
-    });
-    if (fastEvents.length > 0) {
-      return { type: "fast", label: fastEvents[0].render("en"), emoji: "📿" };
-    }
-    const rcEvents = HebrewCalendar.calendar({
-      start: today, end: today, il: true, isHebrewYear: false,
-      mask: flags.ROSH_CHODESH,
-    });
-    if (rcEvents.length > 0) {
-      return { type: "roshChodesh", label: rcEvents[0].render("en"), emoji: "🌙" };
-    }
-    const specialShabbat = HebrewCalendar.calendar({
-      start: today, end: today, il: true, isHebrewYear: false,
-      mask: flags.SPECIAL_SHABBAT,
-    });
-    if (specialShabbat.length > 0) {
-      return { type: "specialShabbat", label: specialShabbat[0].render("en"), emoji: "✨" };
-    }
-  } catch {}
-  return null;
-}
 
 function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
   today: Date;
@@ -385,7 +367,7 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
   const s = totalSec % 60;
   const progress = Math.min(100, Math.max(2, (1 - diff / (7 * 86400 * 1000)) * 100));
 
-  const pad = (n: number) => String(n).padStart(2, "0");
+  const pad = padZero;
 
   /* ── Collapse chevron button ── */
   const CollapseBtn = ({ light }: { light?: boolean }) => (
@@ -567,14 +549,6 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
 }
 
 // ── Upcoming Celebrations (Birthday / Aliyah Anniversary) ──────────────────
-
-function daysUntilAnniversary(dateStr: string): number {
-  const d = new Date(dateStr + "T00:00:00");
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  let ann = new Date(today.getFullYear(), d.getMonth(), d.getDate());
-  if (ann < today) ann = new Date(today.getFullYear() + 1, d.getMonth(), d.getDate());
-  return Math.round((ann.getTime() - today.getTime()) / 86400000);
-}
 
 interface CelebEntry {
   id: string; name: string; role: string; country: string;
@@ -957,20 +931,12 @@ function DateZmanimCard({
     fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`)
       .then(r => r.json())
       .then(data => {
-        const toRad = (d: number) => (d * Math.PI) / 180;
-        const distKm = (lat2: number, lng2: number) => {
-          const R = 6371;
-          const dLat = toRad(lat2 - location.lat);
-          const dLng = toRad(lng2 - location.lng);
-          const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(location.lat)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        };
         const results: Synagogue[] = (data.elements ?? []).map((el: any) => ({
           id: el.id,
           name: el.tags?.name || el.tags?.["name:en"] || "Synagogue",
           lat: el.lat ?? el.center?.lat,
           lng: el.lon ?? el.center?.lon,
-          distKm: distKm(el.lat ?? el.center?.lat, el.lon ?? el.center?.lon),
+          distKm: haversineDistKm(location.lat, location.lng, el.lat ?? el.center?.lat, el.lon ?? el.center?.lon),
         })).filter((s: Synagogue) => s.lat && s.lng)
           .sort((a: Synagogue, b: Synagogue) => a.distKm - b.distKm)
           .slice(0, 8);
@@ -983,15 +949,7 @@ function DateZmanimCard({
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${synMap.lng - 0.06},${synMap.lat - 0.06},${synMap.lng + 0.06},${synMap.lat + 0.06}&layer=mapnik&marker=${synMap.lat},${synMap.lng}`;
 
   // Bearing from current location to Jerusalem (31.7767°N, 35.2345°E)
-  const bearingToJerusalem = (() => {
-    const toRad = (d: number) => d * Math.PI / 180;
-    const lat1 = toRad(location.lat);
-    const lat2 = toRad(31.7767);
-    const dLng = toRad(35.2345 - location.lng);
-    const y = Math.sin(dLng) * Math.cos(lat2);
-    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
-    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-  })();
+  const bearingToJerusalem = getBearingToJerusalem(location.lat, location.lng);
 
   const hebrewDay   = hebrewDayNumeral(hdate.getDate());
   const hebrewMonth = getHebrewMonthName(hdate);
@@ -1563,18 +1521,6 @@ function PremiumCandleCard({
       )}
     </div>
   );
-}
-
-function getTodayHolidays(): string[] {
-  const today = new Date();
-  const events = HebrewCalendar.calendar({
-    start: today,
-    end: today,
-    il: true,
-    isHebrewYear: false,
-    mask: flags.CHAG | flags.MODERN_HOLIDAY,
-  });
-  return events.map(ev => ev.render("en"));
 }
 
 interface HomeProps {
@@ -3770,20 +3716,8 @@ export default function Home({
 
       {/* ── Jerusalem Compass Card overlay ── */}
       {showCompassCard && (() => {
-        const toRad = (d: number) => d * Math.PI / 180;
-        const lat1 = toRad(location.lat);
-        const lat2 = toRad(31.7767);
-        const dLng = toRad(35.2345 - location.lng);
-        const y = Math.sin(dLng) * Math.cos(lat2);
-        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
-        const bearing = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-
-        // Great-circle distance to Jerusalem
-        const R = 6371;
-        const dLat2 = toRad(31.7767 - location.lat);
-        const dLng2 = toRad(35.2345 - location.lng);
-        const a = Math.sin(dLat2 / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng2 / 2) ** 2;
-        const distKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        const bearing = getBearingToJerusalem(location.lat, location.lng);
+        const distKm = getDistToJerusalemKm(location.lat, location.lng);
 
         return (
           <div

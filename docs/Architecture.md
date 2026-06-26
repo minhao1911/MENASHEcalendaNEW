@@ -570,4 +570,84 @@ Per the approved blueprint (SPR-004 §SPR-004):
 | H-005 | Extract types and interfaces into `src/pages/home/types.ts` |
 | H-006 | Slim `Home.tsx` to an orchestration-only shell |
 
-**Stop after H-001 — awaiting Chief Architect review before H-002.**
+---
+
+## SPR-006 — H-002: Pure Utility Extraction
+
+> Status: Complete | Date: 2026-06-26
+
+### Objective
+
+Reduce Home.tsx complexity by extracting all pure, side-effect-free utility functions into a dedicated `src/pages/home/utils/` layer. No components, hooks, or rendering logic were moved.
+
+### Utility Inventory
+
+| Function | Origin in Home.tsx | Extracted to | Notes |
+|---|---|---|---|
+| `getTodaySpecialStatus(today)` | Top-level function (was line 191) | `holidayUtils.ts` | Uses @hebcal/core; returns fast/roshChodesh/specialShabbat status |
+| `daysUntilAnniversary(dateStr)` | Top-level function (was line 571) | `dateUtils.ts` | Pure anniversary countdown (birthday / aliyah) |
+| `getTodayHolidays()` | Top-level function (was line 1568) | `holidayUtils.ts` | Returns today's CHAG + MODERN_HOLIDAY names |
+| `padZero(n)` | Inline const inside `CandleLightingCountdown` | `formatUtils.ts` | `String(n).padStart(2, "0")` |
+| `getBearingToJerusalem(lat, lng)` | Inline IIFE inside `DateZmanimCard` (was line 986) | `geoUtils.ts` | Forward azimuth to Jerusalem |
+| `getDistToJerusalemKm(lat, lng)` | Inline calc in JSX compass IIFE (was line 3786) | `geoUtils.ts` | Rounded haversine km to Jerusalem |
+| `haversineDistKm(lat1, lng1, lat2, lng2)` | Inline inside fetch callback (was line 961) | `geoUtils.ts` | General-purpose Haversine distance |
+| `toRad(degrees)` | Duplicated in 3 locations | `geoUtils.ts` | Internal helper used by geo functions |
+
+**NOT extracted (correctly left in place):**
+- `loadStripDismissed()` — reads `localStorage` (side effect)
+- `getAiToken()` — calls `window.Clerk` (side effect)
+- `buildShareText()` — closes over `next` and `checklist` state
+- `getNextCandleLighting()` — closes over `location`, `canAccess` state
+
+### Files Created
+
+```
+src/pages/home/
+└── utils/
+    ├── index.ts          — barrel re-export
+    ├── dateUtils.ts      — daysUntilAnniversary
+    ├── holidayUtils.ts   — getTodaySpecialStatus, getTodayHolidays
+    ├── geoUtils.ts       — toRad, haversineDistKm, getBearingToJerusalem, getDistToJerusalemKm
+    └── formatUtils.ts    — padZero
+```
+
+### Files Modified
+
+| File | Change |
+|---|---|
+| `src/pages/Home.tsx` | Added `./home/utils` import block; removed 3 top-level functions; replaced 4 inline implementations with imported calls |
+
+### Line Count
+
+| | Lines |
+|---|---|
+| Before H-002 (after H-001) | 5,209 |
+| After H-002 | 5,143 |
+| **H-002 Reduction** | **66 lines** |
+| **Total reduction (H-001 + H-002)** | **184 lines** |
+
+### Verification
+
+- ✓ Home renders correctly (confirmed via screenshot — landing + sign-in flow intact)
+- ✓ Zero TypeScript errors introduced in Home.tsx or utils modules
+- ✓ No runtime errors in browser console
+- ✓ No visual regressions
+- ✓ All extracted utilities are pure, side-effect free, independently reusable, fully typed
+- ✓ Duplicate bearing/distance calculations consolidated (3 sites → 1 shared function each)
+
+### Recommended Future Shared Utilities
+
+The geo utilities (`haversineDistKm`, `getBearingToJerusalem`) and date helpers (`daysUntilAnniversary`) are strong candidates to be promoted to `lib/` shared packages in a future sprint, as they are already used or could be useful in CalendarPage, ZmanimPage, and the mobile app.
+
+### Remaining Migration Phases
+
+| Phase | Description | Status |
+|---|---|---|
+| H-001 | Extract static data into `src/pages/home/data/` | ✓ Complete |
+| H-002 | Extract pure utility functions into `src/pages/home/utils/` | ✓ Complete |
+| H-003 | Extract sub-components (cards, widgets, strips) into `src/pages/home/components/` | Pending review |
+| H-004 | Extract hooks (state management, data fetching) into `src/pages/home/hooks/` | Pending |
+| H-005 | Extract types and interfaces into `src/pages/home/types.ts` | Pending |
+| H-006 | Slim `Home.tsx` to an orchestration-only shell | Pending |
+
+**Stop after H-002 — awaiting Chief Architect review before H-003.**
