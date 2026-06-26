@@ -8,8 +8,76 @@ import {
   type CommunityYahrzeitEntry,
 } from "../lib/userApi";
 import { useLanguage } from "../context/LanguageContext";
+import type { SceneViewType } from "../components/MemorialValley3D";
 
 const MemorialValley3D = lazy(() => import("../components/MemorialValley3D"));
+
+/* ═══════════════════ AMBIENT SOUND HOOK ════════════════════════════════════ */
+function useAmbientSound() {
+  const [playing, setPlaying]    = useState(false);
+  const [volume, setVolumeState] = useState(0.38);
+  const ctxRef    = useRef<AudioContext | null>(null);
+  const masterRef = useRef<GainNode | null>(null);
+
+  const start = useCallback(() => {
+    /* Idempotent guard — never open a second context while one exists */
+    if (ctxRef.current) return;
+    const ctx = new AudioContext();
+    ctxRef.current   = ctx;
+    const master     = ctx.createGain();
+    master.gain.value = volume;
+    master.connect(ctx.destination);
+    masterRef.current = master;
+
+    /* Brown noise — wind & water ambience */
+    const bufLen = ctx.sampleRate * 6;
+    const buffer = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data   = buffer.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < bufLen; i++) {
+      const w = Math.random() * 2 - 1;
+      last = (last + 0.02 * w) / 1.02;
+      data[i] = last * 3.5;
+    }
+    const noise  = ctx.createBufferSource();
+    noise.buffer = buffer; noise.loop = true;
+    const nFilt  = ctx.createBiquadFilter();
+    nFilt.type = "lowpass"; nFilt.frequency.value = 720;
+    const nGain = ctx.createGain(); nGain.gain.value = 0.13;
+    noise.connect(nFilt); nFilt.connect(nGain); nGain.connect(master);
+    noise.start();
+
+    /* D-major pentatonic drones with LFO tremolo */
+    [146.83, 185.00, 220.00, 277.18, 329.63].forEach((f, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine"; osc.frequency.value = f;
+      const g = ctx.createGain(); g.gain.value = 0.016 + i * 0.002;
+      const lfo = ctx.createOscillator(); lfo.type = "sine";
+      lfo.frequency.value = 0.10 + i * 0.032;
+      const lg = ctx.createGain(); lg.gain.value = 0.005;
+      lfo.connect(lg); lg.connect(g.gain); lfo.start();
+      osc.connect(g); g.connect(master); osc.start();
+    });
+
+    setPlaying(true);
+  }, [volume]);
+
+  const stop = useCallback(() => {
+    ctxRef.current?.close();
+    ctxRef.current = null; masterRef.current = null;
+    setPlaying(false);
+  }, []);
+
+  const toggle = useCallback(() => { playing ? stop() : start(); }, [playing, start, stop]);
+
+  const setVolume = useCallback((v: number) => {
+    setVolumeState(v);
+    if (masterRef.current) masterRef.current.gain.value = v;
+  }, []);
+
+  useEffect(() => () => { ctxRef.current?.close(); }, []);
+  return { playing, toggle, volume, setVolume };
+}
 
 /* ═══════════════════ R3F ERROR BOUNDARY ════════════════════════════════════
  * Safety net for any surviving R3F / Three.js render errors.
@@ -47,6 +115,7 @@ interface Props {
   initialEntries?: CommunityYahrzeitEntry[];
 }
 interface Candle { pos: [number, number, number]; name: string }
+interface VirtualFlower { pos: [number, number, number]; colorIdx: number }
 type SceneTab = "valley" | "garden" | "waterfall" | "sanctuary" | "sunset";
 type RightNav = "home" | "memorials" | "flowers" | "messages" | "music";
 
@@ -77,6 +146,177 @@ function allYears(list: CommunityYahrzeitEntry[]) {
 }
 function formatTime() {
   return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+/* ═══════════════════ MUSIC PANEL ═══════════════════════════════════════════ */
+const FLOWER_PALETTE = ["#ff6b8a","#ff99bb","#c778e8","#ff8833","#55ccaa","#f0c030","#e855a0","#7799ff"];
+const FLOWER_NAMES   = ["Rose","Blush","Violet","Marigold","Mint","Sunflower","Peony","Iris"];
+
+function MusicPanel({ sound }: { sound: ReturnType<typeof useAmbientSound> }) {
+  const tracks = [
+    { icon: "💨", label: "Wind & Leaves",  desc: "Gentle breeze through olive trees" },
+    { icon: "💧", label: "Flowing Water",   desc: "River and waterfall ambience"      },
+    { icon: "🎹", label: "Soft Piano",      desc: "Peaceful pentatonic melody"        },
+    { icon: "🐦", label: "Birdsong",        desc: "Morning birds at sunrise"          },
+  ];
+  return (
+    <motion.div
+      key="music-panel"
+      initial={{ x: 80, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: 80, opacity: 0 }}
+      transition={{ type: "spring", damping: 26, stiffness: 280 }}
+      onClick={e => e.stopPropagation()}
+      style={{
+        position: "absolute", right: 80, top: "50%", transform: "translateY(-50%)",
+        zIndex: 25, width: 230,
+        background: "rgba(6,3,20,0.95)",
+        backdropFilter: "blur(28px) saturate(1.6)",
+        border: "1px solid rgba(212,175,55,0.28)",
+        borderRadius: 22, padding: "18px 16px",
+        boxShadow: "0 12px 50px rgba(0,0,0,0.6)",
+      }}
+    >
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(212,175,55,0.75)", marginBottom: 14 }}>
+        🎵  SANCTUARY SOUNDSCAPE
+      </div>
+
+      <motion.button
+        onClick={sound.toggle}
+        whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+        style={{
+          width: "100%", padding: "13px 0", marginBottom: 14,
+          background: sound.playing
+            ? "linear-gradient(135deg,#D4AF37 0%,#8a6000 100%)"
+            : "rgba(212,175,55,0.1)",
+          border: `1px solid rgba(212,175,55,${sound.playing ? 0 : 0.28})`,
+          borderRadius: 14, fontSize: 14, fontWeight: 800,
+          color: sound.playing ? "#0f1829" : "#D4AF37",
+          cursor: "pointer", transition: "all 0.25s",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        }}
+      >
+        {sound.playing ? "⏸ Pause" : "▶ Play Ambient"}
+      </motion.button>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.38)" }}>VOLUME</span>
+          <span style={{ fontSize: 9, color: "rgba(212,175,55,0.7)", fontVariantNumeric: "tabular-nums" }}>{Math.round(sound.volume * 100)}%</span>
+        </div>
+        <input type="range" min={0} max={1} step={0.01}
+          value={sound.volume}
+          onChange={e => sound.setVolume(Number(e.target.value))}
+          style={{ width: "100%", accentColor: "#D4AF37", cursor: "pointer" }}
+        />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {tracks.map((tr, i) => (
+          <div key={i} style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "8px 10px", borderRadius: 11,
+            background: i === 0 && sound.playing ? "rgba(212,175,55,0.08)" : "rgba(255,255,255,0.03)",
+            border: `1px solid rgba(255,255,255,${i === 0 && sound.playing ? "0.10" : "0.04"})`,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>{tr.icon}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: i === 0 && sound.playing ? "#D4AF37" : "rgba(255,255,255,0.7)" }}>{tr.label}</div>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", marginTop: 1 }}>{tr.desc}</div>
+            </div>
+            {i === 0 && sound.playing && (
+              <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 18 }}>
+                {[1,2,3,2,1].map((h, j) => (
+                  <div key={j} style={{ width: 3, height: h * 4 + 2, borderRadius: 2, background: "#D4AF37", animation: `ms-shimmer ${0.45 + j * 0.12}s ease-in-out infinite` }} />
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 14, padding: "10px", borderRadius: 11, background: "rgba(255,255,255,0.025)", textAlign: "center" }}>
+        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.26)", lineHeight: 1.7 }}>
+          Procedural ambient — generated<br/>for peaceful remembrance
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════ FLOWERS PANEL ════════════════════════════════════════ */
+function FlowersPanel({ onSelectColor, selectedColor, placedCount }: {
+  onSelectColor: (idx: number) => void; selectedColor: number; placedCount: number;
+}) {
+  return (
+    <motion.div
+      key="flowers-panel"
+      initial={{ x: 80, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: 80, opacity: 0 }}
+      transition={{ type: "spring", damping: 26, stiffness: 280 }}
+      onClick={e => e.stopPropagation()}
+      style={{
+        position: "absolute", right: 80, top: "50%", transform: "translateY(-50%)",
+        zIndex: 25, width: 234,
+        background: "rgba(6,3,20,0.95)",
+        backdropFilter: "blur(28px) saturate(1.6)",
+        border: "1px solid rgba(248,113,113,0.28)",
+        borderRadius: 22, padding: "18px 16px",
+        boxShadow: "0 12px 50px rgba(0,0,0,0.6)",
+      }}
+    >
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(248,113,113,0.8)", marginBottom: 4 }}>
+        🌸  PLACE A FLOWER
+      </div>
+      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.32)", marginBottom: 14, lineHeight: 1.5 }}>
+        Choose a flower colour then tap the ground to place it in the sanctuary
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
+        {FLOWER_PALETTE.map((col, i) => (
+          <motion.button
+            key={i}
+            onClick={() => onSelectColor(i)}
+            whileHover={{ scale: 1.14 }}
+            whileTap={{ scale: 0.90 }}
+            title={FLOWER_NAMES[i]}
+            style={{
+              width: "100%", aspectRatio: "1", borderRadius: 12, border: "none",
+              background: col, cursor: "pointer",
+              boxShadow: selectedColor === i
+                ? `0 0 0 3px #fff, 0 0 16px ${col}`
+                : "0 2px 8px rgba(0,0,0,0.4)",
+              opacity: selectedColor === i ? 1 : 0.58,
+              transition: "all 0.18s",
+            }}
+          />
+        ))}
+      </div>
+
+      <div style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.45)", marginBottom: 14 }}>
+        Selected: <span style={{ color: FLOWER_PALETTE[selectedColor], fontWeight: 800 }}>{FLOWER_NAMES[selectedColor]}</span>
+      </div>
+
+      <div style={{
+        padding: "11px 14px", borderRadius: 13,
+        background: "rgba(248,113,113,0.08)",
+        border: "1px solid rgba(248,113,113,0.22)",
+        display: "flex", alignItems: "center", gap: 10,
+      }}>
+        <span style={{ fontSize: 20 }}>👆</span>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.5 }}>
+          Tap anywhere on the ground to place your flower
+        </span>
+      </div>
+
+      {placedCount > 0 && (
+        <div style={{ marginTop: 12, textAlign: "center", fontSize: 10, color: "rgba(248,113,113,0.6)" }}>
+          🌸 {placedCount} flower{placedCount !== 1 ? "s" : ""} placed in the sanctuary
+        </div>
+      )}
+    </motion.div>
+  );
 }
 
 /* ═══════════════════ KEYFRAMES ═════════════════════════════════════════════ */
@@ -908,6 +1148,11 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const [saving, setSaving]                 = useState(false);
   const [dedicateForm, setDedicateForm]     = useState({ learnerName: "", studySubject: "" });
   const [dedicateSaving, setDedicateSaving] = useState(false);
+  /* Phase 3 additions */
+  const [virtualFlowers, setVirtualFlowers] = useState<VirtualFlower[]>([]);
+  const [selectedFlowerColor, setSelectedFlowerColor] = useState(0);
+  const [newCandlePos, setNewCandlePos]     = useState<[number, number, number] | null>(null);
+  const sound = useAmbientSound();
   /**
    * canRender3D — mount guard for R3F v9 + React 19 Strict Mode.
    *
@@ -948,10 +1193,15 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
 
   const handleGroundClick = useCallback((pos: [number, number, number]) => {
     if (showForm || selectedEntry) return;
+    /* If flowers nav is active — place a flower instead of opening candle form */
+    if (activeNav === "flowers") {
+      setVirtualFlowers(prev => [...prev, { pos, colorIdx: selectedFlowerColor }]);
+      return;
+    }
     setPendingPos(pos);
     setShowForm(true);
     setShowHints(false);
-  }, [showForm, selectedEntry]);
+  }, [showForm, selectedEntry, activeNav, selectedFlowerColor]);
 
   async function handleSubmit() {
     if (!form.name.trim() || !form.date) return;
@@ -971,7 +1221,12 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         message: form.message.trim(),
         donorDisplayName: userName ?? "Community Member",
       });
-      if (pendingPos) setPlacedCandles(prev => [...prev, { pos: pendingPos, name: form.name.trim() }]);
+      if (pendingPos) {
+        setPlacedCandles(prev => [...prev, { pos: pendingPos, name: form.name.trim() }]);
+        /* Trigger placement animation */
+        setNewCandlePos(pendingPos);
+        setTimeout(() => setNewCandlePos(null), 3500);
+      }
       setSuccess(true);
       await load();
       setTimeout(() => {
@@ -992,11 +1247,13 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
     } finally { setDedicateSaving(false); }
   }
 
-  const filtered   = filterEntries(entries, searchQuery, filterYear);
-  const totalLit   = entries.length;
+  const filtered    = filterEntries(entries, searchQuery, filterYear);
+  const totalLit    = entries.length;
   const totalVisitors = hashNum("global-visitors", 4000, 6000);
-  const panelOpen  = showForm || !!selectedEntry;
-  const showStrip  = activeNav === "memorials" && !searchQuery && !panelOpen;
+  const panelOpen   = showForm || !!selectedEntry;
+  const showStrip   = activeNav === "memorials" && !searchQuery && !panelOpen;
+  const showMusic   = activeNav === "music"   && !panelOpen;
+  const showFlowers = activeNav === "flowers" && !panelOpen;
 
   return (
     <div
@@ -1017,9 +1274,12 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
               <MemorialValley3D
                 entries={entries}
                 placedCandles={placedCandles}
+                virtualFlowers={virtualFlowers}
+                newCandlePos={newCandlePos}
                 onCandleClick={handleCandleClick}
                 onGroundClick={handleGroundClick}
                 selectedId={selectedEntry?.id ?? null}
+                sceneView={activeScene as SceneViewType}
               />
             </Suspense>
           </R3FErrorBoundary>
@@ -1047,6 +1307,22 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         )}
       </AnimatePresence>
 
+      {/* ── BACKGROUND DIM when profile open ── */}
+      <AnimatePresence>
+        {panelOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            style={{
+              position: "absolute", inset: 0, zIndex: 40,
+              background: "rgba(0,0,0,0.42)",
+              backdropFilter: "blur(2px)",
+              pointerEvents: "none",
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* ── LEFT STATS ── */}
       {!panelOpen && (
         <LeftStatsPanel
@@ -1067,11 +1343,27 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         <RightNavPanel
           active={activeNav}
           onSelect={nav => {
-            setActiveNav(nav);
+            setActiveNav(prev => prev === nav ? "home" : nav);
             if (nav === "memorials") setTimeout(() => searchRef.current?.focus(), 80);
           }}
         />
       )}
+
+      {/* ── MUSIC PANEL ── */}
+      <AnimatePresence>
+        {showMusic && <MusicPanel sound={sound} />}
+      </AnimatePresence>
+
+      {/* ── FLOWERS PANEL ── */}
+      <AnimatePresence>
+        {showFlowers && (
+          <FlowersPanel
+            onSelectColor={setSelectedFlowerColor}
+            selectedColor={selectedFlowerColor}
+            placedCount={virtualFlowers.length}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── INTERACTION HINTS ── */}
       {!panelOpen && <InteractionHints visible={showHints} />}

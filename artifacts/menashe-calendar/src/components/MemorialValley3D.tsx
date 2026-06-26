@@ -245,6 +245,17 @@ function interpCycleColor(t: number, kfs: ColorKF[]) {
   return { r: lo.r + (hi.r - lo.r) * s, g: lo.g + (hi.g - lo.g) * s, b: lo.b + (hi.b - lo.b) * s };
 }
 
+/* ── Scene view type ─────────────────────────────────────────────────────── */
+export type SceneViewType = "valley" | "garden" | "waterfall" | "sanctuary" | "sunset";
+
+const SCENE_VIEWS: Record<SceneViewType, { cam: [number, number, number]; target: [number, number, number] }> = {
+  valley:    { cam: [22,  28,  22],  target: [0,  0,  4]   },
+  garden:    { cam: [-14, 18,  14],  target: [-9, 0,  -8]  },
+  waterfall: { cam: [-22, 12,  -2],  target: [-18, 1, -8]  },
+  sanctuary: { cam: [0,   22,  -8],  target: [0,  6,  -25] },
+  sunset:    { cam: [38,  14,   0],  target: [0,  3,   4]  },
+};
+
 /* ── Phase 3 seeded data ──────────────────────────────────────────────────── */
 const R_BIRD  = makeLCG(83);
 const BIRDS   = Array.from({ length: 7 }, () => ({
@@ -1351,6 +1362,100 @@ function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted }: 
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: NEW CANDLE PLACEMENT ANIMATION — golden pulse rings
+══════════════════════════════════════════════════════════════════════════ */
+function AAANewCandleAnim({ pos }: { pos: [number, number, number] }) {
+  const r1 = useRef<THREE.Mesh>(null!), r2 = useRef<THREE.Mesh>(null!), r3 = useRef<THREE.Mesh>(null!);
+  const m1 = useRef<THREE.MeshStandardMaterial>(null!), m2 = useRef<THREE.MeshStandardMaterial>(null!), m3 = useRef<THREE.MeshStandardMaterial>(null!);
+  const startTime = useRef<number | null>(null);
+  const ringGeo   = useMemo(() => new THREE.RingGeometry(0.38, 0.56, 32), []);
+
+  useFrame(({ clock }) => {
+    if (startTime.current === null) startTime.current = clock.getElapsedTime();
+    const age  = clock.getElapsedTime() - startTime.current;
+    const DUR  = 3.2;
+    if (age > DUR) return;
+
+    ([
+      { ref: r1, mat: m1, phase: 0.00 },
+      { ref: r2, mat: m2, phase: 0.30 },
+      { ref: r3, mat: m3, phase: 0.60 },
+    ] as const).forEach(({ ref: rr, mat: mm, phase }) => {
+      const p  = Math.min(1, Math.max(0, (age / DUR - phase) / (1 - phase)));
+      const ss = 0.5 + p * 3.8;
+      const al = Math.max(0, (1 - p) * 0.85);
+      if (rr.current) rr.current.scale.setScalar(ss);
+      if (mm.current) mm.current.opacity = al;
+    });
+  });
+
+  return (
+    <group position={[pos[0], pos[1] + 0.05, pos[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh ref={r1} geometry={ringGeo}>
+        <meshStandardMaterial ref={m1} color="#D4AF37" emissive={new THREE.Color("#D4AF37")} emissiveIntensity={3.0} transparent opacity={0.85} depthWrite={false} />
+      </mesh>
+      <mesh ref={r2} geometry={ringGeo}>
+        <meshStandardMaterial ref={m2} color="#ffcc44" emissive={new THREE.Color("#ffcc44")} emissiveIntensity={2.2} transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <mesh ref={r3} geometry={ringGeo}>
+        <meshStandardMaterial ref={m3} color="#ff9922" emissive={new THREE.Color("#ff9922")} emissiveIntensity={1.6} transparent opacity={0} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: VIRTUAL FLOWERS — placed by visitors in the sanctuary
+══════════════════════════════════════════════════════════════════════════ */
+const FLOWER_PALETTE = ["#ff6b8a","#ff99bb","#c778e8","#ff8833","#55ccaa","#f0c030","#e855a0","#7799ff"];
+
+/* Maximum flowers before stopping — protects FPS */
+const MAX_VIRTUAL_FLOWERS = 40;
+
+export function AAAVirtualFlowers({ flowers }: { flowers: { pos: [number, number, number]; colorIdx: number }[] }) {
+  const capped   = flowers.slice(-MAX_VIRTUAL_FLOWERS);
+  const petalGeo = useMemo(() => new THREE.SphereGeometry(0.11, 6, 5), []);
+  const centerGeo = useMemo(() => new THREE.SphereGeometry(0.058, 6, 4), []);
+  const stemGeo   = useMemo(() => new THREE.CylinderGeometry(0.017, 0.024, 0.32, 5), []);
+
+  if (!capped.length) return null;
+
+  return (
+    <>
+      {capped.map((f, i) => {
+        const col = FLOWER_PALETTE[f.colorIdx % FLOWER_PALETTE.length];
+        return (
+          <group key={i} position={f.pos}>
+            {/* Stem */}
+            <mesh position={[0, 0.16, 0]} geometry={stemGeo}>
+              <meshStandardMaterial color="#3a6a20" roughness={0.88} />
+            </mesh>
+            {/* 6 petals — emissive-only, no per-flower point light */}
+            {Array.from({ length: 6 }, (_, j) => {
+              const a = (j / 6) * Math.PI * 2;
+              return (
+                <mesh key={j} position={[Math.cos(a) * 0.13, 0.35, Math.sin(a) * 0.13]} geometry={petalGeo}>
+                  <meshStandardMaterial
+                    color={col}
+                    emissive={new THREE.Color(col)}
+                    emissiveIntensity={0.55}
+                    roughness={0.58}
+                  />
+                </mesh>
+              );
+            })}
+            {/* Center — bright emissive instead of point light */}
+            <mesh position={[0, 0.37, 0]} geometry={centerGeo}>
+              <meshStandardMaterial color="#ffe050" emissive={new THREE.Color("#ddaa00")} emissiveIntensity={1.6} roughness={0.4} />
+            </mesh>
+          </group>
+        );
+      })}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    PLACED CANDLE
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAPlacedCandle({ pos, name, animOffset }: { pos: [number, number, number]; name: string; animOffset: number }) {
@@ -1677,6 +1782,61 @@ function AAADriftingLeaves() {
       <planeGeometry args={[1, 1.15]} />
       <meshStandardMaterial color="#b04c20" roughness={0.88} side={THREE.DoubleSide}
         transparent opacity={0.84} depthWrite={false} />
+    </instancedMesh>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: GOD RAYS — subtle volumetric light shafts through tree canopy
+══════════════════════════════════════════════════════════════════════════ */
+function AAAGodRays() {
+  const N   = 16;
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  const mat = useRef<THREE.MeshBasicMaterial>(null!);
+  const dum = useMemo(() => new THREE.Object3D(), []);
+
+  const shafts = useMemo(() => {
+    const r = makeLCG(97);
+    return Array.from({ length: N }, () => ({
+      x: (r() - 0.5) * 36, z: (r() - 0.5) * 36,
+      rotX: 0.12 + r() * 0.20, rotZ: (r() - 0.5) * 0.24,
+      ph: r() * Math.PI * 2, sc: 0.5 + r() * 0.75,
+      len: 5 + r() * 9,
+    }));
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t    = clock.getElapsedTime();
+    const cyc  = (t % CYCLE_DURATION) / CYCLE_DURATION;
+    const elev = Math.sin(cyc * Math.PI * 2 - Math.PI * 0.28) * 0.85;
+    const sunStr = Math.max(0, elev + 0.08) / 0.93;
+
+    shafts.forEach((s, i) => {
+      const flicker = 0.90 + Math.sin(t * 0.28 + s.ph) * 0.10;
+      dum.position.set(s.x, s.len * 0.5 + 1.5, s.z);
+      dum.rotation.set(s.rotX, s.ph * 0.3, s.rotZ);
+      dum.scale.set(s.sc * 1.5 * flicker, s.len, s.sc * 0.85);
+      dum.updateMatrix();
+      ref.current.setMatrixAt(i, dum.matrix);
+    });
+    ref.current.instanceMatrix.needsUpdate = true;
+    if (mat.current) {
+      mat.current.opacity = Math.max(0, sunStr * 0.044 * (0.92 + Math.sin(t * 0.14) * 0.08));
+    }
+  });
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, N]}>
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial
+        ref={mat}
+        color="#fff8e0"
+        transparent
+        opacity={0}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        side={THREE.DoubleSide}
+      />
     </instancedMesh>
   );
 }
@@ -2064,24 +2224,73 @@ function GroundClickPlane({ onGroundClick }: { onGroundClick: (pos: [number, num
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   PHASE 3: SCENE CAMERA DRIVER — smooth scene-tab camera transitions
+══════════════════════════════════════════════════════════════════════════ */
+function AAASceneCameraDriver({ sceneView, ctrlRef }: {
+  sceneView: SceneViewType;
+  ctrlRef:   React.MutableRefObject<any>;
+}) {
+  const { camera } = useThree();
+  const fromCam    = useRef(new THREE.Vector3(22, 28, 22));
+  const toCam      = useRef(new THREE.Vector3(22, 28, 22));
+  const fromTarget = useRef(new THREE.Vector3(0, 0, 4));
+  const toTarget   = useRef(new THREE.Vector3(0, 0, 4));
+  const progress   = useRef(1);
+  const animating  = useRef(false);
+  const prevView   = useRef<SceneViewType>(sceneView);
+
+  useEffect(() => {
+    if (sceneView === prevView.current) return;
+    prevView.current = sceneView;
+    const ctrl = ctrlRef.current;
+    if (!ctrl) return;
+
+    fromCam.current.copy(camera.position);
+    fromTarget.current.copy(ctrl.target);
+    const v = SCENE_VIEWS[sceneView];
+    toCam.current.set(...v.cam);
+    toTarget.current.set(...v.target);
+    progress.current = 0;
+    animating.current = true;
+  }, [sceneView, camera, ctrlRef]);
+
+  useFrame((_, delta) => {
+    if (!animating.current || !ctrlRef.current) return;
+    progress.current = Math.min(1, progress.current + delta * 0.75);
+    /* Smooth cubic ease in-out */
+    const t = progress.current * progress.current * (3 - 2 * progress.current);
+    camera.position.lerpVectors(fromCam.current, toCam.current, t);
+    ctrlRef.current.target.lerpVectors(fromTarget.current, toTarget.current, t);
+    ctrlRef.current.update();
+    if (progress.current >= 1) animating.current = false;
+  });
+
+  return null;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    FULL SCENE
 ══════════════════════════════════════════════════════════════════════════ */
 interface SceneProps {
-  entries:       CommunityYahrzeitEntry[];
-  placedCandles: { pos: [number, number, number]; name: string }[];
-  onGroundClick: (pos: [number, number, number]) => void;
-  onCandleClick: (entry: CommunityYahrzeitEntry) => void;
-  selectedId:    string | null;
+  entries:        CommunityYahrzeitEntry[];
+  placedCandles:  { pos: [number, number, number]; name: string }[];
+  virtualFlowers: { pos: [number, number, number]; colorIdx: number }[];
+  newCandlePos:   [number, number, number] | null;
+  onGroundClick:  (pos: [number, number, number]) => void;
+  onCandleClick:  (entry: CommunityYahrzeitEntry) => void;
+  selectedId:     string | null;
+  sceneView:      SceneViewType;
 }
 
-function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, selectedId }: SceneProps) {
+function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, onGroundClick, onCandleClick, selectedId, sceneView }: SceneProps) {
   const litEntries = useMemo(() => entries.slice(0, ENTRY_POSITIONS.length), [entries]);
   const ctrlsRef   = useRef<any>(null);
 
   return (
     <>
       <AAACamera />
-      <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlsRef} />
+      <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlsRef} sceneView={sceneView} />
+      <AAASceneCameraDriver sceneView={sceneView} ctrlRef={ctrlsRef} />
 
       {/* ── Phase 3: Day/night sky dome (renders behind everything) ── */}
       <AAASkyDome />
@@ -2142,6 +2351,15 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
         <AAAPlacedCandle key={`placed-${i}`} pos={c.pos} name={c.name} animOffset={i * 0.55 + 1.2} />
       ))}
 
+      {/* New candle placement animation */}
+      {newCandlePos && <AAANewCandleAnim pos={newCandlePos} />}
+
+      {/* Virtual flowers placed by visitors */}
+      <AAAVirtualFlowers flowers={virtualFlowers} />
+
+      {/* Phase 3: God rays through tree canopy */}
+      <AAAGodRays />
+
       {/* Atmosphere */}
       <AAAFloatingLanterns />
       <AAAGoldenDust />
@@ -2195,10 +2413,11 @@ function AAAValleyScene({ entries, placedCandles, onGroundClick, onCandleClick, 
 ══════════════════════════════════════════════════════════════════════════ */
 const HOME_TARGET = new THREE.Vector3(0, 0, 4);
 
-function AAAFocusCamera({ selectedId, entries, ctrlRef }: {
+function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView }: {
   selectedId: string | null;
-  entries: CommunityYahrzeitEntry[];
-  ctrlRef: React.MutableRefObject<any>;
+  entries:    CommunityYahrzeitEntry[];
+  ctrlRef:    React.MutableRefObject<any>;
+  sceneView:  SceneViewType;
 }) {
   const animating  = useRef(false);
   const progress   = useRef(0);
@@ -2219,11 +2438,13 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef }: {
         toTarget.current.set(cx, cy + 0.5, cz);
       }
     } else {
-      toTarget.current.copy(HOME_TARGET);
+      /* Restore to the active scene view's target, not always the valley home */
+      const sceneTarget = SCENE_VIEWS[sceneView]?.target ?? [0, 0, 4];
+      toTarget.current.set(...sceneTarget);
     }
     progress.current = 0;
     animating.current = true;
-  }, [selectedId, entries, ctrlRef]);
+  }, [selectedId, entries, ctrlRef, sceneView]);
 
   useFrame((_, delta) => {
     if (!animating.current || !ctrlRef.current) return;
@@ -2242,11 +2463,14 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef }: {
    PUBLIC EXPORT
 ══════════════════════════════════════════════════════════════════════════ */
 export interface MemorialValley3DProps {
-  entries:       CommunityYahrzeitEntry[];
-  placedCandles: { pos: [number, number, number]; name: string }[];
-  onGroundClick: (pos: [number, number, number]) => void;
-  onCandleClick: (entry: CommunityYahrzeitEntry) => void;
-  selectedId:    string | null;
+  entries:        CommunityYahrzeitEntry[];
+  placedCandles:  { pos: [number, number, number]; name: string }[];
+  virtualFlowers: { pos: [number, number, number]; colorIdx: number }[];
+  newCandlePos:   [number, number, number] | null;
+  onGroundClick:  (pos: [number, number, number]) => void;
+  onCandleClick:  (entry: CommunityYahrzeitEntry) => void;
+  selectedId:     string | null;
+  sceneView:      SceneViewType;
 }
 
 export default function MemorialValley3D(props: MemorialValley3DProps) {
