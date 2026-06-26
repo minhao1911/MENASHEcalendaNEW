@@ -4831,6 +4831,45 @@ function CommunityFAB({
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useLanguage();
 
+  const FAB_POS_KEY = "menashe-fab-pos";
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    try {
+      const s = localStorage.getItem("menashe-fab-pos");
+      if (s) { const p = JSON.parse(s); if (typeof p.x === "number" && typeof p.y === "number") return p; }
+    } catch {}
+    return { x: window.innerWidth - 92, y: window.innerHeight - 188 };
+  });
+  const drag = useRef({ active: false, startX: 0, startY: 0, initX: 0, initY: 0, moved: false });
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (open) return;
+    drag.current = { active: true, startX: e.clientX, startY: e.clientY, initX: pos.x, initY: pos.y, moved: false };
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+  }
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!drag.current.active) return;
+    const dx = e.clientX - drag.current.startX;
+    const dy = e.clientY - drag.current.startY;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) drag.current.moved = true;
+    if (!drag.current.moved) return;
+    setPos({
+      x: Math.max(0, Math.min(window.innerWidth - 80, drag.current.initX + dx)),
+      y: Math.max(0, Math.min(window.innerHeight - 110, drag.current.initY + dy)),
+    });
+  }
+  function onPointerUp() {
+    if (!drag.current.active) return;
+    drag.current.active = false;
+    if (drag.current.moved) {
+      setPos(p => { try { localStorage.setItem(FAB_POS_KEY, JSON.stringify(p)); } catch {} return p; });
+    }
+  }
+  function handleMainClick() {
+    if (drag.current.moved) return;
+    if (open && !isClosing) triggerClose();
+    else if (!isClosing) setOpen(true);
+  }
+
   function triggerClose() {
     setIsClosing(true);
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -4909,64 +4948,75 @@ function CommunityFAB({
       {(open || isClosing) && (
         <div
           onClick={() => { if (!isClosing) triggerClose(); }}
-          style={{
-            position: "fixed", inset: 0, zIndex: 998,
-          }}
+          style={{ position: "fixed", inset: 0, zIndex: 998 }}
         />
       )}
-      <div style={{ position: "fixed", bottom: 88, right: 20, zIndex: 999, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
-        {(open || isClosing) && items.map((item, i) => (
-          <button
-            key={item.label}
-            onClick={() => { if (!isClosing) handleItem(item.action); }}
-            className="fab-item-active"
-            style={{
-              display: "flex", alignItems: "center", gap: 10,
-              background: "linear-gradient(135deg, #1e2040 0%, #191d38 100%)",
-              border: "1px solid rgba(255,255,255,0.18)",
-              borderRadius: 14,
-              padding: "10px 16px",
-              color: "#f0ece0",
-              fontWeight: 600,
-              fontSize: 13.5,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              animation: isClosing
-                ? `fabItemOut 0.4s ease-in both, fabItemShimmer 2.8s ease-in-out infinite`
-                : `fabItemIn 0.5s ease-out both, fabItemShimmer 2.8s ease-in-out infinite`,
-              animationDelay: isClosing
-                ? `${(items.length - 1 - i) * 0.07}s, ${i * 0.18}s`
-                : `${i * 0.07}s, ${i * 0.18}s`,
-              minWidth: 210,
-              transform: "scale(1)",
-              transformOrigin: "right center",
-            }}
-          >
-            <span style={{ fontSize: 18, lineHeight: 1 }}>{item.icon}</span>
-            <span style={{ flex: 1 }}>{item.label}</span>
-            {"count" in item && (item as { count: number }).count > 0 && (
-              <span style={{
-                background: "#e53e3e",
-                color: "#fff",
-                borderRadius: 10,
-                minWidth: 20, height: 20,
-                fontSize: 11, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                padding: "0 5px",
-                lineHeight: 1,
-                flexShrink: 0,
-              }}>
-                {(item as { count: number }).count > 99 ? "99+" : (item as { count: number }).count}
-              </span>
-            )}
-          </button>
-        ))}
+      <div
+        style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 999, touchAction: "none" }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+      >
+        {/* ── Menu items — float above the button ── */}
+        {(open || isClosing) && (
+          <div style={{ position: "absolute", bottom: "100%", right: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, paddingBottom: 10 }}>
+            {items.map((item, i) => (
+              <button
+                key={item.label}
+                onClick={(e) => { e.stopPropagation(); if (!isClosing) handleItem(item.action); }}
+                className="fab-item-active"
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  background: "linear-gradient(135deg, #1e2040 0%, #191d38 100%)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  borderRadius: 14,
+                  padding: "10px 16px",
+                  color: "#f0ece0",
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  animation: isClosing
+                    ? `fabItemOut 0.4s ease-in both, fabItemShimmer 2.8s ease-in-out infinite`
+                    : `fabItemIn 0.5s ease-out both, fabItemShimmer 2.8s ease-in-out infinite`,
+                  animationDelay: isClosing
+                    ? `${(items.length - 1 - i) * 0.07}s, ${i * 0.18}s`
+                    : `${i * 0.07}s, ${i * 0.18}s`,
+                  minWidth: 210,
+                  transform: "scale(1)",
+                  transformOrigin: "right center",
+                }}
+              >
+                <span style={{ fontSize: 18, lineHeight: 1 }}>{item.icon}</span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+                {"count" in item && (item as { count: number }).count > 0 && (
+                  <span style={{
+                    background: "#e53e3e",
+                    color: "#fff",
+                    borderRadius: 10,
+                    minWidth: 20, height: 20,
+                    fontSize: 11, fontWeight: 700,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "0 5px",
+                    lineHeight: 1,
+                    flexShrink: 0,
+                  }}>
+                    {(item as { count: number }).count > 99 ? "99+" : (item as { count: number }).count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── Main draggable button ── */}
         <div style={{
           position: "relative", width: 72, height: 100,
           animation: announcementCount > 0 && !open ? "fabBounce 2.8s ease-in-out infinite" : undefined,
+          cursor: "grab",
         }}>
           <button
-            onClick={() => { if (open && !isClosing) triggerClose(); else if (!isClosing) setOpen(true); }}
+            onClick={handleMainClick}
             title={t.fabTitle}
             className={`shawl-sway${open ? " shawl-open" : ""}`}
             style={{
