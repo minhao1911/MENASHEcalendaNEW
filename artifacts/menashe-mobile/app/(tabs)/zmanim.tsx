@@ -53,8 +53,8 @@ export default function ZmanimScreen() {
   });
 
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
-  const mins = Math.floor(zmanim.shaahZmanitMinutes);
-  const secs = Math.round((zmanim.shaahZmanitMinutes % 1) * 60);
+  const mins = Math.floor(zmanim.shaahZmanitGra);
+  const secs = Math.round((zmanim.shaahZmanitGra % 1) * 60);
 
   return (
     <ScrollView

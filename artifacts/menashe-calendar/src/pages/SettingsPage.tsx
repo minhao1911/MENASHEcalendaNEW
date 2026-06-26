@@ -574,41 +574,6 @@ export default function SettingsPage({
 
   return (
     <div style={{ padding: "0 0 4px" }}>
-      {/* PIN dialog overlay */}
-      {adminMode === "pin" && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 18, padding: 28, width: "100%", maxWidth: 320, textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🔐</div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>Admin Access</div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 18 }}>Enter your admin PIN to continue</div>
-            <input
-              type="password"
-              inputMode="numeric"
-              value={adminPinInput}
-              onChange={e => { setAdminPinInput(e.target.value); setAdminPinError(""); }}
-              onKeyDown={e => e.key === "Enter" && checkAdminPin()}
-              placeholder="• • • •"
-              autoFocus
-              style={{
-                width: "100%", padding: "12px 14px", borderRadius: 10, fontSize: 18, textAlign: "center",
-                background: "var(--elevated)", border: `1px solid ${adminPinError ? "#ef4444" : "var(--border)"}`,
-                color: "var(--text-primary)", outline: "none", letterSpacing: "0.3em", boxSizing: "border-box" as const,
-              }}
-            />
-            {adminPinError && <div style={{ fontSize: 12, color: "#ef4444", marginTop: 6 }}>{adminPinError}</div>}
-            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-              <button
-                onClick={() => { setAdminMode("none"); setAdminPinInput(""); setAdminPinError(""); }}
-                style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
-              >Cancel</button>
-              <button
-                onClick={checkAdminPin}
-                style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #b8860b, #d4a843)", color: "#1a0f00", fontSize: 14, fontWeight: 800, cursor: "pointer" }}
-              >Enter</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="app-header">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1398,20 +1363,22 @@ export default function SettingsPage({
           </div>
         </div>
 
-        {/* Admin button */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-          <button
-            onClick={() => setAdminMode("pin")}
-            style={{
-              background: "none", border: "1px solid var(--border)", borderRadius: 99,
-              padding: "7px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-              color: "var(--text-muted)", fontSize: 12, fontWeight: 600,
-            }}
-          >
-            <span>🔐</span>
-            <span>Admin</span>
-          </button>
-        </div>
+        {/* Admin button — only visible to verified admins */}
+        {isAdminUser && (
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+            <button
+              onClick={() => setAdminMode("panel")}
+              style={{
+                background: "none", border: "1px solid var(--border)", borderRadius: 99,
+                padding: "7px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                color: "var(--text-muted)", fontSize: 12, fontWeight: 600,
+              }}
+            >
+              <span>🔐</span>
+              <span>Admin</span>
+            </button>
+          </div>
+        )}
 
         {/* Version */}
         <div style={{ textAlign: "center", padding: "8px 0 16px", opacity: 0.4 }}>

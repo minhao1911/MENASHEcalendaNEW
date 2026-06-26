@@ -17,6 +17,7 @@
     "@react-three/fiber": "^9.6.1",
     "@react-three/postprocessing": "^3.0.4",
     "@workspace/object-storage-web": "workspace:*",
+    "@workspace/shared-core": "workspace:*",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "postprocessing": "^6.39.1",

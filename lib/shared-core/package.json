@@ -1,0 +1,21 @@
+{
+  "name": "@workspace/shared-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./calendar": "./src/calendar/hebrewCalendar.ts",
+    "./zmanim": "./src/zmanim/zmanim.ts",
+    "./locations": "./src/locations/locations.ts",
+    "./utils": "./src/utils/lang.ts"
+  },
+  "dependencies": {
+    "@hebcal/core": "^6.5.2",
+    "suncalc": "^1.9.0"
+  },
+  "devDependencies": {
+    "@types/suncalc": "^1.9.2",
+    "typescript": "^5.8.3"
+  }
+}
