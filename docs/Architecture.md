@@ -1,7 +1,7 @@
 # Architecture Overview
 
 > Purpose: High-level system architecture, component boundaries, data flow, and design decisions for the Menashe Platform.
-> Last updated: 2026-06-26 (SPR-004)
+> Last updated: 2026-06-26 (SPR-005 H-001)
 
 ---
 
@@ -501,3 +501,73 @@ Recommended extraction order (each phase is independently shippable with zero be
 | TD-H06 | `AnnouncementStrip` hardcodes its dismissal duration (never resets until localStorage is cleared) — no TTL | Low |
 | TD-H07 | `DateZmanimCard` embeds an OpenStreetMap `<iframe>` with a hardcoded tile URL — no CSP header coverage | Low |
 | TD-H08 | `NextHolidayCard` preparation checklist state (`checklist: boolean[]`) is not persisted — resets on every page visit | Low |
+
+---
+
+## SPR-005 — Home Migration H-001: Static Data Extraction
+
+> Completed: 2026-06-26
+
+### Objective
+
+Extract all static constants, lookup tables, and configuration arrays from `Home.tsx` into dedicated modules under `src/pages/home/data/`. No runtime behaviour was changed.
+
+### Files Created
+
+| File | Contents |
+|---|---|
+| `src/pages/home/data/constants.ts` | `API_BASE`, all localStorage key constants (`MEMBER_DIR_KEY`, `ANN_STRIP_DISMISSED_KEY`, `CANDLE_COLLAPSED_KEY`, `YAHRZEIT_CARD_MINIMIZED_KEY`, `HOLIDAY_CARD_MINIMIZED_KEY`, `SHABBAT_BAR_MINIMIZED_KEY`, `AI_CHAT_HISTORY_KEY`, `AI_CHAT_MINIMIZED_KEY`, `FAB_POS_KEY`, `FAB_HINT_KEY`) |
+| `src/pages/home/data/holidayEmoji.ts` | `HOLIDAY_EMOJI` record + `getHolidayEmoji()` helper |
+| `src/pages/home/data/holidayThemes.ts` | `HOLIDAY_THEMES` record (18 holiday theme + emoji entries) |
+| `src/pages/home/data/torahThoughts.ts` | `TORAH_THOUGHTS` array (49 quote/source pairs) |
+| `src/pages/home/data/aiPrompts.ts` | `AI_SUGGESTED`, `AI_FOLLOWUPS_EN`, `AI_FOLLOWUPS_TK` |
+| `src/pages/home/data/index.ts` | Barrel re-export of all 5 modules |
+
+### Files Modified
+
+| File | Change |
+|---|---|
+| `src/pages/Home.tsx` | Replaced all 9 module-level constants + 10 inline localStorage string literals with imports from `./home/data`; removed all local `const FAB_POS_KEY` and `const HINT_KEY` declarations from component bodies |
+
+### Line Count
+
+| | Lines |
+|---|---|
+| Before H-001 | 5,327 |
+| After H-001 | 5,209 |
+| **Reduction** | **118 lines** |
+
+### New Data Module Layout
+
+```
+src/pages/home/
+└── data/
+    ├── index.ts          — barrel re-export
+    ├── constants.ts      — API_BASE + all localStorage keys
+    ├── holidayEmoji.ts   — HOLIDAY_EMOJI + getHolidayEmoji()
+    ├── holidayThemes.ts  — HOLIDAY_THEMES (countdown card themes)
+    ├── torahThoughts.ts  — TORAH_THOUGHTS (49 entries)
+    └── aiPrompts.ts      — AI_SUGGESTED + AI_FOLLOWUPS_EN/TK
+```
+
+### Verification
+
+- ✓ Home renders correctly (confirmed via screenshot)
+- ✓ No missing imports
+- ✓ Zero TypeScript errors introduced in Home.tsx or data modules
+- ✓ No runtime errors
+- ✓ No visual regressions
+
+### Remaining Migration Phases (H-002 onward)
+
+Per the approved blueprint (SPR-004 §SPR-004):
+
+| Phase | Description |
+|---|---|
+| H-002 | Extract pure utility functions (date helpers, formatting, notification helpers) into `src/pages/home/utils/` |
+| H-003 | Extract sub-components (cards, widgets, strips) out of Home.tsx into `src/pages/home/components/` |
+| H-004 | Extract hooks (state management, data fetching patterns) into `src/pages/home/hooks/` |
+| H-005 | Extract types and interfaces into `src/pages/home/types.ts` |
+| H-006 | Slim `Home.tsx` to an orchestration-only shell |
+
+**Stop after H-001 — awaiting Chief Architect review before H-002.**

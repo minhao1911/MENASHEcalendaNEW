@@ -22,23 +22,17 @@ import { getYahrzeitEntries, getNextYahrzeit, hebrewDayLabel } from "../lib/yahr
 import type { YartzeitEntry } from "../lib/yahrzeit";
 import { getParashaAnniversaries } from "../lib/parashaAnniversaries";
 import type { ParashaAnniversary } from "../lib/parashaAnniversaries";
-
-const API_BASE = "/api";
-
-const HOLIDAY_EMOJI: Record<string, string> = {
-  "Rosh Hashana": "🍎", "Yom Kippur": "📖", "Sukkot": "🌿",
-  "Shemini Atzeret": "✡", "Simchat Torah": "📜", "Chanukah": "🕎",
-  "Tu BiShvat": "🌳", "Purim": "🎭", "Pesach": "🍷",
-  "Yom HaShoah": "🕯", "Yom HaZikaron": "🪖", "Yom HaAtzmaut": "🇮🇱",
-  "Lag BaOmer": "🔥", "Shavuot": "📜", "Tisha B'Av": "😢",
-};
-
-function getHolidayEmoji(name: string): string {
-  for (const [key, emoji] of Object.entries(HOLIDAY_EMOJI)) {
-    if (name.includes(key)) return emoji;
-  }
-  return "✡";
-}
+import {
+  API_BASE,
+  MEMBER_DIR_KEY, ANN_STRIP_DISMISSED_KEY,
+  CANDLE_COLLAPSED_KEY, YAHRZEIT_CARD_MINIMIZED_KEY, HOLIDAY_CARD_MINIMIZED_KEY,
+  SHABBAT_BAR_MINIMIZED_KEY, AI_CHAT_HISTORY_KEY, AI_CHAT_MINIMIZED_KEY,
+  FAB_POS_KEY, FAB_HINT_KEY,
+  HOLIDAY_EMOJI, getHolidayEmoji,
+  HOLIDAY_THEMES,
+  TORAH_THOUGHTS,
+  AI_SUGGESTED, AI_FOLLOWUPS_EN, AI_FOLLOWUPS_TK,
+} from "./home/data";
 
 interface HolidayInsight {
   overview: string;
@@ -193,57 +187,6 @@ function TodayHolidayCard({ name }: { name: string }) {
   );
 }
 
-const TORAH_THOUGHTS: Array<{ quote: string; source: string }> = [
-  { quote: "Who is wise? One who learns from every person.", source: "Pirkei Avot 4:1" },
-  { quote: "In a place where there are no men, strive to be a man.", source: "Pirkei Avot 2:5" },
-  { quote: "Make for yourself a teacher, acquire for yourself a friend.", source: "Pirkei Avot 1:6" },
-  { quote: "The world stands on three things: Torah, service, and acts of loving kindness.", source: "Pirkei Avot 1:2" },
-  { quote: "Do not judge your fellow until you have reached his place.", source: "Pirkei Avot 2:4" },
-  { quote: "A good name is better than precious oil.", source: "Kohelet 7:1" },
-  { quote: "Wherever you go, go with all your heart.", source: "Talmud, Bavli" },
-  { quote: "A person does not see his own faults, as it is written.", source: "Talmud, Shabbat 119a" },
-  { quote: "The seal of the Holy One, Blessed be He, is truth.", source: "Talmud, Shabbat 55a" },
-  { quote: "Repentance, prayer and charity avert the evil decree.", source: "Unetanneh Tokef" },
-  { quote: "Guard your tongue from evil and your lips from speaking deceit.", source: "Psalms 34:14" },
-  { quote: "The beginning of wisdom is the fear of God.", source: "Psalms 111:10" },
-  { quote: "Beloved is man, for he was created in the image of God.", source: "Pirkei Avot 3:14" },
-  { quote: "Receive every person with a pleasant countenance.", source: "Pirkei Avot 1:15" },
-  { quote: "If I am not for myself, who will be for me? And if not now, when?", source: "Pirkei Avot 1:14" },
-  { quote: "Do not trust in yourself until the day of your death.", source: "Pirkei Avot 2:4" },
-  { quote: "Love peace and pursue peace.", source: "Pirkei Avot 1:12" },
-  { quote: "Better one hour of repentance in this world than all of the World to Come.", source: "Pirkei Avot 4:17" },
-  { quote: "Envy, lust, and honor remove a person from the world.", source: "Pirkei Avot 4:21" },
-  { quote: "Know from where you came, and to where you are going.", source: "Pirkei Avot 3:1" },
-  { quote: "Everything is foreseen, yet free will is given.", source: "Pirkei Avot 3:15" },
-  { quote: "The reward for a mitzvah is a mitzvah.", source: "Pirkei Avot 4:2" },
-  { quote: "Be bold as a leopard, light as an eagle, swift as a deer, and mighty as a lion.", source: "Pirkei Avot 5:20" },
-  { quote: "Do not say 'I will study when I have time' — lest you never have time.", source: "Pirkei Avot 2:4" },
-  { quote: "A good heart encompasses all good things.", source: "Pirkei Avot 2:9" },
-  { quote: "Say little and do much.", source: "Pirkei Avot 1:15" },
-  { quote: "Whoever saves a single soul, Scripture accounts it as if he saved an entire world.", source: "Talmud, Sanhedrin 37a" },
-  { quote: "God is close to all who call upon Him, to all who call upon Him sincerely.", source: "Psalms 145:18" },
-  { quote: "Cast your burden upon God and He will sustain you.", source: "Psalms 55:23" },
-  { quote: "This is the day God has made; let us rejoice and be glad in it.", source: "Psalms 118:24" },
-  { quote: "A wise man hears one word and understands two.", source: "Yiddish Proverb" },
-  { quote: "The candle of God is the soul of man.", source: "Proverbs 20:27" },
-  { quote: "Teach a child in the way he should go, and when he is old he will not depart from it.", source: "Proverbs 22:6" },
-  { quote: "Three things sustain the world: truth, justice, and peace.", source: "Pirkei Avot 1:18" },
-  { quote: "Who is rich? One who is satisfied with his portion.", source: "Pirkei Avot 4:1" },
-  { quote: "Love your neighbor as yourself — this is the great principle of the Torah.", source: "Vayikra 19:18" },
-  { quote: "Shema Yisrael — Hear O Israel, the Lord our God, the Lord is One.", source: "Devarim 6:4" },
-  { quote: "Be very careful with the truth, for truth leads to trust.", source: "Talmud, Makkot 24a" },
-  { quote: "Honor your father and your mother.", source: "Shemot 20:12" },
-  { quote: "You shall love the Lord your God with all your heart.", source: "Devarim 6:5" },
-  { quote: "One who speaks falsehood shall not stand before My eyes.", source: "Psalms 101:7" },
-  { quote: "The path of the righteous is like a shining light.", source: "Proverbs 4:18" },
-  { quote: "Choose life, so that you and your descendants may live.", source: "Devarim 30:19" },
-  { quote: "Be holy, for I the Lord your God am holy.", source: "Vayikra 19:2" },
-  { quote: "A good deed done in secret is better than charity done openly.", source: "Talmud, Sukkah 49b" },
-  { quote: "Turn it and turn it, for everything is in it.", source: "Pirkei Avot 5:22" },
-  { quote: "The Torah is a tree of life to those who grasp it.", source: "Proverbs 3:18" },
-  { quote: "One who is brazen-faced is destined for Gehinnom; one who is shamefaced, for Gan Eden.", source: "Pirkei Avot 5:20" },
-  { quote: "Despise no person and consider nothing impossible.", source: "Pirkei Avot 4:3" },
-];
 
 function getTodaySpecialStatus(today: Date): { label: string; emoji: string; type: string } | null {
   try {
@@ -375,14 +318,14 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
   const { t } = useLanguage();
   const [now, setNow] = useState(() => new Date());
   const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem("menashe-candle-collapsed") === "true"; } catch { return false; }
+    try { return localStorage.getItem(CANDLE_COLLAPSED_KEY) === "true"; } catch { return false; }
   });
 
   function toggleCollapse(e: React.MouseEvent) {
     e.stopPropagation();
     const next = !collapsed;
     setCollapsed(next);
-    try { localStorage.setItem("menashe-candle-collapsed", String(next)); } catch {}
+    try { localStorage.setItem(CANDLE_COLLAPSED_KEY, String(next)); } catch {}
   }
 
   useEffect(() => {
@@ -624,7 +567,6 @@ function CandleLightingCountdown({ location, onNavigate }: { location: Location;
 }
 
 // ── Upcoming Celebrations (Birthday / Aliyah Anniversary) ──────────────────
-const MEMBER_DIR_KEY = "menashe-member-directory";
 
 function daysUntilAnniversary(dateStr: string): number {
   const d = new Date(dateStr + "T00:00:00");
@@ -1993,26 +1935,6 @@ function ZmanimTimeline({
 }
 
 // ── Next Holiday Countdown Card ───────────────────────────────────────────────
-const HOLIDAY_THEMES: Record<string, { emoji: string; theme: string }> = {
-  "Rosh Hashanah":   { emoji: "🍎", theme: "Renewal, reflection & divine judgment" },
-  "Yom Kippur":      { emoji: "🕊️", theme: "Day of Atonement — repentance & forgiveness" },
-  "Sukkot":          { emoji: "🌿", theme: "Gratitude, joy & the harvest season" },
-  "Shemini Atzeret": { emoji: "🙏", theme: "Unity — lingering in G-d's presence" },
-  "Simchat Torah":   { emoji: "📜", theme: "Rejoicing in the gift of the Torah" },
-  "Chanukah":        { emoji: "🕎", theme: "Miracles, light & rededication" },
-  "Hanukkah":        { emoji: "🕎", theme: "Miracles, light & rededication" },
-  "Tu BiShvat":      { emoji: "🌳", theme: "New Year of Trees — nature & renewal" },
-  "Purim":           { emoji: "🎭", theme: "G-d's hidden hand & Jewish survival" },
-  "Passover":        { emoji: "🫓", theme: "Exodus, freedom & redemption" },
-  "Pesach":          { emoji: "🫓", theme: "Exodus, freedom & redemption" },
-  "Shavuot":         { emoji: "⚡", theme: "Receiving the Torah at Mount Sinai" },
-  "Tisha B'Av":      { emoji: "🕯️", theme: "Mourning, memory & hope for redemption" },
-  "Rosh Chodesh":    { emoji: "🌙", theme: "New Moon — monthly renewal & fresh start" },
-  "Yom HaShoah":     { emoji: "🕯️", theme: "Holocaust remembrance — never forget" },
-  "Yom HaAtzma'ut":  { emoji: "✡️", theme: "Israeli Independence — a modern miracle" },
-  "Lag BaOmer":      { emoji: "🔥", theme: "Bonfire festival — joy & the light of Rabbi Shimon" },
-  "Tu B'Av":         { emoji: "💛", theme: "Love & unity — the heart of the community" },
-};
 
 interface HolidayHalacha {
   source: string;
@@ -2024,7 +1946,7 @@ function YahrzeitReminderCard({ onShowYartzeit }: { onShowYartzeit: () => void }
   const { t } = useLanguage();
   const [entries, setEntries] = useState<YartzeitEntry[]>(() => getYahrzeitEntries());
   const [minimized, setMinimized] = useState<boolean>(() => {
-    try { return localStorage.getItem("menashe-yahrzeit-card-minimized") === "true"; } catch { return false; }
+    try { return localStorage.getItem(YAHRZEIT_CARD_MINIMIZED_KEY) === "true"; } catch { return false; }
   });
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
@@ -2038,7 +1960,7 @@ function YahrzeitReminderCard({ onShowYartzeit }: { onShowYartzeit: () => void }
   function toggleMinimized() {
     setMinimized(prev => {
       const next = !prev;
-      try { localStorage.setItem("menashe-yahrzeit-card-minimized", String(next)); } catch {}
+      try { localStorage.setItem(YAHRZEIT_CARD_MINIMIZED_KEY, String(next)); } catch {}
       return next;
     });
   }
@@ -2263,7 +2185,7 @@ function YahrzeitReminderCard({ onShowYartzeit }: { onShowYartzeit: () => void }
 function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: Date }> }) {
   const { t } = useLanguage();
   const [minimized, setMinimized] = useState<boolean>(() => {
-    try { return localStorage.getItem("menashe-holiday-card-minimized") === "true"; }
+    try { return localStorage.getItem(HOLIDAY_CARD_MINIMIZED_KEY) === "true"; }
     catch { return false; }
   });
   const [halacha, setHalacha] = useState<HolidayHalacha | null>(null);
@@ -2355,7 +2277,7 @@ function NextHolidayCard({ holidays }: { holidays: Array<{ name: string; date: D
   function toggle() {
     setMinimized(prev => {
       const next = !prev;
-      try { localStorage.setItem("menashe-holiday-card-minimized", String(next)); } catch {}
+      try { localStorage.setItem(HOLIDAY_CARD_MINIMIZED_KEY, String(next)); } catch {}
       return next;
     });
   }
@@ -2886,14 +2808,14 @@ function ShabbatCountdownBar({
   const [countdown, setCountdown] = useState("");
   const [isTonight, setIsTonight] = useState(false);
   const [minimised, setMinimised] = useState(() => {
-    try { return localStorage.getItem("menashe-shabbat-bar-minimised") === "true"; } catch { return false; }
+    try { return localStorage.getItem(SHABBAT_BAR_MINIMIZED_KEY) === "true"; } catch { return false; }
   });
 
   function toggleMinimise(e: React.MouseEvent) {
     e.stopPropagation();
     const next = !minimised;
     setMinimised(next);
-    try { localStorage.setItem("menashe-shabbat-bar-minimised", String(next)); } catch {}
+    try { localStorage.setItem(SHABBAT_BAR_MINIMIZED_KEY, String(next)); } catch {}
   }
 
   useEffect(() => {
@@ -3146,8 +3068,6 @@ function ShabbatCountdownBar({
 }
 
 // ── Announcement Strip ───────────────────────────────────────────────────────
-const ANN_STRIP_DISMISSED_KEY = "menashe-ann-strip-dismissed";
-
 function loadStripDismissed(): Set<string> {
   try {
     const raw = localStorage.getItem(ANN_STRIP_DISMISSED_KEY);
@@ -4038,41 +3958,6 @@ export default function Home({
 /* ─────────────────────────────────────────────────────────────────────
    AI Chat Floating Widget
 ───────────────────────────────────────────────────────────────────── */
-const AI_SUGGESTED = [
-  "What is today's Parasha about?",
-  "When does Shabbat start this week?",
-  "Tell me about Bnei Menashe",
-  "What are the Zmanim for prayer?",
-];
-
-const AI_FOLLOWUPS_EN = [
-  "Can you explain that in more detail?",
-  "What does the Torah say about this?",
-  "When is the next upcoming holiday?",
-  "What is Daf Yomi today?",
-  "When is the next Rosh Chodesh?",
-  "How do I observe Havdalah?",
-  "What does this teach us spiritually?",
-  "Tell me more about the Bnei Menashe tradition",
-  "What are the Shalosh Regalim?",
-  "How do I calculate my Hebrew birthday?",
-  "What is the significance of this Parasha?",
-  "What blessings should I say today?",
-];
-const AI_FOLLOWUPS_TK = [
-  "Zawhna hi hrang hrang dik taka sawi la",
-  "Torah-in hian engtia sawi a ni?",
-  "Zing khawm zing a awm tak tak engtin nge?",
-  "Daf Yomi tun hunah eng nge?",
-  "Rosh Chodesh a zing leh engnge?",
-  "Havdalah hi engtiin ka fiamthu ang?",
-  "Spiritual anga engtia zirtirna a neih?",
-  "Bnei Menashe tradition thu hrang hrang sawi la",
-  "Shalosh Regalim chu eng ni nge?",
-  "Ka Hebrew ni thuamhnawm engtiin ka hmu ang?",
-  "Parasha hi engtin nge a manglam?",
-  "Tun ni hian ka sawi tur blessing eng nge?",
-];
 
 async function getAiToken(): Promise<string | null> {
   return (await (window as any).Clerk?.session?.getToken()) ?? null;
@@ -4085,7 +3970,7 @@ function AiChatFAB() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<AiMessage[]>(() => {
     try {
-      const saved = localStorage.getItem("ai-chat-history");
+      const saved = localStorage.getItem(AI_CHAT_HISTORY_KEY);
       if (!saved) return [];
       const parsed = JSON.parse(saved) as AiMessage[];
       return Array.isArray(parsed) ? parsed.filter(m => !m.streaming) : [];
@@ -4094,7 +3979,7 @@ function AiChatFAB() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [minimized, setMinimized] = useState<boolean>(() => {
-    try { return localStorage.getItem("ai-chat-minimized") === "1"; } catch { return false; }
+    try { return localStorage.getItem(AI_CHAT_MINIMIZED_KEY) === "1"; } catch { return false; }
   });
   const [fabHovered, setFabHovered] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -4174,13 +4059,13 @@ function AiChatFAB() {
   }
 
   useEffect(() => {
-    try { localStorage.setItem("ai-chat-minimized", minimized ? "1" : "0"); } catch {}
+    try { localStorage.setItem(AI_CHAT_MINIMIZED_KEY, minimized ? "1" : "0"); } catch {}
   }, [minimized]);
 
   useEffect(() => {
     try {
       const toSave = messages.filter(m => !m.streaming).slice(-60);
-      localStorage.setItem("ai-chat-history", JSON.stringify(toSave));
+      localStorage.setItem(AI_CHAT_HISTORY_KEY, JSON.stringify(toSave));
     } catch {}
   }, [messages]);
 
@@ -4389,7 +4274,7 @@ function AiChatFAB() {
             </div>
             {messages.length > 0 && (
               <button
-                onClick={() => { setMessages([]); try { localStorage.removeItem("ai-chat-history"); } catch {} }}
+                onClick={() => { setMessages([]); try { localStorage.removeItem(AI_CHAT_HISTORY_KEY); } catch {} }}
                 title="Clear chat"
                 style={{
                   background: "rgba(255,255,255,0.05)",
@@ -4831,19 +4716,17 @@ function CommunityFAB({
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useLanguage();
 
-  const FAB_POS_KEY = "menashe-fab-pos";
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     try {
-      const s = localStorage.getItem("menashe-fab-pos");
+      const s = localStorage.getItem(FAB_POS_KEY);
       if (s) { const p = JSON.parse(s); if (typeof p.x === "number" && typeof p.y === "number") return p; }
     } catch {}
     return { x: window.innerWidth - 92, y: window.innerHeight - 188 };
   });
   const drag = useRef({ active: false, startX: 0, startY: 0, initX: 0, initY: 0, moved: false });
 
-  const HINT_KEY = "menashe-fab-hint-seen";
   const [showHint, setShowHint] = useState(() => {
-    try { return !localStorage.getItem(HINT_KEY); } catch { return false; }
+    try { return !localStorage.getItem(FAB_HINT_KEY); } catch { return false; }
   });
   useEffect(() => {
     if (!showHint) return;
@@ -4862,7 +4745,7 @@ function CommunityFAB({
     const dy = e.clientY - drag.current.startY;
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) drag.current.moved = true;
     if (!drag.current.moved) return;
-    if (showHint) { setShowHint(false); try { localStorage.setItem(HINT_KEY, "1"); } catch {} }
+    if (showHint) { setShowHint(false); try { localStorage.setItem(FAB_HINT_KEY, "1"); } catch {} }
     setPos({
       x: Math.max(0, Math.min(window.innerWidth - 80, drag.current.initX + dx)),
       y: Math.max(0, Math.min(window.innerHeight - 110, drag.current.initY + dy)),
@@ -4872,7 +4755,7 @@ function CommunityFAB({
     if (!drag.current.active) return;
     drag.current.active = false;
     if (drag.current.moved) {
-      try { localStorage.setItem(HINT_KEY, "1"); } catch {}
+      try { localStorage.setItem(FAB_HINT_KEY, "1"); } catch {}
       setPos(p => { try { localStorage.setItem(FAB_POS_KEY, JSON.stringify(p)); } catch {} return p; });
     }
   }
