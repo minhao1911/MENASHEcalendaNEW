@@ -412,6 +412,12 @@ export interface Translations {
   memTitle: string;
   memSubtitle: string;
   memEnteringSanctuary: string;
+  memLoadingScene: string;
+  memInitializingWebGL: string;
+  memBuildingValley: string;
+  memPlacingMemorials: string;
+  memLightingCandles: string;
+  memAlmostReady: string;
   memSearchPlaceholder: string;
   memGoldenHour: string;
   memCandlesLit: string;
@@ -843,6 +849,12 @@ export const en: Translations = {
   memTitle: "COMMUNITY MEMORIAL",
   memSubtitle: "A Valley of Remembrance & Love",
   memEnteringSanctuary: "Entering the Sanctuary",
+  memLoadingScene: "Loading 3D scene…",
+  memInitializingWebGL: "Initializing WebGL…",
+  memBuildingValley: "Building the valley…",
+  memPlacingMemorials: "Placing memorials…",
+  memLightingCandles: "Lighting the candles…",
+  memAlmostReady: "Almost ready…",
   memSearchPlaceholder: "Search for a loved one...",
   memGoldenHour: "Golden Hour",
   memCandlesLit: "Candles Lit",
@@ -1021,6 +1033,12 @@ export const tk: Translations = {
   fabAnnouncements: "Thupek",
   fabCommunityEvents: "Mipil Lawmman",
   fabCommunityMemorial: "Mipil Thi Ni",
+  memLoadingScene: "3D Scene lo in…",
+  memInitializingWebGL: "WebGL pek in…",
+  memBuildingValley: "Valley lak in…",
+  memPlacingMemorials: "Memorial pek in…",
+  memLightingCandles: "Theilawk lak in…",
+  memAlmostReady: "A hnai tawh…",
   fabTorahWisdom: "Torah Thu 48 Dan",
   fabPrayerBoard: "Thu Dawt Hmang",
   fabTorahTracker: "Torah Chhiar",

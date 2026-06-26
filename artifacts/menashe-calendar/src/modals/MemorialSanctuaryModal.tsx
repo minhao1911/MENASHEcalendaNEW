@@ -7,6 +7,7 @@ import {
   dedicateLearning,
   type CommunityYahrzeitEntry,
 } from "../lib/userApi";
+import { useLanguage } from "../context/LanguageContext";
 
 const MemorialValley3D = lazy(() => import("../components/MemorialValley3D"));
 
@@ -81,7 +82,6 @@ function formatTime() {
 /* ═══════════════════ KEYFRAMES ═════════════════════════════════════════════ */
 const STYLES = `
   @keyframes ms-flicker { 0%,100%{filter:drop-shadow(0 0 14px rgba(255,180,40,0.6))} 50%{filter:drop-shadow(0 0 28px rgba(255,140,20,0.95))} }
-  @keyframes ms-bar { from{width:18%} to{width:92%} }
   @keyframes ms-pulse-gold { 0%,100%{box-shadow:0 0 18px rgba(212,175,55,0.35),0 0 0 2px rgba(212,175,55,0.15)} 50%{box-shadow:0 0 40px rgba(212,175,55,0.65),0 0 0 2px rgba(212,175,55,0.35)} }
   @keyframes ms-float { 0%,100%{transform:translateX(-50%) translateY(0px)} 50%{transform:translateX(-50%) translateY(-6px)} }
   @keyframes ms-glow-heart { 0%,100%{filter:drop-shadow(0 0 3px rgba(255,100,100,0.5))} 50%{filter:drop-shadow(0 0 10px rgba(255,60,60,1))} }
@@ -109,18 +109,52 @@ const STYLES = `
 
 /* ═══════════════════ LOADING SCREEN ════════════════════════════════════════ */
 function ValleyLoading() {
+  const { t } = useLanguage();
+  const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState(t.memLoadingScene);
+
+  useEffect(() => {
+    const stages: Array<{ at: number; pct: number; label: string }> = [
+      { at: 350,  pct: 20, label: t.memLoadingScene },
+      { at: 1000, pct: 40, label: t.memInitializingWebGL },
+      { at: 1800, pct: 58, label: t.memBuildingValley },
+      { at: 2700, pct: 74, label: t.memPlacingMemorials },
+      { at: 3600, pct: 87, label: t.memLightingCandles },
+      { at: 4800, pct: 95, label: t.memAlmostReady },
+    ];
+    const timers = stages.map(({ at, pct, label }) =>
+      window.setTimeout(() => { setProgress(pct); setStage(label); }, at)
+    );
+    return () => timers.forEach(id => window.clearTimeout(id));
+  }, []);
+
   return (
     <div style={{
       position: "absolute", inset: 0,
       background: "linear-gradient(168deg, #b05822 0%, #e08830 18%, #f0b850 35%, #e8d890 52%, #b8d498 72%, #6a9a70 100%)",
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20,
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18,
     }}>
       <div style={{ fontSize: 58, animation: "ms-flicker 1.8s ease-in-out infinite" }}>🕯</div>
-      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.22em", color: "rgba(35,18,0,0.7)", textTransform: "uppercase" }}>
-        Entering the Sanctuary
+      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.22em", color: "rgba(35,18,0,0.75)", textTransform: "uppercase" }}>
+        {t.memEnteringSanctuary}
       </div>
-      <div style={{ width: 140, height: 3, borderRadius: 2, background: "rgba(180,140,40,0.2)", overflow: "hidden" }}>
-        <div style={{ height: "100%", borderRadius: 2, background: "linear-gradient(90deg,#D4AF37,#f5d982)", animation: "ms-bar 1.6s ease-in-out infinite alternate" }} />
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, width: 220 }}>
+        <div style={{ fontSize: 11, color: "rgba(35,18,0,0.52)", letterSpacing: "0.05em", height: 16, textAlign: "center" }}>
+          {stage}
+        </div>
+        <div style={{ position: "relative", width: "100%", height: 5, borderRadius: 3, background: "rgba(180,140,40,0.2)", overflow: "hidden" }}>
+          <div style={{
+            position: "absolute", inset: "0 auto 0 0",
+            width: `${progress}%`,
+            borderRadius: 3,
+            background: "linear-gradient(90deg, #D4AF37, #f5d982)",
+            transition: "width 0.75s cubic-bezier(0.4, 0, 0.2, 1)",
+            boxShadow: "0 0 8px rgba(212,175,55,0.6)",
+          }} />
+        </div>
+        <div style={{ fontSize: 10, color: "rgba(35,18,0,0.4)", fontVariantNumeric: "tabular-nums", letterSpacing: "0.06em" }}>
+          {progress}%
+        </div>
       </div>
     </div>
   );
