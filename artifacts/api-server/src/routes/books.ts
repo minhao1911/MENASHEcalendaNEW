@@ -4,6 +4,7 @@ import { booksTable, insertBookSchema, updateBookSchema } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { requireAdmin } from "../lib/requireAdmin";
 import { getAuth } from "@clerk/express";
+import { isAdminUser } from "../lib/authorization";
 
 const router = Router();
 
@@ -11,7 +12,7 @@ router.get("/books", async (req, res) => {
   try {
     const { category } = req.query;
     const auth = getAuth(req);
-    const isAdmin = !!auth?.userId && auth.userId === process.env["ADMIN_USER_ID"];
+    const isAdmin = isAdminUser(auth?.userId);
 
     let rows = await db
       .select()

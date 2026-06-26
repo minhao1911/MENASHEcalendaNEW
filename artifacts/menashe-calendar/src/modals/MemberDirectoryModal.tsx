@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 
 interface Props {
   onClose: () => void;
+  isAdmin?: boolean;
   userProfile?: { name: string; city: string; country: string; role: string; bio: string } | null;
 }
 
@@ -112,10 +113,9 @@ function emptyReg(): Omit<Member, "id" | "status" | "joinedAt"> {
   return { name: "", city: "", country: "India", role: "Member", bio: "", whatsapp: "", phone: "", email: "", otherContact: "", birthday: "", aliyahDate: "" };
 }
 
-export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
+export default function MemberDirectoryModal({ onClose, isAdmin = false, userProfile }: Props) {
   const [members, setMembers] = useState<Member[]>(loadMembers);
-  const [view, setView] = useState<"directory" | "register" | "pin" | "admin">("directory");
-  const [pin, setPin] = useState(""); const [pinError, setPinError] = useState("");
+  const [view, setView] = useState<"directory" | "register" | "admin">("directory");
   const [reg, setReg] = useState(() => {
     if (userProfile) {
       return {
@@ -135,16 +135,10 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
   const [filterCountry, setFilterCountry] = useState("All");
   const [adminFilter, setAdminFilter] = useState<"all" | "pending" | "approved" | "hidden">("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [adminTap, setAdminTap] = useState(0);
   const [connectOpen, setConnectOpen] = useState<string | null>(null);
   const [introMsg, setIntroMsg] = useState("Shalom! I found you in the Bnei Menashe Member Directory and would love to connect. 🕍");
 
   function persist(list: Member[]) { setMembers(list); saveMembers(list); }
-
-  function submitPin() {
-    if (pin === ADMIN_PIN) { setView("admin"); setPin(""); setPinError(""); }
-    else { setPinError("Incorrect PIN"); setPin(""); }
-  }
 
   function submitReg() {
     if (!reg.name.trim()) { setRegError("Please enter your name."); return; }
@@ -173,27 +167,6 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
   const pending  = members.filter(m => m.status === "pending");
   const adminList = adminFilter === "all" ? members : members.filter(m => m.status === adminFilter);
 
-  // ── PIN ────────────────────────────────────────────────────────────────────
-  if (view === "pin") return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-        <div className="modal-handle" />
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Admin Access</div>
-          <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Enter your PIN to moderate the directory</div>
-        </div>
-        <input type="password" inputMode="numeric" value={pin}
-          onChange={e => { setPin(e.target.value); setPinError(""); }}
-          onKeyDown={e => e.key === "Enter" && submitPin()}
-          placeholder="• • • •" maxLength={8} autoFocus
-          style={{ ...inputStyle, fontSize: 22, textAlign: "center", letterSpacing: "0.4em", marginBottom: 10 }} />
-        {pinError && <div style={{ fontSize: 12, color: "#ef4444", textAlign: "center", marginBottom: 10 }}>⚠️ {pinError}</div>}
-        <button className="btn-gold" style={{ width: "100%", padding: 13, fontSize: 15, fontWeight: 700, marginBottom: 10 }} onClick={submitPin}>Enter Admin Panel</button>
-        <button onClick={() => setView("directory")} className="btn-close-full">Cancel</button>
-      </div>
-    </div>
-  );
 
   // ── Register form ──────────────────────────────────────────────────────────
   if (view === "register") return (
@@ -449,8 +422,7 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", cursor: "default" }}
-              onClick={() => { const n = adminTap + 1; setAdminTap(n); if (n >= 5) { setAdminTap(0); setView("pin"); } }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>
               👥 Member Directory
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{approved.length} approved member{approved.length !== 1 ? "s" : ""} worldwide</div>
@@ -654,10 +626,12 @@ export default function MemberDirectoryModal({ onClose, userProfile }: Props) {
           </button>
         </div>
 
-        {/* Footer admin */}
-        <div style={{ textAlign: "center", marginBottom: 10 }}>
-          <button onClick={() => setView("pin")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", opacity: 0.5, padding: "6px 12px" }}>⚙ Admin</button>
-        </div>
+        {/* Footer admin — only visible to administrator */}
+        {isAdmin && (
+          <div style={{ textAlign: "center", marginBottom: 10 }}>
+            <button onClick={() => setView("admin")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", opacity: 0.5, padding: "6px 12px" }}>⚙ Admin</button>
+          </div>
+        )}
         <button onClick={onClose} className="btn-close-full">Close</button>
       </div>
     </div>

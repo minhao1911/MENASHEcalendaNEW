@@ -2,7 +2,7 @@ import { Router } from "express";
 import crypto from "crypto";
 import Razorpay from "razorpay";
 import { pool } from "@workspace/db";
-import { requireAuth } from "../lib/requireAuth";
+import { requireAuth, requireAdmin } from "../lib/authorization";
 
 const router = Router();
 
@@ -118,9 +118,7 @@ router.post("/payment/razorpay/verify", requireAuth, async (req, res) => {
 
 /* ── GET /api/admin/payments ─────────────────────────────────────────────────
    Returns all Razorpay payment records with user display names. Admin only. */
-router.get("/admin/payments", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (!process.env.ADMIN_PIN || pin !== process.env.ADMIN_PIN) return res.status(403).json({ error: "Forbidden" });
+router.get("/admin/payments", requireAdmin, async (req, res) => {
 
   const client = await pool.connect();
   try {

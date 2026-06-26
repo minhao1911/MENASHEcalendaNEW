@@ -12,7 +12,6 @@ interface Props {
   isAdmin?: boolean;
 }
 
-const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
 const EMOJI_OPTIONS = ["📢","📣","🔔","✡","🕍","🌟","📜","🙏","🎯","🫂","⚡","💬","📌","🗓","🌐","🎉","🕎","🌿","💎","🏛","📚","🔗","🕯","✨","🇮🇱","📖","🌾"];
 
 const inputStyle: React.CSSProperties = {
@@ -73,10 +72,7 @@ function statusBadge(status: AnnouncementStatus) {
 }
 
 export default function AnnouncementsModal({ onClose, announcements, onAdd, onUpdate, onDelete, onSendNow, isAdmin = false }: Props) {
-  const [view, setView] = useState<"feed" | "pin" | "admin" | "form">("feed");
-  const [pin, setPin] = useState("");
-  const [pinError, setPinError] = useState("");
-  const [adminTap, setAdminTap] = useState(0);
+  const [view, setView] = useState<"feed" | "admin" | "form">("feed");
 
   const nowStr = () => {
     const d = new Date();
@@ -98,13 +94,6 @@ export default function AnnouncementsModal({ onClose, announcements, onAdd, onUp
       return tb - ta;
     });
   }, [announcements]);
-
-  function submitPin() {
-    if (pin === ADMIN_PIN) {
-      storeAdminPin(pin);
-      setView("admin"); setPin(""); setPinError("");
-    } else { setPinError("Incorrect PIN"); setPin(""); }
-  }
 
   function openForm(ann?: Announcement) {
     if (ann) {
@@ -162,34 +151,6 @@ export default function AnnouncementsModal({ onClose, announcements, onAdd, onUp
     setView("admin");
   }
 
-  // ── PIN screen ──────────────────────────────────────────────────────────────
-  if (view === "pin") {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-          <div className="modal-handle" />
-          <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Admin Access</div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Enter your admin PIN to manage announcements</div>
-          </div>
-          <input
-            type="password" inputMode="numeric"
-            value={pin}
-            onChange={e => { setPin(e.target.value); setPinError(""); }}
-            onKeyDown={e => e.key === "Enter" && submitPin()}
-            placeholder="• • • •" maxLength={8} autoFocus
-            style={{ ...inputStyle, fontSize: 22, textAlign: "center", letterSpacing: "0.4em", marginBottom: 10 }}
-          />
-          {pinError && <div style={{ fontSize: 12, color: "#ef4444", textAlign: "center", marginBottom: 10 }}>⚠️ {pinError}</div>}
-          <button className="btn-gold" style={{ width: "100%", padding: 13, fontSize: 15, fontWeight: 700, marginBottom: 10 }} onClick={submitPin}>
-            Enter Admin Panel
-          </button>
-          <button onClick={() => setView("feed")} className="btn-close-full">Cancel</button>
-        </div>
-      </div>
-    );
-  }
 
   // ── Compose / Edit form ─────────────────────────────────────────────────────
   if (view === "form") {
@@ -410,8 +371,7 @@ export default function AnnouncementsModal({ onClose, announcements, onAdd, onUp
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
             <div
-              style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", cursor: "default" }}
-              onClick={() => { if (isAdmin) return; const n = adminTap + 1; setAdminTap(n); if (n >= 5) { setAdminTap(0); setView("pin"); } }}
+              style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}
             >
               📢 Announcements
             </div>
@@ -494,12 +454,14 @@ export default function AnnouncementsModal({ onClose, announcements, onAdd, onUp
           </div>
         )}
 
-        {/* Footer */}
-        <div style={{ textAlign: "center", marginBottom: 10 }}>
-          <button onClick={() => setView("pin")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", opacity: 0.5, padding: "6px 12px" }}>
-            ⚙ Admin
-          </button>
-        </div>
+        {/* Footer admin — only visible to administrator */}
+        {isAdmin && (
+          <div style={{ textAlign: "center", marginBottom: 10 }}>
+            <button onClick={() => setView("admin")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", opacity: 0.5, padding: "6px 12px" }}>
+              ⚙ Admin
+            </button>
+          </div>
+        )}
 
         <button onClick={onClose} className="btn-close-full">Close</button>
       </div>

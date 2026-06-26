@@ -7,11 +7,9 @@ import {
   fetchCensusMemberSubmissions, submitCensusMemberEntry, reviewCensusMemberSubmission,
 } from "../lib/userApi";
 
-interface Props { onClose: () => void; }
+interface Props { onClose: () => void; isAdmin?: boolean; }
 
 type Tab = "dashboard" | "admin" | "localadmin";
-
-const LOCAL_ADMIN_PIN = "1994";
 
 /* ══════════════════════════════════════════════════════════════
    DATA TYPES
@@ -640,44 +638,22 @@ function exportPrint(branch: Branch) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PIN GATE
+   ACCESS DENIED
 ══════════════════════════════════════════════════════════════ */
-function PinGate({ role, onUnlock }: { role: "admin" | "localadmin"; onUnlock: () => void }) {
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState(false);
-  const correct = role === "admin" ? ADMIN_PIN : LOCAL_ADMIN_PIN;
-
-  function attempt() {
-    if (pin === correct) { setError(false); onUnlock(); }
-    else { setError(true); setPin(""); }
-  }
-
+function AdminAccessDenied() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "36px 24px", gap: 18 }}>
-      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
-        {role === "admin" ? "🏛️" : "📍"}
+      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
+        🔒
       </div>
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
-          {role === "admin" ? "Administrative Access" : "Local Administrator Access"}
+          Administrator Access Required
         </div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", maxWidth: 260, lineHeight: 1.55 }}>
-          {role === "admin"
-            ? "Enter your Admin PIN to manage global census data and all city records."
-            : "Enter your Local Admin PIN to manage your congregation's branch registry."}
+          This panel is restricted to the Bnei Menashe Council administrator. Please sign in with an authorized account.
         </div>
       </div>
-      <input
-        type="password" inputMode="numeric" maxLength={8} placeholder="Enter PIN"
-        value={pin}
-        onChange={e => { setPin(e.target.value); setError(false); }}
-        onKeyDown={e => e.key === "Enter" && attempt()}
-        style={{ ...inputStyle, maxWidth: 280, fontSize: 18, textAlign: "center", letterSpacing: "0.3em", border: `1px solid ${error ? "#ef4444" : "var(--border)"}` }}
-      />
-      {error && <div style={{ fontSize: 12, color: "#ef4444", marginTop: -10 }}>Incorrect PIN. Please try again.</div>}
-      <button onClick={attempt} style={{ width: "100%", maxWidth: 280, padding: "13px 0", borderRadius: 12, background: "var(--gold)", color: "#1a0f00", fontWeight: 700, fontSize: 15, border: "none", cursor: "pointer" }}>
-        Unlock Access
-      </button>
     </div>
   );
 }
@@ -2101,10 +2077,8 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
 /* ══════════════════════════════════════════════════════════════
    ROOT MODAL
 ══════════════════════════════════════════════════════════════ */
-export default function CensusModal({ onClose }: Props) {
+export default function CensusModal({ onClose, isAdmin = false }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
-  const [localAdminUnlocked, setLocalAdminUnlocked] = useState(false);
   const [stats, setStats] = useState<StatEntry[]>(DEFAULT_STATS);
   const [cities, setCities] = useState<CityEntry[]>(DEFAULT_CITIES);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -2257,10 +2231,10 @@ export default function CensusModal({ onClose }: Props) {
           );
         }
         return <Dashboard stats={stats} cities={cities} approvedBranches={approvedBranches} onSubmitRequest={() => setShowSubmitForm(true)} onStatusCheckRequest={() => setShowStatusCheck(true)} />;
-      case "admin":      return !adminUnlocked ? <PinGate role="admin" onUnlock={() => setAdminUnlocked(true)} /> : (
-        <AdminPanel stats={stats} cities={cities} onSave={(s, c) => { setStats(s); setCities(c); }} submissions={submissions} onReview={handleReview} />
-      );
-      case "localadmin": return !localAdminUnlocked ? <PinGate role="localadmin" onUnlock={() => setLocalAdminUnlocked(true)} /> : (
+      case "admin":      return isAdmin
+        ? <AdminPanel stats={stats} cities={cities} onSave={(s, c) => { setStats(s); setCities(c); }} submissions={submissions} onReview={handleReview} />
+        : <AdminAccessDenied />;
+      case "localadmin": return (
         <BranchRegistryPanel cities={cities} submission={localSubmission} onSubmit={handleSubmit} memberSubmissions={memberSubmissions} onMemberReview={handleMemberReview} initialBranch={localSubmission?.branch} />
       );
     }

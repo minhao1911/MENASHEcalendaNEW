@@ -463,7 +463,7 @@ function AppShell() {
   const { unreadCount: announcementCount, unreadAnnouncements, markAllRead: markAnnouncementsRead } = useUnreadAnnouncements();
 
   const isLight = theme === "light";
-  const isAdmin = publicProfile?.role === "Admin";
+  const isAdmin = !!user?.id && user.id === import.meta.env.VITE_ADMIN_USER_ID;
 
   function showToast(msg: string) {
     setToast(msg);
@@ -741,12 +741,13 @@ function AppShell() {
                 <CommunityYahrzeitModal onClose={closeModal} userName={publicProfile?.displayName} />
               )}
               {modal === "community" && <CommunityModal onClose={closeModal} onYahrzeitBoard={() => setModal("community-yahrzeit")} isAdmin={isAdmin} />}
-              {modal === "census" && <CensusModal onClose={closeModal} />}
+              {modal === "census" && <CensusModal onClose={closeModal} isAdmin={isAdmin} />}
               {modal === "omer" && <OmerModal onClose={closeModal} />}
               {modal === "events" && <EventsModal onClose={closeModal} isAdmin={isAdmin} />}
               {modal === "members" && (
                 <MemberDirectoryModal
                   onClose={closeModal}
+                  isAdmin={isAdmin}
                   userProfile={publicProfile ? {
                     name: publicProfile.displayName,
                     city: publicProfile.city,
@@ -757,7 +758,7 @@ function AppShell() {
                 />
               )}
               {modal === "prayers-board" && (
-                <PrayerBoardModal onClose={closeModal} userName={publicProfile?.displayName} />
+                <PrayerBoardModal onClose={closeModal} userName={publicProfile?.displayName} isAdmin={isAdmin} />
               )}
               {modal === "whats-new" && (
                 <WhatsNewModal onClose={() => {

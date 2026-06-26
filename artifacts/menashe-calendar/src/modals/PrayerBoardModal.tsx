@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLanguage } from "../context/LanguageContext";
 
-interface Props { onClose: () => void; userName?: string; }
+interface Props { onClose: () => void; userName?: string; isAdmin?: boolean; }
 
 export interface PrayerRequest {
   id: string;
@@ -80,12 +80,11 @@ function emptyForm() {
   return { name: "", isAnonymous: false, text: "", category: "Blessing" };
 }
 
-export default function PrayerBoardModal({ onClose, userName }: Props) {
+export default function PrayerBoardModal({ onClose, userName, isAdmin = false }: Props) {
   const { t } = useLanguage();
   const [requests, setRequests] = useState<PrayerRequest[]>(loadRequests);
   const [castAmens, setCastAmens] = useState<Set<string>>(loadCastAmens);
-  const [view, setView]       = useState<"board" | "submit" | "pin" | "admin">("board");
-  const [pin, setPin]         = useState(""); const [pinError, setPinError] = useState("");
+  const [view, setView]       = useState<"board" | "submit" | "admin">("board");
   const [form, setForm]       = useState(() => ({ ...emptyForm(), name: userName || "" }));
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -94,14 +93,8 @@ export default function PrayerBoardModal({ onClose, userName }: Props) {
   const [responseText, setResponseText] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [filterCat, setFilterCat] = useState("All");
-  const [adminTap, setAdminTap] = useState(0);
 
   function persist(list: PrayerRequest[]) { setRequests(list); saveRequests(list); }
-
-  function submitPin() {
-    if (pin === ADMIN_PIN) { setView("admin"); setPin(""); setPinError(""); }
-    else { setPinError("Incorrect PIN"); setPin(""); }
-  }
 
   function submitRequest() {
     if (!form.text.trim()) { setSubmitError("Please write your prayer request."); return; }
@@ -149,27 +142,6 @@ export default function PrayerBoardModal({ onClose, userName }: Props) {
   const pending = requests.filter(r => r.status === "pending");
   const adminList = adminFilter === "all" ? requests : requests.filter(r => r.status === adminFilter);
 
-  // ── PIN ────────────────────────────────────────────────────────────────────
-  if (view === "pin") return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-        <div className="modal-handle" />
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>{t.prayerBoardAdminAccess}</div>
-          <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{t.prayerBoardAdminPin}</div>
-        </div>
-        <input type="password" inputMode="numeric" value={pin}
-          onChange={e => { setPin(e.target.value); setPinError(""); }}
-          onKeyDown={e => e.key === "Enter" && submitPin()}
-          placeholder="• • • •" maxLength={8} autoFocus
-          style={{ ...inputStyle, fontSize: 22, textAlign: "center", letterSpacing: "0.4em", marginBottom: 10 }} />
-        {pinError && <div style={{ fontSize: 12, color: "#ef4444", textAlign: "center", marginBottom: 10 }}>⚠️ {pinError}</div>}
-        <button className="btn-gold" style={{ width: "100%", padding: 13, fontSize: 15, fontWeight: 700, marginBottom: 10 }} onClick={submitPin}>Enter Admin Panel</button>
-        <button onClick={() => setView("board")} className="btn-close-full">Cancel</button>
-      </div>
-    </div>
-  );
 
   // ── Submit form ────────────────────────────────────────────────────────────
   if (view === "submit") return (
@@ -372,8 +344,7 @@ export default function PrayerBoardModal({ onClose, userName }: Props) {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", cursor: "default" }}
-              onClick={() => { const n = adminTap + 1; setAdminTap(n); if (n >= 5) { setAdminTap(0); setView("pin"); } }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>
               🙏 Prayer Board
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Community prayers & blessings</div>
@@ -489,10 +460,12 @@ export default function PrayerBoardModal({ onClose, userName }: Props) {
           </button>
         </div>
 
-        {/* Footer admin */}
-        <div style={{ textAlign: "center", marginBottom: 10 }}>
-          <button onClick={() => setView("pin")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", opacity: 0.5, padding: "6px 12px" }}>⚙ Admin</button>
-        </div>
+        {/* Footer admin — only visible to administrator */}
+        {isAdmin && (
+          <div style={{ textAlign: "center", marginBottom: 10 }}>
+            <button onClick={() => setView("admin")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", opacity: 0.5, padding: "6px 12px" }}>⚙ Admin</button>
+          </div>
+        )}
         <button onClick={onClose} className="btn-close-full">Close</button>
       </div>
     </div>

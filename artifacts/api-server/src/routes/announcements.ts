@@ -5,6 +5,7 @@ import { pool } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { requireAdmin } from "../lib/requireAdmin";
 import { getAuth } from "@clerk/express";
+import { isAdminUser } from "../lib/authorization";
 
 const router = Router();
 const expo = new Expo();
@@ -112,7 +113,7 @@ async function broadcastToAll(ann: CommunityAnnouncement) {
 // GET /announcements — public feed (sent); admin sees all
 router.get("/announcements", async (req, res) => {
   const auth = getAuth(req);
-  const isAdmin = !!auth?.userId && auth.userId === process.env["ADMIN_USER_ID"];
+  const isAdmin = isAdminUser(auth?.userId);
   try {
     const r = await pool.query(
       isAdmin

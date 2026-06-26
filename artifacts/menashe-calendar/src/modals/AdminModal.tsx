@@ -296,28 +296,27 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   async function fetchCensus() {
     setCensusLoading(true);
     try {
-      const [subRes, memRes] = await Promise.all([
-        fetch(`${API_BASE}/census/submissions`),
-        fetch(`${API_BASE}/census/member-submissions`),
+      const [subs, mems] = await Promise.all([
+        adminFetch("/census/submissions"),
+        adminFetch("/census/member-submissions"),
       ]);
-      if (subRes.ok) setCensusSubmissions(await subRes.json());
-      if (memRes.ok) setMemberSubmissions(await memRes.json());
-    } finally { setCensusLoading(false); }
+      setCensusSubmissions(subs);
+      setMemberSubmissions(mems);
+    } catch {} finally { setCensusLoading(false); }
   }
 
   async function reviewCensus(id: string, type: "branch" | "member", status: "approved" | "rejected", reviewNote?: string) {
     setReviewingCensus(id);
     try {
       const endpoint = type === "branch"
-        ? `${API_BASE}/census/submissions/${id}`
-        : `${API_BASE}/census/member-submissions/${id}`;
-      await fetch(endpoint, {
+        ? `/census/submissions/${id}`
+        : `/census/member-submissions/${id}`;
+      await adminFetch(endpoint, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, reviewNote: reviewNote || undefined }),
       });
       await fetchCensus();
-    } finally { setReviewingCensus(null); }
+    } catch {} finally { setReviewingCensus(null); }
   }
 
   async function loadAnnouncements() {

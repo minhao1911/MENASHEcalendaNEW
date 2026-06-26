@@ -63,29 +63,13 @@ function groupByCategory(links: CommunityLink[]): Record<string, CommunityLink[]
 
 export default function CommunityModal({ onClose, onYahrzeitBoard, isAdmin = false }: Props & { isAdmin?: boolean }) {
   const [links, setLinks] = useState<CommunityLink[]>(loadLinks);
-  const [view, setView] = useState<"main" | "pin" | "admin" | "form">("main");
-  const [pin, setPin] = useState("");
-  const [pinError, setPinError] = useState("");
+  const [view, setView] = useState<"main" | "admin" | "form">("main");
   const [form, setForm] = useState(emptyForm());
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [adminTapCount, setAdminTapCount] = useState(0);
 
   useEffect(() => { saveLinks(links); }, [links]);
-
-  // Secret tap on the header logo to open admin PIN (only for non-role admins)
-  function handleHeaderTap() {
-    if (isAdmin) return;
-    const next = adminTapCount + 1;
-    setAdminTapCount(next);
-    if (next >= 5) { setAdminTapCount(0); setView("pin"); }
-  }
-
-  function submitPin() {
-    if (pin === ADMIN_PIN) { setView("admin"); setPin(""); setPinError(""); }
-    else { setPinError("Incorrect PIN"); setPin(""); }
-  }
 
   function openForm(link?: CommunityLink) {
     if (link) {
@@ -121,37 +105,6 @@ export default function CommunityModal({ onClose, onYahrzeitBoard, isAdmin = fal
   }
 
   const grouped = groupByCategory(links);
-
-  // ── PIN screen ──
-  if (view === "pin") {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-          <div className="modal-handle" />
-          <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Admin Access</div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Enter your admin PIN to manage community links</div>
-          </div>
-          <input
-            type="password" inputMode="numeric"
-            value={pin}
-            onChange={e => { setPin(e.target.value); setPinError(""); }}
-            onKeyDown={e => e.key === "Enter" && submitPin()}
-            placeholder="• • • •" maxLength={8} autoFocus
-            style={{ ...inputStyle, fontSize: 22, textAlign: "center", letterSpacing: "0.4em", marginBottom: 10 }}
-          />
-          {pinError && (
-            <div style={{ fontSize: 12, color: "#ef4444", textAlign: "center", marginBottom: 10 }}>⚠️ {pinError}</div>
-          )}
-          <button className="btn-gold" style={{ width: "100%", padding: 13, fontSize: 15, fontWeight: 700, marginBottom: 10 }} onClick={submitPin}>
-            Enter Admin Panel
-          </button>
-          <button onClick={() => setView("main")} className="btn-close-full">Cancel</button>
-        </div>
-      </div>
-    );
-  }
 
   // ── Add / Edit form ──
   if (view === "form") {
@@ -389,9 +342,8 @@ export default function CommunityModal({ onClose, onYahrzeitBoard, isAdmin = fal
           <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
 
-        {/* Hero banner — tap 5× to open admin */}
+        {/* Hero banner */}
         <div
-          onClick={handleHeaderTap}
           style={{
             padding: 16, borderRadius: 16, marginBottom: 16, textAlign: "center",
             background: "linear-gradient(135deg, #0f1e38, #1a2a4a)",
@@ -532,19 +484,21 @@ export default function CommunityModal({ onClose, onYahrzeitBoard, isAdmin = fal
           ))
         )}
 
-        {/* Footer admin hint */}
-        <div style={{ textAlign: "center", marginTop: 4, marginBottom: 12 }}>
-          <button
-            onClick={() => setView("pin")}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              fontSize: 11, color: "var(--text-muted)", padding: "6px 12px",
-              opacity: 0.5,
-            }}
-          >
-            ⚙ Admin
-          </button>
-        </div>
+        {/* Footer admin — only visible to administrator */}
+        {isAdmin && (
+          <div style={{ textAlign: "center", marginTop: 4, marginBottom: 12 }}>
+            <button
+              onClick={() => setView("admin")}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 11, color: "var(--text-muted)", padding: "6px 12px",
+                opacity: 0.5,
+              }}
+            >
+              ⚙ Admin
+            </button>
+          </div>
+        )}
 
         <button onClick={onClose} className="btn-close-full">Close</button>
       </div>
