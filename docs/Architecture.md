@@ -1,7 +1,7 @@
 # Architecture Overview
 
 > Purpose: High-level system architecture, component boundaries, data flow, and design decisions for the Menashe Platform.
-> Last updated: 2026-06-26 (SPR-003)
+> Last updated: 2026-06-26 (SPR-004)
 
 ---
 
@@ -166,3 +166,338 @@ artifacts/menashe-mobile/lib/translations.ts           →  @workspace/shared-co
 4. **Admin auth is PIN-based** — deliberately simple for the initial launch; full role-based auth is deferred.
 5. **3D scene loads lazily** — only `MemorialValley3D` is wrapped in `React.lazy`; all other modals are eagerly bundled.
 6. **Service worker caches shell + assets** — PWA shell works offline; dynamic data (books, yahrzeit) is not pre-cached.
+
+---
+
+## SPR-004 — Home.tsx Architecture Blueprint
+
+> **Scope:** Pure analysis sprint. No code changes are made in SPR-004. This section is the production-ready blueprint for a future modular refactor of `Home.tsx` (5,207 lines).
+
+### 1. Executive Summary
+
+`Home.tsx` is the largest and most complex file in the codebase at 5,207 lines. It contains **16 inline sub-components**, **6 file-level utility functions**, **7 file-level data constants**, and the **main `Home` export component** — all in a single file. The component is the primary user surface of the app, rendering the entire home screen: date/zmanim information, AI chat, push notification management, community tools, Shabbat countdown, upcoming celebrations, and more.
+
+The file is well-structured internally but requires extraction into a dedicated directory to enable:
+- Independent testing of each card/widget
+- Code splitting (currently the entire 5 K-line file is always eagerly loaded)
+- Parallel development across multiple contributors
+- Clear ownership boundaries per feature
+
+---
+
+### 2. Full Component Inventory
+
+All 16 inline components defined inside `Home.tsx`, in order of appearance:
+
+| # | Component | Approx. lines | Responsibilities | Has API call | Has local state |
+|---|---|---|---|---|---|
+| 1 | `TodayHolidayCard` | 49–194 | AI holiday insight for today's active holiday | `GET /api/holiday-insights` | `insight`, `loading`, `expanded` |
+| 2 | `DailyBriefingCard` | 275–372 | Random Torah thought; special-day banner (Shabbat/fast/Rosh Chodesh) | — | — (pure derived) |
+| 3 | `CandleLightingCountdown` | 374–624 | Live countdown to candle-lighting or havdalah; notification bell | — | `timeLeft`, `mode`, `notifPermission` |
+| 4 | `CountdownChip` | 643–667 | Tiny chip: "in N days" for a birthday/aliyah anniversary | — | — |
+| 5 | `UpcomingCelebrations` | 669–827 | Member birthday/aliyah anniversary grid from localStorage | — | `members` (from localStorage) |
+| 6 | `CommunityCard` | 829–962 | Expandable card: Member Directory + Census shortcuts | — | `expanded` |
+| 7 | `DateZmanimCard` | 964–1,500 | Hebrew date header; Zmanim grid; OpenStreetMap iframe; nearby synagogue list; compass button | `https://overpass-api.de/api/interpreter` | `synagogues`, `loadingSyns`, `mapExpanded`, `sections` |
+| 8 | `PremiumCandleCard` | 1,502–1,624 | Premium-gated candle-lighting detail card | — | — |
+| 9 | `WeekStrip` | 1,671–1,810 | 7-day mini calendar strip with Hebrew dates and holiday highlights | — | `selectedDay` |
+| 10 | `ZmanimTimeline` | 1,812–1,993 | Horizontal timeline with prayer-time markers and current-time cursor | — | — (derived from props) |
+| 11 | `YahrzeitReminderCard` | 2,023–2,261 | Yahrzeit display; push notification subscribe/unsubscribe/test | `/api/push/register`, `/api/push/subscribe`, `/api/push/cancel-yahrzeit` | `yahrzeit`, `pushStatus`, `notifLoading` |
+| 12 | `NextHolidayCard` | 2,263–2,872 | Next-holiday countdown; AI halacha text; preparation checklist; share-card generator | `GET /api/holiday-halacha` | `daysUntil`, `halachaText`, `halachaLoading`, `checklist`, `shareVisible` |
+| 13 | `ShabbatCountdownBar` | 2,875–3,146 | Sticky Shabbat/havdalah countdown bar; premium/trial gate | — | `minutesLeft`, `trialExpired` |
+| 14 | `AnnouncementStrip` | 3,148–3,266 | Dismissible top banner; cycles through announcements | — | `dismissed` (persisted in localStorage) |
+| 15 | `AiChatFAB` | 4,083–4,813 | Floating AI chat widget; streaming SSE response; chat history | `POST /api/chat` (SSE stream) | `open`, `messages`, `input`, `streaming`, `controller` |
+| 16 | `CommunityFAB` | 4,815–5,207 | Speed-dial FAB with 9 community tool shortcuts | — | `open` |
+
+---
+
+### 3. Main `Home` Export Component
+
+**Location:** lines ~3,268–4,036
+
+#### 3a. Props Interface (HomeProps)
+
+23 props total — a mix of data props and callback props:
+
+```typescript
+interface HomeProps {
+  // Data
+  hDate: HDate;
+  zmanimResult: ZmanimResult | null;
+  location: LocationRecord;
+  parasha: string | null;
+  isPremium: boolean;
+  trialDaysLeft: number;
+  announcements: Announcement[];
+  currentPage: string;
+
+  // Navigation callbacks
+  onNavigate: (page: string) => void;
+  onMoreTools: () => void;
+
+  // Modal-opening callbacks
+  onShowHolidays: () => void;
+  onShowParashah: () => void;
+  onShowPremium: () => void;
+  onShowDafYomi: () => void;
+  onShowOmer: () => void;
+  onOpenSiddur: () => void;
+  onShowCommunity: () => void;
+  onShowCensus: () => void;
+  onShowMembers: () => void;
+  onShowAnnouncements: () => void;
+  onShowEvents: () => void;
+  onShowCommunityYahrzeit: () => void;
+  onShowYartzeit: () => void;
+  onShowMussar: () => void;
+  onShowPrayerBoard: () => void;
+  onShowTorahTracker: () => void;
+
+  // UI action callbacks
+  onLocationClick: () => void;
+  onToggleTheme: () => void;
+  onNotifBell: () => void;
+}
+```
+
+**Architecture note:** All modal-opening is delegated upward to `App.tsx` via callbacks. `Home.tsx` never owns modal visibility state. This is the correct separation — preserve it.
+
+#### 3b. Home Component Local State
+
+| State variable | Type | Owner concern |
+|---|---|---|
+| `mapForceExpand` | `boolean` | Forces `DateZmanimCard` map open from outside the card |
+| `showCompassCard` | `boolean` | Jerusalem compass overlay |
+| `candleCountdown` | `string \| null` | Formatted countdown string shown in header (computed from zmanimResult) |
+| `showShabbatBanner` | `boolean` | Activated Shabbat-mode header variant |
+| `candleNotifFiredRef` | `MutableRefObject<boolean>` | Deduplicate candle-lighting notification |
+
+#### 3c. Home useEffects
+
+1. **Candle countdown ticker** — 1-second `setInterval`; derives `candleCountdown` string from `zmanimResult.candleLighting` or `zmanimResult.havdalah`. Clears on unmount.
+2. **Notification permission request** — fires once on mount; calls `Notification.requestPermission()` if not yet granted.
+
+#### 3d. Render Order (top-to-bottom)
+
+```
+┌─────────────────────────────────────────────────┐
+│  Shabbat banner (conditional)                   │
+│  App header (location chip · theme · notif bell)│
+│  AnnouncementStrip                              │
+│  CandleLightingCountdown (hero)                 │
+│  CompassCard: today's Hebrew date summary       │
+│  Rosh Chodesh banner (conditional)              │
+│  TodayHolidayCard (conditional — holidays only) │
+│  NextHolidayCard                                │
+│  YahrzeitReminderCard                           │
+│  CompassCard: Parasha of the week               │
+│  CompassCard: Omer count (conditional)          │
+│  DailyBriefingCard (Daily Wisdom / Torah quote) │
+│  WeekStrip (7-day mini calendar)                │
+│  ZmanimTimeline (horizontal prayer-time view)   │
+│  DateZmanimCard (full date + zmanim + map)      │
+│  PremiumCandleCard                              │
+│  CompassCard: Siddur Library shortcut           │
+│  Quick Actions grid (6 buttons)                 │
+│  UpcomingCelebrations                           │
+│  CommunityCard                                  │
+├─────────────────────────────────────────────────┤
+│  ShabbatCountdownBar (sticky bottom)            │
+└─────────────────────────────────────────────────┘
+  CommunityFAB (fixed overlay, bottom-right)
+  AiChatFAB (fixed overlay, bottom-right, above FAB)
+  Jerusalem Compass (fixed overlay, conditional)
+```
+
+---
+
+### 4. File-Level Data Constants
+
+| Constant | Type | Size | Purpose |
+|---|---|---|---|
+| `HOLIDAY_EMOJI` | `Record<string, string>` | ~15 entries | Maps holiday name → emoji (e.g. `"Passover" → "🍷"`) |
+| `TORAH_THOUGHTS` | `Array<{quote: string, source: string}>` | 50 entries | Pool of daily Torah quotes shown in DailyBriefingCard |
+| `HOLIDAY_THEMES` | `Record<string, {bg, text, accent}>` | ~15 entries | CSS gradient/color theme per holiday; used in NextHolidayCard and TodayHolidayCard |
+| `MEMBER_DIR_KEY` | `string` constant | 1 | `'menashe_member_directory'` — localStorage key |
+| `ANN_STRIP_DISMISSED_KEY` | `string` constant | 1 | localStorage key for announcement strip dismissed state |
+| `AI_SUGGESTED` | `string[]` | 6 entries | Suggested AI chat prompts shown in AiChatFAB |
+| `AI_FOLLOWUPS_EN` | `string[]` | 5 entries | English follow-up chip prompts in AiChatFAB |
+| `AI_FOLLOWUPS_TK` | `string[]` | 5 entries | Thadou Kuki follow-up chip prompts in AiChatFAB |
+
+**Migration note:** `TORAH_THOUGHTS` (50 items) and `AI_SUGGESTED`/`AI_FOLLOWUPS_*` should migrate to their respective component files or a dedicated `src/data/` directory. `HOLIDAY_EMOJI` and `HOLIDAY_THEMES` can move to `src/lib/hebrewCalendar.ts` or a new `src/lib/holidayThemes.ts`.
+
+---
+
+### 5. File-Level Utility Functions
+
+| Function | Signature | Used by | Candidate migration target |
+|---|---|---|---|
+| `getHolidayEmoji` | `(holidayName: string) => string` | `TodayHolidayCard`, `NextHolidayCard` | `src/lib/holidayThemes.ts` |
+| `getTodaySpecialStatus` | `(hDate, parasha, zmanimResult) => {type, label} \| null` | `DailyBriefingCard`, `Home` header | `lib/shared-core/calendar` |
+| `daysUntilAnniversary` | `(month: number, day: number) => number` | `CountdownChip`, `UpcomingCelebrations` | `lib/shared-core/utils` |
+| `getTodayHolidays` | `(hDate: HDate) => string[]` | `TodayHolidayCard`, `Home` render logic | `lib/shared-core/calendar` |
+| `getAiToken` | `() => Promise<string>` | `TodayHolidayCard`, `NextHolidayCard`, `AiChatFAB`, `YahrzeitReminderCard` | `src/lib/auth.ts` (shared auth util) |
+| `loadStripDismissed` | `() => boolean` | `AnnouncementStrip` | collocate with `AnnouncementStrip` |
+
+**Note on `getAiToken`:** This function calls `window.Clerk?.session?.getToken()` and is duplicated in multiple places across the codebase. It should be extracted to a single shared module (`src/lib/auth.ts` or similar) used by both Home and any other component that calls authenticated endpoints.
+
+---
+
+### 6. Context Consumers
+
+| Hook | Data consumed | Components that use it inside Home.tsx |
+|---|---|---|
+| `useLanguage()` | `t: TranslationDict`, `lang: 'en'\|'tk'` | All 16 sub-components + Home itself |
+| `useUser()` (Clerk) | `user.id`, `user.primaryEmailAddress` | `YahrzeitReminderCard`, `AiChatFAB` |
+| `useAuth()` (Clerk) | `getToken()` | Indirectly via `getAiToken()` |
+
+**Note:** There is no theme context consumed in Home.tsx. Theme is passed as a CSS class on the root element and toggled via `onToggleTheme` prop — Home does not read the current theme value directly.
+
+---
+
+### 7. External API Surface
+
+APIs called from within `Home.tsx` (not via generated hooks — all plain `fetch`):
+
+| Endpoint | Method | Caller component | Auth | Purpose |
+|---|---|---|---|---|
+| `/api/holiday-insights` | `GET` | `TodayHolidayCard` | Bearer token | AI-generated holiday insight text |
+| `/api/holiday-halacha` | `GET` | `NextHolidayCard` | Bearer token | AI-generated halacha for upcoming holiday |
+| `/api/push/register` | `POST` | `YahrzeitReminderCard` | Bearer token | Register push endpoint |
+| `/api/push/subscribe` | `POST` | `YahrzeitReminderCard` | Bearer token | Subscribe to yahrzeit push reminders |
+| `/api/push/cancel-yahrzeit` | `POST` | `YahrzeitReminderCard` | Bearer token | Cancel yahrzeit push subscription |
+| `/api/push/send-test` | `POST` | `YahrzeitReminderCard` | Bearer token | Test push notification |
+| `/api/chat` | `POST` (SSE stream) | `AiChatFAB` | Bearer token | Streaming AI chat |
+| `https://overpass-api.de/api/interpreter` | `POST` | `DateZmanimCard` | None | Query nearby synagogues |
+
+---
+
+### 8. localStorage Key Inventory
+
+| Key | Type | Owner component | Persistence purpose |
+|---|---|---|---|
+| `'menashe_member_directory'` (`MEMBER_DIR_KEY`) | `Member[]` JSON | `UpcomingCelebrations` | Full member directory for anniversary calculations |
+| `ANN_STRIP_DISMISSED_KEY` | `boolean` JSON | `AnnouncementStrip` | Remember if user dismissed the announcement banner |
+| `'menashe_chat_history'` (approx.) | `ChatMessage[]` JSON | `AiChatFAB` | Persist AI chat conversation across reloads |
+| Per-section collapse keys | `boolean` JSON | `DateZmanimCard` | Remember which Zmanim card sections are expanded |
+
+---
+
+### 9. Prop Drilling Map
+
+All callbacks flow: **`App.tsx` → `Home` (via `HomeProps`) → inline sub-component (via direct props)**
+
+No intermediate components hold callback state. The full prop chain is one level deep from `Home` to each sub-component — clean for the current monolith, but some callbacks (e.g. `onShowCommunity`, `onShowCensus`, `onShowMembers`) are passed to 2–3 different sub-components and should be consolidated when extracted.
+
+```
+App.tsx
+ └── Home (HomeProps: 23 props)
+      ├── AnnouncementStrip          ← t, lang, announcements
+      ├── CandleLightingCountdown    ← zmanimResult, isPremium, onShowPremium, t, lang
+      ├── TodayHolidayCard           ← holiday, hDate  [reads lang/t from context]
+      ├── NextHolidayCard            ← hDate, t, lang, onShowHolidays
+      ├── YahrzeitReminderCard       ← t, lang, onShowYartzeit
+      ├── DailyBriefingCard          ← hDate, parasha, zmanimResult, t, lang
+      ├── WeekStrip                  ← hDate, zmanimResult, t, lang, onDayClick
+      ├── ZmanimTimeline             ← zmanimResult, t, lang
+      ├── DateZmanimCard             ← hDate, zmanimResult, location, t, lang, forceExpand, onExpandMap
+      ├── PremiumCandleCard          ← zmanimResult, isPremium, onShowPremium, t, lang
+      ├── UpcomingCelebrations       ← t, lang, onShowMembers
+      ├── CommunityCard              ← t, onShowCommunity, onShowCensus, onShowMembers
+      ├── ShabbatCountdownBar        ← zmanimResult, isPremium, trialDaysLeft, onShowPremium, t, lang
+      ├── AiChatFAB                  ← t, lang, hDate, parasha
+      └── CommunityFAB               ← t, lang, onShowCommunity, onShowCensus, onShowMembers,
+                                        onShowPrayerBoard, onShowMussar, onShowTorahTracker,
+                                        onShowEvents, onShowAnnouncements, onShowCommunityYahrzeit
+```
+
+---
+
+### 10. Proposed Modular Directory Structure
+
+When the refactor sprint is approved, `Home.tsx` should be replaced by this directory:
+
+```
+src/pages/home/
+├── index.tsx                      ← Main Home export (was lines 3268-4036)
+│                                    Renders the scroll layout; owns Home-level state only
+│
+├── HomeProps.ts                   ← HomeProps interface extracted to its own file
+│
+├── hooks/
+│   └── useCandleCountdown.ts      ← Candle countdown ticker (setInterval logic from Home useEffect)
+│
+├── data/
+│   ├── torahThoughts.ts           ← TORAH_THOUGHTS array (50 items)
+│   ├── aiPrompts.ts               ← AI_SUGGESTED, AI_FOLLOWUPS_EN, AI_FOLLOWUPS_TK
+│   └── holidayThemes.ts           ← HOLIDAY_EMOJI, HOLIDAY_THEMES, getHolidayEmoji()
+│
+├── cards/
+│   ├── TodayHolidayCard.tsx       ← Lines 49-194
+│   ├── DailyBriefingCard.tsx      ← Lines 275-372
+│   ├── CandleLightingCountdown.tsx← Lines 374-624
+│   ├── UpcomingCelebrations.tsx   ← Lines 669-827 (incl. CountdownChip)
+│   ├── CommunityCard.tsx          ← Lines 829-962
+│   ├── DateZmanimCard.tsx         ← Lines 964-1500
+│   ├── PremiumCandleCard.tsx      ← Lines 1502-1624
+│   ├── WeekStrip.tsx              ← Lines 1671-1810
+│   ├── ZmanimTimeline.tsx         ← Lines 1812-1993
+│   ├── YahrzeitReminderCard.tsx   ← Lines 2023-2261
+│   ├── NextHolidayCard.tsx        ← Lines 2263-2872
+│   ├── ShabbatCountdownBar.tsx    ← Lines 2875-3146
+│   └── AnnouncementStrip.tsx      ← Lines 3148-3266
+│
+└── overlays/
+    ├── AiChatFAB.tsx              ← Lines 4083-4813
+    └── CommunityFAB.tsx           ← Lines 4815-5207
+```
+
+**Backward compatibility:** The existing import `import Home from './pages/Home'` is preserved by re-exporting from `src/pages/home/index.tsx`. No other file changes required.
+
+---
+
+### 11. Migration Phasing
+
+Recommended extraction order (each phase is independently shippable with zero behaviour change):
+
+| Phase | Extract | Rationale |
+|---|---|---|
+| **H-001** | `data/` directory | Zero React — pure data arrays and constants. Safest first step. |
+| **H-002** | File-level utilities | Extract `getAiToken`, `getTodaySpecialStatus`, `getTodayHolidays`, `daysUntilAnniversary` to `src/lib/` or `shared-core`. No UI changes. |
+| **H-003** | `overlays/AiChatFAB.tsx` | Self-contained, no props into other cards. Largest single reduction (~730 lines). |
+| **H-004** | `overlays/CommunityFAB.tsx` | Self-contained, pure callbacks. ~390 lines. |
+| **H-005** | `cards/DateZmanimCard.tsx` | Largest card (~540 lines). Has its own Overpass API call — fully self-contained. |
+| **H-006** | `cards/NextHolidayCard.tsx` | Second largest (~610 lines). Has its own `/api/holiday-halacha` call. |
+| **H-007** | `cards/ShabbatCountdownBar.tsx` | Has its own `setInterval` — clean boundary. |
+| **H-008** | `cards/YahrzeitReminderCard.tsx` | Has push API calls — extract with its own async logic. |
+| **H-009** | `cards/CandleLightingCountdown.tsx` | Share countdown state with `useCandleCountdown` hook. |
+| **H-010** | `hooks/useCandleCountdown.ts` | Extract the interval ticker that currently duplicates between Home and CandleLightingCountdown. |
+| **H-011** | All remaining cards | `TodayHolidayCard`, `DailyBriefingCard`, `WeekStrip`, `ZmanimTimeline`, `PremiumCandleCard`, `UpcomingCelebrations`, `AnnouncementStrip`, `CommunityCard` — all pure or near-pure components. |
+| **H-012** | `HomeProps.ts` + `index.tsx` | Final cleanup: extract interface, slim main component to layout only. |
+
+---
+
+### 12. Performance Opportunities
+
+| Opportunity | Impact | Effort |
+|---|---|---|
+| **Lazy-load `AiChatFAB`** | Medium — AI chat bundle (~730 lines of logic + streaming) only loads on first open | Low — `React.lazy` + `Suspense` wrapper |
+| **Lazy-load `DateZmanimCard`** | Medium — Overpass map fetch and OpenStreetMap iframe only needed when card is visible | Low — `React.lazy` or conditional render |
+| **Memoize `TORAH_THOUGHTS` selection** | Low — `useMemo` prevents re-roll on every render | Trivial |
+| **`AiChatFAB` chat history** | Low — large message arrays re-serialized to localStorage on every message | Low — debounce the write |
+| **`UpcomingCelebrations` localStorage parse** | Low — re-parses full member directory on every render | Low — `useMemo` with stable key |
+| **`WeekStrip` day calculations** | Low — recalculated on every render | Low — `useMemo` on `hDate` |
+
+---
+
+### 13. Technical Debt Items (Home-scoped)
+
+| ID | Item | Severity |
+|---|---|---|
+| TD-H01 | `getAiToken()` duplicated in TodayHolidayCard, NextHolidayCard, AiChatFAB, YahrzeitReminderCard | Medium |
+| TD-H02 | `MEMBER_DIR_KEY` localStorage key defined in Home.tsx but used by mobile too — should move to `shared-core/utils` | Medium |
+| TD-H03 | `HomeProps` has grown to 23 props; consider grouping into sub-objects (`data`, `callbacks`) for readability | Low |
+| TD-H04 | `CandleLightingCountdown` and `Home` both maintain independent countdown `setInterval` timers from the same `zmanimResult` source — one should be lifted | Medium |
+| TD-H05 | `DailyBriefingCard` picks a random Torah thought via `Math.random()` on every render — not stable across re-renders | Low |
+| TD-H06 | `AnnouncementStrip` hardcodes its dismissal duration (never resets until localStorage is cleared) — no TTL | Low |
+| TD-H07 | `DateZmanimCard` embeds an OpenStreetMap `<iframe>` with a hardcoded tile URL — no CSP header coverage | Low |
+| TD-H08 | `NextHolidayCard` preparation checklist state (`checklist: boolean[]`) is not persisted — resets on every page visit | Low |
