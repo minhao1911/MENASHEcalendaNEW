@@ -4961,7 +4961,10 @@ function CommunityFAB({
             )}
           </button>
         ))}
-        <div style={{ position: "relative", width: 72, height: 100 }}>
+        <div style={{
+          position: "relative", width: 72, height: 100,
+          animation: announcementCount > 0 && !open ? "fabBounce 2.8s ease-in-out infinite" : undefined,
+        }}>
           <button
             onClick={() => { if (open && !isClosing) triggerClose(); else if (!isClosing) setOpen(true); }}
             title={t.fabTitle}
@@ -5142,6 +5145,12 @@ function CommunityFAB({
           border-color: rgba(255,255,255,0.5) !important;
           transform: scale(1.03);
           transition: background 0.15s ease, transform 0.15s ease;
+        }
+        @keyframes fabBounce {
+          0%, 55%, 100% { transform: translateY(0); }
+          20%           { transform: translateY(-8px); }
+          38%           { transform: translateY(-3px); }
+          48%           { transform: translateY(-6px); }
         }
         @keyframes starHaloA {
           0%,100% { transform: scale(1);    opacity: 1;    }
