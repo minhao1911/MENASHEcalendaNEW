@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
 import { requireAuth } from "../lib/requireAuth";
+import { requireAdmin } from "../lib/requireAdmin";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -90,7 +91,7 @@ router.put("/census/branch", requireAuth, async (req, res) => {
 
 /* ── Submissions (Global Admin review) ───────────────────────────────────── */
 
-router.get("/census/submissions", async (_req, res) => {
+router.get("/census/submissions", requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
       "SELECT * FROM census_submissions ORDER BY submitted_at DESC"
@@ -137,7 +138,7 @@ router.post("/census/submissions", requireAuth, async (req, res) => {
   }
 });
 
-router.patch("/census/submissions/:id", async (req, res) => {
+router.patch("/census/submissions/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { status, reviewNote } = req.body as { status: "approved" | "rejected"; reviewNote?: string };
   if (!["approved", "rejected"].includes(status)) {
@@ -161,7 +162,7 @@ router.patch("/census/submissions/:id", async (req, res) => {
 
 /* ── Member submissions ───────────────────────────────────────────────────── */
 
-router.get("/census/member-submissions", async (_req, res) => {
+router.get("/census/member-submissions", requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
       "SELECT * FROM census_member_submissions ORDER BY submitted_at DESC"
@@ -173,6 +174,8 @@ router.get("/census/member-submissions", async (_req, res) => {
   }
 });
 
+/* POST /census/member-submissions — intentionally public (no auth required):
+   Community members submit their household census without needing to sign in. */
 router.post("/census/member-submissions", async (req, res) => {
   const { branchId, branchName, submitterName, submitterNote, headCensus, members } = req.body;
   if (!submitterName) { res.status(400).json({ error: "Missing submitterName" }); return; }
@@ -193,7 +196,7 @@ router.post("/census/member-submissions", async (req, res) => {
   }
 });
 
-router.patch("/census/member-submissions/:id", async (req, res) => {
+router.patch("/census/member-submissions/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { status, reviewNote } = req.body as { status: "approved" | "rejected" | "pending"; reviewNote?: string };
   if (!["approved", "rejected", "pending"].includes(status)) {

@@ -25,7 +25,6 @@ export interface Member {
 }
 
 const STORAGE_KEY = "menashe-member-directory";
-const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
 
 const ROLES = ["Member", "Community Leader", "Rabbi", "Cantor", "Youth Leader", "Women's Group", "Student", "Elder"];
 const COUNTRIES = ["India", "Israel", "United States", "United Kingdom", "Australia", "Canada", "Other"];

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
 import { requireAuth } from "../lib/requireAuth";
+import { requireAdmin } from "../lib/requireAdmin";
 
 const router = Router();
 
@@ -143,11 +144,7 @@ router.post("/yahrzeit/:id/dedicate", requireAuth, async (req, res) => {
 });
 
 /* ── Admin: GET /admin/yahrzeit — all entries ── */
-router.get("/admin/yahrzeit", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
+router.get("/admin/yahrzeit", requireAdmin, async (req, res) => {
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
@@ -178,11 +175,7 @@ router.get("/admin/yahrzeit", async (req, res) => {
 });
 
 /* ── Admin: DELETE /admin/yahrzeit/:id — remove any entry ── */
-router.delete("/admin/yahrzeit/:id", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (pin !== (process.env["ADMIN_PIN"] ?? "1948")) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
+router.delete("/admin/yahrzeit/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {

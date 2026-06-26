@@ -18,7 +18,6 @@ export interface PrayerRequest {
 
 const STORAGE_KEY = "menashe-prayer-board";
 const AMENS_KEY   = "menashe-prayer-amens-cast";
-const ADMIN_PIN   = import.meta.env.VITE_ADMIN_PIN ?? "";
 
 const CATEGORIES = ["Healing", "Blessing", "Aliyah", "Family", "Livelihood", "Community", "Gratitude", "Protection", "Other"];
 

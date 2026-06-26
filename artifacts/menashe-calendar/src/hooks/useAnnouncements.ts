@@ -16,7 +16,6 @@ export interface Announcement {
 }
 
 const STORAGE_KEY = "menashe-announcements";
-const ADMIN_PIN_KEY = "menashe-admin-pin";
 
 export function loadAnnouncements(): Announcement[] {
   try {
@@ -28,15 +27,6 @@ export function loadAnnouncements(): Announcement[] {
 
 export function saveAnnouncements(list: Announcement[]) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch {}
-}
-
-/** Store the admin PIN locally so broadcast calls can include it automatically */
-export function storeAdminPin(pin: string) {
-  try { sessionStorage.setItem(ADMIN_PIN_KEY, pin); } catch {}
-}
-
-function getStoredPin(): string {
-  try { return sessionStorage.getItem(ADMIN_PIN_KEY) ?? ""; } catch { return ""; }
 }
 
 export function useAnnouncements() {
@@ -60,7 +50,6 @@ export function useAnnouncements() {
       if (isNotifSupported() && Notification.permission === "granted") {
         sendNotification(`${ann.emoji} ${ann.title}`, ann.body, `announcement-${ann.id}`);
       }
-      // Mark as sent locally
       setAnnouncements(prev => {
         const updated = prev.map(a =>
           a.id === ann.id
@@ -70,9 +59,7 @@ export function useAnnouncements() {
         saveAnnouncements(updated);
         return updated;
       });
-      // Update server status
-      const pin = getStoredPin();
-      if (pin) patchAnnouncement(ann.id, pin, { sendNow: true }).catch(() => {});
+      patchAnnouncement(ann.id, { sendNow: true }).catch(() => {});
       timersRef.current.delete(ann.id);
     }, ms);
 
@@ -102,13 +89,9 @@ export function useAnnouncements() {
       saveAnnouncements(updated);
       return updated;
     });
-    // Broadcast to all devices via server
-    const pin = getStoredPin();
-    if (pin) {
-      broadcastAnnouncement(pin, {
-        emoji: ann.emoji, title: ann.title, body: ann.body, pinned: ann.pinned,
-      }).catch(() => {});
-    }
+    broadcastAnnouncement({
+      emoji: ann.emoji, title: ann.title, body: ann.body, pinned: ann.pinned,
+    }).catch(() => {});
   }, []);
 
   const addAnnouncement = useCallback((data: Omit<Announcement, "id" | "sentAt">) => {
@@ -119,7 +102,6 @@ export function useAnnouncements() {
       return updated;
     });
     if (ann.status === "scheduled") scheduleOne(ann);
-    // If status is "sent", broadcast will be handled by sendNow caller
     return ann;
   }, [scheduleOne]);
 
@@ -145,9 +127,7 @@ export function useAnnouncements() {
       saveAnnouncements(updated);
       return updated;
     });
-    // Delete from server too
-    const pin = getStoredPin();
-    if (pin) deleteAnnouncementServer(id, pin).catch(() => {});
+    deleteAnnouncementServer(id).catch(() => {});
   }, []);
 
   const unreadCount = announcements.filter(a => a.status === "sent").length;

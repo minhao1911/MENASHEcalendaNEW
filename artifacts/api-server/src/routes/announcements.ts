@@ -3,11 +3,12 @@ import { Expo, type ExpoPushMessage } from "expo-server-sdk";
 import webpush from "web-push";
 import { pool } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { requireAdmin } from "../lib/requireAdmin";
+import { getAuth } from "@clerk/express";
 
 const router = Router();
 const expo = new Expo();
 
-const ADMIN_PIN = process.env["ADMIN_PIN"] ?? "1948";
 const VAPID_PUBLIC = process.env["VAPID_PUBLIC_KEY"] ?? "";
 const VAPID_PRIVATE = process.env["VAPID_PRIVATE_KEY"] ?? "";
 const VAPID_SUBJECT = process.env["VAPID_SUBJECT"] ?? "mailto:admin@menashecalendar.app";
@@ -108,10 +109,10 @@ async function broadcastToAll(ann: CommunityAnnouncement) {
   logger.info({ count: webRows.length }, "announcements: sent web push");
 }
 
-// GET /announcements — public feed (sent + scheduled for admin)
+// GET /announcements — public feed (sent); admin sees all
 router.get("/announcements", async (req, res) => {
-  const adminPin = req.query["adminPin"] as string | undefined;
-  const isAdmin = adminPin === ADMIN_PIN;
+  const auth = getAuth(req);
+  const isAdmin = !!auth?.userId && auth.userId === process.env["ADMIN_USER_ID"];
   try {
     const r = await pool.query(
       isAdmin
@@ -126,9 +127,8 @@ router.get("/announcements", async (req, res) => {
 });
 
 // POST /announcements/broadcast — admin creates + sends + pushes
-router.post("/announcements/broadcast", async (req, res) => {
-  const { adminPin, emoji, title, body, scheduledAt, pinned } = req.body as {
-    adminPin: string;
+router.post("/announcements/broadcast", requireAdmin, async (req, res) => {
+  const { emoji, title, body, scheduledAt, pinned } = req.body as {
     emoji?: string;
     title: string;
     body?: string;
@@ -136,10 +136,6 @@ router.post("/announcements/broadcast", async (req, res) => {
     pinned?: boolean;
   };
 
-  if (adminPin !== ADMIN_PIN) {
-    res.status(403).json({ error: "Invalid admin PIN" });
-    return;
-  }
   if (!title?.trim()) {
     res.status(400).json({ error: "Title is required" });
     return;
@@ -173,23 +169,20 @@ router.post("/announcements/broadcast", async (req, res) => {
 
   res.json({ ok: true, announcement: ann });
 
-  // Broadcast in background (don't block response)
   if (status === "sent") {
     broadcastToAll(ann).catch((err) => logger.error({ err }, "broadcastToAll failed"));
   }
 });
 
 // PATCH /announcements/:id — admin update / send draft
-router.patch("/announcements/:id", async (req, res) => {
-  const { adminPin, emoji, title, body, pinned, sendNow } = req.body as {
-    adminPin: string;
+router.patch("/announcements/:id", requireAdmin, async (req, res) => {
+  const { emoji, title, body, pinned, sendNow } = req.body as {
     emoji?: string;
     title?: string;
     body?: string;
     pinned?: boolean;
     sendNow?: boolean;
   };
-  if (adminPin !== ADMIN_PIN) { res.status(403).json({ error: "Invalid admin PIN" }); return; }
 
   const { id } = req.params;
   try {
@@ -228,9 +221,7 @@ router.patch("/announcements/:id", async (req, res) => {
 });
 
 // DELETE /announcements/:id — admin delete
-router.delete("/announcements/:id", async (req, res) => {
-  const { adminPin } = req.body as { adminPin: string };
-  if (adminPin !== ADMIN_PIN) { res.status(403).json({ error: "Invalid admin PIN" }); return; }
+router.delete("/announcements/:id", requireAdmin, async (req, res) => {
   try {
     await pool.query("DELETE FROM community_announcements WHERE id = $1", [req.params.id]);
     res.json({ ok: true });

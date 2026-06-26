@@ -2,28 +2,16 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { booksTable, insertBookSchema, updateBookSchema } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
-import { z } from "zod/v4";
+import { requireAdmin } from "../lib/requireAdmin";
+import { getAuth } from "@clerk/express";
 
 const router = Router();
 
-const ADMIN_PIN = process.env.ADMIN_PIN;
-if (!ADMIN_PIN) {
-  throw new Error("ADMIN_PIN environment variable is required");
-}
-
-function checkAdmin(req: any, res: any): boolean {
-  const pin = req.headers["x-admin-pin"] ?? req.body?.adminPin;
-  if (pin !== ADMIN_PIN) {
-    res.status(401).json({ error: "Unauthorized" });
-    return false;
-  }
-  return true;
-}
-
 router.get("/books", async (req, res) => {
   try {
-    const { category, admin } = req.query;
-    const isAdmin = req.headers["x-admin-pin"] === ADMIN_PIN;
+    const { category } = req.query;
+    const auth = getAuth(req);
+    const isAdmin = !!auth?.userId && auth.userId === process.env["ADMIN_USER_ID"];
 
     let rows = await db
       .select()
@@ -59,8 +47,7 @@ router.get("/books/:id", async (req, res) => {
   }
 });
 
-router.post("/books", async (req, res) => {
-  if (!checkAdmin(req, res)) return;
+router.post("/books", requireAdmin, async (req, res) => {
   try {
     const parsed = insertBookSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -74,8 +61,7 @@ router.post("/books", async (req, res) => {
   }
 });
 
-router.put("/books/:id", async (req, res) => {
-  if (!checkAdmin(req, res)) return;
+router.put("/books/:id", requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
@@ -98,8 +84,7 @@ router.put("/books/:id", async (req, res) => {
   }
 });
 
-router.delete("/books/:id", async (req, res) => {
-  if (!checkAdmin(req, res)) return;
+router.delete("/books/:id", requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
@@ -113,8 +98,7 @@ router.delete("/books/:id", async (req, res) => {
   }
 });
 
-router.post("/books/seed", async (req, res) => {
-  if (!checkAdmin(req, res)) return;
+router.post("/books/seed", requireAdmin, async (req, res) => {
   try {
     const count = await db.$count(booksTable);
     if (count > 0) return res.json({ skipped: true, message: "Already seeded" });

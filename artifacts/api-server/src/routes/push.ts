@@ -2,6 +2,7 @@ import { Router } from "express";
 import webpush from "web-push";
 import { Expo, type ExpoPushMessage } from "expo-server-sdk";
 import { requireAuth } from "../lib/requireAuth";
+import { requireAdmin } from "../lib/requireAdmin";
 import { pool } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { HebrewCalendar, flags } from "@hebcal/core";
@@ -245,12 +246,7 @@ router.delete("/push/unsubscribe", async (req, res) => {
   }
 });
 
-router.get("/push/subscriber-count", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (!process.env["ADMIN_PIN"] || pin !== process.env["ADMIN_PIN"]) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
+router.get("/push/subscriber-count", requireAdmin, async (req, res) => {
   try {
     const webResult = await pool.query("SELECT COUNT(*) FROM push_subscriptions");
     const expoResult = await pool.query("SELECT COUNT(*) FROM expo_push_tokens");
@@ -264,12 +260,7 @@ router.get("/push/subscriber-count", async (req, res) => {
   }
 });
 
-router.post("/push/broadcast", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (!process.env["ADMIN_PIN"] || pin !== process.env["ADMIN_PIN"]) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
+router.post("/push/broadcast", requireAdmin, async (req, res) => {
   const { title, body, emoji } = req.body as { title: string; body: string; emoji?: string };
   if (!title?.trim() || !body?.trim()) {
     res.status(400).json({ error: "title and body are required" });
@@ -342,17 +333,7 @@ router.post("/push/broadcast", async (req, res) => {
 
 // ── Scheduled Broadcast endpoints ────────────────────────────────────────────
 
-function checkAdminPin(req: import("express").Request, res: import("express").Response): boolean {
-  const pin = req.headers["x-admin-pin"];
-  if (!process.env["ADMIN_PIN"] || pin !== process.env["ADMIN_PIN"]) {
-    res.status(403).json({ error: "Forbidden" });
-    return false;
-  }
-  return true;
-}
-
-router.get("/push/broadcast/scheduled", async (req, res) => {
-  if (!checkAdminPin(req, res)) return;
+router.get("/push/broadcast/scheduled", requireAdmin, async (req, res) => {
   try {
     const r = await pool.query<{ id: number; emoji: string; title: string; body: string; fire_at: string; sent_at: string | null; created_at: string }>(
       "SELECT id, emoji, title, body, fire_at, sent_at, created_at FROM scheduled_broadcasts ORDER BY fire_at ASC"
@@ -364,8 +345,7 @@ router.get("/push/broadcast/scheduled", async (req, res) => {
   }
 });
 
-router.post("/push/broadcast/scheduled", async (req, res) => {
-  if (!checkAdminPin(req, res)) return;
+router.post("/push/broadcast/scheduled", requireAdmin, async (req, res) => {
   const { emoji, title, body, fireAt } = req.body as { emoji?: string; title: string; body: string; fireAt: string };
   if (!title?.trim() || !body?.trim() || !fireAt) {
     res.status(400).json({ error: "emoji, title, body, fireAt are required" });
@@ -388,8 +368,7 @@ router.post("/push/broadcast/scheduled", async (req, res) => {
   }
 });
 
-router.delete("/push/broadcast/scheduled/:id", async (req, res) => {
-  if (!checkAdminPin(req, res)) return;
+router.delete("/push/broadcast/scheduled/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params["id"] ?? "", 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   try {

@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import type { Announcement, AnnouncementStatus } from "../hooks/useAnnouncements";
-import { storeAdminPin } from "../hooks/useAnnouncements";
 import { isNotifSupported } from "../hooks/useNotifications";
 
 interface Props {

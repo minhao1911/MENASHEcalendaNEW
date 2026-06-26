@@ -11,7 +11,6 @@ interface Props { onClose: () => void; }
 
 type Tab = "dashboard" | "admin" | "localadmin";
 
-const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
 const LOCAL_ADMIN_PIN = "1994";
 
 /* ══════════════════════════════════════════════════════════════

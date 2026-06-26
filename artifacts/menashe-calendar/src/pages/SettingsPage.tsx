@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useUser } from "@clerk/react";
 import { HDate } from "@hebcal/core";
 import { Location } from "../lib/locations";
 import { NotificationPrefs, LeadTime, LEAD_TIME_OPTIONS } from "../hooks/useNotifications";
@@ -8,7 +9,20 @@ import { getYahrzeitEntries, getNextYahrzeit, YartzeitEntry } from "../lib/yahrz
 import TranslationEditorModal from "../modals/TranslationEditorModal";
 
 const BIRTHDAY_KEY = "menashe-my-birthday";
-const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
+
+async function adminFetch(path: string, options: RequestInit = {}) {
+  const token: string | null = await (window as any).Clerk?.session?.getToken() ?? null;
+  const res = await fetch(`/api${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers ?? {}),
+    },
+    credentials: "include",
+  });
+  return res;
+}
 
 function AdminAlertSetup() {
   const clerkUserId: string = (window as any).Clerk?.user?.id ?? "";
@@ -111,6 +125,8 @@ export default function SettingsPage({
   notifPermission, notifPrefs, leadTime, onUpdateNotifPref, onUpdateLeadTime,
   pushSubscribed, pushSupported, pushLoading, pushError, onSubscribePush, onUnsubscribePush, onTestPush,
 }: SettingsPageProps) {
+  const { user } = useUser();
+  const isAdminUser = user?.id === import.meta.env.VITE_ADMIN_USER_ID;
   const { lang, setLang, t } = useLanguage();
   const [showHebrew, setShowHebrew] = useState(true);
   const [pendingKey, setPendingKey] = useState<keyof NotificationPrefs | null>(null);
@@ -119,9 +135,7 @@ export default function SettingsPage({
   const [copied, setCopied] = useState(false);
 
   // ── Admin panel state ──────────────────────────────────────────────────────
-  const [adminMode, setAdminMode] = useState<"none" | "pin" | "panel">("none");
-  const [adminPinInput, setAdminPinInput] = useState("");
-  const [adminPinError, setAdminPinError] = useState("");
+  const [adminMode, setAdminMode] = useState<"none" | "panel">("none");
   const [adminTab, setAdminTab] = useState<"requests" | "users">("requests");
   const [adminRequests, setAdminRequests] = useState<any[]>([]);
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
@@ -245,8 +259,8 @@ export default function SettingsPage({
     setAdminLoading(true);
     try {
       const [reqRes, usrRes] = await Promise.all([
-        fetch("/api/admin/premium-requests", { headers: { "x-admin-pin": ADMIN_PIN } }),
-        fetch("/api/admin/users", { headers: { "x-admin-pin": ADMIN_PIN } }),
+        adminFetch("/admin/premium-requests"),
+        adminFetch("/admin/users"),
       ]);
       if (reqRes.ok) setAdminRequests(await reqRes.json());
       if (usrRes.ok) setAdminUsers(await usrRes.json());
@@ -255,23 +269,9 @@ export default function SettingsPage({
     }
   }
 
-  function checkAdminPin() {
-    if (adminPinInput === ADMIN_PIN) {
-      setAdminPinError("");
-      setAdminPinInput("");
-      setAdminMode("panel");
-      fetchAdminData();
-    } else {
-      setAdminPinError("Incorrect PIN. Try again.");
-    }
-  }
-
   async function handleApprove(userId: string) {
     setAdminActionId(userId);
-    await fetch(`/api/admin/premium-requests/${userId}/approve`, {
-      method: "PUT",
-      headers: { "x-admin-pin": ADMIN_PIN },
-    });
+    await adminFetch(`/admin/premium-requests/${userId}/approve`, { method: "PUT" });
     setAdminRequests(r => r.filter(x => x.userId !== userId));
     setSelectedRequests(s => { const n = new Set(s); n.delete(userId); return n; });
     setAdminActionId(null);
@@ -279,10 +279,7 @@ export default function SettingsPage({
 
   async function handleDeny(userId: string) {
     setAdminActionId(userId);
-    await fetch(`/api/admin/premium-requests/${userId}/deny`, {
-      method: "PUT",
-      headers: { "x-admin-pin": ADMIN_PIN },
-    });
+    await adminFetch(`/admin/premium-requests/${userId}/deny`, { method: "PUT" });
     setAdminRequests(r => r.filter(x => x.userId !== userId));
     setSelectedRequests(s => { const n = new Set(s); n.delete(userId); return n; });
     setAdminActionId(null);
@@ -293,10 +290,7 @@ export default function SettingsPage({
     if (ids.length === 0) return;
     setBulkProcessing(true);
     await Promise.all(ids.map(userId =>
-      fetch(`/api/admin/premium-requests/${userId}/approve`, {
-        method: "PUT",
-        headers: { "x-admin-pin": ADMIN_PIN },
-      }).catch(() => {})
+      adminFetch(`/admin/premium-requests/${userId}/approve`, { method: "PUT" }).catch(() => {})
     ));
     setAdminRequests(r => r.filter(x => !selectedRequests.has(x.userId)));
     setSelectedRequests(new Set());
@@ -308,10 +302,7 @@ export default function SettingsPage({
     if (ids.length === 0) return;
     setBulkProcessing(true);
     await Promise.all(ids.map(userId =>
-      fetch(`/api/admin/premium-requests/${userId}/deny`, {
-        method: "PUT",
-        headers: { "x-admin-pin": ADMIN_PIN },
-      }).catch(() => {})
+      adminFetch(`/admin/premium-requests/${userId}/deny`, { method: "PUT" }).catch(() => {})
     ));
     setAdminRequests(r => r.filter(x => !selectedRequests.has(x.userId)));
     setSelectedRequests(new Set());
@@ -336,9 +327,8 @@ export default function SettingsPage({
 
   async function handleTogglePremium(userId: string, current: boolean) {
     setAdminActionId(userId);
-    await fetch(`/api/admin/users/${userId}/premium`, {
+    await adminFetch(`/admin/users/${userId}/premium`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN },
       body: JSON.stringify({ isPremium: !current }),
     });
     setAdminUsers(u => u.map(x => x.userId === userId ? { ...x, isPremium: !current } : x));
@@ -346,7 +336,7 @@ export default function SettingsPage({
   }
 
   // ── Admin Panel (full-page view when authenticated) ───────────────────────
-  if (adminMode === "panel") {
+  if (adminMode === "panel" && isAdminUser) {
     return (
       <div style={{ padding: "0 0 80px" }}>
         <div className="app-header">

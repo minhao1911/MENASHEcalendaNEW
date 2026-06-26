@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useUser } from "@clerk/react";
 import type { Book } from "../pages/SiddurPage";
 import { useUpload } from "@workspace/object-storage-web";
 import {
@@ -15,7 +16,21 @@ interface Props {
 }
 
 const API_BASE = "/api";
-const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? "";
+
+async function adminFetch(path: string, options: RequestInit = {}) {
+  const token: string | null = await (window as any).Clerk?.session?.getToken() ?? null;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers ?? {}),
+    },
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`${path} ${res.status}`);
+  return res.json();
+}
 
 const CATEGORIES = [
   "Siddur", "Tehillim", "Torah Portions", "Kuki Christian Books",
@@ -139,9 +154,8 @@ const defaultForm = {
 };
 
 export default function AdminModal({ onClose, onRefresh }: Props) {
-  const [step, setStep] = useState<"pin" | "panel">("pin");
-  const [pin, setPin] = useState("");
-  const [pinError, setPinError] = useState("");
+  const { user } = useUser();
+  const isAdmin = user?.id === import.meta.env.VITE_ADMIN_USER_ID;
   const [panelTab, setPanelTab] = useState<PanelTab>("books");
   const [mode, setMode] = useState<FormMode>("list");
   const [books, setBooks] = useState<Book[]>([]);
@@ -221,8 +235,8 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
 
   async function fetchSubCount() {
     try {
-      const res = await fetch(`${API_BASE}/push/subscriber-count`, { headers: { "x-admin-pin": ADMIN_PIN } });
-      if (res.ok) setSubCount(await res.json());
+      const data = await adminFetch("/push/subscriber-count");
+      setSubCount(data);
     } catch {}
   }
 
@@ -232,25 +246,21 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     setBroadcastResult(null);
     setScheduleResult(null);
     try {
-      const res = await fetch(`${API_BASE}/push/broadcast`, {
+      const data = await adminFetch("/push/broadcast", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN },
         body: JSON.stringify(broadcastForm),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setBroadcastResult(data);
-        setBroadcastForm(f => ({ ...f, title: "", body: "" }));
-        fetchSubCount();
-      }
+      setBroadcastResult(data);
+      setBroadcastForm(f => ({ ...f, title: "", body: "" }));
+      fetchSubCount();
     } catch {}
     finally { setBroadcasting(false); }
   }
 
   async function fetchScheduled() {
     try {
-      const res = await fetch(`${API_BASE}/push/broadcast/scheduled`, { headers: { "x-admin-pin": ADMIN_PIN } });
-      if (res.ok) setScheduledList(await res.json());
+      const data = await adminFetch("/push/broadcast/scheduled");
+      setScheduledList(data);
     } catch {}
   }
 
@@ -260,31 +270,24 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     setScheduleResult(null);
     setBroadcastResult(null);
     try {
-      const res = await fetch(`${API_BASE}/push/broadcast/scheduled`, {
+      await adminFetch("/push/broadcast/scheduled", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN },
         body: JSON.stringify({ ...broadcastForm, fireAt: scheduledAt }),
       });
-      if (res.ok) {
-        setScheduleResult("scheduled");
-        setBroadcastForm(f => ({ ...f, title: "", body: "" }));
-        setScheduledAt("");
-        await fetchScheduled();
-      } else {
-        const d = await res.json();
-        setScheduleResult(d.error ?? "error");
-      }
-    } catch { setScheduleResult("error"); }
+      setScheduleResult("scheduled");
+      setBroadcastForm(f => ({ ...f, title: "", body: "" }));
+      setScheduledAt("");
+      await fetchScheduled();
+    } catch (err: any) {
+      setScheduleResult(err?.message ?? "error");
+    }
     finally { setScheduling(false); }
   }
 
   async function cancelScheduled(id: number) {
     setCancellingId(id);
     try {
-      await fetch(`${API_BASE}/push/broadcast/scheduled/${id}`, {
-        method: "DELETE",
-        headers: { "x-admin-pin": ADMIN_PIN },
-      });
+      await adminFetch(`/push/broadcast/scheduled/${id}`, { method: "DELETE" });
       await fetchScheduled();
     } catch {}
     finally { setCancellingId(null); }
@@ -319,7 +322,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
 
   async function loadAnnouncements() {
     setAnnLoading(true);
-    try { setAnnouncements(await fetchAnnouncements(ADMIN_PIN)); } finally { setAnnLoading(false); }
+    try { setAnnouncements(await fetchAnnouncements()); } finally { setAnnLoading(false); }
   }
 
   function openAnnCompose(ann?: ServerAnnouncement) {
@@ -344,12 +347,12 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       const scheduledAt = annForm.scheduleMode === "later" && annForm.scheduledAt
         ? new Date(annForm.scheduledAt).toISOString() : null;
       if (annEditId) {
-        await patchAnnouncement(annEditId, ADMIN_PIN, {
+        await patchAnnouncement(annEditId, {
           emoji: annForm.emoji, title: annForm.title, body: annForm.body,
           pinned: annForm.pinned,
         });
       } else {
-        await broadcastAnnouncement(ADMIN_PIN, {
+        await broadcastAnnouncement({
           emoji: annForm.emoji, title: annForm.title, body: annForm.body,
           pinned: annForm.pinned, scheduledAt,
         });
@@ -362,7 +365,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   async function sendAnnNow(id: string) {
     setAnnPinning(id);
     try {
-      await patchAnnouncement(id, ADMIN_PIN, { sendNow: true });
+      await patchAnnouncement(id, { sendNow: true });
       await loadAnnouncements();
     } finally { setAnnPinning(null); }
   }
@@ -370,7 +373,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   async function toggleAnnPin(ann: ServerAnnouncement) {
     setAnnPinning(ann.id);
     try {
-      await patchAnnouncement(ann.id, ADMIN_PIN, { pinned: !ann.pinned });
+      await patchAnnouncement(ann.id, { pinned: !ann.pinned });
       await loadAnnouncements();
     } finally { setAnnPinning(null); }
   }
@@ -378,7 +381,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   async function deleteAnn(id: string) {
     setAnnDeleteId(id);
     try {
-      await deleteAnnouncementServer(id, ADMIN_PIN);
+      await deleteAnnouncementServer(id);
       await loadAnnouncements();
     } finally { setAnnDeleteId(null); }
   }
@@ -386,89 +389,77 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   async function fetchYahrzeit() {
     setYahrzeitLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/yahrzeit`, { headers: { "x-admin-pin": ADMIN_PIN } });
-      if (res.ok) setYahrzeitEntries(await res.json());
-    } finally { setYahrzeitLoading(false); }
+      const data = await adminFetch("/admin/yahrzeit");
+      setYahrzeitEntries(data);
+    } catch {} finally { setYahrzeitLoading(false); }
   }
 
   async function deleteYahrzeit(id: string) {
     if (!confirm("Delete this yahrzeit entry? This cannot be undone.")) return;
     setDeletingYahrzeit(id);
     try {
-      await fetch(`${API_BASE}/admin/yahrzeit/${id}`, {
-        method: "DELETE",
-        headers: { "x-admin-pin": ADMIN_PIN },
-      });
+      await adminFetch(`/admin/yahrzeit/${id}`, { method: "DELETE" });
       await fetchYahrzeit();
-    } finally { setDeletingYahrzeit(null); }
-  }
-
-  function submitPin() {
-    if (pin === ADMIN_PIN) { setStep("panel"); fetchAll(); fetchUsers(); fetchRequests(); fetchPayments(); fetchSubCount(); fetchScheduled(); fetchCensus(); fetchYahrzeit(); loadAnnouncements(); }
-    else { setPinError("Incorrect PIN"); setPin(""); }
+    } catch {} finally { setDeletingYahrzeit(null); }
   }
 
   async function fetchAll() {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/books`, { headers: { "x-admin-pin": ADMIN_PIN } });
-      if (res.ok) setBooks(await res.json());
-    } finally { setLoading(false); }
+      const data = await adminFetch("/books");
+      setBooks(data);
+    } catch {} finally { setLoading(false); }
   }
 
   async function fetchUsers() {
     setUsersLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/users`, { headers: { "x-admin-pin": ADMIN_PIN } });
-      if (res.ok) setUsers(await res.json());
-    } finally { setUsersLoading(false); }
+      const data = await adminFetch("/admin/users");
+      setUsers(data);
+    } catch {} finally { setUsersLoading(false); }
   }
 
   async function fetchRequests() {
     try {
-      const res = await fetch(`${API_BASE}/admin/premium-requests`, { headers: { "x-admin-pin": ADMIN_PIN } });
-      if (res.ok) setRequests(await res.json());
+      const data = await adminFetch("/admin/premium-requests");
+      setRequests(data);
     } catch { /* silent */ }
   }
 
   async function fetchPayments() {
     setPaymentsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/payments`, { headers: { "x-admin-pin": ADMIN_PIN } });
-      if (res.ok) setPayments(await res.json());
-    } finally { setPaymentsLoading(false); }
+      const data = await adminFetch("/admin/payments");
+      setPayments(data);
+    } catch {} finally { setPaymentsLoading(false); }
   }
 
   async function actOnRequest(userId: string, action: "approve" | "deny") {
     setActingRequest(userId);
     try {
-      await fetch(`${API_BASE}/admin/premium-requests/${encodeURIComponent(userId)}/${action}`, {
-        method: "PUT",
-        headers: { "x-admin-pin": ADMIN_PIN },
-      });
+      await adminFetch(`/admin/premium-requests/${encodeURIComponent(userId)}/${action}`, { method: "PUT" });
       await Promise.all([fetchRequests(), fetchUsers()]);
-    } finally { setActingRequest(null); }
+    } catch {} finally { setActingRequest(null); }
   }
 
   async function toggleUserPremium(user: UserRow) {
     setTogglingUser(user.userId);
     try {
-      await fetch(`${API_BASE}/admin/users/${encodeURIComponent(user.userId)}/premium`, {
+      await adminFetch(`/admin/users/${encodeURIComponent(user.userId)}/premium`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN },
         body: JSON.stringify({ isPremium: !user.isPremium }),
       });
       await fetchUsers();
-    } finally { setTogglingUser(null); }
+    } catch {} finally { setTogglingUser(null); }
   }
 
   async function seed() {
     setSeeding(true);
     try {
-      await fetch(`${API_BASE}/books/seed`, { method: "POST", headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN }, body: JSON.stringify({}) });
+      await adminFetch("/books/seed", { method: "POST", body: JSON.stringify({}) });
       await fetchAll();
       onRefresh();
-    } finally { setSeeding(false); }
+    } catch {} finally { setSeeding(false); }
   }
 
   async function save() {
@@ -477,9 +468,9 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     try {
       const body = { ...form, fileUrl: form.fileUrl || null, coverImageUrl: form.coverImageUrl || null };
       if (editId !== null) {
-        await fetch(`${API_BASE}/books/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN }, body: JSON.stringify(body) });
+        await adminFetch(`/books/${editId}`, { method: "PUT", body: JSON.stringify(body) });
       } else {
-        await fetch(`${API_BASE}/books`, { method: "POST", headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN }, body: JSON.stringify(body) });
+        await adminFetch("/books", { method: "POST", body: JSON.stringify(body) });
       }
       await fetchAll();
       onRefresh();
@@ -489,22 +480,23 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
       setUploadedFileName(null);
       setCoverImageUploaded(null);
       setFileMode("url");
-    } finally { setSaving(false); }
+    } catch {} finally { setSaving(false); }
   }
 
   async function deleteBook(id: number) {
     if (!confirm("Delete this book? This cannot be undone.")) return;
-    await fetch(`${API_BASE}/books/${id}`, { method: "DELETE", headers: { "x-admin-pin": ADMIN_PIN } });
+    try { await adminFetch(`/books/${id}`, { method: "DELETE" }); } catch {}
     await fetchAll();
     onRefresh();
   }
 
   async function togglePublished(book: Book) {
-    await fetch(`${API_BASE}/books/${book.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "x-admin-pin": ADMIN_PIN },
-      body: JSON.stringify({ published: !book.published }),
-    });
+    try {
+      await adminFetch(`/books/${book.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ published: !book.published }),
+      });
+    } catch {}
     await fetchAll();
     onRefresh();
   }
@@ -552,36 +544,24 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     letterSpacing: "0.06em", marginBottom: 4, display: "block",
   };
 
-  if (step === "pin") {
+  useEffect(() => {
+    if (isAdmin) {
+      fetchAll(); fetchUsers(); fetchRequests(); fetchPayments();
+      fetchSubCount(); fetchScheduled(); fetchCensus(); fetchYahrzeit(); loadAnnouncements();
+    }
+  }, [isAdmin]);
+
+  if (!isAdmin) {
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-sheet" onClick={e => e.stopPropagation()}>
           <div className="modal-handle" />
-          <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🔐</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Admin Access</div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Enter your admin PIN to manage the library</div>
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>🔒</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>Admin Only</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>You don't have access to this panel.</div>
+            <button onClick={onClose} className="btn-close-full">Close</button>
           </div>
-          <input
-            type="password"
-            inputMode="numeric"
-            value={pin}
-            onChange={e => { setPin(e.target.value); setPinError(""); }}
-            onKeyDown={e => e.key === "Enter" && submitPin()}
-            placeholder="• • • •"
-            maxLength={8}
-            autoFocus
-            style={{ ...inputStyle, fontSize: 22, textAlign: "center", letterSpacing: "0.4em", marginBottom: 10 }}
-          />
-          {pinError && (
-            <div style={{ fontSize: 12, color: "#ef4444", textAlign: "center", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-              ⚠️ {pinError}
-            </div>
-          )}
-          <button className="btn-gold" style={{ width: "100%", padding: 13, fontSize: 15, fontWeight: 700, marginBottom: 10 }} onClick={submitPin}>
-            Enter Admin Panel
-          </button>
-          <button onClick={onClose} className="btn-close-full">Cancel</button>
         </div>
       </div>
     );

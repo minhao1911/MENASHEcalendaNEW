@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
 import { requireAuth } from "../lib/requireAuth";
+import { requireAdmin } from "../lib/requireAdmin";
 import { sendPushToUser } from "./push";
 
 const router = Router();
@@ -350,9 +351,7 @@ router.get("/premium/my-request", requireAuth, async (req, res) => {
 
 // ── Admin: list pending premium requests ─────────────────────────────────────
 
-router.get("/admin/premium-requests", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+router.get("/admin/premium-requests", requireAdmin, async (req, res) => {
   const client = await pool.connect();
   try {
     const { rows } = await client.query(
@@ -375,9 +374,7 @@ router.get("/admin/premium-requests", async (req, res) => {
   }
 });
 
-router.put("/admin/premium-requests/:userId/approve", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+router.put("/admin/premium-requests/:userId/approve", requireAdmin, async (req, res) => {
   const { userId } = req.params;
   const client = await pool.connect();
   try {
@@ -391,7 +388,6 @@ router.put("/admin/premium-requests/:userId/approve", async (req, res) => {
       `UPDATE premium_requests SET status = 'approved', reviewed_at = NOW() WHERE user_id = $1`,
       [userId],
     );
-    // Fire push notification (best-effort, non-blocking)
     sendPushToUser(userId, {
       title: "👑 Premium Approved!",
       body: "Your Premium access has been approved. Open the app to unlock all features!",
@@ -403,9 +399,7 @@ router.put("/admin/premium-requests/:userId/approve", async (req, res) => {
   }
 });
 
-router.put("/admin/premium-requests/:userId/deny", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+router.put("/admin/premium-requests/:userId/deny", requireAdmin, async (req, res) => {
   const { userId } = req.params;
   const client = await pool.connect();
   try {
@@ -421,9 +415,7 @@ router.put("/admin/premium-requests/:userId/deny", async (req, res) => {
 
 // ── Admin: list all users ─────────────────────────────────────────────────────
 
-router.get("/admin/users", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+router.get("/admin/users", requireAdmin, async (req, res) => {
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
@@ -461,9 +453,7 @@ router.get("/admin/users", async (req, res) => {
 
 // ── Admin: set premium for a user ─────────────────────────────────────────────
 
-router.put("/admin/users/:userId/premium", async (req, res) => {
-  const pin = req.headers["x-admin-pin"];
-  if (pin !== "1948") return res.status(403).json({ error: "Forbidden" });
+router.put("/admin/users/:userId/premium", requireAdmin, async (req, res) => {
   const { userId } = req.params;
   const { isPremium } = req.body;
   if (typeof isPremium !== "boolean") return res.status(400).json({ error: "isPremium must be boolean" });
