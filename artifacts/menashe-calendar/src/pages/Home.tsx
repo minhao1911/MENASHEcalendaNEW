@@ -5005,8 +5005,8 @@ function CommunityFAB({
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -54%)",
-              width: 48,
-              height: 48,
+              width: 28,
+              height: 28,
               pointerEvents: "none",
               zIndex: 10,
             }}
@@ -5014,7 +5014,7 @@ function CommunityFAB({
             {/* Outer halo ring 1 */}
             <div style={{
               position: "absolute",
-              inset: -10,
+              inset: -6,
               borderRadius: "50%",
               background: "radial-gradient(circle, rgba(240,192,80,0.35) 0%, rgba(212,168,67,0.12) 45%, transparent 72%)",
               animation: "starHaloA 2.6s ease-in-out infinite",
@@ -5022,7 +5022,7 @@ function CommunityFAB({
             {/* Outer halo ring 2 — offset phase */}
             <div style={{
               position: "absolute",
-              inset: -18,
+              inset: -11,
               borderRadius: "50%",
               background: "radial-gradient(circle, transparent 30%, rgba(212,168,67,0.10) 52%, rgba(212,168,67,0.04) 70%, transparent 86%)",
               animation: "starHaloB 2.6s ease-in-out 1.3s infinite",
