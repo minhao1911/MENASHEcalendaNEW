@@ -1,0 +1,112 @@
+/**
+ * scene/QualityContext.tsx
+ *
+ * Phase 5 — Adaptive quality tier system.
+ *
+ * Auto-detects device capability on mount and provides a context with
+ * per-tier rendering settings.  All scene components read this context
+ * to scale particle counts, enable/disable effects, and cap DPR.
+ *
+ * Tiers
+ * ─────
+ *  high        desktop with ≥8 cores / ≥8 GB — full visual fidelity
+ *  medium      mid-range desktop or modern mobile — balanced
+ *  battery     low-end or constrained — minimal GPU load
+ */
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+
+export type QualityTier = "high" | "medium" | "battery";
+
+export interface QualitySettings {
+  tier:               QualityTier;
+  /** Max device pixel ratio passed to Canvas */
+  dprMax:             number;
+  /** Whether shadow maps are enabled */
+  shadowsEnabled:     boolean;
+  /** Shadow map resolution (px) */
+  shadowMapSize:      number;
+  /** Whether EffectComposer post-processing is active */
+  postProcessing:     boolean;
+  bloomEnabled:       boolean;
+  bloomIntensity:     number;
+  bloomThreshold:     number;
+  /**
+   * Fraction of the full particle count to use (0–1).
+   * Components multiply their array lengths by this value.
+   */
+  particleScale:      number;
+  /**
+   * Number of per-candle point lights to keep active.
+   * Candles beyond this index skip their point light entirely.
+   */
+  lightPoolSize:      number;
+}
+
+const PRESETS: Record<QualityTier, QualitySettings> = {
+  high: {
+    tier:             "high",
+    dprMax:           1.75,
+    shadowsEnabled:   true,
+    shadowMapSize:    1024,
+    postProcessing:   true,
+    bloomEnabled:     true,
+    bloomIntensity:   1.4,
+    bloomThreshold:   0.28,
+    particleScale:    1.0,
+    lightPoolSize:    8,
+  },
+  medium: {
+    tier:             "medium",
+    dprMax:           1.5,
+    shadowsEnabled:   true,
+    shadowMapSize:    512,
+    postProcessing:   true,
+    bloomEnabled:     true,
+    bloomIntensity:   0.9,
+    bloomThreshold:   0.38,
+    particleScale:    0.50,
+    lightPoolSize:    3,
+  },
+  battery: {
+    tier:             "battery",
+    dprMax:           1.0,
+    shadowsEnabled:   false,
+    shadowMapSize:    256,
+    postProcessing:   false,
+    bloomEnabled:     false,
+    bloomIntensity:   0,
+    bloomThreshold:   1.0,
+    particleScale:    0.22,
+    lightPoolSize:    0,
+  },
+};
+
+function detectTier(): QualityTier {
+  if (typeof window === "undefined") return "high";
+  const cores  = navigator.hardwareConcurrency ?? 4;
+  const mem    = ((navigator as unknown) as Record<string, unknown>).deviceMemory as number ?? 4; // Chrome only
+  const touch  = navigator.maxTouchPoints > 1;
+  const px     = window.innerWidth * window.innerHeight * (window.devicePixelRatio ?? 1);
+
+  /* Battery signals: very few cores, low RAM, small pixel count on touch device */
+  if (cores <= 2 || mem <= 2 || (touch && px < 800_000))   return "battery";
+  /* Medium signals: moderate hardware or high-pixel touch screen */
+  if (cores <= 4 || mem <= 4 || (touch && px < 2_000_000)) return "medium";
+  return "high";
+}
+
+const QualityContext = createContext<QualitySettings>(PRESETS.high);
+
+export function QualityProvider({ children }: { children: ReactNode }) {
+  const settings = useMemo(() => PRESETS[detectTier()], []);
+  return (
+    <QualityContext.Provider value={settings}>
+      {children}
+    </QualityContext.Provider>
+  );
+}
+
+/** Read the current quality settings. Works inside and outside the R3F Canvas. */
+export function useQuality(): QualitySettings {
+  return useContext(QualityContext);
+}

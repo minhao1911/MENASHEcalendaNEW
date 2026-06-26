@@ -8,7 +8,8 @@ import {
   GoldenHourLighting,
   PostProcessingPipeline,
   SceneEnvironment,
-
+  QualityProvider,
+  useQuality,
 } from "../scene";
 
 /* ── LCG seeded deterministic random ──────────────────────────────────────── */
@@ -1067,12 +1068,13 @@ function AAAMediterraneanVegetation() {
    PHASE 2 POLLEN PARTICLES — floating Mediterranean pollen + dust motes
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAPollenParticles() {
-  const N       = 220;
+  const { particleScale } = useQuality();
+  const N       = Math.max(20, Math.ceil(220 * particleScale));
   const ref     = useRef<THREE.InstancedMesh>(null!);
   const dum     = useMemo(() => new THREE.Object3D(), []);
   const pts     = useMemo(() => {
     const rp = makeLCG(33);
-    return Array.from({ length: N }, () => ({
+    return Array.from({ length: 220 }, () => ({
       x:   (rp() - 0.5) * 52,
       y:   rp() * 10 + 0.4,
       z:   (rp() - 0.5) * 52,
@@ -1085,7 +1087,7 @@ function AAAPollenParticles() {
 
   useFrame(({ clock }, delta) => {
     const t = clock.getElapsedTime();
-    pts.forEach((p, i) => {
+    pts.slice(0, N).forEach((p, i) => {
       /* Lazy upward drift with gentle horizontal swirl */
       const yPos = ((p.y + t * p.sp) % 12) + 0.3;
       const xPos = p.x + Math.sin(t * 0.22 + p.ph) * 2.2 + p.dr * delta * 18;
@@ -1271,10 +1273,14 @@ function AAAEternalAltar() {
 /* ══════════════════════════════════════════════════════════════════════════
    ENTRY CANDLE — interactive per-memorial candle
 ══════════════════════════════════════════════════════════════════════════ */
-function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted }: {
+function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted, index }: {
   pos: [number, number, number]; entry: CommunityYahrzeitEntry;
-  animOffset: number; onCandleClick: (e: CommunityYahrzeitEntry) => void; highlighted: boolean;
+  animOffset: number; onCandleClick: (e: CommunityYahrzeitEntry) => void;
+  highlighted: boolean; index: number;
 }) {
+  const { lightPoolSize } = useQuality();
+  const showLight = highlighted || index < lightPoolSize;
+
   const flameUniforms = useRef({ uTime: { value: 0 }, uOffset: { value: animOffset } });
   const lightRef  = useRef<THREE.PointLight>(null!);
   const grpRef    = useRef<THREE.Group>(null!);
@@ -1286,16 +1292,13 @@ function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted }: 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     flameUniforms.current.uTime.value = t;
-    /* Candle flicker */
     if (lightRef.current) {
       lightRef.current.intensity = (highlighted ? 3.2 : 1.4) + Math.sin(t * 5.5 + animOffset) * 0.6
         + Math.sin(t * 12.3 + animOffset * 0.7) * 0.2;
     }
-    /* Vertical float when highlighted */
     if (grpRef.current && highlighted) {
       grpRef.current.position.y = pos[1] + Math.sin(t * 2.0) * 0.06;
     }
-    /* Pulsing rings — two rings at different phases */
     if (highlighted && ring1Ref.current && ring2Ref.current) {
       const p1 = (t * 0.9 + animOffset) % 1;
       const p2 = (t * 0.9 + animOffset + 0.5) % 1;
@@ -1352,7 +1355,9 @@ function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted }: 
         />
       </mesh>
 
-      <pointLight ref={lightRef} color="#ff9933" intensity={1.4} distance={5} decay={2} />
+      {showLight && (
+        <pointLight ref={lightRef} color="#ff9933" intensity={1.4} distance={5} decay={2} />
+      )}
 
       <Text position={[0, 1.08, 0]} fontSize={0.13} color="#ffd988" anchorX="center" maxWidth={2.2}>
         {shortName.length > 16 ? shortName.slice(0, 15) + "…" : shortName}
@@ -1483,13 +1488,15 @@ function AAAPlacedCandle({ pos, name, animOffset }: { pos: [number, number, numb
    FLOATING LANTERNS
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAFloatingLanterns() {
+  const { particleScale, lightPoolSize } = useQuality();
+  const activeLanterns = useMemo(() => LANTERNS.slice(0, Math.max(4, Math.ceil(LANTERNS.length * particleScale))), [particleScale]);
   const grpRefs = useRef<THREE.Group[]>([]);
   const matRefs = useRef<THREE.MeshStandardMaterial[]>([]);
-  const posRef  = useRef(LANTERNS.map(d => ({ x: d.x, y: d.startY, z: d.z })));
+  const posRef  = useRef(activeLanterns.map(d => ({ x: d.x, y: d.startY, z: d.z })));
 
   useFrame(({ clock }, delta) => {
     const t = clock.getElapsedTime();
-    LANTERNS.forEach((d, i) => {
+    activeLanterns.forEach((d, i) => {
       posRef.current[i].y += d.speed * delta;
       posRef.current[i].x += Math.sin(t * 0.4 + d.phase) * d.drift * delta;
       if (posRef.current[i].y > 28) { posRef.current[i].y = 0.5; posRef.current[i].x = d.x; }
@@ -1506,7 +1513,7 @@ function AAAFloatingLanterns() {
 
   return (
     <>
-      {LANTERNS.map((d, i) => (
+      {activeLanterns.map((d, i) => (
         <group key={i} ref={el => { if (el) grpRefs.current[i] = el; }} position={[d.x, d.startY, d.z]}>
           <mesh>
             <boxGeometry args={[0.36, 0.48, 0.36]} />
@@ -1527,7 +1534,9 @@ function AAAFloatingLanterns() {
             <sphereGeometry args={[0.1, 8, 6]} />
             <meshStandardMaterial color="#ffee88" emissive={new THREE.Color("#ffcc00")} emissiveIntensity={3.5} />
           </mesh>
-          <pointLight color="#ffaa33" intensity={1.2} distance={5.5} decay={2} />
+          {i < lightPoolSize && (
+            <pointLight color="#ffaa33" intensity={1.2} distance={5.5} decay={2} />
+          )}
         </group>
       ))}
     </>
@@ -1538,13 +1547,14 @@ function AAAFloatingLanterns() {
    GOLDEN DUST PARTICLES
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAGoldenDust() {
-  const n    = 150;
+  const { particleScale } = useQuality();
+  const n    = Math.max(20, Math.ceil(150 * particleScale));
   const ref  = useRef<THREE.InstancedMesh>(null!);
   const dum  = useMemo(() => new THREE.Object3D(), []);
   const pts  = useMemo(() => {
     const r = makeLCG(77);
     return Array.from({ length: n }, () => ({ x: (r()-0.5)*55, y: r()*14+0.5, z: (r()-0.5)*55, sp: 0.15+r()*0.32, ph: r()*Math.PI*2 }));
-  }, []);
+  }, [n]);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -1651,12 +1661,13 @@ function AAACamera() {
    PHASE 3: BIRD FLOCK — 7 birds soaring, lazy circles, flapping wings
 ══════════════════════════════════════════════════════════════════════════ */
 function AAABirdFlock() {
+  const { particleScale } = useQuality();
+  const activeBirds = useMemo(() => BIRDS.slice(0, Math.max(1, Math.ceil(BIRDS.length * particleScale))), [particleScale]);
   const groupRef = useRef<THREE.Group>(null!);
   const wingGeo  = useMemo(() => {
     const g = new THREE.PlaneGeometry(1.15, 0.30, 2, 1);
     const pos = g.attributes.position!;
     for (let i = 0; i < pos.count; i++) {
-      /* Dihedral — outer edge tilts up */
       pos.setY(i, pos.getY(i) + Math.abs(pos.getX(i)) * 0.18);
     }
     g.computeVertexNormals();
@@ -1666,7 +1677,7 @@ function AAABirdFlock() {
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    BIRDS.forEach((b, i) => {
+    activeBirds.forEach((b, i) => {
       const g = groupRef.current?.children[i] as THREE.Group;
       if (!g) return;
       const a = b.phase + t * b.speed;
@@ -1676,7 +1687,7 @@ function AAABirdFlock() {
         Math.sin(a) * b.radius + b.zOff,
       );
       g.rotation.y = -a - Math.PI / 2 + Math.sin(t * 0.36 + b.phase) * 0.1;
-      g.rotation.z = Math.sin(t * 0.32 + b.phase) * 0.07; // banking
+      g.rotation.z = Math.sin(t * 0.32 + b.phase) * 0.07;
       const flap = Math.sin(t * b.flapSp + b.phase) * b.flapAm;
       const lw = g.children[0] as THREE.Mesh, rw = g.children[1] as THREE.Mesh;
       if (lw) lw.rotation.z =  flap;
@@ -1686,7 +1697,7 @@ function AAABirdFlock() {
 
   return (
     <group ref={groupRef}>
-      {BIRDS.map((_, i) => (
+      {activeBirds.map((_, i) => (
         <group key={i}>
           <mesh geometry={wingGeo} position={[-0.62, 0, 0]}>
             <meshStandardMaterial color="#28200e" roughness={0.9} side={THREE.DoubleSide} />
@@ -1707,12 +1718,14 @@ function AAABirdFlock() {
    PHASE 3: BUTTERFLIES — 10 wing-flapping creatures near the flowers
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAButterflies() {
+  const { particleScale } = useQuality();
+  const activeFlies = useMemo(() => BFLIES.slice(0, Math.max(1, Math.ceil(BFLIES.length * particleScale))), [particleScale]);
   const groupRef = useRef<THREE.Group>(null!);
   const wingGeo  = useMemo(() => new THREE.PlaneGeometry(0.20, 0.15), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    BFLIES.forEach((bf, i) => {
+    activeFlies.forEach((bf, i) => {
       const g = groupRef.current?.children[i] as THREE.Group;
       if (!g) return;
       g.position.set(
@@ -1730,7 +1743,7 @@ function AAAButterflies() {
 
   return (
     <group ref={groupRef}>
-      {BFLIES.map((bf, i) => (
+      {activeFlies.map((bf, i) => (
         <group key={i}>
           <mesh geometry={wingGeo} position={[-0.11, 0, 0]}>
             <meshStandardMaterial color={bf.col} transparent opacity={0.76}
@@ -1752,12 +1765,14 @@ function AAAButterflies() {
    PHASE 3: DRIFTING LEAVES — 55 autumn leaves falling and spinning
 ══════════════════════════════════════════════════════════════════════════ */
 function AAADriftingLeaves() {
+  const { particleScale } = useQuality();
+  const activeLeaves = useMemo(() => LEAF_D.slice(0, Math.max(4, Math.ceil(LEAF_D.length * particleScale))), [particleScale]);
   const ref = useRef<THREE.InstancedMesh>(null!);
   const dum = useMemo(() => new THREE.Object3D(), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    LEAF_D.forEach((lf, i) => {
+    activeLeaves.forEach((lf, i) => {
       const yRaw = ((lf.y - t * lf.sp) % 11) + 0.1;
       const yPos = yRaw < 0 ? yRaw + 11 : yRaw;
       dum.position.set(
@@ -1778,7 +1793,7 @@ function AAADriftingLeaves() {
   });
 
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, 55]}>
+    <instancedMesh ref={ref} args={[undefined, undefined, activeLeaves.length]}>
       <planeGeometry args={[1, 1.15]} />
       <meshStandardMaterial color="#b04c20" roughness={0.88} side={THREE.DoubleSide}
         transparent opacity={0.84} depthWrite={false} />
@@ -1884,12 +1899,14 @@ function AAAWaterfallMist({ position }: { position: [number, number, number] }) 
    PHASE 3: GRASS BLADES — 200 wind-swaying grass blades
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAGrassBlades() {
+  const { particleScale } = useQuality();
+  const activeGrass = useMemo(() => GRASS.slice(0, Math.max(10, Math.ceil(GRASS.length * particleScale))), [particleScale]);
   const ref = useRef<THREE.InstancedMesh>(null!);
   const dum = useMemo(() => new THREE.Object3D(), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    GRASS.forEach((g, i) => {
+    activeGrass.forEach((g, i) => {
       const sway = Math.sin(t * 0.75 + g.ph) * 0.18 + Math.sin(t * 1.35 + g.ph * 1.4) * 0.07;
       dum.position.set(g.x, g.h * 0.5, g.z);
       dum.rotation.set(0, g.ph, sway + g.tilt);
@@ -1901,7 +1918,7 @@ function AAAGrassBlades() {
   });
 
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, 200]}>
+    <instancedMesh ref={ref} args={[undefined, undefined, activeGrass.length]}>
       <planeGeometry args={[1, 1]} />
       <meshStandardMaterial color="#548030" roughness={0.88} side={THREE.DoubleSide}
         transparent opacity={0.88} />
@@ -2332,6 +2349,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       {litEntries.map((entry, i) => (
         <AAAEntryCandle
           key={entry.id}
+          index={i}
           pos={ENTRY_POSITIONS[i]}
           entry={entry}
           animOffset={i * 0.38}
@@ -2469,8 +2487,10 @@ export interface MemorialValley3DProps {
 
 export default function MemorialValley3D(props: MemorialValley3DProps) {
   return (
-    <SceneFoundation fov={44}>
-      <AAAValleyScene {...props} />
-    </SceneFoundation>
+    <QualityProvider>
+      <SceneFoundation fov={44}>
+        <AAAValleyScene {...props} />
+      </SceneFoundation>
+    </QualityProvider>
   );
 }

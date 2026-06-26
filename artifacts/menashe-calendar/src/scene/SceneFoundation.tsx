@@ -1,101 +1,75 @@
 /**
- * scene/SceneFoundation.tsx
+ * scene/SceneFoundation.tsx — Phase 5 (quality-aware)
  *
- * Phase 1 — Production-ready Canvas wrapper.
+ * Reads QualitySettings from QualityContext to configure:
+ *  • Device pixel ratio cap (dprMax)
+ *  • Shadow map type and resolution
+ *  • Tone mapping / color space
  *
- * Responsibilities:
- *  • WebGLRenderer configured for HDR PBR rendering
- *  • PCFSoftShadowMap at configurable resolution
- *  • ACES filmic tone mapping baked into renderer
- *  • Device pixel ratio clamped to [1, 1.75] for performance
- *  • Loader setup (Draco + KTX2) wired inside Canvas context
- *  • Suspense boundary with consistent fallback
- *  • Error boundary wrapper (prevents full-page crash)
- *
- * Swap this single file to change the core renderer settings.
- * All scene content goes in `children`.
+ * The QualityProvider must wrap SceneFoundation in the parent component.
  */
 import { Suspense, useEffect, type ReactNode } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { configureLoaders } from "./loaders";
+import { useQuality } from "./QualityContext";
 
-/* ── Loader initialiser (runs once inside Canvas context) ── */
 function LoaderSetup() {
   const { gl } = useThree();
-  useEffect(() => {
-    configureLoaders();
-    void gl; // ensure Canvas context is ready before configuring loaders
-  }, [gl]);
+  useEffect(() => { configureLoaders(); void gl; }, [gl]);
   return null;
 }
 
-/* ── Renderer configurator (runs once on mount) ── */
 function RendererConfig() {
   const { gl, scene } = useThree();
-  useEffect(() => {
-    /* Physically correct rendering */
-    gl.shadowMap.enabled = true;
-    gl.shadowMap.type    = THREE.PCFSoftShadowMap;
+  const q = useQuality();
 
-    /* HDR color pipeline */
+  useEffect(() => {
+    gl.shadowMap.enabled = q.shadowsEnabled;
+    gl.shadowMap.type    = q.shadowsEnabled ? THREE.PCFSoftShadowMap : THREE.BasicShadowMap;
+
     gl.toneMapping         = THREE.ACESFilmicToneMapping;
     gl.toneMappingExposure = 1.28;
     gl.outputColorSpace    = THREE.SRGBColorSpace;
 
-    /* Encoding for generated env maps */
     scene.backgroundBlurriness = 0;
-  }, [gl, scene]);
+  }, [gl, scene, q.shadowsEnabled]);
   return null;
 }
 
-/* ── WebGL context creation attributes ── */
 const GL_PROPS: React.ComponentProps<typeof Canvas>["gl"] = {
-  antialias:        false,   // SMAA post-process handles AA
-  alpha:            false,   // opaque background — saves fill rate
-  stencil:          false,   // not needed for this scene
-  depth:            true,
-  powerPreference:  "high-performance",
+  antialias:                    false,
+  alpha:                        false,
+  stencil:                      false,
+  depth:                        true,
+  powerPreference:              "high-performance",
   failIfMajorPerformanceCaveat: false,
-  preserveDrawingBuffer: false,
+  preserveDrawingBuffer:        false,
 };
 
 interface SceneFoundationProps {
-  children: ReactNode;
-  /** Initial camera FOV in degrees. Default 44 */
-  fov?: number;
-  /** className / style forwarded to the Canvas container */
+  children:   ReactNode;
+  fov?:       number;
   className?: string;
-  style?: React.CSSProperties;
+  style?:     React.CSSProperties;
 }
 
-export function SceneFoundation({
-  children,
-  fov = 44,
-  className,
-  style,
-}: SceneFoundationProps) {
+export function SceneFoundation({ children, fov = 44, className, style }: SceneFoundationProps) {
+  const q = useQuality();
+
   return (
     <Canvas
-      shadows
+      shadows={q.shadowsEnabled}
       camera={{ fov, near: 0.25, far: 260, position: [22, 28, 22] }}
       gl={GL_PROPS}
-      dpr={[1, 1.75]}
+      dpr={[1, q.dprMax]}
       frameloop="always"
-      performance={{ min: 0.5 }}    // auto-downscale DPR if FPS drops
+      performance={{ min: 0.5 }}
       className={className}
-      style={{
-        width:  "100%",
-        height: "100%",
-        touchAction: "none",
-        ...style,
-      }}
+      style={{ width: "100%", height: "100%", touchAction: "none", ...style }}
     >
-      {/* Invisible setup components */}
       <LoaderSetup />
       <RendererConfig />
-
-      {/* Scene content */}
       <Suspense fallback={null}>
         {children}
       </Suspense>

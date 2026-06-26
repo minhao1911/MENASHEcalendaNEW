@@ -1,46 +1,52 @@
 /**
- * scene/fx/PostProcessingPipeline.tsx
+ * scene/fx/PostProcessingPipeline.tsx — Phase 5 (quality-aware)
  *
  * Active effects:
  *  1. SMAA         — temporal-stable anti-aliasing
- *  2. Bloom        — HDR glow on bright emissive surfaces (candles, lanterns)
- *  3. Vignette     — cinematic edge darkening for photographic depth
+ *  2. Bloom        — HDR glow on candles / lanterns
+ *  3. Vignette     — cinematic edge darkening
  *
- * ToneMapping is handled by the WebGLRenderer in SceneFoundation (ACES filmic).
+ * On battery-saver quality the entire EffectComposer is skipped to save
+ * a full render pass worth of GPU work.
  */
 import { BlendFunction } from "postprocessing";
 import { EffectComposer, SMAA, Bloom, Vignette } from "@react-three/postprocessing";
+import { useQuality } from "../QualityContext";
 
 interface PostProcessingPipelineProps {
-  enableSMAA?: boolean;
-  enableBloom?: boolean;
-  enableSSAO?: boolean;
-  bloomIntensity?: number;
-  bloomThreshold?: number;
+  enableSMAA?:      boolean;
+  enableBloom?:     boolean;
+  enableSSAO?:      boolean;
+  bloomIntensity?:  number;
+  bloomThreshold?:  number;
 }
 
 export function PostProcessingPipeline({
-  enableSMAA      = true,
-  enableBloom     = true,
-  bloomIntensity  = 1.6,
-  bloomThreshold  = 0.20,
+  enableSMAA     = true,
+  enableBloom    = true,
+  bloomIntensity,
+  bloomThreshold,
 }: PostProcessingPipelineProps) {
+  const q = useQuality();
+
+  if (!q.postProcessing) return null;
+
+  const intensity  = bloomIntensity  ?? q.bloomIntensity;
+  const threshold  = bloomThreshold  ?? q.bloomThreshold;
+
   return (
     <EffectComposer multisampling={0}>
-      {/* Anti-aliasing */}
-      <SMAA />
+      {enableSMAA ? <SMAA /> : null}
 
-      {/* HDR bloom — wider glow, lower threshold to catch candle light */}
       <Bloom
-        intensity={enableBloom ? bloomIntensity : 0}
-        luminanceThreshold={bloomThreshold}
+        intensity={enableBloom && q.bloomEnabled ? intensity : 0}
+        luminanceThreshold={threshold}
         luminanceSmoothing={0.92}
         mipmapBlur
         blendFunction={BlendFunction.ADD}
-        levels={8}
+        levels={q.tier === "high" ? 8 : 5}
       />
 
-      {/* Vignette — darkened edges for photographic / sacred atmosphere */}
       <Vignette
         offset={0.28}
         darkness={0.65}
