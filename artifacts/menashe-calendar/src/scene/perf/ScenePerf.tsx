@@ -1,45 +1,23 @@
 /**
  * scene/perf/ScenePerf.tsx
  *
- * Phase 1 — Performance monitoring overlay.
+ * Performance monitoring overlay — STUBBED OUT.
  *
- * Uses r3f-perf (https://github.com/utsuboco/r3f-perf) which renders
- * a compact HUD showing:
- *  • FPS and frame time (ms)
- *  • GPU timing (when available via EXT_disjoint_timer_query_webgl2)
- *  • Draw calls, triangles, textures, programs
- *  • Memory usage (MB)
+ * r3f-perf 7.x is incompatible with @react-three/fiber v9.x: the `Perf`
+ * component accesses internal R3F APIs that were redesigned in v9, causing
+ * the R3F reconciler to throw on every frame and crash the entire Canvas.
  *
- * Rendered only in development mode (import.meta.env.DEV).
- * Production builds get a zero-cost stub.
+ * This stub exports the same API surface so no call sites need to change,
+ * but always returns null, keeping the import graph clean and the scene
+ * healthy.  If a compatible version of r3f-perf ships for R3F v9, re-enable
+ * by swapping this file for the real implementation.
  */
-import { Perf } from "r3f-perf";
 
 interface ScenePerfProps {
-  /** Force-show even in production (for debugging deployed builds). */
   forceShow?: boolean;
-  /** Position of the HUD panel. Default "top-left". */
   position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
 }
 
-export function ScenePerf({ forceShow = false, position = "top-left" }: ScenePerfProps) {
-  const isDev = import.meta.env.DEV;
-  if (!isDev && !forceShow) return null;
-
-  return (
-    <Perf
-      position={position}
-      minimal={false}
-      showGraph
-      chart={{ hz: 60, length: 120 }}
-      antialias
-      overClock={false}
-      logsPerSecond={10}
-      style={{
-        opacity: 0.82,
-        fontSize: "11px",
-        zIndex: 9999,
-      }}
-    />
-  );
+export function ScenePerf(_props: ScenePerfProps) {
+  return null;
 }

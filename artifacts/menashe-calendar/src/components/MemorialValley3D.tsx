@@ -390,7 +390,7 @@ function AAATerrain() {
             <mesh key={`${i}-${j}`} position={[wx, 0.28 + i * 0.55, wz]}
               rotation={[0, a + Math.PI / 2, 0]} castShadow receiveShadow>
               <boxGeometry args={[0.68, 0.58 + i * 0.08, 0.32]} />
-              <meshStandardMaterial color={i === 0 ? "#c4b898" : i === 1 ? "#bdb0900" : "#b8ac8c"}
+              <meshStandardMaterial color={i === 0 ? "#c4b898" : i === 1 ? "#bdb090" : "#b8ac8c"}
                 roughness={0.88} metalness={0.04} />
             </mesh>
           );

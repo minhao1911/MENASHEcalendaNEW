@@ -51,6 +51,20 @@ export default defineConfig({
           await import("@replit/vite-plugin-dev-banner").then((m) =>
             m.devBanner(),
           ),
+          // Strip "data-component-name" injected by cartographer from R3F/Three.js
+          // scene files. R3F 9.x parses hyphenated props as nested paths — it
+          // tries obj.data["component-name"] = value and throws a TypeError when
+          // the Three.js object's .data field is not a plain object.
+          {
+            name: "strip-r3f-cartographer-data-props",
+            enforce: "post" as const,
+            transform(code: string, id: string) {
+              if (!id.includes("/scene/") && !id.includes("MemorialValley3D")) return;
+              const cleaned = code.replace(/"data-component-name":\s*"[^"]*",?\s*/g, "");
+              if (cleaned === code) return;
+              return { code: cleaned, map: null };
+            },
+          },
         ]
       : []),
   ],
