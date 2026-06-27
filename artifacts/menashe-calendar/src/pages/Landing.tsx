@@ -496,7 +496,7 @@ export default function Landing({ onSignIn }: LandingProps) {
         <nav className="landing-nav">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {/* Logo */}
-            <img src="/logo.png" alt="Bnei Menashe Calendar" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(212,175,55,0.4)" }} />
+            <img src="/logo-benei-menashe.png" alt="Benei Menashe Calendar" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(212,175,55,0.35)" }} />
             <span style={{ fontSize: 14, fontWeight: 700, color: "#D4AF37", letterSpacing: ".08em" }}>{t.landingBadge}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -517,15 +517,19 @@ export default function Landing({ onSignIn }: LandingProps) {
           <div className="orb" style={{ width: 600, height: 600, background: "rgba(212,175,55,0.06)", top: "10%", left: "50%", transform: "translateX(-50%)" }} />
           <div className="orb" style={{ width: 300, height: 300, background: "rgba(255,99,31,0.04)", top: "20%", right: "-5%" }} />
 
-          {/* Badge */}
-          <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 99, padding: "7px 20px", marginBottom: 36 }}>
-            <span style={{ color: "#D4AF37", fontSize: 16 }}>✡</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#D4AF37", letterSpacing: ".12em" }}>{t.landingBadge}</span>
-          </div>
-
-          {/* Hebrew */}
-          <div className="hero-heb" style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: "clamp(40px,8vw,64px)", color: "#D4AF37", direction: "rtl", marginBottom: 20, lineHeight: 1.2, fontWeight: 700, textShadow: "0 0 40px rgba(212,175,55,0.3)" }}>
-            לוּחַ הַשָּׁנָה
+          {/* Logo */}
+          <div className="hero-badge" style={{ marginBottom: 32 }}>
+            <img
+              src="/logo-benei-menashe.png"
+              alt="Benei Menashe Calendar"
+              style={{
+                width: "clamp(220px, 42vw, 340px)",
+                height: "auto",
+                objectFit: "contain",
+                filter: "drop-shadow(0 0 32px rgba(212,175,55,0.35))",
+                borderRadius: 16,
+              }}
+            />
           </div>
 
           {/* H1 */}
