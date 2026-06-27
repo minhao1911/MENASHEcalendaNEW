@@ -1239,6 +1239,8 @@ interface HomeProps {
   onShowTorahTracker: () => void;
   unreadAnnouncements?: ServerAnnouncement[];
   profileName?: string | null;
+  profilePhotoUrl?: string | null;
+  profileAvatarEmoji?: string | null;
 }
 
 // ── Week Strip (mini 7-day overview) ─────────────────────────────────────────
@@ -2709,6 +2711,8 @@ export default function Home({
   onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowYartzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
   unreadAnnouncements = [],
   profileName,
+  profilePhotoUrl,
+  profileAvatarEmoji,
 }: HomeProps) {
   const { t } = useLanguage();
   const { greeting, displayName, firstName, user } = useHomeGreeting({ profileName });
@@ -2777,11 +2781,21 @@ export default function Home({
             onClick={() => onNavigate("settings")}
             style={{ background: "none", border: "none", padding: 0, cursor: "pointer", flexShrink: 0 }}
           >
-            {user?.imageUrl ? (
+            {(profilePhotoUrl || user?.imageUrl) ? (
               <img
-                src={user.imageUrl} alt={user.firstName ?? "Profile"}
+                src={profilePhotoUrl || user!.imageUrl} alt={displayName ?? user?.firstName ?? "Profile"}
                 style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(212,175,55,0.45)", display: "block" }}
               />
+            ) : profileAvatarEmoji && profileAvatarEmoji !== "👤" ? (
+              <div style={{
+                width: 36, height: 36, borderRadius: "50%",
+                background: "linear-gradient(135deg, #1a3050 0%, #0f2030 100%)",
+                border: "2px solid rgba(212,175,55,0.45)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 20,
+              }}>
+                {profileAvatarEmoji}
+              </div>
             ) : (
               <div style={{
                 width: 36, height: 36, borderRadius: "50%",

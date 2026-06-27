@@ -540,6 +540,8 @@ function AppShell() {
             onShowTorahTracker={() => setModal("torah-tracker")}
             unreadAnnouncements={unreadAnnouncements}
             profileName={publicProfile?.displayName}
+            profilePhotoUrl={publicProfile?.profilePhotoUrl}
+            profileAvatarEmoji={publicProfile?.avatarEmoji}
           />
         );
       case "calendar":

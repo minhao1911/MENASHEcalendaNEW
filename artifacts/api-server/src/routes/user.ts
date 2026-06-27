@@ -28,7 +28,7 @@ const publicProfileSchema = z.object({
   city: z.string().max(100).optional(),
   country: z.string().max(100).optional(),
   avatarEmoji: z.string().max(10).optional(),
-  profilePhotoUrl: z.string().url().max(500).optional().nullable(),
+  profilePhotoUrl: z.string().max(2_000_000).optional().nullable(),
 });
 
 const yahrzeitSchema = z.object({
