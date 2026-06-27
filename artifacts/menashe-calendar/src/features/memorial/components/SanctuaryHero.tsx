@@ -22,51 +22,52 @@ export function SanctuaryHero({
   return (
     <div
       style={{
-        padding: "28px 20px 24px",
-        background: "linear-gradient(180deg, rgba(212,168,67,0.06) 0%, transparent 100%)",
-        borderBottom: "1px solid rgba(212,168,67,0.08)",
+        padding: "32px 20px 28px",
+        background: "linear-gradient(180deg, rgba(212,168,67,0.07) 0%, rgba(212,168,67,0.01) 100%)",
+        borderBottom: "1px solid rgba(212,168,67,0.07)",
       }}
     >
-      {/* Flame icon */}
-      <div
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: 16,
-          background: "linear-gradient(135deg, rgba(212,168,67,0.2) 0%, rgba(212,168,67,0.08) 100%)",
-          border: "1px solid rgba(212,168,67,0.3)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 24,
-          marginBottom: 16,
-        }}
-      >
-        🕯
-      </div>
-
-      <div
-        style={{
-          fontSize: 22,
-          fontWeight: 900,
-          color: GOLD,
-          letterSpacing: "0.02em",
-          lineHeight: 1.2,
-          marginBottom: 6,
-        }}
-      >
-        {title}
-      </div>
-
-      <div
-        style={{
-          fontSize: 13,
-          color: "rgba(255,255,255,0.5)",
-          lineHeight: 1.5,
-          marginBottom: 20,
-        }}
-      >
-        {subtitle}
+      {/* Flame icon + title row */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 18,
+            background: "linear-gradient(135deg, rgba(212,168,67,0.22) 0%, rgba(212,168,67,0.08) 100%)",
+            border: "1px solid rgba(212,168,67,0.28)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 26,
+            flexShrink: 0,
+          }}
+        >
+          🕯
+        </div>
+        <div style={{ paddingTop: 4 }}>
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 900,
+              color: GOLD,
+              letterSpacing: "0.01em",
+              lineHeight: 1.2,
+              marginBottom: 6,
+            }}
+          >
+            {title}
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              color: "rgba(255,255,255,0.48)",
+              lineHeight: 1.55,
+            }}
+          >
+            {subtitle}
+          </div>
+        </div>
       </div>
 
       {isOffline && (
@@ -75,15 +76,15 @@ export function SanctuaryHero({
             display: "flex",
             alignItems: "center",
             gap: 8,
-            padding: "8px 12px",
+            padding: "9px 14px",
             borderRadius: 10,
-            background: "rgba(239,68,68,0.08)",
-            border: "1px solid rgba(239,68,68,0.2)",
-            marginBottom: 14,
+            background: "rgba(239,68,68,0.07)",
+            border: "1px solid rgba(239,68,68,0.18)",
+            marginBottom: 16,
           }}
         >
           <span style={{ fontSize: 14 }}>📵</span>
-          <span style={{ fontSize: 12, color: "rgba(239,68,68,0.9)" }}>{offlineMessage}</span>
+          <span style={{ fontSize: 13, color: "rgba(239,68,68,0.85)" }}>{offlineMessage}</span>
         </div>
       )}
 
@@ -92,13 +93,13 @@ export function SanctuaryHero({
         <div
           style={{
             position: "absolute",
-            left: 14,
+            left: 16,
             top: "50%",
             transform: "translateY(-50%)",
             pointerEvents: "none",
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
@@ -112,15 +113,16 @@ export function SanctuaryHero({
           disabled={isOffline}
           style={{
             width: "100%",
-            padding: "13px 40px 13px 42px",
+            padding: "14px 44px 14px 46px",
             borderRadius: 14,
-            background: "rgba(255,255,255,0.06)",
-            border: `1px solid ${searchValue ? "rgba(212,168,67,0.45)" : "rgba(255,255,255,0.1)"}`,
-            color: "rgba(255,255,255,0.9)",
-            fontSize: 15,
+            background: "rgba(255,255,255,0.055)",
+            border: `1.5px solid ${searchValue ? "rgba(212,168,67,0.5)" : "rgba(255,255,255,0.09)"}`,
+            color: "rgba(255,255,255,0.92)",
+            fontSize: 16,
             outline: "none",
             boxSizing: "border-box",
             transition: "border-color 0.2s",
+            lineHeight: 1.4,
           }}
         />
         {searchValue && (
@@ -132,17 +134,17 @@ export function SanctuaryHero({
               right: 12,
               top: "50%",
               transform: "translateY(-50%)",
-              background: "rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.09)",
               border: "none",
-              color: "rgba(255,255,255,0.5)",
-              width: 22,
-              height: 22,
+              color: "rgba(255,255,255,0.55)",
+              width: 26,
+              height: 26,
               borderRadius: "50%",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 12,
+              fontSize: 13,
             }}
           >
             ✕

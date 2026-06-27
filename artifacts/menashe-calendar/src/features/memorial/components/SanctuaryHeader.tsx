@@ -21,32 +21,34 @@ export function SanctuaryHeader({
         zIndex: 50,
         display: "flex",
         alignItems: "center",
-        gap: 12,
-        padding: "14px 16px 12px",
-        background: "rgba(8,14,26,0.92)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderBottom: "1px solid rgba(212,168,67,0.12)",
+        gap: 14,
+        padding: "12px 16px 12px",
+        background: "rgba(8,14,26,0.94)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(212,168,67,0.10)",
       }}
     >
+      {/* Back button — 44px tap target for WCAG */}
       <button
         onClick={onBack}
         aria-label="Back"
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          border: "1px solid rgba(255,255,255,0.1)",
-          background: "rgba(255,255,255,0.05)",
-          color: "rgba(255,255,255,0.7)",
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.04)",
+          color: "rgba(255,255,255,0.75)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
+          transition: "background 0.15s",
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
       </button>
@@ -54,10 +56,10 @@ export function SanctuaryHeader({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontSize: 16,
+            fontSize: 17,
             fontWeight: 800,
             color: GOLD,
-            letterSpacing: "0.04em",
+            letterSpacing: "0.02em",
             lineHeight: 1.2,
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -67,7 +69,7 @@ export function SanctuaryHeader({
           {title}
         </div>
         {subtitle && (
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", marginTop: 2, letterSpacing: "0.01em" }}>
             {subtitle}
           </div>
         )}
