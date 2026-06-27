@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLanguage } from "@/lib/LanguageContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 type Category = "bug" | "ux" | "content" | "perf" | "suggest";
 type Priority = "critical" | "high" | "medium" | "low";
