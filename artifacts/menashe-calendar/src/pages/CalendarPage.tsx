@@ -124,10 +124,10 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
 
       {/* ── App Header ── */}
       <div className="app-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div className="app-icon" style={{ color: "var(--gold)", fontSize: 18 }}>✡</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <img src="/logo.png" alt="Benei Menashe Calendar" style={{ height: 38, width: 38, objectFit: "contain", borderRadius: 8 }} />
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>Menashe</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>Benei Menashe</div>
             <div style={{ fontSize: 9, color: "var(--gold)", letterSpacing: "0.15em", fontWeight: 700 }}>CALENDAR</div>
           </div>
         </div>
