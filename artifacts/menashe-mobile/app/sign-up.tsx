@@ -15,7 +15,6 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Polygon, Polyline } from "react-native-svg";
 import { useSignUp, useSSO, useAuth } from "@clerk/expo";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
@@ -25,6 +24,8 @@ WebBrowser.maybeCompleteAuthSession();
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const PHOTO = require("@/assets/images/saipikhup-photo.jpg");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const LOGO = require("@/assets/images/logo-benei-menashe.png");
 
 const GOLD = "#D4AF37";
 const GOLD_BRIGHT = "#F5D982";
@@ -39,37 +40,6 @@ function useWarmUpBrowser() {
     void WebBrowser.warmUpAsync();
     return () => { void WebBrowser.coolDownAsync(); };
   }, []);
-}
-
-function LogoBadge() {
-  return (
-    <View style={styles.logoBadge}>
-      <Svg viewBox="0 0 80 80" width={44} height={44} fill="none">
-        <Polygon
-          points="40,6 58,38 22,38"
-          stroke={GOLD}
-          strokeWidth="2.8"
-          strokeLinejoin="round"
-          fill="rgba(212,175,55,0.07)"
-        />
-        <Polygon
-          points="40,62 22,30 58,30"
-          stroke={GOLD}
-          strokeWidth="2.8"
-          strokeLinejoin="round"
-          fill="rgba(212,175,55,0.07)"
-        />
-        <Polyline
-          points="14,74 14,30 40,56 66,30 66,74"
-          stroke={GOLD}
-          strokeWidth="4.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-      </Svg>
-    </View>
-  );
 }
 
 export default function SignUpScreen() {
@@ -244,9 +214,7 @@ export default function SignUpScreen() {
                 style={styles.topGoldBar}
               />
               <View style={styles.headerContent}>
-                <LogoBadge />
-                <Text style={styles.brandName}>BNEI MENASHE</Text>
-                <Text style={styles.brandSub}>SACRED CALENDAR</Text>
+                <Image source={LOGO} style={styles.logoImg} resizeMode="contain" />
               </View>
             </View>
 
@@ -361,30 +329,15 @@ const styles = StyleSheet.create({
       android: { elevation: 32 },
     }),
   },
-  headerWrap: { height: 210, overflow: "hidden", backgroundColor: "#040404" },
+  headerWrap: { height: 230, overflow: "hidden", backgroundColor: "#040404" },
   headerPhoto: { position: "absolute", width: "100%", height: 680, bottom: 0 },
   topGoldBar: { position: "absolute", top: 0, left: 0, right: 0, height: 3 },
   headerContent: {
     position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-    alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 4,
-  },
-  logoBadge: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: "rgba(8,8,14,0.97)",
-    borderWidth: 2, borderColor: "rgba(212,175,55,0.75)",
     alignItems: "center", justifyContent: "center",
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.9, shadowRadius: 16 },
-      android: { elevation: 12 },
-    }),
   },
-  brandName: {
-    color: GOLD_BRIGHT, fontWeight: "800", fontSize: 20, letterSpacing: 3.5, textTransform: "uppercase",
-    textShadowColor: "rgba(0,0,0,1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12,
-  },
-  brandSub: {
-    color: "rgba(245,217,130,0.60)", fontSize: 10, letterSpacing: 5, textTransform: "uppercase",
-    textShadowColor: "rgba(0,0,0,1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8, marginTop: 2,
+  logoImg: {
+    width: 190, height: 190,
   },
   goldSep: { height: 2 },
   formBody: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 4 },
