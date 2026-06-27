@@ -13,6 +13,7 @@ import paymentsRouter from "./payments";
 import calendarRouter from "./calendar";
 import chatRouter from "./chat";
 import holidayHalachaRouter from "./holidayHalacha";
+import memorialsRouter from "./memorials";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(paymentsRouter);
 router.use(calendarRouter);
 router.use(chatRouter);
 router.use(holidayHalachaRouter);
+router.use(memorialsRouter);
 
 export default router;

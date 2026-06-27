@@ -291,6 +291,200 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // ── Memorial Sanctuary V1 ─────────────────────────────────────────────────
+
+    // Enums (idempotent — one DO block per type)
+    await client.query(`DO $$ BEGIN CREATE TYPE memorial_status AS ENUM ('draft','published','archived','removed'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await client.query(`DO $$ BEGIN CREATE TYPE memorial_privacy_level AS ENUM ('private','family','community','public'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await client.query(`DO $$ BEGIN CREATE TYPE memorial_interaction_permission AS ENUM ('nobody','family','community','public'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await client.query(`DO $$ BEGIN CREATE TYPE memorial_candle_type AS ENUM ('yahrzeit','shabbat','memorial','neshama','shloshim'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await client.query(`DO $$ BEGIN CREATE TYPE memorial_tribute_status AS ENUM ('pending','approved','rejected','removed'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await client.query(`DO $$ BEGIN CREATE TYPE memorial_family_member_role AS ENUM ('admin','member','viewer'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await client.query(`DO $$ BEGIN CREATE TYPE memorial_location_type AS ENUM ('burial','birthplace','hometown','synagogue','other'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memorial_families (
+        id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name                TEXT NOT NULL,
+        primary_contact_id  TEXT NOT NULL,
+        member_count        INTEGER NOT NULL DEFAULT 0,
+        created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        deleted_at          TIMESTAMPTZ
+      )
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memorial_family_members (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        family_id   UUID NOT NULL REFERENCES memorial_families(id) ON DELETE CASCADE,
+        user_id     TEXT NOT NULL,
+        role        memorial_family_member_role NOT NULL DEFAULT 'member',
+        invited_by  TEXT,
+        joined_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (family_id, user_id)
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_fam_members_user ON memorial_family_members (user_id);
+      CREATE INDEX IF NOT EXISTS idx_fam_members_family ON memorial_family_members (family_id);
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memorial_persons (
+        id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        full_name            TEXT NOT NULL,
+        hebrew_name          TEXT,
+        hebrew_father_name   TEXT,
+        hebrew_mother_name   TEXT,
+        birth_date           TEXT,
+        birth_date_hebrew    TEXT,
+        death_date           TEXT NOT NULL,
+        death_date_hebrew    TEXT,
+        birth_city           TEXT,
+        birth_country        TEXT,
+        death_city           TEXT,
+        death_country        TEXT,
+        tribe_affiliation    TEXT,
+        occupation           TEXT,
+        biography            TEXT,
+        created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        deleted_at           TIMESTAMPTZ
+      )
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memorials (
+        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug             TEXT NOT NULL UNIQUE,
+        person_id        UUID NOT NULL REFERENCES memorial_persons(id) ON DELETE RESTRICT,
+        family_id        UUID NOT NULL REFERENCES memorial_families(id) ON DELETE RESTRICT,
+        status           memorial_status NOT NULL DEFAULT 'draft',
+        created_by       TEXT NOT NULL,
+        published_at     TIMESTAMPTZ,
+        last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        candle_count     INTEGER NOT NULL DEFAULT 0,
+        flower_count     INTEGER NOT NULL DEFAULT 0,
+        tribute_count    INTEGER NOT NULL DEFAULT 0,
+        prayer_count     INTEGER NOT NULL DEFAULT 0,
+        view_count       INTEGER NOT NULL DEFAULT 0,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        deleted_at       TIMESTAMPTZ
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_memorials_family ON memorials (family_id) WHERE deleted_at IS NULL;
+      CREATE INDEX IF NOT EXISTS idx_memorials_status ON memorials (status) WHERE deleted_at IS NULL;
+      CREATE INDEX IF NOT EXISTS idx_memorials_slug ON memorials (slug) WHERE deleted_at IS NULL;
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memorial_privacy (
+        id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        memorial_id           UUID NOT NULL UNIQUE REFERENCES memorials(id) ON DELETE CASCADE,
+        visibility_level      memorial_privacy_level NOT NULL DEFAULT 'family',
+        can_light_candles     memorial_interaction_permission NOT NULL DEFAULT 'community',
+        can_leave_tributes    memorial_interaction_permission NOT NULL DEFAULT 'family',
+        can_view_photos       memorial_interaction_permission NOT NULL DEFAULT 'family',
+        require_moderation    BOOLEAN NOT NULL DEFAULT true,
+        allow_guest_interaction BOOLEAN NOT NULL DEFAULT false,
+        updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memorial_candles (
+        id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        memorial_id  UUID NOT NULL REFERENCES memorials(id) ON DELETE CASCADE,
+        user_id      TEXT,
+        guest_name   TEXT,
+        message      TEXT,
+        candle_type  memorial_candle_type NOT NULL DEFAULT 'memorial',
+        is_anonymous BOOLEAN NOT NULL DEFAULT false,
+        ip_hash      TEXT,
+        lit_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        deleted_at   TIMESTAMPTZ
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_candles_memorial ON memorial_candles (memorial_id) WHERE deleted_at IS NULL;
+      CREATE INDEX IF NOT EXISTS idx_candles_user ON memorial_candles (user_id) WHERE user_id IS NOT NULL;
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memorial_tributes (
+        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        memorial_id      UUID NOT NULL REFERENCES memorials(id) ON DELETE CASCADE,
+        user_id          TEXT,
+        guest_name       TEXT,
+        guest_email      TEXT,
+        title            TEXT,
+        body             TEXT NOT NULL,
+        language         TEXT NOT NULL DEFAULT 'en',
+        is_anonymous     BOOLEAN NOT NULL DEFAULT false,
+        status           memorial_tribute_status NOT NULL DEFAULT 'pending',
+        moderated_by     TEXT,
+        moderated_at     TIMESTAMPTZ,
+        rejection_reason TEXT,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        deleted_at       TIMESTAMPTZ
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_tributes_memorial ON memorial_tributes (memorial_id, status) WHERE deleted_at IS NULL;
+      CREATE INDEX IF NOT EXISTS idx_tributes_pending ON memorial_tributes (status, created_at) WHERE status = 'pending' AND deleted_at IS NULL;
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memorial_photos (
+        id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        memorial_id    UUID NOT NULL REFERENCES memorials(id) ON DELETE CASCADE,
+        uploaded_by    TEXT NOT NULL,
+        photo_url      TEXT NOT NULL,
+        caption        TEXT,
+        taken_year     INTEGER,
+        taken_location TEXT,
+        is_featured    BOOLEAN NOT NULL DEFAULT false,
+        is_approved    BOOLEAN NOT NULL DEFAULT false,
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        deleted_at     TIMESTAMPTZ
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_photos_memorial ON memorial_photos (memorial_id) WHERE deleted_at IS NULL;
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memorial_locations (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        person_id     UUID NOT NULL REFERENCES memorial_persons(id) ON DELETE CASCADE,
+        location_type memorial_location_type NOT NULL DEFAULT 'burial',
+        label         TEXT NOT NULL,
+        address       TEXT,
+        city          TEXT,
+        country       TEXT,
+        latitude      TEXT,
+        longitude     TEXT,
+        notes         TEXT,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        deleted_at    TIMESTAMPTZ
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_locations_person ON memorial_locations (person_id) WHERE deleted_at IS NULL;
+    `);
+
+    logger.info("Memorial Sanctuary V1 schema ready");
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");

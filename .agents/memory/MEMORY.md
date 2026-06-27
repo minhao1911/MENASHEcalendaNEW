@@ -12,3 +12,4 @@
 - [Home.tsx blueprint](home-blueprint.md) — H-004.5 complete; sections/ dir at src/pages/home/sections/; CommunitySection fully self-contained; CalendarSection owns AnnouncementStrip + children for Today Card; next = H-005 types extraction.
 - [Express 5 req.params types](express5-params-types.md) — Express 5 types req.params values as string | string[]; always wrap with String() before passing to parseInt or SQL.
 - [SPR-010 security Zod schema gaps](spr010-zod-gaps.md) — theme enum must include "sapphire"; role enum must match ROLES array in ProfileModal; community yahrzeit admin routes are at /community/admin/yahrzeit (not /admin/yahrzeit).
+- [Memorial backend V1 architecture](memorial-backend-v1.md) — 8 Drizzle schemas in lib/db/src/schema/memorial.ts; repos+services in artifacts/api-server/src/memorial/; routes at /api/memorials; migrate.ts does idempotent enum+table creation on startup.

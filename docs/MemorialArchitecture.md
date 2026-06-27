@@ -1429,3 +1429,110 @@ Never return un-gated memorial data from any repository method.
 ---
 
 *End of SPR-011 — Memorial Domain Architecture. Awaiting Chief Architect review.*
+
+---
+
+## SPR-013 Implementation Status
+
+> **Sprint:** SPR-013 — Memorial Core Backend (V1)
+> **Completed:** 2026-06-27
+> **Role:** Senior Backend Engineer + Drizzle ORM Architect
+
+---
+
+### What Was Implemented
+
+#### Database (Drizzle ORM schemas + PostgreSQL migration)
+
+All 8 V1 tables are live in PostgreSQL, created idempotently on server startup via `migrate.ts`:
+
+| Table | File | Status |
+|---|---|---|
+| `memorial_families` | `lib/db/src/schema/memorial.ts` | ✅ |
+| `memorial_family_members` | `lib/db/src/schema/memorial.ts` | ✅ |
+| `memorial_persons` | `lib/db/src/schema/memorial.ts` | ✅ |
+| `memorials` | `lib/db/src/schema/memorial.ts` | ✅ |
+| `memorial_privacy` | `lib/db/src/schema/memorial.ts` | ✅ |
+| `memorial_candles` | `lib/db/src/schema/memorial.ts` | ✅ |
+| `memorial_tributes` | `lib/db/src/schema/memorial.ts` | ✅ |
+| `memorial_photos` | `lib/db/src/schema/memorial.ts` | ✅ |
+| `memorial_locations` | `lib/db/src/schema/memorial.ts` | ✅ |
+
+7 PostgreSQL enum types created: `memorial_status`, `memorial_privacy_level`, `memorial_interaction_permission`, `memorial_candle_type`, `memorial_tribute_status`, `memorial_family_member_role`, `memorial_location_type`.
+
+#### Repository Layer
+
+| Repository | File | Key methods |
+|---|---|---|
+| `MemorialRepository` | `artifacts/api-server/src/memorial/repositories/MemorialRepository.ts` | `findById`, `findBySlug`, `findByFamily`, `search`, `create`, `update`, `softDelete`, `incrementCounter` |
+| `CandleRepository` | `artifacts/api-server/src/memorial/repositories/CandleRepository.ts` | `findByMemorial`, `create`, `remove`, `checkRateLimit` |
+| `TributeRepository` | `artifacts/api-server/src/memorial/repositories/TributeRepository.ts` | `findByMemorial`, `findById`, `findPending`, `create`, `approve`, `reject`, `softDelete` |
+| `PhotoRepository` | `artifacts/api-server/src/memorial/repositories/PhotoRepository.ts` | `findByMemorial`, `findById`, `create`, `approve`, `setFeatured`, `softDelete` |
+| `FamilyRepository` | `artifacts/api-server/src/memorial/repositories/FamilyRepository.ts` | `findById`, `findByUser`, `create`, `addMember`, `removeMember`, `getMembers`, `isMember`, `isAdmin` |
+
+#### Service Layer
+
+| Service | File | Responsibilities |
+|---|---|---|
+| `MemorialService` | `artifacts/api-server/src/memorial/services/MemorialService.ts` | Create memorial + auto-family, visibility gating, slug generation, update, search |
+| `CandleService` | `artifacts/api-server/src/memorial/services/CandleService.ts` | Permission check, rate-limit enforcement, candle creation, counter increment |
+| `TributeService` | `artifacts/api-server/src/memorial/services/TributeService.ts` | Permission check, auto-approve for family members, moderation (approve/reject) |
+
+#### API Routes (`artifacts/api-server/src/routes/memorials.ts`)
+
+All routes mounted at `/api` via the existing Express router:
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/memorials` | Required | Create memorial + person + auto-family |
+| `GET` | `/api/memorials/search?q=` | Optional | Full-name search, public/community only |
+| `GET` | `/api/memorials/:id` | Optional | Fetch by UUID or slug, visibility gated |
+| `PATCH` | `/api/memorials/:id` | Required (FamilyAdmin) | Update status (draft→published→archived) |
+| `POST` | `/api/memorials/:id/candles` | Optional (guest OK) | Light a candle, rate-limited by userId+IP |
+| `POST` | `/api/memorials/:id/tributes` | Optional (guest OK) | Submit tribute, enters moderation queue |
+| `POST` | `/api/memorials/:id/photos` | Required | Upload photo URL, auto-approved for family |
+
+---
+
+### What Was NOT Implemented (deferred to V2+)
+
+Per sprint scope:
+
+- Stories / audio
+- Notifications / push
+- Visitor analytics
+- Genealogical relationships
+- Timeline events
+- AI Eulogy Assist
+- Premium features
+- External search index
+- Yahrzeit subscriber scheduler
+
+---
+
+### Security Notes
+
+- `requireAuth` (Clerk JWT) enforced on write routes; read routes use optional auth for visibility gating
+- Ownership checks: FamilyAdmin required for memorial update; family membership required for photo upload
+- Rate limiting: candles rate-limited per `(memorialId, userId)` or `(memorialId, ipHash)` with 60-minute window
+- Guest interactions: allowed only when `memorial_privacy.allow_guest_interaction = true`
+- Tribute moderation: all tributes enter `pending` status by default; family members are auto-approved
+- Soft delete: no hard deletes on any memorial data; `deleted_at` column pattern throughout
+
+---
+
+### How to Verify
+
+```bash
+# Confirm tables exist
+curl http://localhost:8080/api/memorials/search?q=test
+# → 200 []
+
+# Confirm auth gate
+curl -X POST http://localhost:8080/api/memorials -H "Content-Type: application/json" -d '{...}'
+# → 401 Unauthorized
+
+# Confirm not-found handling
+curl http://localhost:8080/api/memorials/nonexistent-slug
+# → 404 Not found
+```
