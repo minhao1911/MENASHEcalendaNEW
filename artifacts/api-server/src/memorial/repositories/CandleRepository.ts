@@ -7,13 +7,35 @@ import {
 import { eq, and, isNull, gte, sql } from "drizzle-orm";
 import crypto from "node:crypto";
 
+export interface PaginatedCandles {
+  data: MemorialCandle[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 export class CandleRepository {
   async findByMemorial(
     memorialId: string,
+    page = 1,
     limit = 20,
-    before?: string,
-  ): Promise<MemorialCandle[]> {
-    let query = db
+  ): Promise<PaginatedCandles> {
+    const offset = (page - 1) * limit;
+
+    const [countRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(memorialCandlesTable)
+      .where(
+        and(
+          eq(memorialCandlesTable.memorialId, memorialId),
+          isNull(memorialCandlesTable.deletedAt),
+        ),
+      );
+
+    const total = countRow?.count ?? 0;
+
+    const data = await db
       .select()
       .from(memorialCandlesTable)
       .where(
@@ -23,9 +45,16 @@ export class CandleRepository {
         ),
       )
       .orderBy(sql`${memorialCandlesTable.litAt} DESC`)
-      .limit(limit);
+      .limit(limit)
+      .offset(offset);
 
-    return query;
+    return {
+      data,
+      total,
+      page,
+      limit,
+      hasMore: offset + data.length < total,
+    };
   }
 
   async create(
@@ -46,6 +75,8 @@ export class CandleRepository {
         guestName: input.guestName ?? null,
         message: input.message ?? null,
         candleType: input.candleType ?? "memorial",
+        relationship: input.relationship ?? null,
+        community: input.community ?? null,
         isAnonymous: input.isAnonymous ?? false,
         ipHash,
       })
@@ -54,7 +85,7 @@ export class CandleRepository {
     return candle!;
   }
 
-  async remove(id: string, actorId: string): Promise<boolean> {
+  async remove(id: string): Promise<boolean> {
     const [result] = await db
       .update(memorialCandlesTable)
       .set({ deletedAt: new Date() })

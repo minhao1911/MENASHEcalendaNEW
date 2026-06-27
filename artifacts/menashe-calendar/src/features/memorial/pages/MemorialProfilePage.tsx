@@ -547,7 +547,7 @@ function TributeSheet({
   onClose, onSubmit, t,
 }: {
   onClose: () => void;
-  onSubmit: (input: AddTributeInput) => Promise<void>;
+  onSubmit: (input: AddTributeInput) => Promise<MemorialTribute | void>;
   t: any;
 }) {
   const [tributeType, setTributeType] = useState<TributeType>("memory");

@@ -483,7 +483,24 @@ export async function runMigrations(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_locations_person ON memorial_locations (person_id) WHERE deleted_at IS NULL;
     `);
 
-    logger.info("Memorial Sanctuary V1 schema ready");
+    // ── Memorial Sanctuary V2 — SPR-017 enhancements ─────────────────────────
+
+    // New enum for tribute types
+    await client.query(`DO $$ BEGIN CREATE TYPE memorial_tribute_type AS ENUM ('memory','prayer','scripture','family','community'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+
+    // Add relationship and community fields to candles
+    await client.query(`ALTER TABLE memorial_candles ADD COLUMN IF NOT EXISTS relationship TEXT`);
+    await client.query(`ALTER TABLE memorial_candles ADD COLUMN IF NOT EXISTS community TEXT`);
+
+    // Add tribute_type to tributes
+    await client.query(`ALTER TABLE memorial_tributes ADD COLUMN IF NOT EXISTS tribute_type memorial_tribute_type`);
+
+    // Performance indexes
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_memorials_view_count ON memorials (view_count DESC) WHERE deleted_at IS NULL AND status = 'published'`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_memorials_last_activity ON memorials (last_activity_at DESC) WHERE deleted_at IS NULL AND status = 'published'`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_memorials_candle_count ON memorials (candle_count DESC) WHERE deleted_at IS NULL AND status = 'published'`);
+
+    logger.info("Memorial Sanctuary V2 schema ready");
 
     logger.info("Schema ready");
 

@@ -6,12 +6,23 @@ import {
 } from "@workspace/db";
 import { eq, and, isNull, sql } from "drizzle-orm";
 
+export interface PaginatedTributes {
+  data: MemorialTribute[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 export class TributeRepository {
   async findByMemorial(
     memorialId: string,
     status: "approved" | "pending" | "all" = "approved",
+    page = 1,
     limit = 10,
-  ): Promise<MemorialTribute[]> {
+  ): Promise<PaginatedTributes> {
+    const offset = (page - 1) * limit;
+
     const conditions = [
       eq(memorialTributesTable.memorialId, memorialId),
       isNull(memorialTributesTable.deletedAt),
@@ -21,12 +32,28 @@ export class TributeRepository {
       conditions.push(eq(memorialTributesTable.status, status));
     }
 
-    return db
+    const [countRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(memorialTributesTable)
+      .where(and(...conditions));
+
+    const total = countRow?.count ?? 0;
+
+    const data = await db
       .select()
       .from(memorialTributesTable)
       .where(and(...conditions))
       .orderBy(sql`${memorialTributesTable.createdAt} DESC`)
-      .limit(limit);
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      hasMore: offset + data.length < total,
+    };
   }
 
   async findById(id: string): Promise<MemorialTribute | null> {
@@ -70,6 +97,7 @@ export class TributeRepository {
         guestEmail: input.guestEmail ?? null,
         title: input.title ?? null,
         body: input.body,
+        tributeType: input.tributeType ?? null,
         language: input.language ?? "en",
         isAnonymous: input.isAnonymous ?? false,
         status: "pending",

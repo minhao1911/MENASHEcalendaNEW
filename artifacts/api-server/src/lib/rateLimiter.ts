@@ -1,52 +1,82 @@
-/**
- * Rate limiters for the Menashe Calendar API.
- *
- * Three tiers:
- *  - global   : 300 req / 15 min per IP  (applied globally)
- *  - ai       : 20  req / 15 min per IP  (chat, parsha/holiday insights)
- *  - payment  : 10  req / 15 min per IP  (order creation, verification)
- *
- * All limiters are IP-based and respond with a consistent { error } shape.
- */
-import rateLimit from "express-rate-limit";
+import type { Request, Response, NextFunction } from "express";
 
-const handler = (message: string) =>
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    message: { error: message },
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
+// Self-contained in-memory rate limiter — no external dependency required.
+// Three tiers:
+//  - global   : 300 req / 15 min per IP  (applied globally)
+//  - ai       : 20  req / 15 min per IP  (chat, parsha/holiday insights)
+//  - payment  : 10  req / 15 min per IP  (order creation, verification)
+//  - push     : 20  req / 60 min per IP  (push subscription)
 
-export const globalRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 300,
-  message: { error: "Too many requests — please try again later" },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => req.path === "/healthz",
-});
+interface WindowRecord {
+  count: number;
+  resetAt: number;
+}
 
-export const aiRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { error: "AI request limit reached — please wait before trying again" },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+function makeRateLimiter(
+  windowMs: number,
+  max: number,
+  message: string,
+  skip?: (req: Request) => boolean,
+) {
+  const store = new Map<string, WindowRecord>();
 
-export const paymentRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: "Too many payment requests — please wait before trying again" },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+  // Periodically prune stale entries
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, rec] of store) {
+      if (rec.resetAt <= now) store.delete(key);
+    }
+  }, 60_000).unref();
 
-export const pushSubscribeRateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 20,
-  message: { error: "Too many subscription attempts — please try again later" },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+  return function rateLimit(req: Request, res: Response, next: NextFunction) {
+    if (skip && skip(req)) return next();
+
+    const ip =
+      String((req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? "") ||
+      req.socket.remoteAddress ||
+      "unknown";
+
+    const now = Date.now();
+    const existing = store.get(ip);
+
+    if (!existing || existing.resetAt <= now) {
+      store.set(ip, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    existing.count++;
+    if (existing.count > max) {
+      res.setHeader("X-RateLimit-Limit", max);
+      res.setHeader("X-RateLimit-Remaining", 0);
+      res.setHeader("Retry-After", Math.ceil((existing.resetAt - now) / 1000));
+      return res.status(429).json({ error: message });
+    }
+
+    return next();
+  };
+}
+
+export const globalRateLimiter = makeRateLimiter(
+  15 * 60 * 1000,
+  300,
+  "Too many requests — please try again later",
+  (req) => req.path === "/healthz",
+);
+
+export const aiRateLimiter = makeRateLimiter(
+  15 * 60 * 1000,
+  20,
+  "AI request limit reached — please wait before trying again",
+);
+
+export const paymentRateLimiter = makeRateLimiter(
+  15 * 60 * 1000,
+  10,
+  "Too many payment requests — please wait before trying again",
+);
+
+export const pushSubscribeRateLimiter = makeRateLimiter(
+  60 * 60 * 1000,
+  20,
+  "Too many subscription attempts — please try again later",
+);

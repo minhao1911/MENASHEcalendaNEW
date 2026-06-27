@@ -6,6 +6,8 @@ import { apiError } from "../lib/apiError";
 import { memorialService } from "../memorial/services/MemorialService";
 import { candleService } from "../memorial/services/CandleService";
 import { tributeService } from "../memorial/services/TributeService";
+import { candleRepository } from "../memorial/repositories/CandleRepository";
+import { tributeRepository } from "../memorial/repositories/TributeRepository";
 import { photoRepository } from "../memorial/repositories/PhotoRepository";
 import { memorialRepository } from "../memorial/repositories/MemorialRepository";
 import { familyRepository } from "../memorial/repositories/FamilyRepository";
@@ -31,7 +33,31 @@ const updateMemorialSchema = z.object({
 });
 
 const searchSchema = z.object({
-  q: z.string().min(2).max(100),
+  q: z.string().max(100).optional().default(""),
+  sort: z
+    .enum(["recent_activity", "most_visited", "recently_lit", "upcoming_yahrzeit", "community_picks"])
+    .optional(),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(50).optional().default(20),
+});
+
+const paginationSchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(50).optional().default(20),
+});
+
+const moderateSchema = z.object({
+  action: z.enum(["approve", "reject"]),
+  reason: z.string().max(500).optional(),
+});
+
+const inviteMemberSchema = z.object({
+  userId: z.string().min(1),
+  role: z.enum(["admin", "member", "viewer"]).optional().default("member"),
+});
+
+const updateRoleSchema = z.object({
+  role: z.enum(["admin", "member", "viewer"]),
 });
 
 // ── POST /memorials ───────────────────────────────────────────────────────────
@@ -61,14 +87,21 @@ router.post("/memorials", requireAuth, async (req, res) => {
 router.get("/memorials/search", async (req, res) => {
   const parsed = searchSchema.safeParse(req.query);
   if (!parsed.success) {
-    return apiError.badRequest(res, "Query parameter 'q' is required (min 2 chars)");
+    return apiError.badRequest(res, "Invalid query parameters");
   }
 
   try {
     const auth = getAuth(req);
+    const { q, sort, page, limit } = parsed.data;
+
+    if (q.trim().length > 0 && q.trim().length < 2) {
+      return apiError.badRequest(res, "Query parameter 'q' must be at least 2 characters");
+    }
+
     const results = await memorialService.search(
-      parsed.data.q,
+      q,
       auth?.userId ?? null,
+      { sort, page, limit },
     );
     return res.json(results);
   } catch (err) {
@@ -121,6 +154,32 @@ router.patch("/memorials/:id", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /memorials/:id/candles ────────────────────────────────────────────────
+
+router.get("/memorials/:id/candles", async (req, res) => {
+  const memorialId = String(req.params.id);
+
+  const parsed = paginationSchema.safeParse(req.query);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid pagination parameters");
+  }
+
+  try {
+    const memorial = await memorialRepository.findById(memorialId);
+    if (!memorial) return apiError.notFound(res, "Memorial not found");
+
+    const result = await candleRepository.findByMemorial(
+      memorialId,
+      parsed.data.page,
+      parsed.data.limit,
+    );
+    return res.json(result);
+  } catch (err) {
+    req.log.error(err);
+    return apiError.internal(res, "Failed to fetch candles");
+  }
+});
+
 // ── POST /memorials/:id/candles ───────────────────────────────────────────────
 
 router.post("/memorials/:id/candles", async (req, res) => {
@@ -159,6 +218,41 @@ router.post("/memorials/:id/candles", async (req, res) => {
   }
 });
 
+// ── GET /memorials/:id/tributes ───────────────────────────────────────────────
+
+router.get("/memorials/:id/tributes", async (req, res) => {
+  const memorialId = String(req.params.id);
+  const auth = getAuth(req);
+  const viewerUserId = auth?.userId ?? null;
+
+  const parsed = paginationSchema.safeParse(req.query);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid pagination parameters");
+  }
+
+  try {
+    const memorial = await memorialRepository.findById(memorialId);
+    if (!memorial) return apiError.notFound(res, "Memorial not found");
+
+    const isFamilyMember = viewerUserId
+      ? await familyRepository.isMember(memorial.familyId, viewerUserId)
+      : false;
+
+    const statusFilter = isFamilyMember ? "all" : "approved";
+
+    const result = await tributeRepository.findByMemorial(
+      memorialId,
+      statusFilter,
+      parsed.data.page,
+      parsed.data.limit,
+    );
+    return res.json(result);
+  } catch (err) {
+    req.log.error(err);
+    return apiError.internal(res, "Failed to fetch tributes");
+  }
+});
+
 // ── POST /memorials/:id/tributes ──────────────────────────────────────────────
 
 router.post("/memorials/:id/tributes", async (req, res) => {
@@ -192,6 +286,40 @@ router.post("/memorials/:id/tributes", async (req, res) => {
     return apiError.internal(res, "Failed to submit tribute");
   }
 });
+
+// ── POST /memorials/:id/tributes/:tributeId/moderate ─────────────────────────
+
+router.post(
+  "/memorials/:id/tributes/:tributeId/moderate",
+  requireAuth,
+  async (req, res) => {
+    const memorialId = String(req.params.id);
+    const tributeId = String(req.params.tributeId);
+    const userId = (req as any).userId as string;
+
+    const parsed = moderateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return apiError.badRequest(res, "Invalid moderation data");
+    }
+
+    try {
+      let result;
+      if (parsed.data.action === "approve") {
+        result = await tributeService.approve(tributeId, userId);
+      } else {
+        result = await tributeService.reject(tributeId, userId, parsed.data.reason);
+      }
+
+      if (!result) return apiError.notFound(res, "Tribute not found");
+      return res.json(result);
+    } catch (err: any) {
+      req.log.error(err);
+      if (err.message?.includes("not found")) return apiError.notFound(res, err.message);
+      if (err.message?.includes("admin")) return apiError.forbidden(res, err.message);
+      return apiError.internal(res, "Failed to moderate tribute");
+    }
+  },
+);
 
 // ── POST /memorials/:id/photos ────────────────────────────────────────────────
 
@@ -228,5 +356,139 @@ router.post("/memorials/:id/photos", requireAuth, async (req, res) => {
     return apiError.internal(res, "Failed to upload photo");
   }
 });
+
+// ── GET /memorials/families/:id ───────────────────────────────────────────────
+
+router.get("/memorials/families/:id", requireAuth, async (req, res) => {
+  const familyId = String(req.params.id);
+  const userId = (req as any).userId as string;
+
+  try {
+    const family = await familyRepository.findById(familyId);
+    if (!family) return apiError.notFound(res, "Family not found");
+
+    const isMember = await familyRepository.isMember(familyId, userId);
+    if (!isMember) return apiError.forbidden(res, "Not a member of this family");
+
+    return res.json(family);
+  } catch (err) {
+    req.log.error(err);
+    return apiError.internal(res, "Failed to fetch family");
+  }
+});
+
+// ── GET /memorials/families/:id/members ──────────────────────────────────────
+
+router.get("/memorials/families/:id/members", requireAuth, async (req, res) => {
+  const familyId = String(req.params.id);
+  const userId = (req as any).userId as string;
+
+  try {
+    const isMember = await familyRepository.isMember(familyId, userId);
+    if (!isMember) return apiError.forbidden(res, "Not a member of this family");
+
+    const members = await familyRepository.getMembers(familyId);
+    return res.json(members);
+  } catch (err) {
+    req.log.error(err);
+    return apiError.internal(res, "Failed to fetch members");
+  }
+});
+
+// ── POST /memorials/families/:id/members ─────────────────────────────────────
+
+router.post("/memorials/families/:id/members", requireAuth, async (req, res) => {
+  const familyId = String(req.params.id);
+  const actorId = (req as any).userId as string;
+
+  const parsed = inviteMemberSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid member data");
+  }
+
+  try {
+    const isAdmin = await familyRepository.isAdmin(familyId, actorId);
+    if (!isAdmin) return apiError.forbidden(res, "Only a family admin can invite members");
+
+    const member = await familyRepository.addMember(
+      familyId,
+      parsed.data.userId,
+      parsed.data.role,
+      actorId,
+    );
+    return res.status(201).json(member);
+  } catch (err) {
+    req.log.error(err);
+    return apiError.internal(res, "Failed to add member");
+  }
+});
+
+// ── PATCH /memorials/families/:id/members/:memberId ──────────────────────────
+
+router.patch(
+  "/memorials/families/:id/members/:memberId",
+  requireAuth,
+  async (req, res) => {
+    const familyId = String(req.params.id);
+    const memberId = String(req.params.memberId);
+    const actorId = (req as any).userId as string;
+
+    const parsed = updateRoleSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return apiError.badRequest(res, "Invalid role");
+    }
+
+    try {
+      const isAdmin = await familyRepository.isAdmin(familyId, actorId);
+      if (!isAdmin) return apiError.forbidden(res, "Only a family admin can change roles");
+
+      const members = await familyRepository.getMembers(familyId);
+      const target = members.find((m) => m.id === memberId);
+      if (!target) return apiError.notFound(res, "Member not found");
+
+      await familyRepository.removeMember(familyId, target.userId);
+      const updated = await familyRepository.addMember(
+        familyId,
+        target.userId,
+        parsed.data.role,
+        actorId,
+      );
+      return res.json(updated);
+    } catch (err) {
+      req.log.error(err);
+      return apiError.internal(res, "Failed to update member role");
+    }
+  },
+);
+
+// ── DELETE /memorials/families/:id/members/:memberId ─────────────────────────
+
+router.delete(
+  "/memorials/families/:id/members/:memberId",
+  requireAuth,
+  async (req, res) => {
+    const familyId = String(req.params.id);
+    const memberId = String(req.params.memberId);
+    const actorId = (req as any).userId as string;
+
+    try {
+      const isAdmin = await familyRepository.isAdmin(familyId, actorId);
+
+      const members = await familyRepository.getMembers(familyId);
+      const target = members.find((m) => m.id === memberId);
+      if (!target) return apiError.notFound(res, "Member not found");
+
+      if (!isAdmin && target.userId !== actorId) {
+        return apiError.forbidden(res, "Only an admin or the member themselves can remove a member");
+      }
+
+      await familyRepository.removeMember(familyId, target.userId);
+      return res.status(204).send();
+    } catch (err) {
+      req.log.error(err);
+      return apiError.internal(res, "Failed to remove member");
+    }
+  },
+);
 
 export default router;

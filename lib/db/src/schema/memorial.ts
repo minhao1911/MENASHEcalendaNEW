@@ -39,6 +39,14 @@ export const candleTypeEnum = pgEnum("memorial_candle_type", [
   "shloshim",
 ]);
 
+export const tributeTypeEnum = pgEnum("memorial_tribute_type", [
+  "memory",
+  "prayer",
+  "scripture",
+  "family",
+  "community",
+]);
+
 export const tributeStatusEnum = pgEnum("memorial_tribute_status", [
   "pending",
   "approved",
@@ -183,6 +191,8 @@ export const memorialCandlesTable = pgTable("memorial_candles", {
   guestName: text("guest_name"),
   message: text("message"),
   candleType: candleTypeEnum("candle_type").notNull().default("memorial"),
+  relationship: text("relationship"),
+  community: text("community"),
   isAnonymous: boolean("is_anonymous").notNull().default(false),
   ipHash: text("ip_hash"),
   litAt: timestamp("lit_at", { withTimezone: true }).notNull().defaultNow(),
@@ -199,6 +209,7 @@ export const memorialTributesTable = pgTable("memorial_tributes", {
   guestEmail: text("guest_email"),
   title: text("title"),
   body: text("body").notNull(),
+  tributeType: tributeTypeEnum("tribute_type"),
   language: text("language").notNull().default("en"),
   isAnonymous: boolean("is_anonymous").notNull().default(false),
   status: tributeStatusEnum("status").notNull().default("pending"),
@@ -298,11 +309,16 @@ export const insertCandleSchema = z.object({
   message: z.string().max(280).optional(),
   guestName: z.string().min(1).max(100).optional(),
   isAnonymous: z.boolean().optional().default(false),
+  relationship: z.string().max(100).optional(),
+  community: z.string().max(200).optional(),
 });
 
 export const insertTributeSchema = z.object({
   title: z.string().max(100).optional(),
   body: z.string().min(10).max(2000),
+  tributeType: z
+    .enum(["memory", "prayer", "scripture", "family", "community"])
+    .optional(),
   language: z.enum(["en", "tk", "he"]).optional().default("en"),
   guestName: z.string().min(1).max(100).optional(),
   guestEmail: z.string().max(200).optional(),

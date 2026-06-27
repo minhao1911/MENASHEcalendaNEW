@@ -10,7 +10,29 @@ import {
   type InsertMemorial,
   type InsertMemorialPerson,
 } from "@workspace/db";
-import { eq, and, isNull, ilike, or, sql } from "drizzle-orm";
+import { eq, and, isNull, ilike, or, sql, desc } from "drizzle-orm";
+
+export type CollectionSort =
+  | "recent_activity"
+  | "most_visited"
+  | "recently_lit"
+  | "upcoming_yahrzeit"
+  | "community_picks";
+
+export interface SearchOptions {
+  query?: string;
+  sort?: CollectionSort;
+  limit?: number;
+  page?: number;
+}
+
+export interface PaginatedMemorials {
+  data: MemorialWithPerson[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
 
 export class MemorialRepository {
   async findById(id: string): Promise<MemorialWithPerson | null> {
@@ -49,39 +71,110 @@ export class MemorialRepository {
     return Promise.all(rows.map((r) => this._hydrate(r)));
   }
 
-  async search(query: string): Promise<MemorialWithPerson[]> {
-    const pattern = `%${query.trim().slice(0, 100)}%`;
+  async search(options: SearchOptions): Promise<PaginatedMemorials> {
+    const { query = "", sort, limit = 20, page = 1 } = options;
+    const offset = (page - 1) * limit;
 
-    const persons = await db
-      .select()
-      .from(memorialPersonsTable)
-      .where(
-        and(
-          or(
-            ilike(memorialPersonsTable.fullName, pattern),
-            ilike(memorialPersonsTable.hebrewName, pattern),
+    const baseCondition = and(
+      eq(memorialsTable.status, "published"),
+      isNull(memorialsTable.deletedAt),
+    );
+
+    if (query.trim().length >= 2) {
+      const pattern = `%${query.trim().slice(0, 100)}%`;
+
+      const persons = await db
+        .select({ id: memorialPersonsTable.id })
+        .from(memorialPersonsTable)
+        .where(
+          and(
+            or(
+              ilike(memorialPersonsTable.fullName, pattern),
+              ilike(memorialPersonsTable.hebrewName, pattern),
+            ),
+            isNull(memorialPersonsTable.deletedAt),
           ),
-          isNull(memorialPersonsTable.deletedAt),
-        ),
-      )
-      .limit(30);
+        )
+        .limit(200);
 
-    if (persons.length === 0) return [];
+      if (persons.length === 0) {
+        return { data: [], total: 0, page, limit, hasMore: false };
+      }
 
-    const personIds = persons.map((p) => p.id);
+      const personIds = persons.map((p) => p.id);
 
-    const memorials = await db
+      const allMemorials = await db
+        .select()
+        .from(memorialsTable)
+        .where(baseCondition);
+
+      const matched = allMemorials.filter((m) => personIds.includes(m.personId));
+      const total = matched.length;
+      const sorted = this._applySortInMemory(matched, sort);
+      const sliced = sorted.slice(offset, offset + limit);
+      const data = await Promise.all(sliced.map((m) => this._hydrate(m)));
+
+      return { data, total, page, limit, hasMore: offset + sliced.length < total };
+    }
+
+    const allMemorials = await db
       .select()
       .from(memorialsTable)
-      .where(
-        and(
-          eq(memorialsTable.status, "published"),
-          isNull(memorialsTable.deletedAt),
-        ),
-      );
+      .where(baseCondition);
 
-    const matched = memorials.filter((m) => personIds.includes(m.personId));
-    return Promise.all(matched.map((m) => this._hydrate(m)));
+    const total = allMemorials.length;
+    const sorted = this._applySortInMemory(allMemorials, sort);
+    const sliced = sorted.slice(offset, offset + limit);
+    const data = await Promise.all(sliced.map((m) => this._hydrate(m)));
+
+    return { data, total, page, limit, hasMore: offset + sliced.length < total };
+  }
+
+  private _applySortInMemory(memorials: Memorial[], sort?: CollectionSort): Memorial[] {
+    switch (sort) {
+      case "most_visited":
+        return [...memorials].sort((a, b) => b.viewCount - a.viewCount);
+      case "recently_lit":
+        return [...memorials].sort(
+          (a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime(),
+        );
+      case "upcoming_yahrzeit":
+        return this._sortByUpcomingYahrzeit(memorials);
+      case "community_picks":
+        return [...memorials].sort(
+          (a, b) => (b.candleCount + b.tributeCount) - (a.candleCount + a.tributeCount),
+        );
+      case "recent_activity":
+      default:
+        return [...memorials].sort(
+          (a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime(),
+        );
+    }
+  }
+
+  private _sortByUpcomingYahrzeit(memorials: Memorial[]): Memorial[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayMs = today.getTime();
+    const msPerDay = 86400000;
+
+    return [...memorials].sort((a, b) => {
+      const aNext = this._daysUntilAnniversary(a.createdAt, todayMs, msPerDay);
+      const bNext = this._daysUntilAnniversary(b.createdAt, todayMs, msPerDay);
+      return aNext - bNext;
+    });
+  }
+
+  private _daysUntilAnniversary(dateStr: string, todayMs: number, msPerDay: number): number {
+    try {
+      const d = new Date(dateStr);
+      const thisYear = new Date(todayMs).getFullYear();
+      let candidate = new Date(thisYear, d.getMonth(), d.getDate()).getTime();
+      if (candidate < todayMs) candidate += 365 * msPerDay;
+      return Math.round((candidate - todayMs) / msPerDay);
+    } catch {
+      return 9999;
+    }
   }
 
   async create(

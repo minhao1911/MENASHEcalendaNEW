@@ -13,4 +13,4 @@ export {
   hebrewDayNumeral,
   getHebrewMonthsBetween,
   type CalendarDay,
-} from "@workspace/shared-core/calendar";
+} from "@workspace/shared-core";

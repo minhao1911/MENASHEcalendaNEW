@@ -1,6 +1,7 @@
 import { memorialRepository } from "../repositories/MemorialRepository";
 import { familyRepository } from "../repositories/FamilyRepository";
 import type { InsertMemorialPerson } from "@workspace/db";
+import type { CollectionSort } from "../repositories/MemorialRepository";
 
 function slugify(name: string): string {
   return name
@@ -77,6 +78,9 @@ export class MemorialService {
     );
 
     if (!canView) return null;
+
+    await memorialRepository.incrementCounter(id, "viewCount");
+
     return memorial;
   }
 
@@ -91,6 +95,9 @@ export class MemorialService {
     );
 
     if (!canView) return null;
+
+    await memorialRepository.incrementCounter(memorial.id, "viewCount");
+
     return memorial;
   }
 
@@ -108,12 +115,29 @@ export class MemorialService {
     return memorialRepository.update(id, data);
   }
 
-  async search(query: string, viewerUserId: string | null) {
-    if (!query || query.trim().length < 2) return [];
-    const results = await memorialRepository.search(query);
-    return results.filter((m) =>
+  async search(
+    query: string,
+    viewerUserId: string | null,
+    opts: { sort?: CollectionSort; page?: number; limit?: number } = {},
+  ) {
+    const result = await memorialRepository.search({
+      query,
+      sort: opts.sort,
+      page: opts.page ?? 1,
+      limit: opts.limit ?? 20,
+    });
+
+    const accessible = result.data.filter((m) =>
       ["public", "community"].includes(m.privacy?.visibilityLevel ?? "private"),
     );
+
+    return {
+      data: accessible,
+      total: accessible.length,
+      page: result.page,
+      limit: result.limit,
+      hasMore: result.hasMore,
+    };
   }
 
   private async _checkVisibility(

@@ -4,4 +4,4 @@ export {
   calculateZmanim,
   formatTime,
   type ZmanimTimes,
-} from "@workspace/shared-core/zmanim";
+} from "@workspace/shared-core";
