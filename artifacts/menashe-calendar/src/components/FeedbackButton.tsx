@@ -78,34 +78,41 @@ export default function FeedbackButton() {
 
   return (
     <>
-      {/* Floating side tab */}
+      {/* Floating star button */}
       <button
         onClick={() => setOpen(true)}
         aria-label={t.feedbackButtonLabel}
+        title={t.feedbackButtonLabel}
         style={{
           position: "fixed",
-          right: 0,
-          top: "50%",
-          transform: "translateY(-50%) rotate(-90deg) translateY(-100%)",
-          transformOrigin: "right bottom",
+          right: 20,
+          bottom: 88,
           zIndex: 9000,
+          width: 52,
+          height: 52,
+          borderRadius: "50%",
           background: "linear-gradient(135deg,#D4AF37,#A0821A)",
           color: "#0F1829",
           border: "none",
-          padding: "6px 16px",
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: "0.05em",
           cursor: "pointer",
-          borderRadius: "6px 6px 0 0",
-          boxShadow: "-2px 0 12px rgba(0,0,0,0.4)",
           display: "flex",
           alignItems: "center",
-          gap: 6,
-          whiteSpace: "nowrap",
+          justifyContent: "center",
+          boxShadow: "0 4px 20px rgba(212,175,55,0.45), 0 2px 8px rgba(0,0,0,0.4)",
+          fontSize: 24,
+          lineHeight: 1,
+          transition: "transform 0.15s ease, box-shadow 0.15s ease",
+        }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.1)";
+          (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 28px rgba(212,175,55,0.6), 0 3px 12px rgba(0,0,0,0.5)";
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+          (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 20px rgba(212,175,55,0.45), 0 2px 8px rgba(0,0,0,0.4)";
         }}
       >
-        ✦ {t.feedbackButtonLabel}
+        ★
       </button>
 
       {/* Overlay + modal */}
