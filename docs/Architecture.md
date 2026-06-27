@@ -646,11 +646,95 @@ The geo utilities (`haversineDistKm`, `getBearingToJerusalem`) and date helpers 
 | H-001 | Extract static data into `src/pages/home/data/` | ✓ Complete |
 | H-002 | Extract pure utility functions into `src/pages/home/utils/` | ✓ Complete |
 | H-003 | Extract reusable business logic into `src/pages/home/hooks/` | ✓ Complete |
-| H-004 | Extract sub-components (cards, widgets, strips) into `src/pages/home/components/` | Pending |
+| H-004 | Extract presentational components into `src/pages/home/components/` | ✓ Complete |
 | H-005 | Extract types and interfaces into `src/pages/home/types.ts` | Pending |
 | H-006 | Slim `Home.tsx` to an orchestration-only shell | Pending |
 
-**Stop after H-003 — awaiting Chief Architect review before H-004.**
+**Stop after H-004 — awaiting Chief Architect review before H-005.**
+
+---
+
+## SPR-008 — H-004: Presentational Component Extraction
+
+> Status: Complete | Date: 2026-06-27
+
+### Objective
+
+Extract purely presentational JSX blocks from `Home.tsx` into typed React components under `src/pages/home/components/`. No business logic was moved. No hooks were extracted. No APIs were touched. Home.tsx remains the orchestrator.
+
+### Directory Structure Created
+
+```
+src/pages/home/
+└── components/
+    ├── index.ts                   — barrel export of all 6 components
+    ├── cards/
+    │   ├── ParashaCard.tsx        — weekly Torah portion card
+    │   ├── OmerCard.tsx           — Sefirat Ha-Omer progress card
+    │   ├── DailyWisdomCard.tsx    — daily Torah thought card
+    │   └── SiddurCard.tsx         — siddur library card
+    └── sections/
+        ├── ShabbatBanner.tsx      — candle lighting banner overlay
+        └── QuickActionGrid.tsx    — 3-item quick-actions row
+```
+
+### Components Extracted
+
+| Component | Location | Props | Behaviour |
+|---|---|---|---|
+| `ShabbatBanner` | `sections/` | `show`, `locationName`, `onDismiss` | Fixed-position Shabbat banner with candle animation; renders `null` when `show` is false |
+| `QuickActionGrid` | `sections/` | `hebrewYear`, `isPremium`, 4 handler callbacks | Three quick-action tiles; uses `useLanguage()` for `t.homeMoreTools` |
+| `ParashaCard` | `cards/` | `parasha`, `nextShabbat`, `onTap` | `CompassCard` wrapping weekly parasha data |
+| `OmerCard` | `cards/` | `omerDay`, `onTap` | `CompassCard` with inline SVG progress circle; uses `useLanguage()` for omer translation strings |
+| `DailyWisdomCard` | `cards/` | `hdateAbsDay`, `children?` | `CompassCard` that picks a `TORAH_THOUGHTS` entry by day index; accepts `DailyBriefingCard` as children |
+| `SiddurCard` | `cards/` | `onTap` | `CompassCard` with static siddur category tiles |
+
+### Design Decisions
+
+- **Context vs. prop drilling**: `OmerCard` and `QuickActionGrid` call `useLanguage()` directly to avoid unnecessary prop drilling of translation strings, consistent with sprint guidance ("never access global contexts unless required" = never for data, acceptable for UI language).
+- **`DailyBriefingCard` as children**: `DailyBriefingCard` (an inline component in `Home.tsx` with its own local state) is passed as `children` to `DailyWisdomCard`, keeping it inside Home.tsx where its state lives, and avoiding premature extraction of interactive components.
+- **Asset co-location**: Card-specific assets (`torahScrollWatermark`, `dailyWisdomBg`) are imported directly inside the component files, not drilled via props. `Home.tsx`'s now-unused `dailyWisdomBg` import was removed.
+- **Interactive components deferred**: `App Header`, `Today Card`, `Jerusalem Compass Overlay`, `AiChatFAB`, `CommunityFAB` were intentionally left in Home.tsx as they own navigation handlers, deeply nested state, or inline sub-components with complex interactions.
+
+### Responsibilities Moved
+
+| Responsibility | From | To |
+|---|---|---|
+| Shabbat banner display + dismiss button | `Home()` JSX (57 lines) | `ShabbatBanner` |
+| Parasha CompassCard | `Home()` JSX (26 lines) | `ParashaCard` |
+| Omer SVG progress CompassCard | `Home()` JSX (30 lines) | `OmerCard` |
+| Daily Wisdom IIFE + CompassCard | `Home()` JSX (22 lines) | `DailyWisdomCard` |
+| Siddur Library CompassCard | `Home()` JSX (27 lines) | `SiddurCard` |
+| Quick Actions 3-tile grid | `Home()` JSX (33 lines) | `QuickActionGrid` |
+
+### Line Count
+
+| | Lines |
+|---|---|
+| Before H-004 (after H-003) | ~4,788 |
+| After H-004 | ~4,620 |
+| **H-004 Reduction** | **~168 lines** |
+| **Total reduction (H-001 → H-004)** | **~707 lines** |
+
+### Remaining Extraction Candidates (H-005+)
+
+| Candidate | Why Deferred | Sprint |
+|---|---|---|
+| App Header (avatar + location + actions row) | Multiple navigation handlers, Clerk user object, candle countdown display | H-004+ |
+| Today Card (DateZmanimCard + WeekStrip + ZmanimTimeline wrapper) | Deeply nested sub-components, ForceExpand prop, navigation handler | H-005+ |
+| Jerusalem Compass Overlay | Inline bearing/distance computation, show/hide handler | H-005+ |
+| `DailyBriefingCard` (inline in Home.tsx) | Has local state; left as children pattern for now | H-005 |
+| `TodayHolidayCard` (inline in Home.tsx, ~170 lines) | Has state + fetch + share logic | H-005 (as hook + dumb view) |
+
+### Verification
+
+- ✓ UI identical (splash + home screen confirmed via screenshot)
+- ✓ Zero TypeScript errors introduced in new component files
+- ✓ Zero TypeScript errors in Home.tsx after import cleanup
+- ✓ No browser console errors
+- ✓ Business logic remains exclusively in `src/pages/home/hooks/`
+- ✓ Unused `dailyWisdomBg` import removed from Home.tsx
+- ✓ Code review: **Pass** (after import cleanup)
 
 ---
 

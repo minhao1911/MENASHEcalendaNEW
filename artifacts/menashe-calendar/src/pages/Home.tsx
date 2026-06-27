@@ -7,7 +7,6 @@ import CompassCard from "../components/CompassCard";
 import TimeAwareBackground from "../components/TimeAwareBackground";
 import ShabbatMode from "../components/ShabbatMode";
 import torahScrollWatermark from "@assets/afc3e4a8-094b-4933-9d08-f8fb899140c9_1782276994801.png";
-import dailyWisdomBg from "@assets/ChatGPT_Image_Jun_24,_2026,_12_01_34_PM_1782300946792.png";
 import { getHebrewDate, getDayOfWeek, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import type { ZmanimTimes } from "../lib/zmanim";
@@ -50,6 +49,14 @@ import {
   useHomeAI,
   useHomeCommunity,
 } from "./home/hooks";
+import {
+  ShabbatBanner,
+  ParashaCard,
+  OmerCard,
+  DailyWisdomCard,
+  SiddurCard,
+  QuickActionGrid,
+} from "./home/components";
 
 interface HolidayInsight {
   overview: string;
@@ -3203,63 +3210,11 @@ export default function Home({
       `}</style>
 
       {/* ── Shabbat Shalom Banner ── */}
-      {showShabbatBanner && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999,
-          padding: "0 12px 12px",
-          animation: "shabbatBannerIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both",
-        }}>
-          <div style={{
-            borderRadius: "0 0 20px 20px",
-            background: "linear-gradient(135deg, #0d0a00 0%, #1a1000 40%, #100d00 100%)",
-            border: "1px solid rgba(212,168,67,0.5)",
-            borderTop: "none",
-            boxShadow: "0 8px 40px rgba(212,168,67,0.25), 0 2px 0 rgba(212,168,67,0.4) inset",
-            padding: "18px 20px 16px",
-            display: "flex", alignItems: "center", gap: 16,
-          }}>
-            {/* Candles */}
-            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-              {[0, 1].map(i => (
-                <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
-                  <div style={{
-                    width: 6, height: 14, borderRadius: "50% 50% 0 0 / 60% 60% 0 0",
-                    background: "linear-gradient(180deg, #fff9c4, #fbbf24)",
-                    animation: `candleFlicker ${1.2 + i * 0.3}s ease-in-out infinite`,
-                    transformOrigin: "bottom center",
-                    boxShadow: "0 0 8px 4px rgba(251,191,36,0.45)",
-                  }} />
-                  <div style={{ width: 8, height: 28, borderRadius: "2px 2px 4px 4px", background: "linear-gradient(180deg, #e8d5a0, #c8a855)" }} />
-                </div>
-              ))}
-            </div>
-
-            {/* Text */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(212,168,67,0.65)", marginBottom: 3 }}>
-                🕯 CANDLE LIGHTING · {location.name.toUpperCase()}
-              </div>
-              <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 22, color: "#f0c050", direction: "rtl", lineHeight: 1.1, marginBottom: 4 }}>
-                שַׁבָּת שָׁלוֹם
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.75)" }}>
-                Shabbat Shalom! Time to light candles.
-              </div>
-            </div>
-
-            {/* Dismiss */}
-            <button
-              onClick={() => setShowShabbatBanner(false)}
-              style={{
-                flexShrink: 0, width: 30, height: 30, borderRadius: "50%",
-                background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.25)",
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 14, color: "rgba(212,168,67,0.8)",
-              }}
-            >✕</button>
-          </div>
-        </div>
-      )}
+      <ShabbatBanner
+        show={showShabbatBanner}
+        locationName={location.name}
+        onDismiss={() => setShowShabbatBanner(false)}
+      />
       <div className="app-header">
         {/* ── Left: avatar + brand + location ── */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
@@ -3464,31 +3419,7 @@ export default function Home({
             PARASHA CARD — Weekly Torah Portion
         ══════════════════════════════════════════ */}
         {parasha && (
-          <CompassCard
-            gradient="linear-gradient(160deg, #0d0c1a 0%, #08070f 55%, #0f0e1c 100%)"
-            accentColor="#c9a227"
-            shimmerColor="#e8c84a"
-            category="THIS WEEK'S PARASHA"
-            icon={
-              <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 42, color: "#c9a227", lineHeight: 1, display: "block", filter: "drop-shadow(0 0 14px rgba(201,162,39,0.55))" }}>
-                פ
-              </span>
-            }
-            title={`Parashat ${parasha.name}`}
-            subtitle={`${parasha.book} · ${parasha.verses}`}
-            badge={
-              <span style={{
-                fontSize: 10, fontWeight: 800, color: "#c9a227", letterSpacing: "0.08em",
-                background: "rgba(201,162,39,0.12)", border: "1px solid rgba(201,162,39,0.32)",
-                padding: "3px 9px", borderRadius: 20,
-              }}>
-                SHABBAT {nextShabbat.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}
-              </span>
-            }
-            onTap={onShowParashah}
-            minHeight={180}
-            watermarkSrc={torahScrollWatermark}
-          />
+          <ParashaCard parasha={parasha} nextShabbat={nextShabbat} onTap={onShowParashah} />
         )}
 
 
@@ -3496,124 +3427,30 @@ export default function Home({
             OMER COUNTER (during 49-day period)
         ══════════════════════════════════════════ */}
         {omerDay !== null && (
-          <CompassCard
-            gradient="linear-gradient(160deg, #0d0c1a 0%, #08070f 55%, #0f0e1c 100%)"
-            accentColor="#c9a227"
-            shimmerColor="#e8c84a"
-            category="SEFIRAT HA-OMER"
-            icon={
-              <div style={{ position: "relative", display: "inline-block", width: 48, height: 48 }}>
-                <svg width="48" height="48" viewBox="0 0 52 52">
-                  <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(201,162,39,0.15)" strokeWidth="5" />
-                  <circle cx="26" cy="26" r="21" fill="none" stroke="#c9a227" strokeWidth="5"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 21}
-                    strokeDashoffset={2 * Math.PI * 21 - (omerDay / 49) * 2 * Math.PI * 21}
-                    transform="rotate(-90 26 26)"
-                  />
-                </svg>
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: 14, fontWeight: 900, color: "#c9a227" }}>{omerDay}</span>
-                </div>
-              </div>
-            }
-            title={t.omerSefiratTitle}
-            subtitle={`${t.omerDayCount.replace("{day}", String(omerDay))} · ${(49 - omerDay === 1 ? t.omerDayLeft : t.omerDaysLeft).replace("{days}", String(49 - omerDay))}`}
-            onTap={onShowOmer}
-            minHeight={170}
-            watermarkSrc={torahScrollWatermark}
-          />
+          <OmerCard omerDay={omerDay} onTap={onShowOmer} />
         )}
 
         {/* ══════════════════════════════════════════
             DAILY WISDOM CARD — Torah Thought
         ══════════════════════════════════════════ */}
-        {(() => {
-          const dayIdx = Math.abs(hdate.abs()) % TORAH_THOUGHTS.length;
-          const thought = TORAH_THOUGHTS[dayIdx];
-          return (
-            <CompassCard
-              gradient="linear-gradient(160deg, #0d0c1a 0%, #08070f 55%, #0f0e1c 100%)"
-              accentColor="#c9a227"
-              shimmerColor="#e8c84a"
-              category="DAILY WISDOM"
-              icon={<span style={{ fontSize: 38, filter: "drop-shadow(0 0 8px rgba(201,162,39,0.4))" }}>✡</span>}
-              title={`"${thought.quote.length > 60 ? thought.quote.slice(0, 60) + "…" : thought.quote}"`}
-              subtitle={thought.source}
-              expandedTitle="Daily Wisdom"
-              expandedSubtitle="Sacred teachings for today"
-              watermarkSrc={dailyWisdomBg}
-            >
-              <div style={{ padding: "20px 20px 0" }}>
-                <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
-              </div>
-            </CompassCard>
-          );
-        })()}
+        <DailyWisdomCard hdateAbsDay={hdate.abs()}>
+          <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
+        </DailyWisdomCard>
 
         {/* ══════════════════════════════════════════
             SIDDUR LIBRARY CARD
         ══════════════════════════════════════════ */}
-        <CompassCard
-          gradient="linear-gradient(160deg, #0d0c1a 0%, #08070f 55%, #0f0e1c 100%)"
-          accentColor="#c9a227"
-          shimmerColor="#e8c84a"
-          category="SIDDUR LIBRARY"
-          icon={<span style={{ fontSize: 42, filter: "drop-shadow(0 0 8px rgba(201,162,39,0.4))" }}>📚</span>}
-          title="Sacred Texts & Prayers"
-          subtitle="Siddurim, Tehillim, Torah & Kuki Books"
-          previewContent={
-            <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
-              {["Siddur", "Tehillim", "Torah", "Kuki Books"].map(cat => (
-                <div key={cat} style={{
-                  flex: 1, textAlign: "center",
-                  background: "rgba(201,162,39,0.07)",
-                  border: "1px solid rgba(201,162,39,0.2)",
-                  borderRadius: 8, padding: "5px 2px",
-                  fontSize: 9, fontWeight: 700, color: "rgba(201,162,39,0.75)",
-                  letterSpacing: "0.05em",
-                }}>{cat}</div>
-              ))}
-            </div>
-          }
-          onTap={onOpenSiddur}
-          minHeight={200}
-          watermarkSrc={torahScrollWatermark}
-        />
+        <SiddurCard onTap={onOpenSiddur} />
 
         {/* ── Quick Actions ── */}
-        <div className="quick-action-grid" style={{ marginBottom: 12 }}>
-          <div className="quick-action" onClick={onShowHolidays}>
-            <div className="quick-action-icon" style={{ background: "rgba(59,130,246,0.13)", border: "1px solid rgba(59,130,246,0.18)", borderRadius: 12 }}>📅</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>Holidays {hebrewYear}</div>
-          </div>
-          <div className="quick-action" onClick={isPremium ? onShowDafYomi : onShowPremium} style={{ position: "relative" }}>
-            <div style={{ position: "relative", display: "inline-block" }}>
-              <div className="quick-action-icon" style={{ background: isPremium ? "rgba(20,184,166,0.13)" : "rgba(212,168,67,0.1)", border: `1px solid ${isPremium ? "rgba(20,184,166,0.18)" : "rgba(212,168,67,0.25)"}`, borderRadius: 12 }}>📖</div>
-              {!isPremium && (
-                <div style={{
-                  position: "absolute", top: -4, right: -4,
-                  width: 16, height: 16, borderRadius: "50%",
-                  background: "linear-gradient(135deg, #b8860b, #d4a843)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.5)",
-                }}>
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#1a0900" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                </div>
-              )}
-            </div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: isPremium ? "var(--text-secondary)" : "#d4a843", lineHeight: 1.3 }}>
-              Daf Yomi{!isPremium && " 👑"}
-            </div>
-          </div>
-          <div className="quick-action" onClick={onMoreTools}>
-            <div className="quick-action-icon" style={{ background: "rgba(168,85,247,0.13)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 12 }}>🔧</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", lineHeight: 1.3 }}>{t.homeMoreTools}</div>
-          </div>
-        </div>
+        <QuickActionGrid
+          hebrewYear={hebrewYear}
+          isPremium={isPremium}
+          onShowHolidays={onShowHolidays}
+          onShowDafYomi={onShowDafYomi}
+          onShowPremium={onShowPremium}
+          onMoreTools={onMoreTools}
+        />
 
         {/* ── Celebrations + Community ── */}
         <UpcomingCelebrations onShowMembers={onShowMembers} />
