@@ -475,6 +475,38 @@ export interface Translations {
   memShellFamilyEmptySub: string;
   memShellOffline: string;
   memShellOfflineSub: string;
+  memProfileBorn: string;
+  memProfileDied: string;
+  memProfileAge: string;
+  memProfileYears: string;
+  memProfileBiography: string;
+  memProfileRecentTributes: string;
+  memProfileRecentCandles: string;
+  memProfileUpcomingYahrzeit: string;
+  memProfileFamilySection: string;
+  memProfileLocationSection: string;
+  memProfileActionLight: string;
+  memProfileActionTribute: string;
+  memProfileActionPhotos: string;
+  memProfileActionShare: string;
+  memProfileCopied: string;
+  memProfilePrivateBadge: string;
+  memProfileFamilyBadge: string;
+  memProfileCommunityBadge: string;
+  memProfilePublicBadge: string;
+  memProfileNotFound: string;
+  memProfileNotFoundSub: string;
+  memProfilePrivate: string;
+  memProfilePrivateSub: string;
+  memProfileNoBio: string;
+  memProfileNoTributes: string;
+  memProfileNoCandles: string;
+  memProfileNoFamily: string;
+  memProfileNoYahrzeit: string;
+  memProfileNoLocation: string;
+  memProfileYahrzeitNext: string;
+  memProfileYahrzeitToday: string;
+  memProfileDaysAway: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -937,6 +969,38 @@ export const en: Translations = {
   memShellFamilyEmptySub: "Create a memorial to remember a loved one",
   memShellOffline: "You are offline",
   memShellOfflineSub: "Connect to the internet to browse memorials",
+  memProfileBorn: "Born",
+  memProfileDied: "Passed",
+  memProfileAge: "Age",
+  memProfileYears: "years",
+  memProfileBiography: "Biography",
+  memProfileRecentTributes: "Tributes",
+  memProfileRecentCandles: "Candles",
+  memProfileUpcomingYahrzeit: "Upcoming Yahrzeit",
+  memProfileFamilySection: "Family",
+  memProfileLocationSection: "Location",
+  memProfileActionLight: "Light Candle",
+  memProfileActionTribute: "Leave Tribute",
+  memProfileActionPhotos: "Photos",
+  memProfileActionShare: "Share",
+  memProfileCopied: "Copied!",
+  memProfilePrivateBadge: "Private",
+  memProfileFamilyBadge: "Family",
+  memProfileCommunityBadge: "Community",
+  memProfilePublicBadge: "Public",
+  memProfileNotFound: "Memorial Not Found",
+  memProfileNotFoundSub: "This memorial may have been removed or the link is incorrect.",
+  memProfilePrivate: "Private Memorial",
+  memProfilePrivateSub: "Only family members can view this memorial.",
+  memProfileNoBio: "No biography on record.",
+  memProfileNoTributes: "No tributes yet. Be the first to leave one.",
+  memProfileNoCandles: "No candles lit yet.",
+  memProfileNoFamily: "Family information not available.",
+  memProfileNoYahrzeit: "Yahrzeit date unavailable.",
+  memProfileNoLocation: "Location not recorded.",
+  memProfileYahrzeitNext: "Next yahrzeit:",
+  memProfileYahrzeitToday: "Today is the yahrzeit",
+  memProfileDaysAway: "days",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1398,6 +1462,38 @@ export const tk: Translations = {
   memShellFamilyEmptySub: "In mi chungchang memorial siam rawh",
   memShellOffline: "I chhungkua lo",
   memShellOfflineSub: "Memorial en turin internet nen inzawm rawh",
+  memProfileBorn: "Chhungkhat Ni",
+  memProfileDied: "Thi Ni",
+  memProfileAge: "Chhuang",
+  memProfileYears: "kum",
+  memProfileBiography: "Biography",
+  memProfileRecentTributes: "Tribute Te",
+  memProfileRecentCandles: "Damdawi",
+  memProfileUpcomingYahrzeit: "Yahrzeit Hnai",
+  memProfileFamilySection: "Chhungkua",
+  memProfileLocationSection: "Hmun",
+  memProfileActionLight: "Damdawi Hluat",
+  memProfileActionTribute: "Tribute Chhut",
+  memProfileActionPhotos: "Foto",
+  memProfileActionShare: "Share",
+  memProfileCopied: "Copy tlin!",
+  memProfilePrivateBadge: "Private",
+  memProfileFamilyBadge: "Chhungkua",
+  memProfileCommunityBadge: "Mipui",
+  memProfilePublicBadge: "Public",
+  memProfileNotFound: "Memorial Hmu Lo",
+  memProfileNotFoundSub: "Memorial hi a lo awm tawh ve thei a, link palh thei bawk.",
+  memProfilePrivate: "Private Memorial",
+  memProfilePrivateSub: "Chhungkua member te chauhin memorial hi an en thei.",
+  memProfileNoBio: "Biography record awm lo.",
+  memProfileNoTributes: "Tribute awm lo. Hmasawn rawh.",
+  memProfileNoCandles: "Damdawi hluut lo.",
+  memProfileNoFamily: "Chhungkua thu hrechhuak awm lo.",
+  memProfileNoYahrzeit: "Yahrzeit ni hrechhuak lo.",
+  memProfileNoLocation: "Hmun record awm lo.",
+  memProfileYahrzeitNext: "Yahrzeit hnai:",
+  memProfileYahrzeitToday: "Tun ni Yahrzeit a ni",
+  memProfileDaysAway: "ni",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

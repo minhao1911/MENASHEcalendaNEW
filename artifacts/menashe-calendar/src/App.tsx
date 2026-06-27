@@ -60,6 +60,7 @@ import InstallPrompt from "./components/InstallPrompt";
 import ShabbatBanner from "./components/ShabbatBanner";
 import WhatsNewModal, { APP_VERSION, VERSION_KEY } from "./modals/WhatsNewModal";
 import MemorialSanctuaryPage from "./features/memorial/pages/MemorialSanctuaryPage";
+import MemorialProfilePage from "./features/memorial/pages/MemorialProfilePage";
 
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
@@ -372,6 +373,7 @@ function AppShell() {
   const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
 
   const [activePage, setActivePage] = useState<Page>("home");
+  const [memorialSlug, setMemorialSlug] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [dayModal, setDayModal] = useState<DayInfo>(null);
@@ -616,10 +618,19 @@ function AppShell() {
           />
         );
       case "memorial":
+        if (memorialSlug) {
+          return (
+            <MemorialProfilePage
+              slug={memorialSlug}
+              onBack={() => setMemorialSlug(null)}
+            />
+          );
+        }
         return (
           <MemorialSanctuaryPage
             onBack={() => setActivePage("home")}
             onEnter3D={() => setModal("memorial-3d" as any)}
+            onSelectMemorial={(slug) => setMemorialSlug(slug)}
           />
         );
     }

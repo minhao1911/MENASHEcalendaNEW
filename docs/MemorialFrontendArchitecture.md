@@ -1,7 +1,7 @@
 # Memorial Frontend Architecture
 
-**Sprint:** SPR-014  
-**Status:** Architecture complete — UI implementation pending (SPR-015)  
+**Sprint:** SPR-016 (profile page) builds on SPR-015 (sanctuary shell)
+**Status:** Profile page complete (SPR-016)
 **Scope:** Frontend only. Backend APIs, DB schema, and 3D scene are out of scope for this document.
 
 ---
@@ -11,239 +11,166 @@
 ```
 src/features/memorial/
 ├── api/
-│   └── memorialApi.ts        — API client functions (fetch + Clerk auth)
+│   └── memorialApi.ts             — API client (fetch + Clerk Bearer auth), MemorialApiError
 ├── hooks/
-│   ├── useMemorial.ts         — Fetch + refetch a single memorial by slug
-│   ├── useCandles.ts          — Paginated candle list + optimistic light action
-│   ├── useTributes.ts         — Paginated tribute list + submit action
-│   ├── useSearch.ts           — Debounced search with stale-response guard
-│   ├── useCreateMemorial.ts   — Multi-step create submission lifecycle
-│   ├── useUploadPhoto.ts      — File upload to Object Storage + API registration
-│   ├── useMemorialPermissions.ts — Derives effective permissions from Clerk + family
-│   └── index.ts               — Barrel export
+│   ├── useMemorial.ts              — Fetch + refetch a single memorial by slug
+│   ├── useCandles.ts               — Paginated candle list + optimistic light action
+│   ├── useTributes.ts              — Paginated tribute list + submit (moderation-aware)
+│   ├── useSearch.ts                — Debounced search with stale-response guard
+│   ├── useCreateMemorial.ts        — Multi-step create submission lifecycle
+│   ├── useUploadPhoto.ts           — File upload to Object Storage + API registration
+│   ├── useMemorialPermissions.ts   — Derives effective permissions from Clerk + family membership
+│   └── index.ts
 ├── components/
-│   └── index.ts               — Reserved (SPR-015)
+│   ├── SanctuaryHeader.tsx         — Sticky back-button header (shared across pages)
+│   ├── SanctuaryHero.tsx           — Hero banner with search input
+│   ├── GlassPanel.tsx              — Frosted-glass card container
+│   ├── SectionTitle.tsx            — Section label + optional count + optional action
+│   ├── MemorialPlaceholderCard.tsx — Compact result card for search/lists
+│   ├── EmptyState.tsx              — Centered icon + message + optional CTA
+│   ├── LoadingState.tsx             — Skeleton shimmer rows
+│   └── index.ts
 ├── pages/
-│   └── index.ts               — Reserved (SPR-015)
-├── stores/
-│   └── memorialStore.ts       — UI state + create wizard form state (hook-based)
-├── types/
-│   └── index.ts               — All TypeScript types for the feature
-├── utils/
-│   └── index.ts               — Permission resolver, date formatters, label helpers
-└── index.ts                   — Public module barrel
+│   ├── MemorialSanctuaryPage.tsx   — Shell: search, featured, recent candles, family list (SPR-015)
+│   ├── MemorialProfilePage.tsx     — Profile: hero, actions, sections, sheets (SPR-016)
+│   └── index.ts
+└── types/
+    └── index.ts                    — All domain + UI + API types
 ```
 
 ---
 
-## 2. API Layer
+## 2. Navigation Model
 
-### Transport
+Navigation is state-driven (no URL routing for this page set):
 
-All API calls go through a shared `apiFetch` helper that:
+```
+App.tsx
+  activePage = "memorial"
+    memorialSlug === null  →  MemorialSanctuaryPage  (search + browse)
+    memorialSlug !== null  →  MemorialProfilePage    (profile for that slug)
+```
 
-- Targets `/api/*` (proxied by Vite dev server to the Express backend on port 8080)
-- Attaches a Clerk Bearer token via `window.Clerk?.session?.getToken()`
-- Throws `MemorialApiError` on non-2xx responses (carries `.status`, `.isNotFound`, `.isForbidden`, etc.)
-
-### Functions
-
-| Function | Method | Path |
-|---|---|---|
-| `getMemorial(slug)` | GET | `/api/memorials/:slug` |
-| `createMemorial(input)` | POST | `/api/memorials` |
-| `updateMemorial(id, input)` | PATCH | `/api/memorials/:id` |
-| `deleteMemorial(id)` | DELETE | `/api/memorials/:id` |
-| `searchMemorial(params)` | GET | `/api/memorials/search?q=…` |
-| `getCandles(id, page)` | GET | `/api/memorials/:id/candles` |
-| `lightCandle(id, input)` | POST | `/api/memorials/:id/candles` |
-| `getTributes(id, page)` | GET | `/api/memorials/:id/tributes` |
-| `addTribute(id, input)` | POST | `/api/memorials/:id/tributes` |
-| `moderateTribute(id, tid, action)` | POST | `/api/memorials/:id/tributes/:tid/moderate` |
-| `getPhotos(id)` | GET | `/api/memorials/:id/photos` |
-| `uploadPhoto(id, input)` | POST | `/api/memorials/:id/photos` |
-| `deletePhoto(id, pid)` | DELETE | `/api/memorials/:id/photos/:pid` |
-| `getFamily(familyId)` | GET | `/api/memorials/families/:id` |
-| `getFamilyMembers(familyId)` | GET | `/api/memorials/families/:id/members` |
-| `inviteFamilyMember(…)` | POST | `/api/memorials/families/:id/members` |
-| `updateFamilyMemberRole(…)` | PATCH | `/api/memorials/families/:id/members/:mid` |
-| `removeFamilyMember(…)` | DELETE | `/api/memorials/families/:id/members/:mid` |
+`onSelectMemorial(slug)` on `MemorialSanctuaryPage` sets `memorialSlug` in App state.
+`onBack()` on `MemorialProfilePage` clears `memorialSlug`, returning to the sanctuary.
 
 ---
 
-## 3. Hook Architecture
+## 3. MemorialProfilePage — Composition (SPR-016)
 
-### Server state hooks (fetch + lifecycle)
+### Props
 
-```
-useMemorial(slug)
-  └── state: { memorial, status, error }
-  └── action: refetch()            — call after any mutation to re-sync
+| Prop | Type | Description |
+|------|------|-------------|
+| `slug` | `string` | Memorial slug from the sanctuary list |
+| `onBack` | `() => void` | Clears active slug, returns to sanctuary |
 
-useCandles(memorialId)
-  └── state: { candles[], total, hasMore, status }
-  └── actions: loadMore(), light(input) — optimistic prepend on light
+### Hook Wiring (no duplicate fetches)
 
-useTributes(memorialId)
-  └── state: { tributes[], total, hasMore, status }
-  └── actions: loadMore(), submit(input) — no optimistic (moderation queue)
+| Hook | Arg | Purpose |
+|------|-----|---------|
+| `useMemorial(slug)` | slug | Fetches `MemorialWithPerson`, drives all states |
+| `useCandles(memorial?.id)` | memorial ID | Paginated candles + optimistic light action |
+| `useTributes(memorial?.id)` | memorial ID | Paginated tributes + submit |
+| `useMemorialPermissions({memorial})` | memorial | Gates action buttons per user role |
 
-useSearch()
-  └── state: { results[], total, hasMore, status, query }
-  └── actions: setQuery(q), loadMore(), reset()
-  └── debounced 300 ms, stale-response guard via ref
-
-useCreateMemorial()
-  └── state: { status, error, created }
-  └── action: submit(CreateMemorialInput) → MemorialWithPerson | null
-
-useUploadPhoto()
-  └── state: { status, progress, error }
-  └── action: upload(memorialId, File, meta) → MemorialPhoto | null
-```
-
-### Derived / permission hook
+### State Machine
 
 ```
-useMemorialPermissions({ memorial, familyMembers })
-  └── reads useUser() from Clerk
-  └── returns MemorialPermissions | null
-  └── role resolution: administrator > moderator > family_admin > family_member > authenticated > guest
+status = "idle" | "loading"    →  <LoadingState />
+!isOnline && !memorial         →  Offline state
+status = "error" && 404        →  Not Found state
+status = "error" && 403        →  Private (access denied) state
+status = "error" && other      →  Generic error + Retry button
+permissions?.canView = false   →  Private gate (published but visibility-restricted)
+status = "success"             →  Full profile render
 ```
+
+### Rendered Sections (in order)
+
+1. **SanctuaryHeader** — sticky back button · full name · Hebrew name subtitle
+2. **Hero** — avatar (🕊 placeholder), full name, Hebrew name, privacy badge, birth/death/age pills, candle count
+3. **Action Row** — Light Candle · Leave Tribute · Photos (disabled) · Share (Web Share API / clipboard fallback)
+4. **Biography** — `person.biography` freetext or empty state
+5. **Recent Candles** — first 5 from `useCandles`; lit-by + candle type + message
+6. **Recent Tributes** — first 3 approved from `useTributes`; title + body + author
+7. **Family** — father name, mother name, tribe affiliation, occupation
+8. **Upcoming Yahrzeit** — next Hebrew anniversary computed client-side via `@hebcal/core` HDate
+9. **Location** — birthplace + death location from `MemorialPerson` (section omitted if both empty)
+
+### Inline Interaction Sheets
+
+Both actions open as a `BottomSheet` overlay — no external modal library required.
+
+**CandleSheet**
+- 5 candle types: Memorial · Yahrzeit · Neshama · Shabbat · Shloshim
+- Optional message (280 chars), optional guest name, anonymous toggle
+- Calls `useCandles.light()` → optimistic prepend → triggers `refetch()`
+
+**TributeSheet**
+- Optional title (120 chars), required body (1200 chars), optional guest name, anonymous toggle
+- Calls `useTributes.submit()` → pending moderation notice on success
+
+### Privacy Badge
+
+Colour-coded by `privacy.visibilityLevel`:
+
+| Level | Colour | Icon |
+|-------|--------|------|
+| private | Red | 🔒 |
+| family | Blue | 👪 |
+| community | Gold | ✡ |
+| public | Green | 🌐 |
 
 ---
 
-## 4. State Ownership
+## 4. Permission Gating
 
-| State category | Owner | Notes |
-|---|---|---|
-| **Server state** | Fetch hooks (`useMemorial`, `useCandles`, `useTributes`) | Re-fetched via `refetch()` / page reload after mutations |
-| **UI state** | `useMemorialUIStore()` | Active panel, edit mode, upload progress |
-| **Session state** | Clerk (`useUser`) | User identity, role metadata |
-| **Temporary form state** | `useCreateMemorialFormStore()` | Multi-step wizard, cleared on unmount |
-| **Optimistic updates** | `useCandles.light()` + `useMemorialUIStore.optimisticCandleCount` | Candle count incremented immediately, cleared on next server sync |
+`useMemorialPermissions` resolves role via Clerk public metadata + family membership table:
 
-### Caching strategy
+| Role | Light candle | Leave tribute | View photos |
+|------|-------------|---------------|-------------|
+| guest | per privacy | per privacy | per privacy |
+| authenticated | per privacy | per privacy | per privacy |
+| family_member | ✓ | ✓ | ✓ |
+| family_admin | ✓ | ✓ | ✓ |
+| moderator | ✓ | ✓ | ✓ |
+| administrator | ✓ | ✓ | ✓ |
 
-- No global cache layer (no React Query in this codebase)
-- Per-hook local state is source of truth
-- `refetch()` token (integer `rev` increment) re-triggers `useEffect` to reload
-- Search results are page-accumulated (infinite scroll model); reset on query change
-- Candle / tribute pages are accumulated; re-fetch page 1 after mutations
+Action buttons are rendered `disabled` (not hidden) when permission is denied.
 
 ---
 
-## 5. Routing Architecture
+## 5. Bilingual Support
 
-Wouter is the app router. Routes integrate into the existing `/app/*` subtree.
-
-```
-/app/memorial                   MemorialSearchPage
-/app/memorial/create            CreateMemorialPage      [auth required]
-/app/memorial/:slug             MemorialProfilePage     [privacy gate]
-/app/memorial/:slug/edit        EditMemorialPage        [family_admin+]
-/app/memorial/:slug/family      FamilyManagementPage    [family_admin+]
-/app/memorial/:slug/gallery     MemorialGalleryPage     [privacy.canViewPhotos]
-```
-
-Route registration belongs in `App.tsx` inside the `<Route path="/app/*">` block (SPR-015).
-
-### Navigation flow
-
-```
-Landing / Home
-  └─ "Memorial Sanctuary" button
-        └─ /app/memorial  (search)
-              ├─ [create button] → /app/memorial/create
-              └─ [select result] → /app/memorial/:slug
-                    ├─ [edit] → /app/memorial/:slug/edit
-                    ├─ [family] → /app/memorial/:slug/family
-                    └─ [gallery] → /app/memorial/:slug/gallery
-```
+All UI strings flow through `useLanguage()` / `t.memProfile*` keys.
+32 new translation keys added in both EN and TK in `lib/translations.ts`.
 
 ---
 
-## 6. Permission Architecture
+## 6. Future Extensions
 
-### Roles (ascending privilege)
-
-| Role | Conditions |
-|---|---|
-| `guest` | Not signed in |
-| `authenticated` | Signed in via Clerk |
-| `family_member` | In `memorial_family_members` for this memorial's family |
-| `family_admin` | Same + `role = "admin"` in that table |
-| `moderator` | Clerk `publicMetadata.role === "moderator"` |
-| `administrator` | Clerk `publicMetadata.role === "admin"` |
-
-### Capability matrix
-
-| Capability | guest | auth | family | f.admin | mod | admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| canView (public) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| canView (community) | — | ✓ | ✓ | ✓ | ✓ | ✓ |
-| canView (family) | — | — | ✓ | ✓ | ✓ | ✓ |
-| canView (private) | — | — | — | ✓ | ✓ | ✓ |
-| canLightCandle\* | ✓\* | ✓ | ✓ | ✓ | ✓ | ✓ |
-| canLeaveTribute\* | — | — | ✓ | ✓ | ✓ | ✓ |
-| canViewPhotos\* | — | — | ✓ | ✓ | ✓ | ✓ |
-| canUploadPhotos | — | — | ✓ | ✓ | ✓ | ✓ |
-| canEditProfile | — | — | — | ✓ | — | ✓ |
-| canManageFamily | — | — | — | ✓ | — | ✓ |
-| canModerate | — | — | — | — | ✓ | ✓ |
-| canDelete | — | — | — | — | — | ✓ |
-| canPublish | — | — | — | ✓ | — | ✓ |
-
-\* `allowGuestInteraction` flag on the privacy record can expand guest access to candles. Interaction permissions (`canLightCandles`, `canLeaveTributes`, `canViewPhotos`) are configurable per memorial.
-
-Permission resolution is handled by `resolvePermissions(role, privacy)` in `utils/index.ts` and surfaced to components via `useMemorialPermissions()`.
+| Feature | What exists today | Remaining work |
+|---------|-------------------|----------------|
+| Profile photo | `MemorialPhoto.isFeatured` in DB; hero avatar ready for URL | `useUploadPhoto` + Object Storage wiring; hero `<img>` |
+| Photo gallery | `canViewPhotos` permission; `getPhotos()` API; action button present (disabled) | Gallery panel page/sheet |
+| Family member list | `getFamilyMembers()` in `memorialApi.ts`; family section UI | Member list rows + role display |
+| Editing | `canEditProfile` permission resolves correctly | Edit sheet/page (separate sprint) |
+| Deep linking | State-driven nav works | URL-based routing (`/memorial/:slug`) when needed |
+| Story / Timeline | Not started | Separate feature sprint |
+| 3D scene | Not started | Separate 3D sprint |
+| Create memorial | `useCreateMemorial` hook exists | Multi-step wizard page |
+| Moderation panel | `moderateTribute()` API exists | Admin-only tribute review UI |
 
 ---
 
-## 7. Error Handling
+## 7. Remaining Work (Prioritised)
 
-| State | Handling strategy |
-|---|---|
-| **Loading** | `status === "loading"` guard in hooks — components render skeletons |
-| **Empty state** | `status === "success"` + empty array — `<MemorialEmptyState />` placeholder |
-| **Fetch error** | `status === "error"` + `error` exposed — component renders retry button that calls `refetch()` |
-| **Retry** | `refetch()` increments an internal `rev` counter, re-triggering `useEffect` |
-| **Offline** | `useOnlineStatus()` (existing hook) — banner shown, mutations disabled |
-| **Upload failure** | `useUploadPhoto.status === "error"` — progress resets, error message shown, retry available |
-| **Permission denied** | `MemorialApiError.isForbidden` caught — redirects to `/app/memorial` with toast |
-| **Not found** | `MemorialApiError.isNotFound` caught — renders 404 state, link back to search |
-
----
-
-## 8. Implementation Roadmap
-
-### SPR-014 (this sprint) — Architecture ✅
-- [x] Feature module directory structure
-- [x] TypeScript types (`types/index.ts`)
-- [x] API client layer (`api/memorialApi.ts`)
-- [x] All 7 custom hooks (`hooks/*.ts`)
-- [x] State stores (`stores/memorialStore.ts`)
-- [x] Utility functions (`utils/index.ts`)
-- [x] Module barrel (`index.ts`)
-- [x] This document
-
-### SPR-015 — UI Implementation (next)
-- [ ] `PermissionGate` component
-- [ ] `MemorialCard` for search results
-- [ ] `MemorialSearchPage` with filters
-- [ ] `CreateMemorialWizard` (multi-step, uses `useCreateMemorialFormStore`)
-- [ ] `MemorialProfilePage` with panel tabs
-- [ ] `CandleWall` with `useCandles`
-- [ ] `TributeList` with `useTributes`
-- [ ] `PhotoGallery` with `useUploadPhoto`
-- [ ] `FamilyRoster` with `getFamilyMembers` / `inviteFamilyMember`
-- [ ] Route registration in `App.tsx`
-- [ ] Bilingual labels in `translations.ts`
-
-### SPR-016 — Polish & Integration
-- [ ] Object Storage presigned URL backend route for `useUploadPhoto`
-- [ ] Moderation queue UI for family admins
-- [ ] Edit memorial form
-- [ ] Family management page
-- [ ] Memorial → Yahrzeit cross-link (death date → auto-yahrzeit entry)
-- [ ] Push notification on new tributes (family members)
+- [ ] Profile photo upload and display
+- [ ] Photo gallery panel
+- [ ] Family member list in Family section
+- [ ] Edit memorial flow (title, biography, dates, privacy)
+- [ ] Moderation UI for pending tributes
+- [ ] Create memorial wizard
+- [ ] URL-based deep linking (`/memorial/:slug`)
+- [ ] 3D scene integration (future sprint)
