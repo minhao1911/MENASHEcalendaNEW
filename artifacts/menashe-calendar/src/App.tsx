@@ -847,34 +847,6 @@ function AppShell() {
       <ShabbatBanner location={location} />
       <InstallPrompt />
 
-      {/* AI Chat FAB */}
-      {!chatOpen && !modal && (
-        <button
-          onClick={() => setChatOpen(true)}
-          aria-label="Open AI Chat"
-          style={{
-            position: "fixed",
-            bottom: 90,
-            right: 18,
-            zIndex: 500,
-            width: 52,
-            height: 52,
-            borderRadius: "50%",
-            background: "linear-gradient(135deg,#D4AF37,#A0821A)",
-            border: "2px solid rgba(255,220,100,0.3)",
-            boxShadow: "0 4px 20px rgba(212,175,55,0.45), 0 2px 8px rgba(0,0,0,0.5)",
-            color: "#0F1829",
-            fontSize: 22,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          ✡
-        </button>
-      )}
-
       {chatOpen && <ChatModal onClose={() => setChatOpen(false)} />}
     </LanguageProvider>
   );
