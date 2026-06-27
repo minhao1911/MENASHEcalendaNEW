@@ -942,3 +942,84 @@ src/pages/home/
 | H-004 | Extract sub-components (cards, widgets, strips) into `src/pages/home/components/` | Pending |
 | H-005 | Extract types and interfaces into `src/pages/home/types.ts` | Pending |
 | H-006 | Slim `Home.tsx` to an orchestration-only shell | Pending |
+
+---
+
+## SPR-011 — Memorial Domain Architecture
+
+> Status: Complete (Architecture Only) | Date: 2026-06-27
+
+### Objective
+
+Design the complete domain architecture for the Community Memorial Sanctuary. No implementation — architecture, entities, repositories, services, API design, and permissions only.
+
+### Deliverable
+
+Full specification written to **`docs/MemorialArchitecture.md`**.
+
+### Domain Summary
+
+The Memorial Sanctuary domain is modelled as a family-owned aggregate centred on `Memorial`, with `Person` as the biographical core and a ring of interaction entities (`Candle`, `Flower`, `Tribute`, `Prayer`, `Photo`, `Story`) that visitors and family members contribute over time.
+
+```
+Family → Memorial → Person
+                 ↓         ↓        ↓         ↓
+              Candle    Flower   Tribute    Prayer
+                 ↓
+              Photo / Story / Timeline / Yahrzeit
+```
+
+### Entities Designed (19 total)
+
+| Entity | Role |
+|---|---|
+| `Memorial` | Aggregate root — the sacred page |
+| `Person` | Biographical record of the deceased |
+| `Family` | Owning family unit + stewardship |
+| `FamilyMember` | User ↔ Family role junction |
+| `Candle` | Virtual Yahrzeit / Neshama candle |
+| `Tribute` | Written condolence / memory |
+| `Flower` | Virtual flower left at the memorial |
+| `Visitor` | Anonymous visit log |
+| `Prayer` | Kaddish / Tehillim / Yizkor prayer record |
+| `Photo` | Image with moderation state |
+| `Story` | Long-form life narrative or eulogy |
+| `Timeline` | Ordered life event sequence |
+| `TimelineEvent` | Individual milestone within Timeline |
+| `Privacy` | Visibility + interaction permission config |
+| `Community` | Community-level stewardship |
+| `Yahrzeit` | Annual Hebrew death anniversary + reminders |
+| `Location` | Burial / significant place |
+| `Media` | Normalised file asset record |
+| `Notification` | Outbound notification log |
+| `Relationship` | Person ↔ Person genealogical link |
+
+### Repositories (12)
+
+`MemorialRepository`, `PersonRepository`, `FamilyRepository`, `CandleRepository`, `FlowerRepository`, `TributeRepository`, `PrayerRepository`, `PhotoRepository`, `StoryRepository`, `VisitorRepository`, `YahrzeitRepository`, `MediaRepository`, `NotificationRepository`
+
+### Services (9)
+
+`MemorialService`, `CandleService`, `FlowerService`, `TributeService`, `PrayerService`, `YahrzeitService`, `NotificationService`, `SearchService`, `ModerationService`, `VisitorService`, `FamilyService`
+
+### Permission Tiers (8)
+
+`Guest → Visitor → FamilyMember → FamilyAdmin → CommunityModerator → CommunityAdmin → PlatformAdministrator` + `Premium` cross-cutting tier
+
+### Key Scalability Decisions
+
+- Denormalised counter columns (`candleCount`, `viewCount`, etc.) updated via background job — never synchronously in write path
+- `Visitor` and `Notification` tables partitioned by month as data grows
+- PostgreSQL `tsvector` + `GIN` index for memorial name/biography search
+- All media assets in GCS; `Media` table stores metadata only
+- Privacy filter applied in every repository query — no un-gated data ever returned
+- Yahrzeit date refresh scheduled daily via existing push scheduler infrastructure
+
+### Future Expansion Hooks
+
+- Virtual Cemetery Map (coordinates already on `Location`)
+- Audio Tributes (`Media` already supports `durationSeconds`)
+- Kaddish Board (aggregate `Prayer.type = kaddish` across dates)
+- Bulk import for community historical records
+- AI Eulogy Assist via Gemini integration
+- Memorial QR codes for physical grave markers
