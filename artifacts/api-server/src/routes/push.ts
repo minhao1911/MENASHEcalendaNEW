@@ -13,7 +13,7 @@ const expo = new Expo();
 const router = Router();
 
 const VAPID_PUBLIC = process.env["VAPID_PUBLIC_KEY"] ?? "";
-const VAPID_PRIVATE = process.env["VAPID_PRIVATE_KEY"] ?? "";
+const VAPID_PRIVATE = (process.env["VAPID_PRIVATE_KEY"] ?? "").replace(/[="'\s]/g, "");
 const VAPID_SUBJECT = process.env["VAPID_SUBJECT"] ?? "mailto:admin@menashecalendar.app";
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
