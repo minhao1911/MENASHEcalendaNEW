@@ -19,6 +19,7 @@ import SiddurPage from "./pages/SiddurPage";
 import SettingsPage from "./pages/SettingsPage";
 import PremiumPage from "./pages/PremiumPage";
 import BottomNav from "./components/BottomNav";
+import FeedbackButton from "./components/FeedbackButton";
 import { useNotifications } from "./hooks/useNotifications";
 import { useUnreadAnnouncements } from "./hooks/useUnreadAnnouncements";
 import { usePushSubscription } from "./hooks/usePushSubscription";
@@ -848,6 +849,7 @@ function AppShell() {
       <InstallPrompt />
 
       {chatOpen && <ChatModal onClose={() => setChatOpen(false)} />}
+      <FeedbackButton />
     </LanguageProvider>
   );
 }

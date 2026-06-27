@@ -502,6 +502,26 @@ export async function runMigrations(): Promise<void> {
 
     logger.info("Memorial Sanctuary V2 schema ready");
 
+    // Beta feedback submissions
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS feedback (
+        id          SERIAL PRIMARY KEY,
+        user_id     TEXT,
+        category    TEXT NOT NULL DEFAULT 'bug',
+        priority    TEXT NOT NULL DEFAULT 'medium',
+        message     TEXT NOT NULL,
+        page        TEXT NOT NULL DEFAULT '',
+        device      TEXT NOT NULL DEFAULT '',
+        status      TEXT NOT NULL DEFAULT 'open',
+        admin_note  TEXT NOT NULL DEFAULT '',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS feedback_status_idx ON feedback (status, created_at DESC)
+    `);
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");

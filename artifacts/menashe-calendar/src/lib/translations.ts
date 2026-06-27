@@ -31,6 +31,30 @@ export interface Translations {
   navSettings: string;
   navChat: string;
 
+  /* ── Beta Feedback ── */
+  feedbackButtonLabel: string;
+  feedbackTitle: string;
+  feedbackSubtitle: string;
+  feedbackCategory: string;
+  feedbackCategoryBug: string;
+  feedbackCategoryUx: string;
+  feedbackCategoryContent: string;
+  feedbackCategoryPerf: string;
+  feedbackCategorySuggest: string;
+  feedbackPriority: string;
+  feedbackPriorityCritical: string;
+  feedbackPriorityHigh: string;
+  feedbackPriorityMedium: string;
+  feedbackPriorityLow: string;
+  feedbackMessage: string;
+  feedbackMessagePlaceholder: string;
+  feedbackSubmit: string;
+  feedbackSubmitting: string;
+  feedbackSuccess: string;
+  feedbackSuccessDetail: string;
+  feedbackClose: string;
+  feedbackError: string;
+
   /* ── Settings ── */
   settingsTitle: string;
   settingsLocation: string;
@@ -579,6 +603,30 @@ export const en: Translations = {
   navSettings: "Settings",
   navChat: "Chat",
 
+  /* ── Beta Feedback ── */
+  feedbackButtonLabel: "Feedback",
+  feedbackTitle: "Share Feedback",
+  feedbackSubtitle: "Help us improve the platform for the whole community.",
+  feedbackCategory: "Category",
+  feedbackCategoryBug: "Bug",
+  feedbackCategoryUx: "Confusing Workflow",
+  feedbackCategoryContent: "Missing Content",
+  feedbackCategoryPerf: "Performance",
+  feedbackCategorySuggest: "Suggestion",
+  feedbackPriority: "How urgent?",
+  feedbackPriorityCritical: "Critical — can't use the app",
+  feedbackPriorityHigh: "High — major feature broken",
+  feedbackPriorityMedium: "Medium — works but frustrating",
+  feedbackPriorityLow: "Low — minor polish",
+  feedbackMessage: "Your feedback",
+  feedbackMessagePlaceholder: "Describe what happened, what you expected, or what would help…",
+  feedbackSubmit: "Send Feedback",
+  feedbackSubmitting: "Sending…",
+  feedbackSuccess: "Thank you!",
+  feedbackSuccessDetail: "Your feedback has been recorded. We read every submission.",
+  feedbackClose: "Close",
+  feedbackError: "Could not send — please try again.",
+
   settingsTitle: "Settings",
   settingsLocation: "LOCATION",
   settingsCity: "City",
@@ -1110,6 +1158,30 @@ export const tk: Translations = {
   navSiddur: "Thu Ziak",
   navSettings: "Siam Dan",
   navChat: "Chat",
+
+  /* ── Beta Feedback ── */
+  feedbackButtonLabel: "Thu Pe",
+  feedbackTitle: "Thu Pe Rawh",
+  feedbackSubtitle: "Pawlpi tengin platform siamthat ding in hong pui rawh.",
+  feedbackCategory: "Thlang Dan",
+  feedbackCategoryBug: "Bug",
+  feedbackCategoryUx: "A Thiam Lo",
+  feedbackCategoryContent: "Thu Om Lo",
+  feedbackCategoryPerf: "A Liam Tlai",
+  feedbackCategorySuggest: "Thu Sawl",
+  feedbackPriority: "A Tha Lo Zat?",
+  feedbackPriorityCritical: "A Tha Lohna Ber — App hmang theilo",
+  feedbackPriorityHigh: "A Sang Ber — Feature a dong lo",
+  feedbackPriorityMedium: "Lakhawm — a bawl thei nain a phur",
+  feedbackPriorityLow: "Hniam — siamthat tur hniam",
+  feedbackMessage: "Na thu",
+  feedbackMessagePlaceholder: "Thil om dan, om tur leh pui tur gen rawh…",
+  feedbackSubmit: "Thu Thawn",
+  feedbackSubmitting: "A thawn mek…",
+  feedbackSuccess: "Lawm e!",
+  feedbackSuccessDetail: "Na thu a ziak ta. Ziak tawh zawng zawng kan en ang.",
+  feedbackClose: "Kawr",
+  feedbackError: "A thawn theilo — zawk tih rawh.",
 
   settingsTitle: "Siam Dan",
   settingsLocation: "HMUN",
