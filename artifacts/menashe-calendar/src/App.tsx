@@ -59,6 +59,7 @@ import NotificationDrawer from "./components/NotificationDrawer";
 import InstallPrompt from "./components/InstallPrompt";
 import ShabbatBanner from "./components/ShabbatBanner";
 import WhatsNewModal, { APP_VERSION, VERSION_KEY } from "./modals/WhatsNewModal";
+import MemorialSanctuaryPage from "./features/memorial/pages/MemorialSanctuaryPage";
 
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
@@ -198,7 +199,7 @@ const darkCardAppearance = {
   },
 };
 
-type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium";
+type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium" | "memorial";
 type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
@@ -612,6 +613,13 @@ function AppShell() {
             onBack={() => setActivePage("home")}
           />
         );
+      case "memorial":
+        return (
+          <MemorialSanctuaryPage
+            onBack={() => setActivePage("home")}
+            onEnter3D={() => setModal("memorial-3d" as any)}
+          />
+        );
     }
   }
 
@@ -812,6 +820,7 @@ function AppShell() {
                   onMembers={() => setModal("members")}
                   onPrayerBoard={() => setModal("prayers-board")}
                   onTorahTracker={() => setModal("torah-tracker")}
+                  onMemorial={() => { setActivePage("memorial"); setModal(null); }}
                   isPremium={isPremium}
                   candleEnabled={candleEnabled}
                   onToggleCandle={onToggleCandle}

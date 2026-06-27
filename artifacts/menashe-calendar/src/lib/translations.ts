@@ -450,6 +450,31 @@ export interface Translations {
   memClearSearch: string;
   memCandlesCount: string;
   memLitBy: string;
+  /* ── Memorial Shell (SPR-015) ── */
+  memShellWelcome: string;
+  memShellWelcomeSub: string;
+  memShellFeatured: string;
+  memShellRecentCandles: string;
+  memShellFamilyMemorials: string;
+  memShellCreate: string;
+  memShellCreateSub: string;
+  memShellEnter3D: string;
+  memShellEnter3DSub: string;
+  memShellResults: string;
+  memShellViewAll: string;
+  memShellLoadMore: string;
+  memShellLoading: string;
+  memShellEmptySearch: string;
+  memShellSearchError: string;
+  memShellRetry: string;
+  memShellFeaturedEmpty: string;
+  memShellFeaturedEmptySub: string;
+  memShellRecentEmpty: string;
+  memShellRecentEmptySub: string;
+  memShellFamilyEmpty: string;
+  memShellFamilyEmptySub: string;
+  memShellOffline: string;
+  memShellOfflineSub: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -887,6 +912,31 @@ export const en: Translations = {
   memClearSearch: "Clear search",
   memCandlesCount: "candles",
   memLitBy: "LIT BY",
+  /* ── Memorial Shell (SPR-015) ── */
+  memShellWelcome: "Memorial Sanctuary",
+  memShellWelcomeSub: "A sacred space to honor and remember loved ones of the Bnei Menashe community",
+  memShellFeatured: "Featured Memorials",
+  memShellRecentCandles: "Recently Lit Candles",
+  memShellFamilyMemorials: "Family Memorials",
+  memShellCreate: "Create a Memorial",
+  memShellCreateSub: "Honor a loved one in the community sanctuary",
+  memShellEnter3D: "Enter 3D Sanctuary",
+  memShellEnter3DSub: "Experience the immersive Memorial Valley",
+  memShellResults: "Search Results",
+  memShellViewAll: "View all",
+  memShellLoadMore: "Load more",
+  memShellLoading: "Searching…",
+  memShellEmptySearch: "No results for",
+  memShellSearchError: "Search failed",
+  memShellRetry: "Try again",
+  memShellFeaturedEmpty: "Featured memorials coming soon",
+  memShellFeaturedEmptySub: "Be the first to create a memorial in the sanctuary",
+  memShellRecentEmpty: "No candles lit recently",
+  memShellRecentEmptySub: "Light a candle on any memorial to honor a loved one",
+  memShellFamilyEmpty: "No family memorials yet",
+  memShellFamilyEmptySub: "Create a memorial to remember a loved one",
+  memShellOffline: "You are offline",
+  memShellOfflineSub: "Connect to the internet to browse memorials",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1287,6 +1337,67 @@ export const tk: Translations = {
     "Bnei Menashe chanchin sawi rawh",
     "Thu dawt Zmanim zawng zawng en rawh",
   ],
+  /* ── Memorial Sanctuary 3D (missing TK keys) ── */
+  memTitle: "MIPUI MEMORIAL",
+  memSubtitle: "Ngaihtuah leh Hlimna Valley",
+  memEnteringSanctuary: "Sanctuary lut mek",
+  memSearchPlaceholder: "Innlam mi zawng rawh...",
+  memGoldenHour: "Golden Hour",
+  memCandlesLit: "Damdawi Hluut",
+  memInLovingMemory: "Ngaihna Leh Hlimna",
+  memNavHome: "Inn",
+  memNavMemorials: "Memorials",
+  memHintDrag: "Pan turin zawm rawh",
+  memHintPinch: "Zoom turin pinch rawh",
+  memHintTap: "Damdawi hluat turin chhuah rawh",
+  memLightCandle: "Damdawi Hluat",
+  memLightCandleSub: "Sanctuary-ah innlam mi thangthat rawh",
+  memFullName: "HER/HI HMINGKHAT",
+  memFullNamePlaceholder: "Thi mi hming",
+  memHebrewName: "HEBREW HMING",
+  memDateOfPassing: "THI NI",
+  memMemorialMessage: "MEMORIAL LEHKHA",
+  memMessagePlaceholder: "Hrechhuak leh damdawi sawi rawh...",
+  memLightingCandle: "Damdawi hluat mek…",
+  memLightTheCandle: "Damdawi Hluat Rawh",
+  memCandleLit: "Damdawi Hluut",
+  memMemoryBlessing: "An hrechhuak chuan an hlimna a ni dawn",
+  memDedicatedLearning: "DEDICATED THUZIAK",
+  memLeaveTribute: "Tribute Chhut Rawh",
+  memYourName: "NA HMING",
+  memStudySubject: "THUZIAK SUBJECT",
+  memSubmitting: "Submit mek…",
+  memDedicate: "Dedicate",
+  memTributeRecorded: "Tribute record tlin — hlimna tur a ni dawn",
+  memNoResults: "Memorial hmu lo",
+  memClearSearch: "Zawng chhiat rawh",
+  memCandlesCount: "damdawi",
+  memLitBy: "HLUAT TU",
+  /* ── Memorial Shell (SPR-015) ── */
+  memShellWelcome: "Memorial Sanctuary",
+  memShellWelcomeSub: "Bnei Menashe mipui leh in chungchang thu hrechhuak leh ngaihtuah dan inn",
+  memShellFeatured: "Featured Memorials",
+  memShellRecentCandles: "Tun dinah Damdawi Hluut",
+  memShellFamilyMemorials: "In-pum Memorial",
+  memShellCreate: "Memorial Siam",
+  memShellCreateSub: "Innlam mi in thlarau sanctuary-ah thangthat rawh",
+  memShellEnter3D: "3D Sanctuary Lut",
+  memShellEnter3DSub: "Memorial Valley immersive trawk rawh",
+  memShellResults: "Chhiar Dan",
+  memShellViewAll: "Zawng zawng en rawh",
+  memShellLoadMore: "Tam zawk load rawh",
+  memShellLoading: "Zawng mek…",
+  memShellEmptySearch: "Chhiar theih lo",
+  memShellSearchError: "Zawng dan palh",
+  memShellRetry: "Chhiar leh rawh",
+  memShellFeaturedEmpty: "Featured memorials in lo awm",
+  memShellFeaturedEmptySub: "Sanctuary-ah memorial siam hmasawn rawh",
+  memShellRecentEmpty: "Tun dinah damdawi hluut lo",
+  memShellRecentEmptySub: "Memorial khat-ah damdawi hluat in thangthat rawh",
+  memShellFamilyEmpty: "In-pum memorial awm lo",
+  memShellFamilyEmptySub: "In mi chungchang memorial siam rawh",
+  memShellOffline: "I chhungkua lo",
+  memShellOfflineSub: "Memorial en turin internet nen inzawm rawh",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };
