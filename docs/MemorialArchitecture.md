@@ -1,9 +1,29 @@
 # Memorial Sanctuary — Domain Architecture
 
-> **Sprint:** SPR-011
+> **Sprint:** SPR-011 (architecture) · SPR-015–SPR-017 (implementation)
 > **Role:** Senior Software Architect / Domain Architect / Database Architect
-> **Status:** Architecture Only — No implementation
+> **Status:** Living Memorial Experience implemented (SPR-017)
 > **Last updated:** 2026-06-27
+
+## SPR-017 Implementation Status
+
+SPR-017 delivered the **Living Memorial Experience** — transforming memorial profiles into active places of remembrance:
+
+### Completed (frontend)
+- **Extended types**: `relationship` + `community` on `MemorialCandle`/`LightCandleInput`; `TributeType` enum + `tributeType` on `MemorialTribute`/`AddTributeInput`; `sort` param on `SearchMemorialParams`
+- **`useFamilyManagement` hook**: fetches family + members, provides invite / updateRole / remove
+- **`useCollections` hook**: 5 parallel collection queries with sort hints (recentlyRemembered, mostVisited, recentlyLit, upcomingYahrzeit, communityPicks)
+- **`MemorialProfilePage` enhanced**: candle tabs (Recent/Today/Community), tribute type filter chips, Load More for both candles and tributes, YahrzeitAlert banner (today = full card with suggestions; ≤7 days = subtle banner), Family Management Sheet (invite + role + remove), enhanced CandleSheet (relationship picker + community text), enhanced TributeSheet (tribute type picker)
+- **`MemorialSanctuaryPage` enhanced**: 5 live collection strips using `useCollections`, horizontal scroll layout
+- **40 new bilingual translation keys** (EN + TK) for all SPR-017 UI
+
+### Pending (server / DB)
+- `relationship` and `community` columns on `memorial_candles` table → Drizzle migration needed
+- `tribute_type` column on `memorial_tributes` table → Drizzle migration needed
+- `sort` query param support on `GET /memorials/search` → API route update needed
+- Once DB columns exist, the frontend will receive and display them automatically (types already extended)
+
+---
 
 ---
 

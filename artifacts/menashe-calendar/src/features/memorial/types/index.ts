@@ -8,6 +8,8 @@ export type InteractionPermission = "nobody" | "family" | "community" | "public"
 
 export type CandleType = "yahrzeit" | "shabbat" | "memorial" | "neshama" | "shloshim";
 
+export type TributeType = "memory" | "prayer" | "scripture" | "family" | "community";
+
 export type TributeStatus = "pending" | "approved" | "rejected" | "removed";
 
 export type FamilyMemberRole = "admin" | "member" | "viewer";
@@ -109,6 +111,8 @@ export interface MemorialCandle {
   candleType: CandleType;
   isAnonymous: boolean;
   litAt: string;
+  relationship: string | null;
+  community: string | null;
 }
 
 export interface MemorialTribute {
@@ -120,6 +124,7 @@ export interface MemorialTribute {
   title: string | null;
   body: string;
   language: string;
+  tributeType: TributeType | null;
   isAnonymous: boolean;
   status: TributeStatus;
   moderatedBy: string | null;
@@ -198,11 +203,14 @@ export interface LightCandleInput {
   message?: string;
   guestName?: string;
   isAnonymous?: boolean;
+  relationship?: string;
+  community?: string;
 }
 
 export interface AddTributeInput {
   title?: string;
   body: string;
+  tributeType?: TributeType;
   language?: "en" | "tk" | "he";
   guestName?: string;
   guestEmail?: string;
@@ -222,6 +230,7 @@ export interface SearchMemorialParams {
   country?: string;
   page?: number;
   limit?: number;
+  sort?: "recent_activity" | "most_visited" | "recently_lit" | "upcoming_yahrzeit" | "community_picks";
 }
 
 // ── API response envelope ─────────────────────────────────────────────────────

@@ -5,3 +5,5 @@ export { useSearch } from "./useSearch";
 export { useCreateMemorial } from "./useCreateMemorial";
 export { useUploadPhoto } from "./useUploadPhoto";
 export { useMemorialPermissions } from "./useMemorialPermissions";
+export { useFamilyManagement } from "./useFamilyManagement";
+export { useCollections } from "./useCollections";

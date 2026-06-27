@@ -507,6 +507,43 @@ export interface Translations {
   memProfileYahrzeitNext: string;
   memProfileYahrzeitToday: string;
   memProfileDaysAway: string;
+  memCandleTabRecent: string;
+  memCandleTabToday: string;
+  memCandleTabCommunity: string;
+  memCandleRelationship: string;
+  memCandleCommunityField: string;
+  memCandleRelationshipPlaceholder: string;
+  memTributeTypeLabel: string;
+  memTributeTypeAll: string;
+  memTributeTypeMemory: string;
+  memTributeTypePrayer: string;
+  memTributeTypeScripture: string;
+  memTributeTypeFamily: string;
+  memTributeCommunityType: string;
+  memFamilyManage: string;
+  memFamilyInvite: string;
+  memFamilyUserId: string;
+  memFamilySelectRole: string;
+  memFamilyRoleAdmin: string;
+  memFamilyRoleMember: string;
+  memFamilyRoleViewer: string;
+  memFamilyRemove: string;
+  memFamilyTransfer: string;
+  memFamilyInviting: string;
+  memFamilyInvited: string;
+  memFamilyNoMembers: string;
+  memFamilyPrimaryContact: string;
+  memYahrzeitAlertToday: string;
+  memYahrzeitAlertSoon: string;
+  memYahrzeitSuggestPrayer: string;
+  memYahrzeitSuggestPsalm: string;
+  memYahrzeitSuggestCandle: string;
+  memColRecentlyRemembered: string;
+  memColMostVisited: string;
+  memColRecentlyLit: string;
+  memColUpcomingYahrzeit: string;
+  memColCommunityPicks: string;
+  memLoadMore: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -1001,6 +1038,43 @@ export const en: Translations = {
   memProfileYahrzeitNext: "Next yahrzeit:",
   memProfileYahrzeitToday: "Today is the yahrzeit",
   memProfileDaysAway: "days",
+  memCandleTabRecent: "Recent",
+  memCandleTabToday: "Today",
+  memCandleTabCommunity: "Community",
+  memCandleRelationship: "Relationship",
+  memCandleCommunityField: "Community / Congregation",
+  memCandleRelationshipPlaceholder: "e.g. Son, Daughter, Friend",
+  memTributeTypeLabel: "Type",
+  memTributeTypeAll: "All",
+  memTributeTypeMemory: "Memory",
+  memTributeTypePrayer: "Prayer",
+  memTributeTypeScripture: "Scripture",
+  memTributeTypeFamily: "Family",
+  memTributeCommunityType: "Community",
+  memFamilyManage: "Manage Family",
+  memFamilyInvite: "Invite Member",
+  memFamilyUserId: "User ID",
+  memFamilySelectRole: "Select role",
+  memFamilyRoleAdmin: "Admin",
+  memFamilyRoleMember: "Member",
+  memFamilyRoleViewer: "Viewer",
+  memFamilyRemove: "Remove",
+  memFamilyTransfer: "Transfer ownership",
+  memFamilyInviting: "Inviting…",
+  memFamilyInvited: "Member invited",
+  memFamilyNoMembers: "No family members yet",
+  memFamilyPrimaryContact: "Primary contact",
+  memYahrzeitAlertToday: "Today is the Yahrzeit",
+  memYahrzeitAlertSoon: "Yahrzeit in",
+  memYahrzeitSuggestPrayer: "Say Kaddish",
+  memYahrzeitSuggestPsalm: "Psalm 23 — Mizmor LeDavid",
+  memYahrzeitSuggestCandle: "Light a Yahrzeit Candle",
+  memColRecentlyRemembered: "Recently Remembered",
+  memColMostVisited: "Most Visited",
+  memColRecentlyLit: "Recently Lit",
+  memColUpcomingYahrzeit: "Upcoming Yahrzeit",
+  memColCommunityPicks: "Community Picks",
+  memLoadMore: "Load more",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1494,6 +1568,43 @@ export const tk: Translations = {
   memProfileYahrzeitNext: "Yahrzeit hnai:",
   memProfileYahrzeitToday: "Tun ni Yahrzeit a ni",
   memProfileDaysAway: "ni",
+  memCandleTabRecent: "Hnai Ber",
+  memCandleTabToday: "Tun Ni",
+  memCandleTabCommunity: "Mipui",
+  memCandleRelationship: "Inzawmna",
+  memCandleCommunityField: "Mipui / Khawlai",
+  memCandleRelationshipPlaceholder: "e.g. Fapa, Fate, Rualpa",
+  memTributeTypeLabel: "Type",
+  memTributeTypeAll: "Thlang Zawk",
+  memTributeTypeMemory: "Hriat Tur",
+  memTributeTypePrayer: "Duawhna",
+  memTributeTypeScripture: "Thuthlung",
+  memTributeTypeFamily: "Chhungkua",
+  memTributeCommunityType: "Mipui",
+  memFamilyManage: "Chhungkua Zirchian",
+  memFamilyInvite: "Member Sawm",
+  memFamilyUserId: "User ID",
+  memFamilySelectRole: "Role thlang rawh",
+  memFamilyRoleAdmin: "Zirchian",
+  memFamilyRoleMember: "Member",
+  memFamilyRoleViewer: "En Zawk",
+  memFamilyRemove: "Lak chhuah",
+  memFamilyTransfer: "Ownership siamthiam",
+  memFamilyInviting: "Sawmna in zawm…",
+  memFamilyInvited: "Member sawm tlin",
+  memFamilyNoMembers: "Chhungkua member awm lo",
+  memFamilyPrimaryContact: "Chiang ber inzawmna",
+  memYahrzeitAlertToday: "Tun ni Yahrzeit a ni",
+  memYahrzeitAlertSoon: "Yahrzeit a hung hnai ta",
+  memYahrzeitSuggestPrayer: "Kaddish chhiar rawh",
+  memYahrzeitSuggestPsalm: "Psalm 23 — Mizmor LeDavid",
+  memYahrzeitSuggestCandle: "Yahrzeit damdawi hluat rawh",
+  memColRecentlyRemembered: "Hriat Tur Hnai Ber",
+  memColMostVisited: "Zawk Taka En",
+  memColRecentlyLit: "Damdawi Hnai Ber",
+  memColUpcomingYahrzeit: "Yahrzeit Hung Hnai",
+  memColCommunityPicks: "Mipui Thlang",
+  memLoadMore: "Zawk load rawh",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };
