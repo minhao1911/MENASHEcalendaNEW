@@ -235,7 +235,7 @@ export default function PremiumModal({ onClose, onActivated }: Props) {
       currency: orderData.currency,
       name: "Bnei Menashe Calendar",
       description: `Premium ${plan === "annual" ? "Annual" : "Monthly"} Plan`,
-      image: `${window.location.origin}/logo.jpeg`,
+      image: `${window.location.origin}/logo.png`,
       order_id: orderData.orderId,
       theme: { color: "#d4a843" },
       handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {

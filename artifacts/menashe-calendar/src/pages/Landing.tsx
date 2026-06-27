@@ -496,7 +496,7 @@ export default function Landing({ onSignIn }: LandingProps) {
         <nav className="landing-nav">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {/* Logo */}
-            <img src="/logo.jpeg" alt="Bnei Menashe Calendar" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(212,175,55,0.4)" }} />
+            <img src="/logo.png" alt="Bnei Menashe Calendar" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(212,175,55,0.4)" }} />
             <span style={{ fontSize: 14, fontWeight: 700, color: "#D4AF37", letterSpacing: ".08em" }}>{t.landingBadge}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

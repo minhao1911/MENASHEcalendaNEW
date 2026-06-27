@@ -93,7 +93,7 @@ export default function SplashScreen({ onFinished }: SplashScreenProps) {
             }}
           />
           <img
-            src="/logo.jpeg"
+            src="/logo.png"
             alt="Menashe Calendar"
             style={{
               width: 100,

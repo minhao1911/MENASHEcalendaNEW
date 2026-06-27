@@ -97,7 +97,7 @@ const clerkAppearance = {
   options: {
     logoPlacement: "inside" as const,
     logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    logoImageUrl: `${window.location.origin}${basePath}/logo.png`,
   },
   variables: {
     colorPrimary: "#D4AF37",
@@ -281,7 +281,7 @@ function AuthCard({ children }: { children: React.ReactNode }) {
           <div style={{ position: "relative", zIndex: 10, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
             {/* 3D logo badge */}
             <img
-              src="/logo.jpeg"
+              src="/logo.png"
               alt="Bnei Menashe Calendar"
               style={{
                 width: 80, height: 80,
