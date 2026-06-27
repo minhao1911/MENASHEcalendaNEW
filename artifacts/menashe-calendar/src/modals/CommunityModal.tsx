@@ -330,177 +330,249 @@ export default function CommunityModal({ onClose, onYahrzeitBoard, isAdmin = fal
   // ── Main community view ──
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
-        <div className="modal-handle" />
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto", padding: 0 }}>
+        <div className="modal-handle" style={{ marginTop: 10 }} />
 
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>🤝 Community</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Bnei Menashe worldwide</div>
-          </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
-        </div>
+        {/* ── Hero banner with background image ── */}
+        <div style={{ position: "relative", overflow: "hidden", borderRadius: "0 0 0 0", marginBottom: 0 }}>
+          {/* Background photo */}
+          <div style={{
+            position: "absolute", inset: 0,
+            backgroundImage: "url('/bnei-menashe-community-bg.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center top",
+            filter: "brightness(0.28) saturate(0.8)",
+          }} />
+          {/* Gradient overlay — dark bottom for readability */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(180deg, rgba(8,14,28,0.45) 0%, rgba(8,14,28,0.72) 60%, rgba(8,14,28,0.97) 100%)",
+          }} />
+          {/* Gold top accent line */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, height: 2,
+            background: "linear-gradient(90deg, transparent, #d4a843, #f0c94a, #d4a843, transparent)",
+          }} />
 
-        {/* Hero banner */}
-        <div
-          style={{
-            padding: 16, borderRadius: 16, marginBottom: 16, textAlign: "center",
-            background: "linear-gradient(135deg, #0f1e38, #1a2a4a)",
-            border: "1px solid rgba(212,168,67,0.25)",
-            cursor: "default", userSelect: "none",
-          }}
-        >
-          <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 26, color: "#d4a843", marginBottom: 6 }}>בְּנֵי מְנַשֶּׁה</div>
-          <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 10 }}>
-            The Bnei Menashe are a community from northeastern India who trace their ancestry to the tribe of Menashe, one of the Ten Lost Tribes of Israel.
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#d4a843" }}>9,000+</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: ".06em" }}>MADE ALIYAH</div>
-            </div>
-            <div style={{ width: 1, background: "rgba(212,168,67,0.2)" }} />
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#d4a843" }}>3</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: ".06em" }}>STATES IN INDIA</div>
-            </div>
-            <div style={{ width: 1, background: "rgba(212,168,67,0.2)" }} />
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#d4a843" }}>54</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: ".06em" }}>PARSHIYOT</div>
-            </div>
-          </div>
-        </div>
+          {/* Close button inside hero */}
+          <button
+            className="modal-close-btn"
+            onClick={onClose}
+            style={{ position: "absolute", top: 14, right: 14, zIndex: 2 }}
+          >✕</button>
 
-        {/* Yahrzeit Board entry */}
-        {onYahrzeitBoard && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".08em", marginBottom: 8, paddingLeft: 2 }}>
-              MEMORIAL
+          {/* Content */}
+          <div style={{ position: "relative", zIndex: 1, padding: "28px 20px 24px", textAlign: "center" }}>
+            {/* Badge */}
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.3)",
+              borderRadius: 99, padding: "4px 14px", marginBottom: 14,
+            }}>
+              <span style={{ fontSize: 12 }}>✡</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#d4a843", letterSpacing: ".1em" }}>BNEI MENASHE WORLDWIDE</span>
             </div>
-            <div
-              onClick={onYahrzeitBoard}
-              style={{
-                borderRadius: 16, border: "1px solid rgba(212,168,67,0.3)",
-                background: "linear-gradient(135deg, rgba(212,168,67,0.08), rgba(212,168,67,0.03))",
-                overflow: "hidden", cursor: "pointer",
-                transition: "border-color 0.15s",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,168,67,0.55)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,168,67,0.3)"; }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: 13, flexShrink: 0,
-                  background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)",
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
+
+            {/* Hebrew title */}
+            <div style={{
+              fontFamily: "'Noto Serif Hebrew', serif", fontSize: 30, color: "#f0c94a",
+              marginBottom: 10, lineHeight: 1.2, fontWeight: 700,
+              textShadow: "0 2px 20px rgba(212,168,67,0.4)",
+            }}>בְּנֵי מְנַשֶּׁה</div>
+
+            {/* Tagline */}
+            <div style={{
+              fontSize: 13, color: "rgba(248,246,240,0.82)", lineHeight: 1.65,
+              maxWidth: 300, margin: "0 auto 20px",
+            }}>
+              A community from northeastern India who trace their ancestry to the lost tribe of Menashe — returning to Zion.
+            </div>
+
+            {/* Stats row */}
+            <div style={{
+              display: "flex", justifyContent: "center", gap: 0,
+              background: "rgba(0,0,0,0.35)", borderRadius: 14,
+              border: "1px solid rgba(212,168,67,0.18)",
+              overflow: "hidden", margin: "0 4px",
+            }}>
+              {[
+                { val: "10,000+", label: "TOTAL POPULATION" },
+                { val: "5,000+", label: "MADE ALIYAH" },
+                { val: "54", label: "PARSHIYOT" },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  flex: 1, padding: "12px 4px", textAlign: "center",
+                  borderRight: i < 2 ? "1px solid rgba(212,168,67,0.15)" : "none",
                 }}>
-                  🕯
+                  <div style={{ fontSize: 18, fontWeight: 900, color: "#f0c94a", letterSpacing: "-.02em" }}>{s.val}</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(212,168,67,0.6)", letterSpacing: ".07em", marginTop: 2 }}>{s.label}</div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>Community Yahrzeit Board</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                    Light memorial candles — the community prays &amp; learns together
+              ))}
+            </div>
+
+            {/* Isaiah quote */}
+            <div style={{
+              marginTop: 16, padding: "10px 16px",
+              borderLeft: "2px solid rgba(212,168,67,0.4)",
+              textAlign: "left", marginLeft: 4,
+            }}>
+              <div style={{ fontSize: 12, color: "rgba(248,246,240,0.6)", fontStyle: "italic", lineHeight: 1.6 }}>
+                "I will bring the remnant of my people from the East, and gather them from the West."
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(212,168,67,0.5)", marginTop: 4, fontWeight: 600 }}>— Isaiah 43:5</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Body content ── */}
+        <div style={{ padding: "20px 16px 8px" }}>
+
+          {/* Yahrzeit Board entry */}
+          {onYahrzeitBoard && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".1em", marginBottom: 8, paddingLeft: 2 }}>
+                MEMORIAL
+              </div>
+              <div
+                onClick={onYahrzeitBoard}
+                style={{
+                  borderRadius: 16, border: "1px solid rgba(212,168,67,0.3)",
+                  background: "linear-gradient(135deg, rgba(212,168,67,0.09), rgba(212,168,67,0.03))",
+                  overflow: "hidden", cursor: "pointer",
+                  transition: "border-color 0.2s, box-shadow 0.2s",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.borderColor = "rgba(212,168,67,0.6)";
+                  el.style.boxShadow = "0 4px 20px rgba(212,168,67,0.12)";
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.borderColor = "rgba(212,168,67,0.3)";
+                  el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.2)";
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
+                  <div style={{
+                    width: 50, height: 50, borderRadius: 14, flexShrink: 0,
+                    background: "linear-gradient(135deg, rgba(212,168,67,0.18), rgba(212,168,67,0.06))",
+                    border: "1px solid rgba(212,168,67,0.3)",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
+                  }}>
+                    🕯
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>Community Yahrzeit Board</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.5 }}>
+                      Light memorial candles — the community prays &amp; learns together
+                    </div>
+                  </div>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                    background: "rgba(212,168,67,0.14)", border: "1px solid rgba(212,168,67,0.25)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M4 2 L9 6 L4 10" stroke="#d4a843" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </div>
                 </div>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                  background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.2)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M4 2 L9 6 L4 10" stroke="#d4a843" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Links grouped by category */}
-        {Object.keys(grouped).length === 0 ? (
-          <div style={{ textAlign: "center", padding: 24, color: "var(--text-muted)", fontSize: 13 }}>
-            No community links yet.
-          </div>
-        ) : (
-          Object.entries(grouped).map(([category, catLinks]) => (
-            <div key={category} style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".08em", marginBottom: 8, paddingLeft: 2 }}>
-                {category.toUpperCase()}
-              </div>
-              <div style={{ borderRadius: 16, border: "1px solid var(--border)", overflow: "hidden", background: "var(--card)" }}>
-                {catLinks.map((link, i) => (
-                  <div
-                    key={link.id}
-                    onClick={() => link.url && openLink(link.url)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12, padding: "13px 16px",
-                      borderBottom: i < catLinks.length - 1 ? "1px solid var(--border)" : "none",
-                      cursor: link.url ? "pointer" : "default",
-                      transition: "background 0.15s",
-                    }}
-                    onMouseEnter={e => { if (link.url) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-                  >
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                      background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.15)",
-                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-                    }}>
-                      {link.emoji}
-                    </div>
+          {/* Links grouped by category */}
+          {Object.keys(grouped).length === 0 ? (
+            <div style={{ textAlign: "center", padding: 24, color: "var(--text-muted)", fontSize: 13 }}>
+              No community links yet.
+            </div>
+          ) : (
+            Object.entries(grouped).map(([category, catLinks]) => (
+              <div key={category} style={{ marginBottom: 18 }}>
+                <div style={{
+                  fontSize: 10, fontWeight: 700, color: "var(--text-muted)",
+                  letterSpacing: ".1em", marginBottom: 8, paddingLeft: 2,
+                }}>
+                  {category.toUpperCase()}
+                </div>
+                <div style={{
+                  borderRadius: 16, border: "1px solid var(--border)",
+                  overflow: "hidden", background: "var(--card)",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+                }}>
+                  {catLinks.map((link, i) => (
+                    <div
+                      key={link.id}
+                      onClick={() => link.url && openLink(link.url)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 12, padding: "13px 16px",
+                        borderBottom: i < catLinks.length - 1 ? "1px solid var(--border)" : "none",
+                        cursor: link.url ? "pointer" : "default",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={e => { if (link.url) (e.currentTarget as HTMLElement).style.background = "rgba(212,168,67,0.04)"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                    >
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                        background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.15)",
+                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+                      }}>
+                        {link.emoji}
+                      </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{link.title}</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>{link.sub}</div>
-                      {link.url && (
-                        <div style={{ fontSize: 10, color: "#d4a843", marginTop: 3, display: "flex", alignItems: "center", gap: 3 }}>
-                          <span>🔗</span>
-                          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>
-                            {link.url.replace(/^https?:\/\//, "")}
-                          </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{link.title}</div>
+                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>{link.sub}</div>
+                        {link.url && (
+                          <div style={{ fontSize: 10, color: "#d4a843", marginTop: 3, display: "flex", alignItems: "center", gap: 3 }}>
+                            <span>🔗</span>
+                            <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>
+                              {link.url.replace(/^https?:\/\//, "")}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {link.url ? (
+                        <div style={{
+                          width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                          background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.2)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 10 L10 2 M5 2 L10 2 L10 7" stroke="#d4a843" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
                         </div>
+                      ) : (
+                        <span style={{ color: "var(--text-muted)", fontSize: 16, flexShrink: 0 }}>›</span>
                       )}
                     </div>
-
-                    {link.url ? (
-                      <div style={{
-                        width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                        background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.2)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                          <path d="M2 10 L10 2 M5 2 L10 2 L10 7" stroke="#d4a843" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                    ) : (
-                      <span style={{ color: "var(--text-muted)", fontSize: 16, flexShrink: 0 }}>›</span>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+            ))
+          )}
+
+          {/* Footer admin */}
+          {isAdmin && (
+            <div style={{ textAlign: "center", marginTop: 4, marginBottom: 12 }}>
+              <button
+                onClick={() => setView("admin")}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 11, color: "var(--text-muted)", padding: "6px 12px",
+                  opacity: 0.5,
+                }}
+              >
+                ⚙ Admin
+              </button>
             </div>
-          ))
-        )}
+          )}
 
-        {/* Footer admin — only visible to administrator */}
-        {isAdmin && (
-          <div style={{ textAlign: "center", marginTop: 4, marginBottom: 12 }}>
-            <button
-              onClick={() => setView("admin")}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 11, color: "var(--text-muted)", padding: "6px 12px",
-                opacity: 0.5,
-              }}
-            >
-              ⚙ Admin
-            </button>
-          </div>
-        )}
-
-        <button onClick={onClose} className="btn-close-full">Close</button>
+          <button onClick={onClose} className="btn-close-full">Close</button>
+        </div>
       </div>
     </div>
   );
