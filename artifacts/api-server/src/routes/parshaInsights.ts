@@ -1,6 +1,9 @@
 import { Router } from "express";
+import { z } from "zod";
 import { GoogleGenAI } from "@google/genai";
 import { requireAuth } from "../lib/requireAuth";
+import { aiRateLimiter } from "../lib/rateLimiter";
+import { apiError } from "../lib/apiError";
 
 const router = Router();
 
@@ -26,19 +29,22 @@ export interface ParshaInsight {
   sourceReferences: string;
 }
 
+const bodySchema = z.object({
+  parshaName: z.string().min(1).max(100),
+  hebrewName: z.string().max(100).optional(),
+  bookName: z.string().max(100).optional(),
+  chaptersRange: z.string().max(50).optional(),
+});
+
 const cache = new Map<string, ParshaInsight>();
 
-router.post("/parsha-insights", requireAuth, async (req, res) => {
-  const { parshaName, hebrewName, bookName, chaptersRange } = req.body as {
-    parshaName: string;
-    hebrewName?: string;
-    bookName?: string;
-    chaptersRange?: string;
-  };
-
-  if (!parshaName || typeof parshaName !== "string") {
-    return res.status(400).json({ error: "parshaName is required" });
+router.post("/parsha-insights", requireAuth, aiRateLimiter, async (req, res) => {
+  const parsed = bodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid request", parsed.error.issues);
   }
+
+  const { parshaName, hebrewName, bookName, chaptersRange } = parsed.data;
 
   const cacheKey = parshaName.toLowerCase().trim();
   if (cache.has(cacheKey)) {
@@ -49,7 +55,7 @@ router.post("/parsha-insights", requireAuth, async (req, res) => {
   try {
     genai = getGenAI();
   } catch {
-    return res.status(503).json({ error: "AI service not configured" });
+    return apiError.unavailable(res, "AI service not configured");
   }
 
   const prompt = `You are a knowledgeable Jewish scholar providing Torah insights specifically relevant to the Bnei Menashe community — the Jewish community from Northeast India (Manipur and Mizoram) who are descendants of the lost tribe of Menashe and have made aliyah to Israel.
@@ -81,29 +87,29 @@ Return only valid JSON, no markdown fences.`;
       content.match(/```\s*([\s\S]*?)```/);
     const jsonStr = jsonMatch ? jsonMatch[1] : content;
 
-    const parsed = JSON.parse(jsonStr) as Omit<ParshaInsight, "parshaName" | "hebrewName" | "bookName" | "chaptersRange">;
+    const parsedAi = JSON.parse(jsonStr) as Omit<ParshaInsight, "parshaName" | "hebrewName" | "bookName" | "chaptersRange">;
 
     const result: ParshaInsight = {
       parshaName,
       hebrewName: hebrewName ?? "",
       bookName: bookName ?? "",
       chaptersRange: chaptersRange ?? "",
-      keyTheme: parsed.keyTheme ?? "",
-      didYouKnow: parsed.didYouKnow ?? "",
-      bneiManasheConnection: parsed.bneiManasheConnection ?? "",
-      mainSources: parsed.mainSources ?? "",
-      classicalCommentary: parsed.classicalCommentary ?? "",
-      practicalLesson: parsed.practicalLesson ?? "",
-      discussionQuestion: parsed.discussionQuestion ?? "",
-      hebrewQuote: parsed.hebrewQuote ?? { hebrew: "", translation: "", reference: "" },
-      sourceReferences: parsed.sourceReferences ?? "",
+      keyTheme: parsedAi.keyTheme ?? "",
+      didYouKnow: parsedAi.didYouKnow ?? "",
+      bneiManasheConnection: parsedAi.bneiManasheConnection ?? "",
+      mainSources: parsedAi.mainSources ?? "",
+      classicalCommentary: parsedAi.classicalCommentary ?? "",
+      practicalLesson: parsedAi.practicalLesson ?? "",
+      discussionQuestion: parsedAi.discussionQuestion ?? "",
+      hebrewQuote: parsedAi.hebrewQuote ?? { hebrew: "", translation: "", reference: "" },
+      sourceReferences: parsedAi.sourceReferences ?? "",
     };
 
     cache.set(cacheKey, result);
     return res.json(result);
   } catch (err: any) {
     req.log.error(err);
-    return res.status(500).json({ error: "Failed to generate Torah insights. Please try again." });
+    return apiError.internal(res, "Failed to generate Torah insights. Please try again.");
   }
 });
 

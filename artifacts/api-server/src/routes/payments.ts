@@ -1,8 +1,12 @@
 import { Router } from "express";
+import { z } from "zod";
 import crypto from "crypto";
 import Razorpay from "razorpay";
 import { pool } from "@workspace/db";
 import { requireAuth, requireAdmin } from "../lib/authorization";
+import { paymentRateLimiter } from "../lib/rateLimiter";
+import { apiError } from "../lib/apiError";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -10,6 +14,17 @@ const PRICES: Record<string, number> = {
   monthly: 19900,
   annual: 99900,
 };
+
+const orderSchema = z.object({
+  plan: z.enum(["monthly", "annual"]),
+});
+
+const verifySchema = z.object({
+  orderId: z.string().min(1).max(100),
+  paymentId: z.string().min(1).max(100),
+  signature: z.string().min(1).max(256),
+  plan: z.enum(["monthly", "annual"]).optional(),
+});
 
 function getRazorpay() {
   const keyId = process.env.RAZORPAY_KEY_ID;
@@ -32,16 +47,17 @@ router.get("/payment/config", (_req, res) => {
 /* ── POST /api/payment/razorpay/order ───────────────────────────────────────
    Creates a Razorpay order. Requires auth.
    Body: { plan: "monthly" | "annual" } */
-router.post("/payment/razorpay/order", requireAuth, async (req, res) => {
+router.post("/payment/razorpay/order", requireAuth, paymentRateLimiter, async (req, res) => {
   const rz = getRazorpay();
-  if (!rz) return res.status(503).json({ error: "Razorpay not configured" });
+  if (!rz) return apiError.unavailable(res, "Razorpay not configured");
 
   const userId = (req as any).userId;
-  const { plan } = req.body as { plan: string };
-
-  if (!plan || !PRICES[plan]) {
-    return res.status(400).json({ error: "Invalid plan. Must be 'monthly' or 'annual'." });
+  const parsed = orderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid plan. Must be 'monthly' or 'annual'.", parsed.error.issues);
   }
+
+  const { plan } = parsed.data;
 
   try {
     const order = await rz.orders.create({
@@ -58,29 +74,25 @@ router.post("/payment/razorpay/order", requireAuth, async (req, res) => {
       keyId: process.env.RAZORPAY_KEY_ID,
     });
   } catch (err: any) {
-    console.error("Razorpay order creation failed:", err);
-    return res.status(500).json({ error: err.message ?? "Order creation failed" });
+    logger.error({ err }, "Razorpay order creation failed");
+    return apiError.internal(res, "Order creation failed");
   }
 });
 
 /* ── POST /api/payment/razorpay/verify ──────────────────────────────────────
    Verifies Razorpay signature, grants premium, records payment. Requires auth.
    Body: { orderId, paymentId, signature, plan } */
-router.post("/payment/razorpay/verify", requireAuth, async (req, res) => {
+router.post("/payment/razorpay/verify", requireAuth, paymentRateLimiter, async (req, res) => {
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keySecret) return res.status(503).json({ error: "Razorpay not configured" });
+  if (!keySecret) return apiError.unavailable(res, "Razorpay not configured");
 
   const userId = (req as any).userId;
-  const { orderId, paymentId, signature, plan } = req.body as {
-    orderId: string;
-    paymentId: string;
-    signature: string;
-    plan: string;
-  };
-
-  if (!orderId || !paymentId || !signature) {
-    return res.status(400).json({ error: "Missing payment verification fields." });
+  const parsed = verifySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Missing or invalid payment verification fields.", parsed.error.issues);
   }
+
+  const { orderId, paymentId, signature, plan } = parsed.data;
 
   const expected = crypto
     .createHmac("sha256", keySecret)
@@ -104,13 +116,13 @@ router.post("/payment/razorpay/verify", requireAuth, async (req, res) => {
       `INSERT INTO payment_records (user_id, order_id, payment_id, plan, amount, status, created_at)
        VALUES ($1, $2, $3, $4, $5, 'captured', NOW())
        ON CONFLICT (payment_id) DO NOTHING`,
-      [userId, orderId, paymentId, plan ?? "unknown", PRICES[plan] ?? 0],
+      [userId, orderId, paymentId, plan ?? "unknown", PRICES[plan ?? ""] ?? 0],
     );
 
     return res.json({ verified: true, isPremium: true });
   } catch (err: any) {
-    console.error("Failed to activate premium after payment:", err);
-    return res.status(500).json({ error: "Payment verified but failed to activate premium." });
+    logger.error({ err }, "Failed to activate premium after payment");
+    return apiError.internal(res, "Payment verified but failed to activate premium.");
   } finally {
     client.release();
   }
@@ -119,7 +131,6 @@ router.post("/payment/razorpay/verify", requireAuth, async (req, res) => {
 /* ── GET /api/admin/payments ─────────────────────────────────────────────────
    Returns all Razorpay payment records with user display names. Admin only. */
 router.get("/admin/payments", requireAdmin, async (req, res) => {
-
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`

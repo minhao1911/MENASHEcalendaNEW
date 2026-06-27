@@ -1,9 +1,33 @@
 import { Router } from "express";
+import { z } from "zod";
 import { pool } from "@workspace/db";
 import { requireAuth } from "../lib/requireAuth";
 import { requireAdmin } from "../lib/requireAdmin";
+import { apiError } from "../lib/apiError";
 
 const router = Router();
+
+// ── Validation schemas ────────────────────────────────────────────────────────
+
+const yahrzeitCreateSchema = z.object({
+  id: z.string().min(1).max(100),
+  deceasedName: z.string().min(1).max(200),
+  hebrewDay: z.number().int().min(1).max(30),
+  hebrewMonth: z.number().int().min(1).max(13),
+  displayDate: z.string().max(100).optional(),
+  passingYear: z.number().int().min(1).max(3000).optional().nullable(),
+  message: z.string().max(500).optional(),
+  donorDisplayName: z.string().max(200).optional(),
+});
+
+const lightSchema = z.object({
+  donorDisplayName: z.string().max(200).optional(),
+});
+
+const dedicateSchema = z.object({
+  learnerName: z.string().min(1).max(200),
+  studySubject: z.string().max(200).optional(),
+});
 
 /* ── GET /yahrzeit — public, returns all lit candles with active learners ── */
 router.get("/yahrzeit", async (req, res) => {
@@ -57,11 +81,11 @@ router.get("/yahrzeit", async (req, res) => {
 /* ── POST /yahrzeit — create + immediately light a candle (auth) ── */
 router.post("/yahrzeit", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { id, deceasedName, hebrewDay, hebrewMonth, displayDate, passingYear, message, donorDisplayName } = req.body;
-
-  if (!id || !deceasedName || hebrewDay == null || hebrewMonth == null) {
-    return res.status(400).json({ error: "Missing required fields" });
+  const parsed = yahrzeitCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid yahrzeit data", parsed.error.issues);
   }
+  const { id, deceasedName, hebrewDay, hebrewMonth, displayDate, passingYear, message, donorDisplayName } = parsed.data;
 
   const client = await pool.connect();
   try {
@@ -82,7 +106,11 @@ router.post("/yahrzeit", requireAuth, async (req, res) => {
 router.post("/yahrzeit/:id/light", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
   const { id } = req.params;
-  const { donorDisplayName } = req.body;
+  const parsed = lightSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid data", parsed.error.issues);
+  }
+  const { donorDisplayName } = parsed.data;
 
   const client = await pool.connect();
   try {
@@ -119,9 +147,11 @@ router.delete("/yahrzeit/:id", requireAuth, async (req, res) => {
 router.post("/yahrzeit/:id/dedicate", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
   const { id } = req.params;
-  const { learnerName, studySubject } = req.body;
-
-  if (!learnerName) return res.status(400).json({ error: "learnerName required" });
+  const parsed = dedicateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid dedication data", parsed.error.issues);
+  }
+  const { learnerName, studySubject } = parsed.data;
 
   const dedicationId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const activeUntil = new Date(Date.now() + 5 * 60 * 1000).toISOString();

@@ -1,10 +1,61 @@
 import { Router } from "express";
+import { z } from "zod";
 import { pool } from "@workspace/db";
 import { requireAuth } from "../lib/requireAuth";
 import { requireAdmin } from "../lib/requireAdmin";
+import { apiError } from "../lib/apiError";
 import { sendPushToUser } from "./push";
 
 const router = Router();
+
+// ── Validation schemas ────────────────────────────────────────────────────────
+
+const profileSchema = z.object({
+  theme: z.enum(["dark", "light"]).optional(),
+  location: z.record(z.unknown()).optional().nullable(),
+  // isPremium intentionally excluded — only set by admin/payment routes
+  candleEnabled: z.boolean().optional(),
+  language: z.enum(["en", "tk"]).optional(),
+  notifPrefs: z.record(z.unknown()).optional().nullable(),
+  leadTime: z.number().int().min(0).max(120).optional(),
+});
+
+const publicProfileSchema = z.object({
+  displayName: z.string().min(1).max(100),
+  congregation: z.string().max(200).optional(),
+  bio: z.string().max(500).optional(),
+  role: z.enum(["Member", "Elder", "Rabbi", "Student", "Leader", "Teacher", "Other"]).optional(),
+  city: z.string().max(100).optional(),
+  country: z.string().max(100).optional(),
+  avatarEmoji: z.string().max(10).optional(),
+  profilePhotoUrl: z.string().url().max(500).optional().nullable(),
+});
+
+const yahrzeitSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  hebrewDay: z.number().int().min(1).max(30),
+  hebrewMonth: z.number().int().min(1).max(13),
+  displayDate: z.string().max(100).optional(),
+  wasAfterSunset: z.boolean().optional(),
+});
+
+const torahTrackerSchema = z.object({
+  id: z.string().min(1).max(100),
+  date: z.string().min(1).max(20),
+  subject: z.string().min(1).max(200),
+  description: z.string().max(1000).optional(),
+  duration: z.number().int().min(0).max(1440).optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+const goalSchema = z.object({
+  goalMins: z.number().int().min(0).max(1440),
+});
+
+const premiumRequestSchema = z.object({
+  note: z.string().max(500).optional(),
+});
 
 // ── Profile ───────────────────────────────────────────────────────────────────
 
@@ -44,16 +95,21 @@ router.get("/user/profile", requireAuth, async (req, res) => {
 
 router.put("/user/profile", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { theme, location, isPremium, candleEnabled, language, notifPrefs, leadTime } = req.body;
+  const parsed = profileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid profile data", parsed.error.issues);
+  }
+  const { theme, location, candleEnabled, language, notifPrefs, leadTime } = parsed.data;
+  // isPremium is intentionally NOT accepted here — premium status is controlled
+  // exclusively by admin routes (/admin/users/:id/premium) and payment verification.
   const client = await pool.connect();
   try {
     await client.query(
-      `INSERT INTO user_profiles (user_id, theme, location, is_premium, candle_enabled, language, notif_prefs, lead_time, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+      `INSERT INTO user_profiles (user_id, theme, location, candle_enabled, language, notif_prefs, lead_time, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        ON CONFLICT (user_id) DO UPDATE SET
          theme = EXCLUDED.theme,
          location = EXCLUDED.location,
-         is_premium = EXCLUDED.is_premium,
          candle_enabled = EXCLUDED.candle_enabled,
          language = EXCLUDED.language,
          notif_prefs = EXCLUDED.notif_prefs,
@@ -63,7 +119,6 @@ router.put("/user/profile", requireAuth, async (req, res) => {
         userId,
         theme ?? "dark",
         location ? JSON.stringify(location) : null,
-        isPremium ?? false,
         candleEnabled ?? true,
         language ?? "en",
         notifPrefs ? JSON.stringify(notifPrefs) : null,
@@ -103,10 +158,11 @@ router.get("/user/yahrzeit", requireAuth, async (req, res) => {
 
 router.post("/user/yahrzeit", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { id, name, hebrewDay, hebrewMonth, displayDate, wasAfterSunset } = req.body;
-  if (!id || !name || hebrewDay == null || hebrewMonth == null) {
-    return res.status(400).json({ error: "Missing required fields" });
+  const parsed = yahrzeitSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid yahrzeit data", parsed.error.issues);
   }
+  const { id, name, hebrewDay, hebrewMonth, displayDate, wasAfterSunset } = parsed.data;
   const client = await pool.connect();
   try {
     await client.query(
@@ -129,6 +185,7 @@ router.post("/user/yahrzeit", requireAuth, async (req, res) => {
 router.delete("/user/yahrzeit/:id", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
   const { id } = req.params;
+  if (!id || id.length > 100) return apiError.badRequest(res, "Invalid id");
   const client = await pool.connect();
   try {
     await client.query(
@@ -168,10 +225,11 @@ router.get("/user/torah-tracker", requireAuth, async (req, res) => {
 
 router.post("/user/torah-tracker", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { id, date, subject, description, duration, notes } = req.body;
-  if (!id || !date || !subject) {
-    return res.status(400).json({ error: "Missing required fields" });
+  const parsed = torahTrackerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid Torah tracker data", parsed.error.issues);
   }
+  const { id, date, subject, description, duration, notes } = parsed.data;
   const client = await pool.connect();
   try {
     await client.query(
@@ -194,6 +252,7 @@ router.post("/user/torah-tracker", requireAuth, async (req, res) => {
 router.delete("/user/torah-tracker/:id", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
   const { id } = req.params;
+  if (!id || id.length > 100) return apiError.badRequest(res, "Invalid id");
   const client = await pool.connect();
   try {
     await client.query(
@@ -222,8 +281,11 @@ router.get("/user/torah-tracker/goal", requireAuth, async (req, res) => {
 
 router.put("/user/torah-tracker/goal", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { goalMins } = req.body;
-  if (goalMins == null) return res.status(400).json({ error: "Missing goalMins" });
+  const parsed = goalSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid goal data", parsed.error.issues);
+  }
+  const { goalMins } = parsed.data;
   const client = await pool.connect();
   try {
     await client.query(
@@ -267,8 +329,11 @@ router.get("/user/public-profile", requireAuth, async (req, res) => {
 
 router.put("/user/public-profile", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { displayName, congregation, bio, role, city, country, avatarEmoji, profilePhotoUrl } = req.body;
-  if (!displayName?.trim()) return res.status(400).json({ error: "displayName required" });
+  const parsed = publicProfileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid public profile data", parsed.error.issues);
+  }
+  const { displayName, congregation, bio, role, city, country, avatarEmoji, profilePhotoUrl } = parsed.data;
   const client = await pool.connect();
   try {
     await client.query(
@@ -296,7 +361,11 @@ router.put("/user/public-profile", requireAuth, async (req, res) => {
 
 router.post("/premium/request", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { note } = req.body;
+  const parsed = premiumRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid request data", parsed.error.issues);
+  }
+  const { note } = parsed.data;
   const client = await pool.connect();
   try {
     const { rows: pp } = await client.query(
@@ -317,7 +386,6 @@ router.post("/premium/request", requireAuth, async (req, res) => {
        profile.congregation ?? null, profile.city ?? null, profile.country ?? null],
     );
 
-    // Notify admin via push if ADMIN_USER_ID is configured
     const adminUserId = process.env["ADMIN_USER_ID"];
     if (adminUserId) {
       const isPaid = typeof note === "string" && note.toLowerCase().includes("paid");
@@ -456,7 +524,7 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
 router.put("/admin/users/:userId/premium", requireAdmin, async (req, res) => {
   const { userId } = req.params;
   const { isPremium } = req.body;
-  if (typeof isPremium !== "boolean") return res.status(400).json({ error: "isPremium must be boolean" });
+  if (typeof isPremium !== "boolean") return apiError.badRequest(res, "isPremium must be boolean");
   const client = await pool.connect();
   try {
     await client.query(

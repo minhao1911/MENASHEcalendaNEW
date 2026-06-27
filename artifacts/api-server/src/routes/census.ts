@@ -1,10 +1,41 @@
 import { Router } from "express";
+import { z } from "zod";
 import { pool } from "@workspace/db";
 import { requireAuth } from "../lib/requireAuth";
 import { requireAdmin } from "../lib/requireAdmin";
+import { apiError } from "../lib/apiError";
 import { logger } from "../lib/logger";
 
 const router = Router();
+
+// ── Validation schemas ────────────────────────────────────────────────────────
+
+const familyMemberSchema = z.object({
+  name: z.string().min(1).max(200),
+  relation: z.string().max(100).optional(),
+  age: z.number().int().min(0).max(150).optional(),
+}).passthrough();
+
+const branchSchema = z.object({
+  id: z.string().max(100).optional(),
+  name: z.string().min(1).max(200),
+  cityId: z.string().max(100).optional(),
+  cityName: z.string().max(200).optional(),
+  adminName: z.string().max(200).optional(),
+  established: z.string().max(50).optional().nullable(),
+  families: z.array(z.record(z.unknown())).max(500).optional(),
+});
+
+const memberSubmissionSchema = z.object({
+  branchId: z.string().max(100).optional(),
+  branchName: z.string().max(200).optional(),
+  submitterName: z.string().min(1).max(200),
+  submitterNote: z.string().max(1000).optional().nullable(),
+  headCensus: z.record(z.unknown()).optional(),
+  members: z.array(z.record(z.unknown())).max(100).optional(),
+});
+
+// ── Row mappers ───────────────────────────────────────────────────────────────
 
 function rowToBranch(row: any) {
   return {
@@ -58,14 +89,17 @@ router.get("/census/branch", requireAuth, async (req, res) => {
     res.json(rowToBranch(rows[0]));
   } catch (err) {
     logger.error({ err }, "census/branch GET failed");
-    res.status(500).json({ error: "Failed to load branch" });
+    return apiError.internal(res, "Failed to load branch");
   }
 });
 
 router.put("/census/branch", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { id, name, cityId, cityName, adminName, established, families } = req.body;
-  if (!name) { res.status(400).json({ error: "Missing name" }); return; }
+  const parsed = branchSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid branch data", parsed.error.issues);
+  }
+  const { id, name, cityId, cityName, adminName, established, families } = parsed.data;
   const branchId = id || `br_${Date.now()}`;
   try {
     await pool.query(
@@ -85,7 +119,7 @@ router.put("/census/branch", requireAuth, async (req, res) => {
     res.json({ ok: true, id: branchId });
   } catch (err) {
     logger.error({ err }, "census/branch PUT failed");
-    res.status(500).json({ error: "Failed to save branch" });
+    return apiError.internal(res, "Failed to save branch");
   }
 });
 
@@ -99,14 +133,18 @@ router.get("/census/submissions", requireAdmin, async (_req, res) => {
     res.json(rows.map(rowToSubmission));
   } catch (err) {
     logger.error({ err }, "census/submissions GET failed");
-    res.status(500).json({ error: "Failed to load submissions" });
+    return apiError.internal(res, "Failed to load submissions");
   }
 });
 
 router.post("/census/submissions", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
   const { branch } = req.body;
-  if (!branch) { res.status(400).json({ error: "Missing branch" }); return; }
+  if (!branch) { return apiError.badRequest(res, "Missing branch"); }
+  const parsedBranch = branchSchema.safeParse(branch);
+  if (!parsedBranch.success) {
+    return apiError.badRequest(res, "Invalid branch data", parsedBranch.error.issues);
+  }
   try {
     const existing = await pool.query(
       "SELECT id FROM census_submissions WHERE owner_user_id = $1",
@@ -118,7 +156,7 @@ router.post("/census/submissions", requireAuth, async (req, res) => {
         `UPDATE census_submissions
            SET branch_data = $2::jsonb, status = 'pending', submitted_at = NOW(), reviewed_at = NULL, review_note = NULL
            WHERE id = $1`,
-        [id, JSON.stringify(branch)]
+        [id, JSON.stringify(parsedBranch.data)]
       );
       const { rows } = await pool.query("SELECT * FROM census_submissions WHERE id = $1", [id]);
       res.json(rowToSubmission(rows[0]));
@@ -127,14 +165,14 @@ router.post("/census/submissions", requireAuth, async (req, res) => {
       await pool.query(
         `INSERT INTO census_submissions (id, owner_user_id, branch_data, status)
          VALUES ($1, $2, $3::jsonb, 'pending')`,
-        [id, userId, JSON.stringify(branch)]
+        [id, userId, JSON.stringify(parsedBranch.data)]
       );
       const { rows } = await pool.query("SELECT * FROM census_submissions WHERE id = $1", [id]);
       res.json(rowToSubmission(rows[0]));
     }
   } catch (err) {
     logger.error({ err }, "census/submissions POST failed");
-    res.status(500).json({ error: "Failed to create submission" });
+    return apiError.internal(res, "Failed to create submission");
   }
 });
 
@@ -142,7 +180,10 @@ router.patch("/census/submissions/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { status, reviewNote } = req.body as { status: "approved" | "rejected"; reviewNote?: string };
   if (!["approved", "rejected"].includes(status)) {
-    res.status(400).json({ error: "Invalid status" }); return;
+    return apiError.badRequest(res, "status must be 'approved' or 'rejected'");
+  }
+  if (reviewNote != null && (typeof reviewNote !== "string" || reviewNote.length > 500)) {
+    return apiError.badRequest(res, "reviewNote must be a string under 500 characters");
   }
   try {
     await pool.query(
@@ -152,11 +193,11 @@ router.patch("/census/submissions/:id", requireAdmin, async (req, res) => {
       [id, status, reviewNote || null]
     );
     const { rows } = await pool.query("SELECT * FROM census_submissions WHERE id = $1", [id]);
-    if (rows.length === 0) { res.status(404).json({ error: "Not found" }); return; }
+    if (rows.length === 0) { return apiError.notFound(res); }
     res.json(rowToSubmission(rows[0]));
   } catch (err) {
     logger.error({ err }, "census/submissions PATCH failed");
-    res.status(500).json({ error: "Failed to update submission" });
+    return apiError.internal(res, "Failed to update submission");
   }
 });
 
@@ -170,15 +211,18 @@ router.get("/census/member-submissions", requireAdmin, async (_req, res) => {
     res.json(rows.map(rowToMemberSub));
   } catch (err) {
     logger.error({ err }, "census/member-submissions GET failed");
-    res.status(500).json({ error: "Failed to load member submissions" });
+    return apiError.internal(res, "Failed to load member submissions");
   }
 });
 
 /* POST /census/member-submissions — intentionally public (no auth required):
    Community members submit their household census without needing to sign in. */
 router.post("/census/member-submissions", async (req, res) => {
-  const { branchId, branchName, submitterName, submitterNote, headCensus, members } = req.body;
-  if (!submitterName) { res.status(400).json({ error: "Missing submitterName" }); return; }
+  const parsed = memberSubmissionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid submission data", parsed.error.issues);
+  }
+  const { branchId, branchName, submitterName, submitterNote, headCensus, members } = parsed.data;
   const id = `msub_${Date.now()}`;
   try {
     await pool.query(
@@ -192,7 +236,7 @@ router.post("/census/member-submissions", async (req, res) => {
     res.json(rowToMemberSub(rows[0]));
   } catch (err) {
     logger.error({ err }, "census/member-submissions POST failed");
-    res.status(500).json({ error: "Failed to submit" });
+    return apiError.internal(res, "Failed to submit");
   }
 });
 
@@ -200,7 +244,10 @@ router.patch("/census/member-submissions/:id", requireAdmin, async (req, res) =>
   const { id } = req.params;
   const { status, reviewNote } = req.body as { status: "approved" | "rejected" | "pending"; reviewNote?: string };
   if (!["approved", "rejected", "pending"].includes(status)) {
-    res.status(400).json({ error: "Invalid status" }); return;
+    return apiError.badRequest(res, "status must be 'approved', 'rejected', or 'pending'");
+  }
+  if (reviewNote != null && (typeof reviewNote !== "string" || reviewNote.length > 500)) {
+    return apiError.badRequest(res, "reviewNote must be a string under 500 characters");
   }
   try {
     await pool.query(
@@ -210,11 +257,11 @@ router.patch("/census/member-submissions/:id", requireAdmin, async (req, res) =>
       [id, status, reviewNote || null]
     );
     const { rows } = await pool.query("SELECT * FROM census_member_submissions WHERE id = $1", [id]);
-    if (rows.length === 0) { res.status(404).json({ error: "Not found" }); return; }
+    if (rows.length === 0) { return apiError.notFound(res); }
     res.json(rowToMemberSub(rows[0]));
   } catch (err) {
     logger.error({ err }, "census/member-submissions PATCH failed");
-    res.status(500).json({ error: "Failed to update" });
+    return apiError.internal(res, "Failed to update");
   }
 });
 

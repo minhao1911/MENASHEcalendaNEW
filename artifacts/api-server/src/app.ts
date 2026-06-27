@@ -10,6 +10,7 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { globalRateLimiter } from "./lib/rateLimiter";
 
 const app: Express = express();
 
@@ -35,12 +36,20 @@ app.use(
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
+// CORS: in production ALLOWED_ORIGINS must be set explicitly.
+// In development (NODE_ENV !== 'production'), allow all origins for convenience.
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim())
-  : true;
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : process.env.NODE_ENV === "production"
+    ? ((() => {
+        logger.warn("ALLOWED_ORIGINS is not set in production — CORS will reject cross-origin requests");
+        return false;
+      })())
+    : true;
+
 app.use(cors({ credentials: true, origin: allowedOrigins }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "512kb" }));
+app.use(express.urlencoded({ extended: true, limit: "512kb" }));
 
 app.use(
   clerkMiddleware((req) => ({
@@ -50,6 +59,8 @@ app.use(
     ),
   })),
 );
+
+app.use(globalRateLimiter);
 
 app.use("/api", router);
 

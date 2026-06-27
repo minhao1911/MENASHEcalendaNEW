@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { Expo, type ExpoPushMessage } from "expo-server-sdk";
 import webpush from "web-push";
 import { pool } from "@workspace/db";
@@ -6,6 +7,7 @@ import { logger } from "../lib/logger";
 import { requireAdmin } from "../lib/requireAdmin";
 import { getAuth } from "@clerk/express";
 import { isAdminUser } from "../lib/authorization";
+import { apiError } from "../lib/apiError";
 
 const router = Router();
 const expo = new Expo();
@@ -29,6 +31,22 @@ export interface CommunityAnnouncement {
   sentAt: string | null;
   createdAt: string;
 }
+
+const broadcastSchema = z.object({
+  emoji: z.string().max(10).optional(),
+  title: z.string().min(1).max(200),
+  body: z.string().max(2000).optional(),
+  scheduledAt: z.string().datetime().optional().nullable(),
+  pinned: z.boolean().optional(),
+});
+
+const patchSchema = z.object({
+  emoji: z.string().max(10).optional(),
+  title: z.string().min(1).max(200).optional(),
+  body: z.string().max(2000).optional(),
+  pinned: z.boolean().optional(),
+  sendNow: z.boolean().optional(),
+});
 
 function rowToAnn(row: any): CommunityAnnouncement {
   return {
@@ -123,24 +141,18 @@ router.get("/announcements", async (req, res) => {
     res.json({ announcements: r.rows.map(rowToAnn) });
   } catch (err) {
     logger.error({ err }, "GET /announcements: db error");
-    res.status(500).json({ error: "Failed to load announcements" });
+    return apiError.internal(res, "Failed to load announcements");
   }
 });
 
 // POST /announcements/broadcast — admin creates + sends + pushes
 router.post("/announcements/broadcast", requireAdmin, async (req, res) => {
-  const { emoji, title, body, scheduledAt, pinned } = req.body as {
-    emoji?: string;
-    title: string;
-    body?: string;
-    scheduledAt?: string | null;
-    pinned?: boolean;
-  };
-
-  if (!title?.trim()) {
-    res.status(400).json({ error: "Title is required" });
-    return;
+  const parsed = broadcastSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid announcement data", parsed.error.issues);
   }
+
+  const { emoji, title, body, scheduledAt, pinned } = parsed.data;
 
   const id = `ann-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const isScheduled = !!scheduledAt;
@@ -156,8 +168,7 @@ router.post("/announcements/broadcast", requireAdmin, async (req, res) => {
     );
   } catch (err) {
     logger.error({ err }, "POST /announcements/broadcast: db error");
-    res.status(500).json({ error: "Failed to save announcement" });
-    return;
+    return apiError.internal(res, "Failed to save announcement");
   }
 
   const ann: CommunityAnnouncement = {
@@ -177,18 +188,17 @@ router.post("/announcements/broadcast", requireAdmin, async (req, res) => {
 
 // PATCH /announcements/:id — admin update / send draft
 router.patch("/announcements/:id", requireAdmin, async (req, res) => {
-  const { emoji, title, body, pinned, sendNow } = req.body as {
-    emoji?: string;
-    title?: string;
-    body?: string;
-    pinned?: boolean;
-    sendNow?: boolean;
-  };
+  const parsed = patchSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid announcement data", parsed.error.issues);
+  }
 
+  const { emoji, title, body, pinned, sendNow } = parsed.data;
   const { id } = req.params;
+
   try {
     const existing = await pool.query("SELECT * FROM community_announcements WHERE id = $1", [id]);
-    if (existing.rows.length === 0) { res.status(404).json({ error: "Not found" }); return; }
+    if (existing.rows.length === 0) { return apiError.notFound(res); }
 
     const row = existing.rows[0];
     const newEmoji = emoji ?? row.emoji;
@@ -217,7 +227,7 @@ router.patch("/announcements/:id", requireAdmin, async (req, res) => {
     }
   } catch (err) {
     logger.error({ err }, "PATCH /announcements/:id: db error");
-    res.status(500).json({ error: "Failed to update announcement" });
+    return apiError.internal(res, "Failed to update announcement");
   }
 });
 
@@ -228,7 +238,7 @@ router.delete("/announcements/:id", requireAdmin, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, "DELETE /announcements/:id: db error");
-    res.status(500).json({ error: "Failed to delete announcement" });
+    return apiError.internal(res, "Failed to delete announcement");
   }
 });
 

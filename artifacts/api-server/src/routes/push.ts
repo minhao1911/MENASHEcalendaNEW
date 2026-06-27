@@ -3,6 +3,7 @@ import webpush from "web-push";
 import { Expo, type ExpoPushMessage } from "expo-server-sdk";
 import { requireAuth } from "../lib/requireAuth";
 import { requireAdmin } from "../lib/requireAdmin";
+import { pushSubscribeRateLimiter } from "../lib/rateLimiter";
 import { pool } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { HebrewCalendar, flags } from "@hebcal/core";
@@ -213,7 +214,7 @@ router.get("/push/vapid-public-key", (_req, res) => {
   res.json({ publicKey: VAPID_PUBLIC });
 });
 
-router.post("/push/subscribe", async (req, res) => {
+router.post("/push/subscribe", pushSubscribeRateLimiter, async (req, res) => {
   const { subscription, schedule, userId } = req.body as {
     subscription: webpush.PushSubscription;
     schedule: ScheduleItem[];

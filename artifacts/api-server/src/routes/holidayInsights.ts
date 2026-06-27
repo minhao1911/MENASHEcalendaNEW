@@ -1,6 +1,9 @@
 import { Router } from "express";
+import { z } from "zod";
 import { GoogleGenAI } from "@google/genai";
 import { requireAuth } from "../lib/requireAuth";
+import { aiRateLimiter } from "../lib/rateLimiter";
+import { apiError } from "../lib/apiError";
 
 const router = Router();
 
@@ -20,18 +23,21 @@ interface HolidayInsight {
   bneiManasheConnection: string;
 }
 
+const bodySchema = z.object({
+  holidayName: z.string().min(1).max(100),
+  hebrewName: z.string().max(100).optional(),
+  timing: z.string().max(100).optional(),
+});
+
 const cache = new Map<string, HolidayInsight>();
 
-router.post("/holiday-insights", requireAuth, async (req, res) => {
-  const { holidayName, hebrewName, timing } = req.body as {
-    holidayName: string;
-    hebrewName?: string;
-    timing?: string;
-  };
-
-  if (!holidayName || typeof holidayName !== "string") {
-    return res.status(400).json({ error: "holidayName is required" });
+router.post("/holiday-insights", requireAuth, aiRateLimiter, async (req, res) => {
+  const parsed = bodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid request", parsed.error.issues);
   }
+
+  const { holidayName, hebrewName, timing } = parsed.data;
 
   const cacheKey = holidayName.toLowerCase().trim();
   if (cache.has(cacheKey)) {
@@ -42,7 +48,7 @@ router.post("/holiday-insights", requireAuth, async (req, res) => {
   try {
     genai = getGenAI();
   } catch {
-    return res.status(503).json({ error: "AI service not configured" });
+    return apiError.unavailable(res, "AI service not configured");
   }
 
   const prompt = `You are a knowledgeable Jewish Mussar teacher and scholar providing holiday insights tailored for the Bnei Menashe community — the Jewish community from Northeast India (Manipur and Mizoram), descendants of the lost tribe of Menashe, who have made aliyah to Israel.
@@ -70,23 +76,23 @@ Return only valid JSON, no markdown fences.`;
       content.match(/```\s*([\s\S]*?)```/);
     const jsonStr = jsonMatch ? jsonMatch[1] : content;
 
-    const parsed = JSON.parse(jsonStr) as Omit<HolidayInsight, "holidayName" | "hebrewName">;
+    const parsedAi = JSON.parse(jsonStr) as Omit<HolidayInsight, "holidayName" | "hebrewName">;
 
     const result: HolidayInsight = {
       holidayName,
       hebrewName: hebrewName ?? "",
-      overview: parsed.overview ?? "",
-      observances: parsed.observances ?? "",
-      mussarLesson: parsed.mussarLesson ?? "",
-      spiritualTheme: parsed.spiritualTheme ?? "",
-      bneiManasheConnection: parsed.bneiManasheConnection ?? "",
+      overview: parsedAi.overview ?? "",
+      observances: parsedAi.observances ?? "",
+      mussarLesson: parsedAi.mussarLesson ?? "",
+      spiritualTheme: parsedAi.spiritualTheme ?? "",
+      bneiManasheConnection: parsedAi.bneiManasheConnection ?? "",
     };
 
     cache.set(cacheKey, result);
     return res.json(result);
   } catch (err: any) {
     req.log.error(err);
-    return res.status(500).json({ error: "Failed to generate holiday insights. Please try again." });
+    return apiError.internal(res, "Failed to generate holiday insights. Please try again.");
   }
 });
 

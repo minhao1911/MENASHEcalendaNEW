@@ -1,6 +1,9 @@
 import { Router } from "express";
+import { z } from "zod";
 import { GoogleGenAI } from "@google/genai";
 import { requireAuth } from "../lib/requireAuth";
+import { aiRateLimiter } from "../lib/rateLimiter";
+import { apiError } from "../lib/apiError";
 
 const router = Router();
 
@@ -29,20 +32,26 @@ Tone: Warm, encouraging, scholarly yet accessible. Use "dear friend" occasionall
 
 If asked about something outside your expertise, gently redirect to Jewish topics or suggest consulting a local rabbi for practical halachic decisions.`;
 
-router.post("/chat", requireAuth, async (req, res) => {
-  const { messages } = req.body as {
-    messages: Array<{ role: "user" | "assistant"; content: string }>;
-  };
+const messageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(2000),
+});
 
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: "messages array is required" });
+const chatBodySchema = z.object({
+  messages: z.array(messageSchema).min(1).max(20),
+});
+
+router.post("/chat", requireAuth, aiRateLimiter, async (req, res) => {
+  const parsed = chatBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid messages", parsed.error.issues);
   }
 
   let genai: GoogleGenAI;
   try {
     genai = getGenAI();
   } catch {
-    return res.status(503).json({ error: "AI service not configured" });
+    return apiError.unavailable(res, "AI service not configured");
   }
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -51,7 +60,7 @@ router.post("/chat", requireAuth, async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
 
   try {
-    const history = messages.slice(-10);
+    const history = parsed.data.messages.slice(-10);
     const lastMessage = history[history.length - 1];
     const priorMessages = history.slice(0, -1);
 
