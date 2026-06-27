@@ -92,21 +92,15 @@ channel = "stable-25_05"
 
 [userenv.shared]
 VAPID_PUBLIC_KEY = "BBWVKa2fu6rVkKANdSG9_bFbIoEa41LlZs2J2XThCuMF6DHxgLFKRNtwqXEcNkbvn5Uy20Oxo3j70RRuEvOvYFo"
-VAPID_PRIVATE_KEY = "71-eZWQZMNH5gXgknxsKuxeYxm1xTEPDq13xKRc_wDc"
 VAPID_SUBJECT = "mailto:admin@menashecalendar.app"
 VITE_CLERK_PROXY_URL = ""
 CLERK_PUBLISHABLE_KEY = "pk_test_cHJlc2VudC1waXBlZmlzaC0xNy5jbGVyay5hY2NvdW50cy5kZXYk"
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_cHJlc2VudC1waXBlZmlzaC0xNy5jbGVyay5hY2NvdW50cy5kZXYk"
 VITE_CLERK_PUBLISHABLE_KEY = "pk_test_cHJlc2VudC1waXBlZmlzaC0xNy5jbGVyay5hY2NvdW50cy5kZXYk"
-SUPABASE = "pk_test_cHJlc2VudC1waXBlZmlzaC0xNy5jbGVyay5hY2NvdW50cy5kZXYk"
-SUPABASE_API_sec_key = "sk_test_O4HdH2jIETJ5dc37SEPW9p3qhTiEjuTzxsjyq3QJht"
 ADMIN_PIN = "1948"
 VITE_ADMIN_PIN = "1948"
 ADMIN_USER_ID = "user_3FY97P9A6kElvpsVl74YZxr1giS"
-GEMINI_API_KEY = "AQ.Ab8RN6I2rocu0W7omABPl8rkrCA4ulB8K9SJiZ-94W7AzQaxoA"
-GOOGLE_API_KEY = "AQ.Ab8RN6I2rocu0W7omABPl8rkrCA4ulB8K9SJiZ-94W7AzQaxoA"
 VITE_ADMIN_USER_ID = "user_3FY97P9A6kElvpsVl74YZxr1giS"
-CLERK_SECRET_KEY = "sk_test_O4HdH2jIETJ5dc37SEPW9p3qhTiEjuTzxsjyq3QJht"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-c5b161bf-7380-4234-b117-63cabc6e63ee"
