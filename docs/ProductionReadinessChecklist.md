@@ -423,3 +423,149 @@
 4. Run: pnpm audit   (scan for known dependency vulnerabilities)
 5. Verify VITE_ADMIN_PIN is removed from env vars (SEC-06 from prior checklist — admin PIN should not be in browser)
 ```
+
+---
+
+## SPR-021A — Release Blocker Resolution
+
+> Sprint executed: 2026-06-27  
+> Engineer: Release Engineering  
+> Objective: Resolve all B-03 and B-05 blockers identified in SPR-021 before v1.0 launch.
+
+---
+
+### Task 1 — Global React Error Boundary ✅ RESOLVED
+
+**Blocker resolved:** B-03
+
+**Action:**
+- Created `artifacts/menashe-calendar/src/components/ErrorBoundary.tsx` — class-based React Error Boundary using `getDerivedStateFromError` + `componentDidCatch`.
+- Wraps entire app root in `main.tsx`: `<ErrorBoundary> → <WouterRouter> → <Root />`.
+- Fallback UI includes: Reload button, Return Home button, error reference ID (timestamp-based `err-NNNN`), error logging via `console.error`.
+- Matches app's dark gold theme (`#080e1a` / `#D4AF37`) so it is visually consistent with the rest of the platform.
+
+---
+
+### Task 2 — Production CORS Validation ✅ RESOLVED
+
+**Blocker resolved:** B-05
+
+**Actions:**
+
+1. **`ALLOWED_ORIGINS` env var set** to:  
+   `https://f9c15f53-13a1-431f-9cdf-dd4c27135d35-00-3nzd0ziqwk0p0.sisko.replit.dev`
+
+2. **`app.ts` CORS logic hardened** — replaced single-branch fallback with `buildAllowedOrigins()`:
+   - If `ALLOWED_ORIGINS` is set → use it (comma-separated list).
+   - If production + `REPLIT_DOMAINS` is set → derive `https://<domain>` from Replit-managed env (safe automatic fallback for first deploy).
+   - If neither → log warning + reject all cross-origin requests.
+   - Dev (`NODE_ENV !== 'production'`) → allow all (no change to dev workflow).
+
+3. **Production CORS posture:**
+
+| Origin | Allowed |
+|---|---|
+| `https://<replit-dev-domain>` | ✅ (via ALLOWED_ORIGINS) |
+| `https://<replit-prod-domain>` | ✅ (via REPLIT_DOMAINS auto-fallback in production) |
+| `https://*.clerk.accounts.dev` | ✅ (Clerk proxied at `/clerk-proxy`, not direct CORS) |
+| `https://evil.example.com` | ❌ (rejected in production) |
+| Localhost in dev | ✅ (dev mode, `origin: true`) |
+
+**⚠️ Remaining action for production go-live (owner: operator):**  
+After deploying to Replit Autoscale, the production domain (`.replit.app`) is set automatically in `REPLIT_DOMAINS`. No manual change needed. If a custom domain is used, add it to `ALLOWED_ORIGINS`.
+
+---
+
+### Task 3 — Production Secrets Audit ✅ COMPLETE
+
+| Variable | Category | Status | Notes |
+|---|---|---|---|
+| `DATABASE_URL` | Secret | ✅ Present | PostgreSQL connection string |
+| `CLERK_SECRET_KEY` | Secret | ✅ Present | Clerk backend key (`sk_test_*` — dev key) |
+| `SESSION_SECRET` | Secret | ✅ Present | Express session signing |
+| `REPLIT_DEV_DOMAIN` | Secret (Replit-managed) | ✅ Present | Dev preview domain |
+| `REPLIT_DOMAINS` | Secret (Replit-managed) | ✅ Present | Production domains (auto-set) |
+| `REPL_ID` | Secret (Replit-managed) | ✅ Present | Repl identity |
+| `PGDATABASE` / `PGHOST` / `PGPORT` / `PGUSER` / `PGPASSWORD` | Secret (Replit-managed) | ✅ Present | DB connection parts |
+| `ALLOWED_ORIGINS` | Env var | ✅ Present (just set) | CORS allowlist — resolves B-05 |
+| `CLERK_PUBLISHABLE_KEY` | Env var | ✅ Present | `pk_test_*` — dev key |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Env var | ✅ Present | Frontend Clerk key |
+| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Env var | ✅ Present | Mobile Clerk key |
+| `ADMIN_PIN` | Env var | ✅ Present | `1948` — backend admin gate |
+| `ADMIN_USER_ID` | Env var | ✅ Present | Clerk user ID for admin |
+| `VAPID_PUBLIC_KEY` | Env var | ✅ Present | Web push public key |
+| `VAPID_SUBJECT` | Env var | ✅ Present | Web push contact email |
+| `VITE_ADMIN_PIN` | Env var | ⚠️ Security risk | SEC-06: admin PIN exposed to browser bundle — remove for production |
+| `VITE_ADMIN_USER_ID` | Env var | ⚠️ Security risk | Admin user ID exposed to browser bundle — remove for production |
+| `VAPID_PRIVATE_KEY` | Secret | ❌ Missing | Push notifications silently disabled without this; non-blocking for v1 |
+| `GOOGLE_API_KEY` | Secret | ⚠️ Unverified | AI chat routes require this; provided via Replit integration |
+| `CLERK_SECRET_KEY` (live) | Secret | ❌ Not switched | Still `sk_test_*`; must switch to `sk_live_*` before public launch |
+| `CLERK_PUBLISHABLE_KEY` (live) | Env var | ❌ Not switched | Still `pk_test_*`; must switch to `pk_live_*` before public launch |
+
+**Summary:** 15 present, 2 security warnings, 3 require operator action before production.
+
+---
+
+### Task 4 — Deployment Audit ✅ PASS
+
+| Asset | Required | Status | Detail |
+|---|---|---|---|
+| `public/manifest.json` | PWA | ✅ | name, short_name, start_url, display, icons |
+| `public/sw.js` | PWA offline | ✅ | Service Worker v3, two caches (shell + assets), git-safe |
+| `public/icon-192.png` | PWA | ✅ | 61 KB |
+| `public/icon-512.png` | PWA | ✅ | 430 KB |
+| `public/favicon.svg` | Browser tab | ✅ | SVG, 163 B |
+| `public/opengraph.jpg` | Social share | ✅ | 37 KB |
+| `public/robots.txt` | SEO | ✅ | `Allow: /` for all user-agents |
+| `index.html` — viewport meta | Mobile | ✅ | `width=device-width, initial-scale=1` |
+| `index.html` — theme-color | PWA / Android | ✅ | `#1e3a8a` |
+| `index.html` — apple-mobile-web-app | iOS PWA | ✅ | capable + status-bar-style + title |
+| `index.html` — apple-touch-icon | iOS | ✅ | `/icon-192.png` |
+| `index.html` — OG tags | Social | ✅ | title, description, type, image |
+| `index.html` — Twitter card | Social | ✅ | summary_large_image |
+| `index.html` — description meta | SEO | ✅ | present |
+| `index.html` — robots meta | SEO | ✅ | `index, follow` |
+| `vite.config.ts` — outDir | Build | ✅ | `dist/public` |
+| `sitemap.xml` | SEO | ⚠️ Not present | Optional for v1; no public content pages |
+
+**API Server build:** esbuild, outputs to `artifacts/api-server/dist/index.mjs` (4.9 MB). Source maps present.
+
+---
+
+### Task 5 — Smoke Test ✅ ALL PASS
+
+Executed 2026-06-27 against live dev environment:
+
+| Check | Method | Result |
+|---|---|---|
+| Frontend boots | Visual inspection + HMR | ✅ Loads, renders, no crash |
+| API health | `GET /api/healthz` | ✅ `{"status":"ok"}` — 200 |
+| Database connected | Health response + migration logs | ✅ `Schema ready`, books seeded |
+| Books public endpoint | `GET /api/books` | ✅ 200 |
+| Announcements | `GET /api/announcements` | ✅ 200 |
+| Memorial search | `GET /api/memorials/search?q=test` | ✅ 200 |
+| Auth guard | `POST /api/storage/uploads/request-url` (no token) | ✅ 401 (correct rejection) |
+| CORS (dev, any origin) | `GET /api/books` + evil Origin header | ✅ 200 (expected — dev mode `origin: true`) |
+| CORS (production logic) | Code audit of `buildAllowedOrigins()` | ✅ Enforced when `NODE_ENV=production` |
+| Error Boundary | Component created + wired in `main.tsx` | ✅ Wraps entire app root |
+
+---
+
+### Go / No-Go Decision (SPR-021A)
+
+> **🟢 GO — Conditional on 3 operator-owned actions before public launch.**
+
+**Critical blockers RESOLVED:**
+- ✅ B-03 — Global Error Boundary implemented
+- ✅ B-05 — ALLOWED_ORIGINS set; CORS hardened with REPLIT_DOMAINS production fallback
+
+**Operator actions required before public launch (not code changes — configuration only):**
+
+1. **Switch Clerk keys to production** (`pk_live_` / `sk_live_`) in Replit env vars
+2. **Remove `VITE_ADMIN_PIN` and `VITE_ADMIN_USER_ID`** from shared env vars (SEC-06)
+3. **Set `VAPID_PRIVATE_KEY`** as a secret if push notifications are required at launch
+
+**Post-launch (v1.1 backlog):**
+- B-02: No push notification opt-in flow (VAPID_PRIVATE_KEY not set)
+- B-04: Memorial Sanctuary not in mobile app
+- B-01: Community features (Events, Prayer Board) are localStorage-only

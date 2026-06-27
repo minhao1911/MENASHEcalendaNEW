@@ -40,16 +40,27 @@ app.use(
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
-// CORS: in production ALLOWED_ORIGINS must be set explicitly.
+// CORS: prefer ALLOWED_ORIGINS; fall back to REPLIT_DOMAINS in production
+// so the app works on first deploy without manual secret configuration.
 // In development (NODE_ENV !== 'production'), allow all origins for convenience.
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : process.env.NODE_ENV === "production"
-    ? ((() => {
-        logger.warn("ALLOWED_ORIGINS is not set in production — CORS will reject cross-origin requests");
-        return false;
-      })())
-    : true;
+function buildAllowedOrigins(): string[] | boolean {
+  if (process.env.ALLOWED_ORIGINS) {
+    return process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
+  }
+  if (process.env.NODE_ENV !== "production") return true;
+  // Production fallback: derive from Replit-managed REPLIT_DOMAINS
+  const replitDomains = process.env.REPLIT_DOMAINS;
+  if (replitDomains) {
+    const origins = replitDomains
+      .split(",")
+      .map((d) => `https://${d.trim()}`);
+    logger.info({ origins }, "ALLOWED_ORIGINS not set — using REPLIT_DOMAINS as CORS allowlist");
+    return origins;
+  }
+  logger.warn("ALLOWED_ORIGINS and REPLIT_DOMAINS are both unset — CORS will reject cross-origin requests");
+  return false;
+}
+const allowedOrigins = buildAllowedOrigins();
 
 app.use(cors({ credentials: true, origin: allowedOrigins }));
 app.use(express.json({ limit: "512kb" }));

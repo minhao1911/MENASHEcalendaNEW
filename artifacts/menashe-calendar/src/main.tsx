@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { useState, useCallback } from "react";
 import { Router as WouterRouter } from "wouter";
 import App from "./App";
+import ErrorBoundary from "./components/ErrorBoundary";
 import SplashScreen from "./components/SplashScreen";
 import OnboardingFlow, { hasSeenOnboarding } from "./components/OnboardingFlow";
 import OfflineBanner from "./components/OfflineBanner";
@@ -85,7 +86,9 @@ function Root() {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <WouterRouter base={basePath}>
-    <Root />
-  </WouterRouter>
+  <ErrorBoundary>
+    <WouterRouter base={basePath}>
+      <Root />
+    </WouterRouter>
+  </ErrorBoundary>
 );
