@@ -1,6 +1,8 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "path";
+import fs from "fs";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import {
@@ -78,5 +80,27 @@ app.use(
 app.use(globalRateLimiter);
 
 app.use("/api", router);
+
+// In production, serve the built React frontend from the same process.
+// The frontend builds to artifacts/menashe-calendar/dist/public.
+// __dirname is shimmed by esbuild banner to the dir of dist/index.mjs,
+// so we step two levels up: dist/ → api-server/ → artifacts/ → workspace root,
+// then into menashe-calendar/dist/public.
+if (process.env.NODE_ENV === "production") {
+  const frontendDir = path.resolve(
+    __dirname,
+    "../../menashe-calendar/dist/public",
+  );
+  if (fs.existsSync(frontendDir)) {
+    logger.info({ frontendDir }, "Serving static frontend");
+    app.use(express.static(frontendDir, { maxAge: "1d", etag: true }));
+    // SPA fallback — all non-API routes return index.html
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(frontendDir, "index.html"));
+    });
+  } else {
+    logger.warn({ frontendDir }, "Frontend dist not found — static serving skipped");
+  }
+}
 
 export default app;
