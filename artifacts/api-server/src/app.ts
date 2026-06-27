@@ -14,6 +14,10 @@ import { globalRateLimiter } from "./lib/rateLimiter";
 
 const app: Express = express();
 
+// Replit runs behind a reverse proxy — trust the X-Forwarded-For header
+// so that express-rate-limit can correctly identify client IPs.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
