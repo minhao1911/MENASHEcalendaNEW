@@ -654,6 +654,115 @@ The geo utilities (`haversineDistKm`, `getBearingToJerusalem`) and date helpers 
 
 ---
 
+## SPR-009 — H-004.5: Section Layer Introduction
+
+> Status: Complete | Date: 2026-06-27
+
+### Objective
+
+Introduce a semantic Section layer between `Home.tsx` and the presentational components, grouping related UI into cohesive containers. No UI was redesigned, no business logic was moved, no APIs were touched.
+
+### Directory Structure Created
+
+```
+src/pages/home/
+└── sections/
+    ├── index.ts                   — barrel export of all 5 sections
+    ├── CalendarSection.tsx        — calendar block layout shell
+    ├── LearningSection.tsx        — parasha + omer + wisdom group
+    ├── PrayerSection.tsx          — siddur library group
+    ├── QuickActionsSection.tsx    — quick action grid group
+    └── CommunitySection.tsx       — celebrations + community group
+```
+
+### Section Hierarchy
+
+```
+Home.tsx (orchestrator)
+├── ShabbatMode          (overlay — above sections)
+├── ShabbatBanner        (fixed-position banner — above sections)
+├── AppHeader            (not sectioned — navigation handlers)
+│
+├── CalendarSection      ← NEW
+│   ├── AnnouncementStrip
+│   ├── Today Card (CompassCard + TimeAwareBackground + Zmanim)
+│   ├── RoshChodeshBanner
+│   ├── TodayHolidayCard(s)
+│   ├── NextHolidayCard
+│   └── YahrzeitReminderCard
+│
+├── LearningSection      ← NEW
+│   ├── ParashaCard      (from components/cards/)
+│   ├── OmerCard         (from components/cards/, conditional)
+│   └── DailyWisdomCard  (from components/cards/, with DailyBriefingCard as children)
+│
+├── PrayerSection        ← NEW
+│   └── SiddurCard       (from components/cards/)
+│
+├── QuickActionsSection  ← NEW
+│   └── QuickActionGrid  (from components/sections/)
+│
+├── CommunitySection     ← NEW
+│   ├── UpcomingCelebrations
+│   └── CommunityCard
+│
+├── CommunityFAB         (floating — outside sections)
+├── AiChatFAB            (floating — outside sections)
+└── JerusalemCompass     (overlay — outside sections)
+```
+
+### Design Decisions
+
+- **AnnouncementStrip moved to CalendarSection**: `loadStripDismissed` helper and `AnnouncementStrip` function relocated from Home.tsx into CalendarSection.tsx. CalendarSection accepts `unreadAnnouncements` + `onShowAnnouncements` props and renders the strip directly, then renders the Today Card area via `children`.
+- **CommunitySection is fully self-contained**: `CelebEntry` type, `CountdownChip`, `UpcomingCelebrations`, and `CommunityCard` relocated from Home.tsx into CommunitySection.tsx. CommunitySection accepts `onShowMembers`, `onShowCommunity`, `onShowCensus` props — no `children` needed.
+- **Children/slot pattern for CalendarSection's Today Card block**: RoshChodeshBanner, TodayHolidayCard, NextHolidayCard, YahrzeitReminderCard are still local functions in Home.tsx (complex state + data fetching). They are passed as `children` until promoted to standalone components in a future sprint.
+- **Full composition for LearningSection, PrayerSection, QuickActionsSection**: These sections import and compose the already-extracted H-004 components (ParashaCard, OmerCard, DailyWisdomCard, SiddurCard, QuickActionGrid) directly. They own conditional rendering and component ordering within their block.
+- **DailyBriefingCard threading**: `DailyBriefingCard` is an inline component in Home.tsx with its own local state. It is passed as `children` from Home.tsx → LearningSection → DailyWisdomCard, keeping state ownership in Home.tsx without the component needing to be extracted prematurely.
+- **Floating/overlay elements stay in Home.tsx**: ShabbatMode, ShabbatBanner, AppHeader, CommunityFAB, AiChatFAB, JerusalemCompass are structural or floating — they don't belong in a content section.
+
+### Import Reduction in Home.tsx
+
+| Before H-004.5 | After H-004.5 |
+|---|---|
+| `import { ShabbatBanner, ParashaCard, OmerCard, DailyWisdomCard, SiddurCard, QuickActionGrid } from "./home/components"` | `import { ShabbatBanner } from "./home/components"` |
+| — | `import { CalendarSection, LearningSection, PrayerSection, QuickActionsSection, CommunitySection } from "./home/sections"` |
+| 6 component invocations scattered across JSX | 5 semantic section calls |
+| `CelebEntry`, `CountdownChip`, `UpcomingCelebrations`, `CommunityCard` defined in Home.tsx | Moved to `CommunitySection.tsx` |
+| `loadStripDismissed`, `AnnouncementStrip` defined in Home.tsx | Moved to `CalendarSection.tsx` |
+
+### Line Count
+
+| | Lines |
+|---|---|
+| Before H-004.5 (after H-004) | ~4,620 |
+| After H-004.5 | ~4,170 |
+| **H-004.5 Net Reduction** | **~450 lines** (438 from moved functions + JSX reorganisation) |
+| **Total reduction (H-001 → H-004.5)** | **~1,157 lines** |
+
+### Remaining Migration Phases
+
+| Phase | Description | Status |
+|---|---|---|
+| H-004.5-next | Promote remaining local Home.tsx calendar functions (TodayHolidayCard, NextHolidayCard, YahrzeitReminderCard, RoshChodeshBanner) to standalone components so CalendarSection can compose them via props instead of children | Future |
+| H-005 | Extract types and interfaces into `src/pages/home/types.ts` | Pending |
+| H-006 | Slim `Home.tsx` to an orchestration-only shell | Pending |
+
+### Verification
+
+- ✓ UI identical (onboarding + home flow confirmed via screenshot)
+- ✓ No new TypeScript errors in section files or Home.tsx
+- ✓ Business logic remains exclusively in `hooks/`
+- ✓ Hooks untouched
+- ✓ APIs untouched
+- ✓ Components untouched (ParashaCard, OmerCard, DailyWisdomCard, SiddurCard, QuickActionGrid)
+- ✓ Home.tsx component imports reduced from 6 to 1; 5 section imports added
+- ✓ No duplicate JSX — local functions MOVED (not copied) to section files
+- ✓ `MEMBER_DIR_KEY` + `ANN_STRIP_DISMISSED_KEY` removed from Home.tsx data imports (now owned by section files)
+- ✓ 438 lines removed from Home.tsx in this sprint
+- ✓ Code review: **Pass** (after moving AnnouncementStrip to CalendarSection and UpcomingCelebrations/CommunityCard to CommunitySection)
+
+---
+
 ## SPR-008 — H-004: Presentational Component Extraction
 
 > Status: Complete | Date: 2026-06-27

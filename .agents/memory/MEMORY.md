@@ -9,4 +9,4 @@
 - [r3f-perf crashes R3F canvas](r3f-perf-crash.md) — ScenePerf / r3f-perf Perf component breaks R3F reconciler every frame; never use it in MemorialValley3D
 - [Cartographer breaks R3F scene files](cartographer-r3f-fix.md) — cartographer injects data-component-name into all JSX; R3F 9.x treats hyphenated props as nested paths and throws; strip via enforce:post Vite transform
 - [Memorial Sanctuary modal architecture](memorial-sanctuary-modal.md) — all UI panels live in one large self-contained file; per-flower point lights must be removed (use emissive-only); AmbientNotification entries must use a ref to avoid stale closure; virtual flowers capped at MAX_VIRTUAL_FLOWERS=40 for FPS.
-- [Home.tsx blueprint](home-blueprint.md) — H-004 complete; hooks in hooks/, components in components/ (cards/ + sections/); next = H-005 types extraction; hooks use ../../../ paths, components use ../../../../ paths from their subdirs.
+- [Home.tsx blueprint](home-blueprint.md) — H-004.5 complete; sections/ dir at src/pages/home/sections/; CommunitySection fully self-contained; CalendarSection owns AnnouncementStrip + children for Today Card; next = H-005 types extraction.
