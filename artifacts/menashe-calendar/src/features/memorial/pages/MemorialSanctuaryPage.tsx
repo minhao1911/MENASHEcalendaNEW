@@ -10,10 +10,10 @@ import {
   SectionTitle,
   GlassPanel,
   MemorialPlaceholderCard,
+  PortraitCard,
   EmptyState,
   LoadingState,
 } from "../components";
-import { SanctuaryWorldPreview } from "../components/SanctuaryWorldPreview";
 import type { MemorialWithPerson } from "../types";
 
 interface MemorialSanctuaryPageProps {
@@ -23,9 +23,9 @@ interface MemorialSanctuaryPageProps {
   onSelectMemorial?: (slug: string) => void;
 }
 
-// ── Featured Memorial Strip (vertical, full-width) ────────────────────────────
+// ── Portrait Strip (horizontal, featured) ─────────────────────────────────────
 
-function FeaturedStrip({
+function PortraitStrip({
   title,
   icon,
   items,
@@ -33,6 +33,7 @@ function FeaturedStrip({
   onSelect,
   emptyTitle,
   viewAll,
+  compact = false,
 }: {
   title: string;
   icon: string;
@@ -41,39 +42,168 @@ function FeaturedStrip({
   onSelect: (slug: string) => void;
   emptyTitle: string;
   viewAll?: () => void;
+  compact?: boolean;
 }) {
+  if (status === "error" || (status === "success" && items.length === 0)) return null;
+
   return (
-    <div style={{ marginBottom: 32 }}>
+    <div style={{ marginBottom: 28 }}>
       <SectionTitle
         title={title}
         icon={icon}
         action={
-          viewAll && (
+          viewAll ? (
             <button
               onClick={viewAll}
               style={{
-                fontSize: 12, color: GOLD, background: "none",
-                border: "none", cursor: "pointer", fontWeight: 600,
+                fontSize: 12,
+                color: GOLD,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 600,
                 padding: "4px 0",
               }}
             >
               See all
             </button>
-          )
+          ) : undefined
         }
       />
 
-      {status === "loading" && <LoadingState rows={3} />}
-
-      {status === "success" && items.length === 0 && (
-        <GlassPanel>
-          <EmptyState icon={icon} title={emptyTitle} />
-        </GlassPanel>
+      {status === "loading" && (
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            overflowX: "auto",
+            paddingBottom: 4,
+            scrollbarWidth: "none",
+          } as React.CSSProperties}
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <PortraitCard key={i} shimmer compact={compact} />
+          ))}
+        </div>
       )}
 
       {status === "success" && items.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            overflowX: "auto",
+            paddingBottom: 4,
+            scrollbarWidth: "none",
+            WebkitOverflowScrolling: "touch",
+          } as React.CSSProperties}
+        >
+          {items.slice(0, 8).map((m) => (
+            <PortraitCard
+              key={m.id}
+              name={m.person.fullName}
+              hebrewName={m.person.hebrewName}
+              deathDate={m.person.deathDate}
+              candleCount={m.candleCount}
+              compact={compact}
+              onClick={() => onSelect(m.slug)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Search Results List ────────────────────────────────────────────────────────
+
+function SearchResultsList({
+  results,
+  total,
+  hasMore,
+  status,
+  error,
+  query,
+  onSelect,
+  onLoadMore,
+  onClear,
+  onRetry,
+  t,
+}: {
+  results: MemorialWithPerson[];
+  total: number;
+  hasMore: boolean;
+  status: string;
+  error: Error | null;
+  query: string;
+  onSelect: (slug: string) => void;
+  onLoadMore: () => void;
+  onClear: () => void;
+  onRetry: () => void;
+  t: Record<string, string>;
+}) {
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <SectionTitle
+        title={status === "loading" ? t.memShellLoading : t.memShellResults}
+        icon="🔍"
+        count={status === "success" ? total : undefined}
+        action={
+          <button
+            onClick={onClear}
+            style={{
+              fontSize: 12,
+              color: GOLD,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+              padding: "4px 0",
+            }}
+          >
+            {t.memClearSearch}
+          </button>
+        }
+      />
+
+      {status === "loading" && <LoadingState rows={4} />}
+
+      {status === "error" && (
+        <EmptyState
+          icon="⚠️"
+          title={t.memShellSearchError}
+          subtitle={error?.message}
+          action={
+            <button
+              onClick={onRetry}
+              style={{
+                fontSize: 13,
+                color: GOLD,
+                background: "rgba(212,168,67,0.1)",
+                border: "1px solid rgba(212,168,67,0.3)",
+                borderRadius: 10,
+                padding: "8px 18px",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              {t.memShellRetry}
+            </button>
+          }
+        />
+      )}
+
+      {status === "success" && results.length === 0 && (
+        <EmptyState
+          icon="🕊"
+          title={t.memNoResults}
+          subtitle={`${t.memShellEmptySearch} "${query}"`}
+        />
+      )}
+
+      {status === "success" && results.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {items.slice(0, 5).map(m => (
+          {results.map((m) => (
             <MemorialPlaceholderCard
               key={m.id}
               name={m.person.fullName}
@@ -83,76 +213,202 @@ function FeaturedStrip({
               onClick={() => onSelect(m.slug)}
             />
           ))}
+          {hasMore && (
+            <button
+              onClick={onLoadMore}
+              style={{
+                padding: "12px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 12,
+                color: "rgba(255,255,255,0.45)",
+                fontSize: 13,
+                cursor: "pointer",
+                fontWeight: 500,
+              }}
+            >
+              {t.memShellLoadMore}
+            </button>
+          )}
         </div>
-      )}
-
-      {status === "error" && (
-        <GlassPanel>
-          <EmptyState icon="⚠️" title="Could not load" />
-        </GlassPanel>
       )}
     </div>
   );
 }
 
-// ── Horizontal Scroll Strip (secondary sections) ──────────────────────────────
+// ── Subtle Enter Sanctuary CTA ─────────────────────────────────────────────────
 
-function ScrollStrip({
-  title,
-  icon,
-  items,
-  status,
-  onSelect,
-  emptyTitle,
+function EnterSanctuaryCTA({
+  onEnter,
+  label,
+  sublabel,
 }: {
-  title: string;
-  icon: string;
-  items: MemorialWithPerson[];
-  status: string;
-  onSelect: (slug: string) => void;
-  emptyTitle: string;
+  onEnter: () => void;
+  label: string;
+  sublabel: string;
 }) {
-  if (status === "loading") {
-    return (
-      <div style={{ marginBottom: 28 }}>
-        <SectionTitle title={title} icon={icon} />
-        <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} style={{ flexShrink: 0, width: 190 }}>
-              <MemorialPlaceholderCard shimmer />
-            </div>
-          ))}
+  return (
+    <button
+      onClick={onEnter}
+      style={{
+        width: "100%",
+        padding: "14px 18px",
+        borderRadius: 14,
+        background:
+          "linear-gradient(135deg, rgba(212,168,67,0.07) 0%, rgba(212,168,67,0.03) 100%)",
+        border: "1px solid rgba(212,168,67,0.16)",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        textAlign: "left",
+        marginBottom: 12,
+        boxSizing: "border-box",
+        transition: "border-color 0.15s, background 0.15s",
+      }}
+    >
+      {/* Night landscape thumbnail */}
+      <div
+        style={{
+          flexShrink: 0,
+          width: 44,
+          height: 44,
+          borderRadius: 10,
+          overflow: "hidden",
+          position: "relative",
+          background: "linear-gradient(180deg, #03090f 0%, #081420 50%, #0a1a0a 100%)",
+          border: "1px solid rgba(212,168,67,0.18)",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+        }}
+      >
+        <svg viewBox="0 0 44 24" style={{ position: "absolute", bottom: 0, width: "100%", height: 18 }}>
+          <polygon points="0,24 8,10 16,16 24,6 32,14 38,8 44,12 44,24" fill="#071209" />
+        </svg>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 2,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 24,
+            height: 12,
+            background:
+              "radial-gradient(ellipse at 50% 100%, rgba(212,168,67,0.5) 0%, transparent 70%)",
+            filter: "blur(3px)",
+          }}
+        />
+        <span
+          style={{
+            position: "relative",
+            fontSize: 16,
+            paddingBottom: 10,
+            zIndex: 1,
+            filter: "drop-shadow(0 0 4px rgba(212,168,67,0.7))",
+          }}
+        >
+          🕯
+        </span>
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: GOLD,
+            marginBottom: 2,
+            letterSpacing: "0.01em",
+          }}
+        >
+          {label}
+        </div>
+        <div
+          style={{
+            fontSize: 12,
+            color: "rgba(212,168,67,0.48)",
+            lineHeight: 1.4,
+          }}
+        >
+          {sublabel}
         </div>
       </div>
-    );
-  }
 
-  if (status === "error" || (status === "success" && items.length === 0)) return null;
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={GOLD}
+        strokeWidth="2.5"
+        style={{ flexShrink: 0, opacity: 0.45 }}
+      >
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </button>
+  );
+}
 
+// ── Subtle Create Memorial CTA ─────────────────────────────────────────────────
+
+function CreateMemorialCTA({ onPress, label }: { onPress: () => void; label: string }) {
   return (
-    <div style={{ marginBottom: 28 }}>
-      <SectionTitle title={title} icon={icon} />
-      <div style={{
+    <button
+      onClick={onPress}
+      style={{
+        width: "100%",
+        padding: "12px 18px",
+        borderRadius: 12,
+        background: "transparent",
+        border: "1px solid rgba(255,255,255,0.07)",
+        cursor: "pointer",
         display: "flex",
-        overflowX: "auto",
-        gap: 10,
-        paddingBottom: 4,
-        scrollbarWidth: "none",
-        WebkitOverflowScrolling: "touch",
-      } as React.CSSProperties}>
-        {items.map(m => (
-          <div key={m.id} style={{ flexShrink: 0, width: 210 }}>
-            <MemorialPlaceholderCard
-              name={m.person.fullName}
-              hebrewName={m.person.hebrewName}
-              deathDate={m.person.deathDate}
-              candleCount={m.candleCount}
-              onClick={() => onSelect(m.slug)}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
+        alignItems: "center",
+        gap: 12,
+        textAlign: "left",
+        marginBottom: 28,
+        boxSizing: "border-box",
+        transition: "border-color 0.15s",
+      }}
+    >
+      <span style={{ fontSize: 16, opacity: 0.55 }}>✡</span>
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: "rgba(255,255,255,0.42)",
+          letterSpacing: "0.01em",
+        }}
+      >
+        {label}
+      </span>
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="rgba(255,255,255,0.2)"
+        strokeWidth="2.5"
+        style={{ marginLeft: "auto", flexShrink: 0 }}
+      >
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </button>
+  );
+}
+
+// ── Divider ────────────────────────────────────────────────────────────────────
+
+function Divider() {
+  return (
+    <div
+      style={{
+        height: 1,
+        background: "rgba(255,255,255,0.05)",
+        marginBottom: 28,
+      }}
+    />
   );
 }
 
@@ -168,34 +424,41 @@ export default function MemorialSanctuaryPage({
   const isOnline = useOnlineStatus();
 
   const {
-    results, total, hasMore,
-    status: searchStatus, error: searchError,
-    query, setQuery, loadMore, reset: resetSearch,
+    results,
+    total,
+    hasMore,
+    status: searchStatus,
+    error: searchError,
+    query,
+    setQuery,
+    loadMore,
+    reset: resetSearch,
   } = useSearch();
 
   const collections = useCollections();
 
   const isSearching = query.trim().length > 0;
 
-  const handleSelectResult = useCallback(
+  const handleSelect = useCallback(
     (slug: string) => { if (onSelectMemorial) onSelectMemorial(slug); },
     [onSelectMemorial],
   );
 
   return (
-    <div style={{
-      minHeight: "100%",
-      background: "var(--background, #080e1a)",
-      display: "flex",
-      flexDirection: "column",
-      overflowY: "auto",
-      overflowX: "hidden",
-    }}>
-
-      {/* ── 1. Header ── */}
+    <div
+      style={{
+        minHeight: "100%",
+        background: "var(--background, #080e1a)",
+        display: "flex",
+        flexDirection: "column",
+        overflowY: "auto",
+        overflowX: "hidden",
+      }}
+    >
+      {/* ── 1. Sticky Header ── */}
       <SanctuaryHeader onBack={onBack} title={t.memTitle} subtitle={t.memSubtitle} />
 
-      {/* ── 2. Hero + Search ── */}
+      {/* ── 2. Cinematic Hero + Floating Search ── */}
       <SanctuaryHero
         title={t.memShellWelcome}
         subtitle={t.memShellWelcomeSub}
@@ -206,188 +469,116 @@ export default function MemorialSanctuaryPage({
         offlineMessage={t.memShellOffline}
       />
 
-      <div style={{ flex: 1, padding: "28px 16px 110px" }}>
+      {/* ── Content ── */}
+      <div style={{ flex: 1, padding: "24px 16px 110px" }}>
 
-        {/* ── Search Results ── */}
+        {/* ── Search results ── */}
         {isSearching && (
-          <div style={{ marginBottom: 28 }}>
-            <SectionTitle
-              title={searchStatus === "loading" ? t.memShellLoading : t.memShellResults}
-              icon="🔍"
-              count={searchStatus === "success" ? total : undefined}
-              action={
-                <button onClick={resetSearch} style={{
-                  fontSize: 12, color: GOLD, background: "none",
-                  border: "none", cursor: "pointer", fontWeight: 600,
-                  padding: "4px 0",
-                }}>
-                  {t.memClearSearch}
-                </button>
-              }
-            />
-
-            {searchStatus === "loading" && <LoadingState rows={4} />}
-
-            {searchStatus === "error" && (
-              <EmptyState icon="⚠️" title={t.memShellSearchError}
-                subtitle={searchError?.message}
-                action={
-                  <button onClick={() => setQuery(query)} style={{
-                    fontSize: 13, color: GOLD,
-                    background: "rgba(212,168,67,0.1)",
-                    border: "1px solid rgba(212,168,67,0.3)",
-                    borderRadius: 10, padding: "8px 18px", cursor: "pointer",
-                    fontWeight: 600,
-                  }}>{t.memShellRetry}</button>
-                }
-              />
-            )}
-
-            {searchStatus === "success" && results.length === 0 && (
-              <EmptyState icon="🕊" title={t.memNoResults}
-                subtitle={`${t.memShellEmptySearch} "${query}"`} />
-            )}
-
-            {searchStatus === "success" && results.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {results.map(m => (
-                  <MemorialPlaceholderCard
-                    key={m.id}
-                    name={m.person.fullName}
-                    hebrewName={m.person.hebrewName}
-                    deathDate={m.person.deathDate}
-                    candleCount={m.candleCount}
-                    onClick={() => handleSelectResult(m.slug)}
-                  />
-                ))}
-                {hasMore && (
-                  <button onClick={loadMore} style={{
-                    padding: "12px", background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 12, color: "rgba(255,255,255,0.45)",
-                    fontSize: 13, cursor: "pointer", fontWeight: 500,
-                  }}>
-                    {t.memShellLoadMore}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          <SearchResultsList
+            results={results}
+            total={total}
+            hasMore={hasMore}
+            status={searchStatus}
+            error={searchError}
+            query={query}
+            onSelect={handleSelect}
+            onLoadMore={loadMore}
+            onClear={resetSearch}
+            onRetry={() => setQuery(query)}
+            t={t as unknown as Record<string, string>}
+          />
         )}
 
-        {/* ── Non-search sections ── */}
+        {/* ── Browse sections (non-search) ── */}
         {!isSearching && (
           <>
-            {/* ── 3. Featured Memorial: Recently Remembered ── */}
+            {/* ── Recently Remembered — portrait strip ── */}
             {isOnline && (
-              <FeaturedStrip
+              <PortraitStrip
                 title={t.memColRecentlyRemembered}
                 icon="✨"
                 items={collections.recentlyRemembered.items}
                 status={collections.recentlyRemembered.status}
-                onSelect={handleSelectResult}
+                onSelect={handleSelect}
                 emptyTitle={t.memShellFeaturedEmpty}
                 viewAll={() => setQuery(" ")}
               />
             )}
 
-            {/* ── 4. Primary Action: Create Memorial ── */}
-            {onCreateMemorial && (
-              <button
-                onClick={onCreateMemorial}
-                style={{
-                  width: "100%",
-                  padding: "18px 20px",
-                  borderRadius: 18,
-                  background: "linear-gradient(135deg, rgba(212,168,67,0.13) 0%, rgba(212,168,67,0.05) 100%)",
-                  border: "1.5px solid rgba(212,168,67,0.32)",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
-                  textAlign: "left",
-                  marginBottom: 28,
-                }}
-              >
-                <div style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 15,
-                  background: "rgba(212,168,67,0.14)",
-                  border: "1px solid rgba(212,168,67,0.28)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 24,
-                  flexShrink: 0,
-                }}>✡</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: GOLD, marginBottom: 4 }}>
-                    {t.memShellCreate}
-                  </div>
-                  <div style={{ fontSize: 13, color: "rgba(212,168,67,0.52)", lineHeight: 1.4 }}>
-                    {t.memShellCreateSub}
-                  </div>
-                </div>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.5" style={{ flexShrink: 0, opacity: 0.6 }}>
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
+            {/* ── Enter 3D Sanctuary — subtle CTA ── */}
+            {onEnter3D && (
+              <EnterSanctuaryCTA
+                onEnter={onEnter3D}
+                label={t.memShellEnter3D}
+                sublabel={t.memShellEnter3DSub}
+              />
             )}
 
-            {/* ── 5. World Preview Viewport ── */}
-            {onEnter3D && (
-              <SanctuaryWorldPreview
-                onEnter={onEnter3D}
-                enterLabel={t.memShellEnter3D}
-                enterSub={t.memShellEnter3DSub}
+            {/* ── Create Memorial — subtle row ── */}
+            {onCreateMemorial && (
+              <CreateMemorialCTA
+                onPress={onCreateMemorial}
+                label={t.memShellCreate}
               />
             )}
 
             {/* ── Offline notice ── */}
             {!isOnline && (
               <GlassPanel style={{ marginBottom: 28 }}>
-                <EmptyState icon="📵" title={t.memShellOffline} subtitle={t.memShellOfflineSub} />
+                <EmptyState
+                  icon="📵"
+                  title={t.memShellOffline}
+                  subtitle={t.memShellOfflineSub}
+                />
               </GlassPanel>
             )}
 
-            {/* ── 6. Recent Activity: Most Visited + Recently Lit ── */}
             {isOnline && (
               <>
-                <ScrollStrip
-                  title={t.memColMostVisited}
-                  icon="👁"
-                  items={collections.mostVisited.items}
-                  status={collections.mostVisited.status}
-                  onSelect={handleSelectResult}
-                  emptyTitle={t.memShellFeaturedEmpty}
-                />
+                <Divider />
 
-                <ScrollStrip
+                {/* ── Recently Lit — compact portrait strip ── */}
+                <PortraitStrip
                   title={t.memColRecentlyLit}
                   icon="🔥"
                   items={collections.recentlyLit.items}
                   status={collections.recentlyLit.status}
-                  onSelect={handleSelectResult}
+                  onSelect={handleSelect}
                   emptyTitle={t.memShellRecentEmpty}
+                  compact
                 />
 
-                <ScrollStrip
+                {/* ── Most Visited ── */}
+                <PortraitStrip
+                  title={t.memColMostVisited}
+                  icon="👁"
+                  items={collections.mostVisited.items}
+                  status={collections.mostVisited.status}
+                  onSelect={handleSelect}
+                  emptyTitle={t.memShellFeaturedEmpty}
+                  compact
+                />
+
+                {/* ── Upcoming Yahrzeit ── */}
+                <PortraitStrip
                   title={t.memColUpcomingYahrzeit}
                   icon="🕎"
                   items={collections.upcomingYahrzeit.items}
                   status={collections.upcomingYahrzeit.status}
-                  onSelect={handleSelectResult}
+                  onSelect={handleSelect}
                   emptyTitle="No upcoming yahrzeits"
+                  compact
                 />
 
-                <ScrollStrip
+                {/* ── Community Picks ── */}
+                <PortraitStrip
                   title={t.memColCommunityPicks}
                   icon="✡"
                   items={collections.communityPicks.items}
                   status={collections.communityPicks.status}
-                  onSelect={handleSelectResult}
+                  onSelect={handleSelect}
                   emptyTitle={t.memShellFamilyEmpty}
+                  compact
                 />
               </>
             )}
