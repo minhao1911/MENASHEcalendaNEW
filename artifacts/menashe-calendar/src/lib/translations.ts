@@ -29,6 +29,7 @@ export interface Translations {
   navZmanim: string;
   navSiddur: string;
   navSettings: string;
+  navChat: string;
 
   /* ── Settings ── */
   settingsTitle: string;
@@ -576,6 +577,7 @@ export const en: Translations = {
   navZmanim: "Zmanim",
   navSiddur: "Siddur",
   navSettings: "Settings",
+  navChat: "Chat",
 
   settingsTitle: "Settings",
   settingsLocation: "LOCATION",
@@ -1107,6 +1109,7 @@ export const tk: Translations = {
   navZmanim: "Zmanim",
   navSiddur: "Thu Ziak",
   navSettings: "Siam Dan",
+  navChat: "Chat",
 
   settingsTitle: "Siam Dan",
   settingsLocation: "HMUN",

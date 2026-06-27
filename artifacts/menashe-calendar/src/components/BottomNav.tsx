@@ -3,6 +3,7 @@ import { useLanguage } from "../context/LanguageContext";
 interface BottomNavProps {
   active: string;
   onNavigate: (page: string) => void;
+  onChat?: () => void;
 }
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -54,27 +55,38 @@ function SettingsIcon({ active }: { active: boolean }) {
   );
 }
 
-export default function BottomNav({ active, onNavigate }: BottomNavProps) {
+function ChatIcon({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill={active ? "rgba(212,168,67,0.15)" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <line x1="9" y1="10" x2="15" y2="10" />
+      <line x1="9" y1="14" x2="13" y2="14" />
+    </svg>
+  );
+}
+
+export default function BottomNav({ active, onNavigate, onChat }: BottomNavProps) {
   const { t } = useLanguage();
 
   const NAV_ITEMS = [
-    { id: "home",     label: t.navHome,     icon: HomeIcon,     ariaLabel: "Home" },
-    { id: "calendar", label: t.navCalendar, icon: CalendarIcon, ariaLabel: "Calendar" },
-    { id: "zmanim",   label: t.navZmanim,   icon: ClockIcon,    ariaLabel: "Prayer times" },
-    { id: "siddur",   label: t.navSiddur,   icon: SiddurIcon,   ariaLabel: "Siddur library" },
-    { id: "settings", label: t.navSettings, icon: SettingsIcon, ariaLabel: "Settings" },
+    { id: "home",     label: t.navHome,     icon: HomeIcon,     ariaLabel: "Home",          handler: () => onNavigate("home") },
+    { id: "calendar", label: t.navCalendar, icon: CalendarIcon, ariaLabel: "Calendar",       handler: () => onNavigate("calendar") },
+    { id: "zmanim",   label: t.navZmanim,   icon: ClockIcon,    ariaLabel: "Prayer times",   handler: () => onNavigate("zmanim") },
+    { id: "siddur",   label: t.navSiddur,   icon: SiddurIcon,   ariaLabel: "Siddur library", handler: () => onNavigate("siddur") },
+    { id: "chat",     label: t.navChat,     icon: ChatIcon,     ariaLabel: "AI Chat",        handler: () => onChat?.() },
+    { id: "settings", label: t.navSettings, icon: SettingsIcon, ariaLabel: "Settings",       handler: () => onNavigate("settings") },
   ];
 
   return (
     <nav className="bottom-nav" aria-label="Main navigation" style={{ display: "flex" }}>
-      {NAV_ITEMS.map(({ id, label, icon: Icon, ariaLabel }) => {
+      {NAV_ITEMS.map(({ id, label, icon: Icon, ariaLabel, handler }) => {
         const isActive = active === id;
         return (
           <button
             key={id}
             type="button"
             className={`nav-item ${isActive ? "active" : ""}`}
-            onClick={() => onNavigate(id)}
+            onClick={handler}
             aria-label={ariaLabel}
             aria-current={isActive ? "page" : undefined}
             style={{ background: "none", border: "none", outline: "none", flex: 1 }}

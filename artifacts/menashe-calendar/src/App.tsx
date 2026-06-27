@@ -657,7 +657,7 @@ function AppShell() {
                 {renderPage()}
               </div>
 
-              <BottomNav active={activePage} onNavigate={(p) => setActivePage(p as Page)} />
+              <BottomNav active={activePage} onNavigate={(p) => setActivePage(p as Page)} onChat={() => setChatOpen(true)} />
 
               {toast && <div className="toast">{toast}</div>}
 
