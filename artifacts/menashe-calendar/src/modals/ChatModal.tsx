@@ -265,7 +265,7 @@ export default function ChatModal({ onClose }: Props) {
                   justifyContent: "center",
                 }}
               >
-                {SUGGESTED_QUESTIONS.map((q) => (
+                {t.chatSuggestedQuestions.map((q) => (
                   <button
                     key={q}
                     onClick={() => sendMessage(q)}

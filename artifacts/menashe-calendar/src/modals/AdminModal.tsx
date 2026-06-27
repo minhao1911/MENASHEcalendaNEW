@@ -388,7 +388,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   async function fetchYahrzeit() {
     setYahrzeitLoading(true);
     try {
-      const data = await adminFetch("/admin/yahrzeit");
+      const data = await adminFetch("/community/admin/yahrzeit");
       setYahrzeitEntries(data);
     } catch {} finally { setYahrzeitLoading(false); }
   }
@@ -397,7 +397,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     if (!confirm("Delete this yahrzeit entry? This cannot be undone.")) return;
     setDeletingYahrzeit(id);
     try {
-      await adminFetch(`/admin/yahrzeit/${id}`, { method: "DELETE" });
+      await adminFetch(`/community/admin/yahrzeit/${id}`, { method: "DELETE" });
       await fetchYahrzeit();
     } catch {} finally { setDeletingYahrzeit(null); }
   }

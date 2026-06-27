@@ -11,7 +11,7 @@ const router = Router();
 // ── Validation schemas ────────────────────────────────────────────────────────
 
 const profileSchema = z.object({
-  theme: z.enum(["dark", "light"]).optional(),
+  theme: z.enum(["dark", "light", "sapphire"]).optional(),
   location: z.record(z.unknown()).optional().nullable(),
   // isPremium intentionally excluded — only set by admin/payment routes
   candleEnabled: z.boolean().optional(),
@@ -24,7 +24,7 @@ const publicProfileSchema = z.object({
   displayName: z.string().min(1).max(100),
   congregation: z.string().max(200).optional(),
   bio: z.string().max(500).optional(),
-  role: z.enum(["Member", "Elder", "Rabbi", "Student", "Leader", "Teacher", "Other"]).optional(),
+  role: z.enum(["Member", "Elder", "Rabbi", "Student", "Leader", "Teacher", "Other", "Community Leader", "Cantor", "Youth Leader", "Women's Group", "Admin"]).optional(),
   city: z.string().max(100).optional(),
   country: z.string().max(100).optional(),
   avatarEmoji: z.string().max(10).optional(),
@@ -184,7 +184,7 @@ router.post("/user/yahrzeit", requireAuth, async (req, res) => {
 
 router.delete("/user/yahrzeit/:id", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { id } = req.params;
+  const id = String(req.params.id);
   if (!id || id.length > 100) return apiError.badRequest(res, "Invalid id");
   const client = await pool.connect();
   try {
@@ -251,7 +251,7 @@ router.post("/user/torah-tracker", requireAuth, async (req, res) => {
 
 router.delete("/user/torah-tracker/:id", requireAuth, async (req, res) => {
   const userId = (req as any).userId;
-  const { id } = req.params;
+  const id = String(req.params.id);
   if (!id || id.length > 100) return apiError.badRequest(res, "Invalid id");
   const client = await pool.connect();
   try {
@@ -443,7 +443,7 @@ router.get("/admin/premium-requests", requireAdmin, async (req, res) => {
 });
 
 router.put("/admin/premium-requests/:userId/approve", requireAdmin, async (req, res) => {
-  const { userId } = req.params;
+  const userId = String(req.params.userId);
   const client = await pool.connect();
   try {
     await client.query(
@@ -468,7 +468,7 @@ router.put("/admin/premium-requests/:userId/approve", requireAdmin, async (req, 
 });
 
 router.put("/admin/premium-requests/:userId/deny", requireAdmin, async (req, res) => {
-  const { userId } = req.params;
+  const userId = String(req.params.userId);
   const client = await pool.connect();
   try {
     await client.query(
@@ -522,7 +522,7 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
 // ── Admin: set premium for a user ─────────────────────────────────────────────
 
 router.put("/admin/users/:userId/premium", requireAdmin, async (req, res) => {
-  const { userId } = req.params;
+  const userId = String(req.params.userId);
   const { isPremium } = req.body;
   if (typeof isPremium !== "boolean") return apiError.badRequest(res, "isPremium must be boolean");
   const client = await pool.connect();

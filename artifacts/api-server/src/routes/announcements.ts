@@ -194,7 +194,7 @@ router.patch("/announcements/:id", requireAdmin, async (req, res) => {
   }
 
   const { emoji, title, body, pinned, sendNow } = parsed.data;
-  const { id } = req.params;
+  const id = String(req.params.id);
 
   try {
     const existing = await pool.query("SELECT * FROM community_announcements WHERE id = $1", [id]);
@@ -234,7 +234,7 @@ router.patch("/announcements/:id", requireAdmin, async (req, res) => {
 // DELETE /announcements/:id — admin delete
 router.delete("/announcements/:id", requireAdmin, async (req, res) => {
   try {
-    await pool.query("DELETE FROM community_announcements WHERE id = $1", [req.params.id]);
+    await pool.query("DELETE FROM community_announcements WHERE id = $1", [String(req.params.id)]);
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, "DELETE /announcements/:id: db error");

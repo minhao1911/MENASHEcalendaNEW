@@ -6,7 +6,7 @@ import { requireAdmin } from "../lib/requireAdmin";
 import { pushSubscribeRateLimiter } from "../lib/rateLimiter";
 import { pool } from "@workspace/db";
 import { logger } from "../lib/logger";
-import { HebrewCalendar, flags } from "@hebcal/core";
+import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 
 const expo = new Expo();
 
@@ -370,7 +370,7 @@ router.post("/push/broadcast/scheduled", requireAdmin, async (req, res) => {
 });
 
 router.delete("/push/broadcast/scheduled/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "", 10);
+  const id = parseInt(String(req.params["id"] ?? ""), 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   try {
     await pool.query("DELETE FROM scheduled_broadcasts WHERE id = $1 AND sent_at IS NULL", [id]);

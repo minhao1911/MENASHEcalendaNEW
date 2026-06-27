@@ -36,7 +36,7 @@ router.get("/books", async (req, res) => {
 
 router.get("/books/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     if (isNaN(id)) return apiError.badRequest(res, "Invalid id");
 
     const auth = getAuth(req);
@@ -71,7 +71,7 @@ router.post("/books", requireAdmin, async (req, res) => {
 
 router.put("/books/:id", requireAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     if (isNaN(id)) return apiError.badRequest(res, "Invalid id");
 
     const parsed = updateBookSchema.safeParse(req.body);
@@ -94,7 +94,7 @@ router.put("/books/:id", requireAdmin, async (req, res) => {
 
 router.delete("/books/:id", requireAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     if (isNaN(id)) return apiError.badRequest(res, "Invalid id");
 
     const [book] = await db.delete(booksTable).where(eq(booksTable.id, id)).returning();
