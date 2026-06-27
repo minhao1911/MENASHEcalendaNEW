@@ -3272,12 +3272,7 @@ function AiChatFAB() {
           (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 12px rgba(0,0,0,0.5)";
         }}
       >
-        <div style={{
-          width: 22, height: 22, borderRadius: "50%",
-          background: "linear-gradient(135deg,#D4AF37,#A0821A)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 11, flexShrink: 0,
-        }}>✡</div>
+        <img src="/rav-menashe-ai.png" alt="Rav Menashe AI" style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid rgba(212,175,55,0.4)" }} />
         <span style={{ color: "#C8A84B", fontSize: 11, fontWeight: 600, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
           {t.chatTitle}
         </span>
@@ -3332,12 +3327,7 @@ function AiChatFAB() {
             alignItems: "center",
             gap: 10,
           }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: "50%",
-              background: "linear-gradient(135deg,#D4AF37,#A0821A)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, flexShrink: 0,
-            }}>✡</div>
+            <img src="/rav-menashe-ai.png" alt="Rav Menashe AI" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid rgba(212,175,55,0.4)" }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: "#D4AF37", fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>
                 {t.chatTitle}
@@ -3444,12 +3434,7 @@ function AiChatFAB() {
                   width: "100%",
                 }}>
                   {msg.role === "assistant" && (
-                    <div style={{
-                      width: 24, height: 24, borderRadius: "50%",
-                      background: "linear-gradient(135deg,#D4AF37,#A0821A)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 11, flexShrink: 0, marginBottom: 2,
-                    }}>✡</div>
+                    <img src="/rav-menashe-ai.png" alt="Rav Menashe AI" style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginBottom: 2, border: "1px solid rgba(212,175,55,0.3)" }} />
                   )}
                   <div style={{
                     maxWidth: "80%",
@@ -3728,9 +3713,10 @@ function AiChatFAB() {
             transform: fabHovered && !open ? "scale(1.1)" : open ? "scale(1.05)" : "scale(1)",
           }}
         >
-          <span style={{ fontSize: 24, lineHeight: 1, userSelect: "none", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
-            {open ? "✕" : "✡"}
-          </span>
+          {open
+            ? <span style={{ fontSize: 22, lineHeight: 1, userSelect: "none", color: "#D4AF37", fontWeight: 700 }}>✕</span>
+            : <img src="/rav-menashe-ai.png" alt="Rav Menashe AI" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(212,175,55,0.5)" }} />
+          }
           {!open && messages.length > 0 && (
             <span style={{
               position: "absolute", top: -2, right: -2,

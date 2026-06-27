@@ -193,21 +193,11 @@ export default function ChatModal({ onClose }: Props) {
             gap: 12,
           }}
         >
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg,#D4AF37,#A0821A)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 20,
-              flexShrink: 0,
-            }}
-          >
-            ✡
-          </div>
+          <img
+            src="/rav-menashe-ai.png"
+            alt="Rav Menashe AI"
+            style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid rgba(212,175,55,0.45)" }}
+          />
           <div style={{ flex: 1 }}>
             <div style={{ color: "#D4AF37", fontWeight: 700, fontSize: 16 }}>
               {t.chatTitle}
