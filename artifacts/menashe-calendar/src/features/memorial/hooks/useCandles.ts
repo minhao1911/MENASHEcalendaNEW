@@ -9,6 +9,7 @@ import type {
 
 // ── useCandles ────────────────────────────────────────────────────────────────
 // Paginated candle list + optimistic light action.
+// Pass `filter` to fetch only today's or community candles server-side.
 
 interface UseCandles {
   candles: MemorialCandle[];
@@ -20,7 +21,10 @@ interface UseCandles {
   light: (input: LightCandleInput) => Promise<MemorialCandle>;
 }
 
-export function useCandles(memorialId: string | null | undefined): UseCandles {
+export function useCandles(
+  memorialId: string | null | undefined,
+  filter?: "recent" | "today" | "community",
+): UseCandles {
   const [pages, setPages] = useState<MemorialCandle[][]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -37,6 +41,8 @@ export function useCandles(memorialId: string | null | undefined): UseCandles {
         const res: PaginatedResponse<MemorialCandle> = await getCandles(
           memorialId,
           p,
+          20,
+          filter,
         );
         setPages((prev) => {
           const next = [...prev];
@@ -51,7 +57,7 @@ export function useCandles(memorialId: string | null | undefined): UseCandles {
         setStatus("error");
       }
     },
-    [memorialId],
+    [memorialId, filter],
   );
 
   useEffect(() => {

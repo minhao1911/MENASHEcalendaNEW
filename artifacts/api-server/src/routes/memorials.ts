@@ -46,6 +46,16 @@ const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
 });
 
+const candleQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(50).optional().default(20),
+  filter: z.enum(["recent", "today", "community"]).optional().default("recent"),
+});
+
+const transferOwnershipSchema = z.object({
+  newPrimaryContactId: z.string().min(1),
+});
+
 const moderateSchema = z.object({
   action: z.enum(["approve", "reject"]),
   reason: z.string().max(500).optional(),
@@ -159,9 +169,9 @@ router.patch("/memorials/:id", requireAuth, async (req, res) => {
 router.get("/memorials/:id/candles", async (req, res) => {
   const memorialId = String(req.params.id);
 
-  const parsed = paginationSchema.safeParse(req.query);
+  const parsed = candleQuerySchema.safeParse(req.query);
   if (!parsed.success) {
-    return apiError.badRequest(res, "Invalid pagination parameters");
+    return apiError.badRequest(res, "Invalid query parameters");
   }
 
   try {
@@ -172,6 +182,7 @@ router.get("/memorials/:id/candles", async (req, res) => {
       memorialId,
       parsed.data.page,
       parsed.data.limit,
+      parsed.data.filter,
     );
     return res.json(result);
   } catch (err) {
@@ -321,6 +332,29 @@ router.post(
   },
 );
 
+// ── GET /memorials/:id/photos ─────────────────────────────────────────────────
+
+router.get("/memorials/:id/photos", async (req, res) => {
+  const memorialId = String(req.params.id);
+  const auth = getAuth(req);
+  const viewerUserId = auth?.userId ?? null;
+
+  try {
+    const memorial = await memorialRepository.findById(memorialId);
+    if (!memorial) return apiError.notFound(res, "Memorial not found");
+
+    const isFamilyMember = viewerUserId
+      ? await familyRepository.isMember(memorial.familyId, viewerUserId)
+      : false;
+
+    const photos = await photoRepository.findByMemorial(memorialId, !isFamilyMember);
+    return res.json(photos);
+  } catch (err) {
+    req.log.error(err);
+    return apiError.internal(res, "Failed to fetch photos");
+  }
+});
+
 // ── POST /memorials/:id/photos ────────────────────────────────────────────────
 
 router.post("/memorials/:id/photos", requireAuth, async (req, res) => {
@@ -354,6 +388,35 @@ router.post("/memorials/:id/photos", requireAuth, async (req, res) => {
   } catch (err: any) {
     req.log.error(err);
     return apiError.internal(res, "Failed to upload photo");
+  }
+});
+
+// ── POST /memorials/families/:id/transfer ────────────────────────────────────
+
+router.post("/memorials/families/:id/transfer", requireAuth, async (req, res) => {
+  const familyId = String(req.params.id);
+  const actorId = (req as any).userId as string;
+
+  const parsed = transferOwnershipSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return apiError.badRequest(res, "Invalid transfer data");
+  }
+
+  try {
+    const isAdmin = await familyRepository.isAdmin(familyId, actorId);
+    if (!isAdmin) return apiError.forbidden(res, "Only a family admin can transfer ownership");
+
+    const updated = await familyRepository.transferOwnership(
+      familyId,
+      parsed.data.newPrimaryContactId,
+    );
+    return res.json(updated);
+  } catch (err: any) {
+    req.log.error(err);
+    if (err.message?.includes("must be a family member"))
+      return apiError.badRequest(res, err.message);
+    if (err.message === "Family not found") return apiError.notFound(res, err.message);
+    return apiError.internal(res, "Failed to transfer ownership");
   }
 });
 

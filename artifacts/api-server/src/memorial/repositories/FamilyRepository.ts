@@ -5,7 +5,7 @@ import {
   type MemorialFamily,
   type MemorialFamilyMember,
 } from "@workspace/db";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 
 export class FamilyRepository {
   async findById(id: string): Promise<MemorialFamily | null> {
@@ -126,6 +126,48 @@ export class FamilyRepository {
         ),
       );
     return !!row;
+  }
+
+  async transferOwnership(
+    familyId: string,
+    newPrimaryContactId: string,
+  ): Promise<MemorialFamily> {
+    const isMember = await this.isMember(familyId, newPrimaryContactId);
+    if (!isMember) {
+      throw new Error("New primary contact must be a family member");
+    }
+
+    const [updated] = await db
+      .update(memorialFamiliesTable)
+      .set({ primaryContactId: newPrimaryContactId, updatedAt: new Date() })
+      .where(
+        and(
+          eq(memorialFamiliesTable.id, familyId),
+          isNull(memorialFamiliesTable.deletedAt),
+        ),
+      )
+      .returning();
+
+    if (!updated) throw new Error("Family not found");
+    return updated;
+  }
+
+  async updateMemberRole(
+    familyId: string,
+    memberId: string,
+    role: "admin" | "member" | "viewer",
+  ): Promise<MemorialFamilyMember | null> {
+    const [updated] = await db
+      .update(memorialFamilyMembersTable)
+      .set({ role })
+      .where(
+        and(
+          eq(memorialFamilyMembersTable.id, memberId),
+          eq(memorialFamilyMembersTable.familyId, familyId),
+        ),
+      )
+      .returning();
+    return updated ?? null;
   }
 }
 

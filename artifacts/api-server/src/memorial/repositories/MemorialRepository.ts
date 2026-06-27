@@ -4,13 +4,11 @@ import {
   memorialPersonsTable,
   memorialPrivacyTable,
   type Memorial,
-  type MemorialPerson,
-  type MemorialPrivacy,
   type MemorialWithPerson,
   type InsertMemorial,
   type InsertMemorialPerson,
 } from "@workspace/db";
-import { eq, and, isNull, ilike, or, sql, desc } from "drizzle-orm";
+import { eq, and, isNull, ilike, or, sql, desc, inArray } from "drizzle-orm";
 
 export type CollectionSort =
   | "recent_activity"
@@ -68,22 +66,23 @@ export class MemorialRepository {
         ),
       );
 
-    return Promise.all(rows.map((r) => this._hydrate(r)));
+    return this._hydrateMany(rows);
   }
 
   async search(options: SearchOptions): Promise<PaginatedMemorials> {
     const { query = "", sort, limit = 20, page = 1 } = options;
     const offset = (page - 1) * limit;
 
-    const baseCondition = and(
+    // Build base filter conditions
+    const baseConditions: ReturnType<typeof eq>[] = [
       eq(memorialsTable.status, "published"),
-      isNull(memorialsTable.deletedAt),
-    );
+      isNull(memorialsTable.deletedAt) as any,
+    ];
 
     if (query.trim().length >= 2) {
       const pattern = `%${query.trim().slice(0, 100)}%`;
 
-      const persons = await db
+      const matchedPersons = await db
         .select({ id: memorialPersonsTable.id })
         .from(memorialPersonsTable)
         .where(
@@ -95,72 +94,84 @@ export class MemorialRepository {
             isNull(memorialPersonsTable.deletedAt),
           ),
         )
-        .limit(200);
+        .limit(500);
 
-      if (persons.length === 0) {
+      if (matchedPersons.length === 0) {
         return { data: [], total: 0, page, limit, hasMore: false };
       }
 
-      const personIds = persons.map((p) => p.id);
+      (baseConditions as any[]).push(
+        inArray(memorialsTable.personId, matchedPersons.map((p) => p.id)),
+      );
+    }
 
-      const allMemorials = await db
+    const whereClause = and(...(baseConditions as any[]));
+
+    // upcoming_yahrzeit requires person deathDate — load all, sort in JS
+    if (sort === "upcoming_yahrzeit") {
+      const all = await db
         .select()
         .from(memorialsTable)
-        .where(baseCondition);
+        .where(whereClause);
 
-      const matched = allMemorials.filter((m) => personIds.includes(m.personId));
-      const total = matched.length;
-      const sorted = this._applySortInMemory(matched, sort);
+      const hydrated = await this._hydrateMany(all);
+      const sorted = this._sortByUpcomingYahrzeit(hydrated);
       const sliced = sorted.slice(offset, offset + limit);
-      const data = await Promise.all(sliced.map((m) => this._hydrate(m)));
-
-      return { data, total, page, limit, hasMore: offset + sliced.length < total };
+      return {
+        data: sliced,
+        total: hydrated.length,
+        page,
+        limit,
+        hasMore: offset + sliced.length < hydrated.length,
+      };
     }
 
-    const allMemorials = await db
+    // SQL-sorted paginated query for all other sorts
+    const [countRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(memorialsTable)
+      .where(whereClause);
+
+    const total = countRow?.count ?? 0;
+    if (total === 0) return { data: [], total: 0, page, limit, hasMore: false };
+
+    const orderExpr = this._sqlOrderExpr(sort);
+    const rows = await db
       .select()
       .from(memorialsTable)
-      .where(baseCondition);
+      .where(whereClause)
+      .orderBy(orderExpr as any)
+      .limit(limit)
+      .offset(offset);
 
-    const total = allMemorials.length;
-    const sorted = this._applySortInMemory(allMemorials, sort);
-    const sliced = sorted.slice(offset, offset + limit);
-    const data = await Promise.all(sliced.map((m) => this._hydrate(m)));
-
-    return { data, total, page, limit, hasMore: offset + sliced.length < total };
+    const data = await this._hydrateMany(rows);
+    return { data, total, page, limit, hasMore: offset + rows.length < total };
   }
 
-  private _applySortInMemory(memorials: Memorial[], sort?: CollectionSort): Memorial[] {
+  // ── Sort helpers ─────────────────────────────────────────────────────────────
+
+  private _sqlOrderExpr(sort?: CollectionSort) {
     switch (sort) {
       case "most_visited":
-        return [...memorials].sort((a, b) => b.viewCount - a.viewCount);
-      case "recently_lit":
-        return [...memorials].sort(
-          (a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime(),
-        );
-      case "upcoming_yahrzeit":
-        return this._sortByUpcomingYahrzeit(memorials);
+        return desc(memorialsTable.viewCount);
       case "community_picks":
-        return [...memorials].sort(
-          (a, b) => (b.candleCount + b.tributeCount) - (a.candleCount + a.tributeCount),
-        );
+        return sql`${memorialsTable.candleCount} + ${memorialsTable.tributeCount} DESC`;
+      case "recently_lit":
       case "recent_activity":
       default:
-        return [...memorials].sort(
-          (a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime(),
-        );
+        return desc(memorialsTable.lastActivityAt);
     }
   }
 
-  private _sortByUpcomingYahrzeit(memorials: Memorial[]): Memorial[] {
+  private _sortByUpcomingYahrzeit(memorials: MemorialWithPerson[]): MemorialWithPerson[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayMs = today.getTime();
     const msPerDay = 86400000;
 
     return [...memorials].sort((a, b) => {
-      const aNext = this._daysUntilAnniversary(a.createdAt, todayMs, msPerDay);
-      const bNext = this._daysUntilAnniversary(b.createdAt, todayMs, msPerDay);
+      const aNext = this._daysUntilAnniversary(a.person.deathDate, todayMs, msPerDay);
+      const bNext = this._daysUntilAnniversary(b.person.deathDate, todayMs, msPerDay);
       return aNext - bNext;
     });
   }
@@ -176,6 +187,58 @@ export class MemorialRepository {
       return 9999;
     }
   }
+
+  // ── Hydration ────────────────────────────────────────────────────────────────
+
+  private async _hydrate(memorial: Memorial): Promise<MemorialWithPerson> {
+    const [person] = await db
+      .select()
+      .from(memorialPersonsTable)
+      .where(eq(memorialPersonsTable.id, memorial.personId));
+
+    const [privacy] = await db
+      .select()
+      .from(memorialPrivacyTable)
+      .where(eq(memorialPrivacyTable.memorialId, memorial.id));
+
+    return {
+      ...memorial,
+      person: person!,
+      privacy: privacy!,
+    };
+  }
+
+  // Batch hydration — 2 queries instead of 2N. Use for collections / search results.
+  private async _hydrateMany(memorials: Memorial[]): Promise<MemorialWithPerson[]> {
+    if (memorials.length === 0) return [];
+
+    const personIds = [...new Set(memorials.map((m) => m.personId))];
+    const memorialIds = memorials.map((m) => m.id);
+
+    const [persons, privacies] = await Promise.all([
+      db
+        .select()
+        .from(memorialPersonsTable)
+        .where(inArray(memorialPersonsTable.id, personIds)),
+      db
+        .select()
+        .from(memorialPrivacyTable)
+        .where(inArray(memorialPrivacyTable.memorialId, memorialIds)),
+    ]);
+
+    const personMap = new Map(persons.map((p) => [p.id, p]));
+    const privacyMap = new Map(privacies.map((p) => [p.memorialId, p]));
+
+    return memorials
+      .filter((m) => personMap.has(m.personId))
+      .map((m) => ({
+        ...m,
+        person: personMap.get(m.personId)!,
+        privacy: privacyMap.get(m.id)!,
+      }));
+  }
+
+  // ── Write operations ──────────────────────────────────────────────────────────
 
   async create(
     personData: InsertMemorialPerson,
@@ -256,24 +319,6 @@ export class MemorialRepository {
         updatedAt: new Date(),
       })
       .where(eq(memorialsTable.id, id));
-  }
-
-  private async _hydrate(memorial: Memorial): Promise<MemorialWithPerson> {
-    const [person] = await db
-      .select()
-      .from(memorialPersonsTable)
-      .where(eq(memorialPersonsTable.id, memorial.personId));
-
-    const [privacy] = await db
-      .select()
-      .from(memorialPrivacyTable)
-      .where(eq(memorialPrivacyTable.memorialId, memorial.id));
-
-    return {
-      ...memorial,
-      person: person!,
-      privacy: privacy!,
-    };
   }
 }
 

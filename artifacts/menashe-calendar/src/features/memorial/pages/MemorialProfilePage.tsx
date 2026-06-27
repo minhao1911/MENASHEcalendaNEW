@@ -660,6 +660,7 @@ function FamilyManagementSheet({
   invite,
   updateRole,
   remove,
+  transferOwnership,
   t,
 }: {
   family: MemorialFamily | null;
@@ -668,6 +669,7 @@ function FamilyManagementSheet({
   invite: (userId: string, role: FamilyMemberRole) => Promise<void>;
   updateRole: (memberId: string, role: FamilyMemberRole) => Promise<void>;
   remove: (memberId: string) => Promise<void>;
+  transferOwnership: (newPrimaryUserId: string) => Promise<void>;
   t: any;
 }) {
   const [inviteId, setInviteId] = useState("");
@@ -676,6 +678,8 @@ function FamilyManagementSheet({
   const [inviteDone, setInviteDone] = useState(false);
   const [inviteErr, setInviteErr] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [transferring, setTransferring] = useState<string | null>(null);
+  const [transferDone, setTransferDone] = useState(false);
 
   const handleInvite = useCallback(async () => {
     if (!inviteId.trim()) return;
@@ -695,6 +699,16 @@ function FamilyManagementSheet({
     try { await remove(memberId); } catch { /* ignore */ }
     setRemoving(null);
   }, [remove]);
+
+  const handleTransfer = useCallback(async (userId: string) => {
+    setTransferring(userId);
+    try {
+      await transferOwnership(userId);
+      setTransferDone(true);
+      setTimeout(() => setTransferDone(false), 3000);
+    } catch { /* ignore */ }
+    setTransferring(null);
+  }, [transferOwnership]);
 
   const roleLabel: Record<FamilyMemberRole, string> = {
     admin: t.memFamilyRoleAdmin,
@@ -737,10 +751,22 @@ function FamilyManagementSheet({
                 <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)" }}>
                   {m.userId.slice(0, 18)}…
                 </div>
-                {family?.primaryContactId === m.userId && (
+                {family?.primaryContactId === m.userId ? (
                   <div style={{ fontSize: 10, color: GOLD, marginTop: 1 }}>
                     ★ {t.memFamilyPrimaryContact}
                   </div>
+                ) : (
+                  <button
+                    onClick={() => handleTransfer(m.userId)}
+                    disabled={transferring === m.userId}
+                    style={{
+                      marginTop: 2, padding: "2px 7px", borderRadius: 5, fontSize: 10,
+                      background: "rgba(212,168,67,0.08)", border: `1px solid ${BORDER_GOLD}`,
+                      color: GOLD, cursor: "pointer", opacity: transferring === m.userId ? 0.5 : 1,
+                    }}
+                  >
+                    {transferring === m.userId ? "…" : `★ ${t.memFamilyTransfer}`}
+                  </button>
                 )}
               </div>
               <select
@@ -789,6 +815,7 @@ function FamilyManagementSheet({
         </div>
         {inviteErr && <div style={{ fontSize: 12, color: "#e07070", marginBottom: 8 }}>{inviteErr}</div>}
         {inviteDone && <div style={{ fontSize: 12, color: "#70d070", marginBottom: 8 }}>✓ {t.memFamilyInvited}</div>}
+        {transferDone && <div style={{ fontSize: 12, color: GOLD, marginBottom: 8 }}>★ {t.memFamilyTransfer} ✓</div>}
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={onClose} style={cancelBtnStyle}>Close</button>
           <button
@@ -915,10 +942,13 @@ export default function MemorialProfilePage({ slug, onBack }: MemorialProfilePag
   const isOnline = useOnlineStatus();
 
   const { memorial, status, error, refetch } = useMemorial(slug);
+  const [candleTab, setCandleTab] = useState<CandleTab>("recent");
+  const candleFilter: "recent" | "today" | "community" | undefined =
+    candleTab === "today" ? "today" : candleTab === "community" ? "community" : undefined;
   const {
     candles, total: candleTotal, hasMore: candleHasMore,
     status: candleStatus, loadMore: loadMoreCandles, light,
-  } = useCandles(memorial?.id ?? null);
+  } = useCandles(memorial?.id ?? null, candleFilter);
   const {
     tributes, total: tributeTotal, hasMore: tributeHasMore,
     status: tributeStatus, loadMore: loadMoreTributes, submit,
@@ -929,7 +959,6 @@ export default function MemorialProfilePage({ slug, onBack }: MemorialProfilePag
   );
 
   const [sheet, setSheet] = useState<"candle" | "tribute" | "family" | null>(null);
-  const [candleTab, setCandleTab] = useState<CandleTab>("recent");
   const [tributeFilter, setTributeFilter] = useState<TributeType | "all">("all");
   const [copied, setCopied] = useState(false);
 
@@ -1011,12 +1040,7 @@ export default function MemorialProfilePage({ slug, onBack }: MemorialProfilePag
     ? approvedTributes
     : approvedTributes.filter(tr => tr.tributeType === tributeFilter);
 
-  const todayCandles = candles.filter(c => isToday(c.litAt));
-  const communityCandles = candles.filter(c => Boolean(c.community));
-  const displayCandles =
-    candleTab === "today" ? todayCandles
-    : candleTab === "community" ? communityCandles
-    : candles;
+  const displayCandles = candles;
 
   return (
     <>
@@ -1346,6 +1370,7 @@ export default function MemorialProfilePage({ slug, onBack }: MemorialProfilePag
           invite={familyMgmt.invite}
           updateRole={familyMgmt.updateRole}
           remove={familyMgmt.remove}
+          transferOwnership={familyMgmt.transferOwnership}
           t={t}
         />
       )}

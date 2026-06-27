@@ -112,9 +112,12 @@ export async function getCandles(
   memorialId: string,
   page = 1,
   limit = 20,
+  filter?: "recent" | "today" | "community",
 ): Promise<PaginatedResponse<MemorialCandle>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (filter) params.set("filter", filter);
   return apiFetch<PaginatedResponse<MemorialCandle>>(
-    `/memorials/${memorialId}/candles?page=${page}&limit=${limit}`,
+    `/memorials/${memorialId}/candles?${params.toString()}`,
   );
 }
 
@@ -242,4 +245,14 @@ export async function removeFamilyMember(
     `/memorials/families/${familyId}/members/${memberId}`,
     { method: "DELETE" },
   );
+}
+
+export async function transferFamilyOwnership(
+  familyId: string,
+  newPrimaryContactId: string,
+): Promise<MemorialFamily> {
+  return apiFetch<MemorialFamily>(`/memorials/families/${familyId}/transfer`, {
+    method: "POST",
+    body: JSON.stringify({ newPrimaryContactId }),
+  });
 }

@@ -251,6 +251,18 @@ export default function MemorialSanctuaryPage({
               />
             )}
 
+            {/* ── Most Visited ── */}
+            {isOnline && (
+              <CollectionStrip
+                title={t.memColMostVisited}
+                icon="👁"
+                items={collections.mostVisited.items}
+                status={collections.mostVisited.status}
+                onSelect={handleSelectResult}
+                emptyTitle={t.memShellFeaturedEmpty}
+              />
+            )}
+
             {/* ── Recently Lit ── */}
             {isOnline && (
               <CollectionStrip

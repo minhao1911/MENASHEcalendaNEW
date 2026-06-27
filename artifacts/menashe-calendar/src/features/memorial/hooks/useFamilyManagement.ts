@@ -5,6 +5,7 @@ import {
   inviteFamilyMember,
   updateFamilyMemberRole,
   removeFamilyMember,
+  transferFamilyOwnership,
 } from "../api/memorialApi";
 import type {
   MemorialFamily,
@@ -25,6 +26,7 @@ export interface UseFamilyManagement {
   invite: (userId: string, role: FamilyMemberRole) => Promise<void>;
   updateRole: (memberId: string, role: FamilyMemberRole) => Promise<void>;
   remove: (memberId: string) => Promise<void>;
+  transferOwnership: (newPrimaryUserId: string) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -87,5 +89,14 @@ export function useFamilyManagement(
     [familyId],
   );
 
-  return { family, members, status, error, invite, updateRole, remove, refetch: load };
+  const transferOwnership = useCallback(
+    async (newPrimaryUserId: string) => {
+      if (!familyId) throw new Error("No family ID");
+      const updated = await transferFamilyOwnership(familyId, newPrimaryUserId);
+      setFamily(updated);
+    },
+    [familyId],
+  );
+
+  return { family, members, status, error, invite, updateRole, remove, transferOwnership, refetch: load };
 }

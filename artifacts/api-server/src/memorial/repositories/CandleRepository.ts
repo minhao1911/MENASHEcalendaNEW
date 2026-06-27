@@ -4,8 +4,10 @@ import {
   type MemorialCandle,
   type InsertCandle,
 } from "@workspace/db";
-import { eq, and, isNull, gte, sql } from "drizzle-orm";
+import { eq, and, isNull, gte, isNotNull, sql } from "drizzle-orm";
 import crypto from "node:crypto";
+
+export type CandleFilter = "recent" | "today" | "community";
 
 export interface PaginatedCandles {
   data: MemorialCandle[];
@@ -13,6 +15,7 @@ export interface PaginatedCandles {
   page: number;
   limit: number;
   hasMore: boolean;
+  filter: CandleFilter;
 }
 
 export class CandleRepository {
@@ -20,30 +23,37 @@ export class CandleRepository {
     memorialId: string,
     page = 1,
     limit = 20,
+    filter: CandleFilter = "recent",
   ): Promise<PaginatedCandles> {
     const offset = (page - 1) * limit;
+
+    const conditions = [
+      eq(memorialCandlesTable.memorialId, memorialId),
+      isNull(memorialCandlesTable.deletedAt),
+    ];
+
+    if (filter === "today") {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      conditions.push(gte(memorialCandlesTable.litAt, startOfToday));
+    } else if (filter === "community") {
+      conditions.push(isNotNull(memorialCandlesTable.community));
+      conditions.push(sql`${memorialCandlesTable.community} <> ''`);
+    }
+
+    const whereClause = and(...conditions);
 
     const [countRow] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(memorialCandlesTable)
-      .where(
-        and(
-          eq(memorialCandlesTable.memorialId, memorialId),
-          isNull(memorialCandlesTable.deletedAt),
-        ),
-      );
+      .where(whereClause);
 
     const total = countRow?.count ?? 0;
 
     const data = await db
       .select()
       .from(memorialCandlesTable)
-      .where(
-        and(
-          eq(memorialCandlesTable.memorialId, memorialId),
-          isNull(memorialCandlesTable.deletedAt),
-        ),
-      )
+      .where(whereClause)
       .orderBy(sql`${memorialCandlesTable.litAt} DESC`)
       .limit(limit)
       .offset(offset);
@@ -54,6 +64,7 @@ export class CandleRepository {
       page,
       limit,
       hasMore: offset + data.length < total,
+      filter,
     };
   }
 
