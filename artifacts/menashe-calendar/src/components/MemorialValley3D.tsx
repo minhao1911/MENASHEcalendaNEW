@@ -2098,11 +2098,10 @@ function FirstPersonController({
     return () => window.removeEventListener("mousemove", onMove);
   }, [PASSIVE_SENS]);
 
-  /* ── Desktop keyboard ── */
+  /* ── Desktop keyboard — works with or without pointer lock ── */
   useEffect(() => {
     if (isTouch.current) return;
     const down = (e: KeyboardEvent) => {
-      if (!isLocked.current) return;
       if (e.code === "KeyW") keys.current.w = true;
       if (e.code === "KeyA") keys.current.a = true;
       if (e.code === "KeyS") keys.current.s = true;
@@ -2147,7 +2146,8 @@ function FirstPersonController({
       ctrlRef.current.target.set(cx + fwdVec.current.x * 8, wantY, cz + fwdVec.current.z * 8);
     }
 
-    const active = isTouch.current ? true : isLocked.current;
+    const anyKeyDown = keys.current.w || keys.current.a || keys.current.s || keys.current.d;
+    const active = isTouch.current ? true : (isLocked.current || anyKeyDown);
     if (!active) {
       camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY, 0.06);
       return;
@@ -2256,7 +2256,7 @@ function FirstPersonController({
     );
   }
 
-  /* ── DESKTOP OVERLAY — click-to-lock prompt ── */
+  /* ── DESKTOP OVERLAY — WASD hint + optional pointer-lock for mouse look ── */
   return (
     <>
       <PointerLockControls ref={plcRef} onLock={handleLock} onUnlock={handleUnlock} />
@@ -2267,25 +2267,39 @@ function FirstPersonController({
           alignItems: "flex-end", justifyContent: "center",
           paddingBottom: 88, pointerEvents: "none",
         }}>
-          <button
-            onClick={() => plcRef.current?.lock()}
-            style={{
-              pointerEvents: "all",
-              background: "rgba(0,0,0,0.72)",
-              border: "1.5px solid rgba(212,175,55,0.60)",
-              borderRadius: 14, padding: "11px 26px",
-              color: "#D4AF37", fontSize: 13, fontWeight: 700,
-              cursor: "pointer",
-              backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-              userSelect: "none", display: "flex", alignItems: "center",
-              gap: 10, letterSpacing: "0.01em",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.45)",
-            }}
-          >
-            <span style={{ fontSize: 20 }}>🚶</span>
-            <span>Click to Walk</span>
-            <span style={{ opacity: 0.55, fontWeight: 400, fontSize: 12 }}>WASD · Mouse Look · Esc to Exit</span>
-          </button>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            {/* Always-available WASD hint */}
+            <div style={{
+              background: "rgba(0,0,0,0.65)",
+              border: "1px solid rgba(212,175,55,0.40)",
+              borderRadius: 12, padding: "8px 20px",
+              color: "rgba(212,175,55,0.90)", fontSize: 12, fontWeight: 600,
+              letterSpacing: "0.04em", pointerEvents: "none",
+              backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+            }}>
+              🚶 WASD to walk · Mouse to look
+            </div>
+            {/* Optional pointer-lock for captured mouse look */}
+            <button
+              onClick={() => plcRef.current?.lock()}
+              style={{
+                pointerEvents: "all",
+                background: "rgba(0,0,0,0.72)",
+                border: "1.5px solid rgba(212,175,55,0.60)",
+                borderRadius: 14, padding: "9px 22px",
+                color: "#D4AF37", fontSize: 12, fontWeight: 700,
+                cursor: "pointer",
+                backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+                userSelect: "none", display: "flex", alignItems: "center",
+                gap: 8, letterSpacing: "0.01em",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.45)",
+              }}
+            >
+              <span style={{ fontSize: 16 }}>🖱️</span>
+              <span>Click for captured mouse look</span>
+              <span style={{ opacity: 0.55, fontWeight: 400, fontSize: 11 }}>Esc to release</span>
+            </button>
+          </div>
         </div>
       </Html>
     </>
