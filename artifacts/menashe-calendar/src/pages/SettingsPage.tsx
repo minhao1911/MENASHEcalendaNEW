@@ -118,6 +118,53 @@ interface SettingsPageProps {
   onTestPush: () => Promise<boolean>;
 }
 
+function VersionFooter({ userId, versionLabel }: { userId: string; versionLabel: string }) {
+  const [taps, setTaps] = useState(0);
+  const [showId, setShowId] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  function handleTap() {
+    const next = taps + 1;
+    setTaps(next);
+    if (next >= 5) { setShowId(true); setTaps(0); }
+  }
+
+  function copyId() {
+    if (!userId) return;
+    navigator.clipboard.writeText(userId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div style={{ textAlign: "center", padding: "8px 16px 20px" }}>
+      <div style={{ opacity: 0.4, cursor: "pointer" }} onClick={handleTap}>
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{versionLabel} · v1.2</div>
+        <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 14, color: "var(--gold)", marginTop: 4 }}>ברוך הבא</div>
+      </div>
+      {showId && userId && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.5, marginBottom: 4, letterSpacing: "0.06em" }}>YOUR USER ID</div>
+          <div
+            onClick={copyId}
+            style={{
+              fontSize: 11, color: "var(--text-muted)", background: "var(--elevated)",
+              border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px",
+              fontFamily: "monospace", wordBreak: "break-all", cursor: "pointer",
+            }}
+          >
+            {userId}
+          </div>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.45, marginTop: 4 }}>
+            {copied ? "✓ Copied!" : "tap to copy"}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsPage({
   theme, location,
   onToggleTheme, onSetTheme, onLocationClick, onPremium, onTahara, onYartzeit, onBirthday, onCommunity, onCensus,
@@ -1380,30 +1427,8 @@ export default function SettingsPage({
           </div>
         )}
 
-        {/* User ID (for admin setup) */}
-        {user?.id && (
-          <div style={{ textAlign: "center", padding: "0 16px 12px" }}>
-            <div style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.5, marginBottom: 4, letterSpacing: "0.05em" }}>YOUR USER ID</div>
-            <div
-              style={{
-                fontSize: 11, color: "var(--text-muted)", background: "var(--elevated)",
-                border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px",
-                fontFamily: "monospace", wordBreak: "break-all", cursor: "pointer",
-              }}
-              onClick={() => { navigator.clipboard.writeText(user.id); }}
-              title="Click to copy"
-            >
-              {user.id}
-            </div>
-            <div style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.4, marginTop: 4 }}>tap to copy · share with admin to get access</div>
-          </div>
-        )}
-
-        {/* Version */}
-        <div style={{ textAlign: "center", padding: "8px 0 16px", opacity: 0.4 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.settingsVersion} · v1.2</div>
-          <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 14, color: "var(--gold)", marginTop: 4 }}>ברוך הבא</div>
-        </div>
+        {/* Version — tap 5× to reveal User ID for admin setup */}
+        <VersionFooter userId={user?.id ?? ""} versionLabel={t.settingsVersion} />
       </div>
     </div>
   );
