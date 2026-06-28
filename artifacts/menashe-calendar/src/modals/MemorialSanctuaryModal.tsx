@@ -1143,6 +1143,124 @@ function SearchResults({
   );
 }
 
+/* ═══════════════════ MICRO CANDLE CARD ══════════════════════════════════════
+ * Appears after a ground tap — a tiny floating pill.
+ * Tapping it "unwraps" into the full LightCandleForm via framer-motion
+ * shared-layout animation (layoutId="ms-candle-panel").
+ * Auto-dismisses after 6 s with an animated countdown border.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+function MicroCandleCard({ onOpen, onDismiss }: { onOpen: () => void; onDismiss: () => void }) {
+  const [progress, setProgress] = useState(100);
+  const AUTO_DISMISS_MS = 6000;
+
+  useEffect(() => {
+    const start = Date.now();
+    const iv = setInterval(() => {
+      const elapsed = Date.now() - start;
+      setProgress(Math.max(0, 100 - (elapsed / AUTO_DISMISS_MS) * 100));
+    }, 40);
+    const t = setTimeout(() => { clearInterval(iv); onDismiss(); }, AUTO_DISMISS_MS);
+    return () => { clearInterval(iv); clearTimeout(t); };
+  }, [onDismiss]);
+
+  return (
+    /* Centering wrapper — no layoutId so framer-motion doesn't track it */
+    <div style={{
+      position: "absolute", bottom: 82, left: 0, right: 0,
+      display: "flex", justifyContent: "center",
+      zIndex: 51, pointerEvents: "none",
+    }}>
+      <motion.div
+        layoutId="ms-candle-panel"
+        key="micro-card"
+        initial={{ opacity: 0, scale: 0.68, y: 18 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.8, y: 14 }}
+        transition={{
+          layout: { type: "spring", damping: 26, stiffness: 300 },
+          opacity: { duration: 0.22 },
+          scale:   { type: "spring", damping: 20, stiffness: 360 },
+          y:       { type: "spring", damping: 20, stiffness: 360 },
+        }}
+        onClick={onOpen}
+        style={{
+          pointerEvents: "auto",
+          cursor: "pointer",
+          width: 232,
+          background: "rgba(4,2,14,0.97)",
+          backdropFilter: "blur(36px) saturate(2.0)",
+          border: "1px solid rgba(212,175,55,0.48)",
+          borderRadius: 28,
+          boxShadow: "0 12px 48px rgba(0,0,0,0.72), 0 0 0 1px rgba(212,175,55,0.10) inset, 0 0 40px rgba(212,175,55,0.10)",
+          overflow: "hidden",
+          userSelect: "none",
+          position: "relative",
+        }}
+      >
+        {/* ── Countdown progress bar — shrinks left to right over 6 s ── */}
+        <div style={{
+          position: "absolute", top: 0, left: 0,
+          height: 2.5, width: `${progress}%`,
+          background: "linear-gradient(90deg, #D4AF37 0%, #f5e47a 100%)",
+          borderRadius: "28px 0 0 0",
+          boxShadow: "0 0 8px rgba(212,175,55,0.6)",
+          transition: "width 40ms linear",
+        }} />
+
+        <div style={{ padding: "15px 16px 17px", display: "flex", alignItems: "center", gap: 12 }}>
+          {/* Flame orb */}
+          <div style={{
+            width: 46, height: 46, borderRadius: 17, flexShrink: 0,
+            background: "linear-gradient(135deg, rgba(212,175,55,0.22), rgba(212,175,55,0.07))",
+            border: "1px solid rgba(212,175,55,0.38)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 24,
+            boxShadow: "0 0 20px rgba(212,175,55,0.28)",
+            animation: "ms-flicker 1.8s ease-in-out infinite",
+          }}>🕯</div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: "#fff", lineHeight: 1.15, marginBottom: 3, letterSpacing: "0.01em" }}>
+              Light a Candle
+            </div>
+            <div style={{ fontSize: 10, color: "rgba(212,175,55,0.62)", fontWeight: 500, lineHeight: 1.4 }}>
+              Tap to honor a loved one
+            </div>
+          </div>
+
+          {/* Expand chevron */}
+          <div style={{
+            width: 32, height: 32, borderRadius: 11, flexShrink: 0,
+            background: "rgba(212,175,55,0.12)",
+            border: "1px solid rgba(212,175,55,0.28)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </div>
+        </div>
+
+        {/* ── Dismiss ×  ── */}
+        <button
+          onClick={e => { e.stopPropagation(); onDismiss(); }}
+          aria-label="Dismiss"
+          style={{
+            position: "absolute", top: 7, right: 8,
+            width: 22, height: 22, borderRadius: 7,
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.09)",
+            color: "rgba(255,255,255,0.38)",
+            cursor: "pointer", fontSize: 11, fontWeight: 800,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 0, lineHeight: 1,
+          }}
+        >✕</button>
+      </motion.div>
+    </div>
+  );
+}
+
 /* ═══════════════════ LIGHT A CANDLE FORM ════════════════════════════════════
  * SPR-026: Added donation tiers + anonymous toggle.
  * APIs unchanged — donation tier is captured locally for UX only (future
@@ -1168,11 +1286,16 @@ function LightCandleForm({
 
   return (
     <motion.div
+      layoutId="ms-candle-panel"
       key="candle-form"
-      initial={{ y: "100%", opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: "100%", opacity: 0 }}
-      transition={{ type: "spring", damping: 30, stiffness: 300 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, y: "6%" }}
+      transition={{
+        layout:   { type: "spring", damping: 28, stiffness: 280 },
+        opacity:  { duration: 0.18 },
+        y:        { type: "spring", damping: 28, stiffness: 280 },
+      }}
       onClick={e => e.stopPropagation()}
       style={{
         position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 50,
@@ -1689,6 +1812,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const [virtualFlowers, setVirtualFlowers] = useState<VirtualFlower[]>([]);
   const [selectedFlowerColor, setSelectedFlowerColor] = useState(0);
   const [newCandlePos, setNewCandlePos]     = useState<[number, number, number] | null>(null);
+  const [showMicro, setShowMicro]           = useState(false);
   const sound = useAmbientSound();
 
   /* Phase 4: keyboard handler — Escape closes any open panel */
@@ -1697,12 +1821,13 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
       if (e.key !== "Escape") return;
       if (selectedEntry) { setSelectedEntry(null); setShowDedicate(false); setDedicateSuccess(false); return; }
       if (showForm) { setShowForm(false); setPendingPos(null); return; }
+      if (showMicro) { setShowMicro(false); setPendingPos(null); return; }
       if (activeNav !== "home") { setActiveNav("home"); return; }
       onClose();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedEntry, showForm, activeNav, onClose]);
+  }, [selectedEntry, showForm, showMicro, activeNav, onClose]);
   /**
    * canRender3D — mount guard for R3F v9 + React 19 Strict Mode.
    *
@@ -1743,16 +1868,16 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   }, []);
 
   const handleGroundClick = useCallback((pos: [number, number, number]) => {
-    if (showForm || selectedEntry) return;
+    if (showForm || selectedEntry || showMicro) return;
     /* If flowers nav is active — place a flower instead of opening candle form */
     if (activeNav === "flowers") {
       setVirtualFlowers(prev => [...prev, { pos, colorIdx: selectedFlowerColor }]);
       return;
     }
     setPendingPos(pos);
-    setShowForm(true);
+    setShowMicro(true);   /* show micro pill first; it opens the full form on tap */
     setShowHints(false);
-  }, [showForm, selectedEntry, activeNav, selectedFlowerColor]);
+  }, [showForm, selectedEntry, showMicro, activeNav, selectedFlowerColor]);
 
   async function handleSubmit() {
     if (!form.name.trim() || !form.date) return;
@@ -1965,7 +2090,18 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         <BottomSceneTabs active={activeScene} onSelect={setActiveScene} />
       )}
 
-      {/* ── LIGHT A CANDLE FORM ── */}
+      {/* ── MICRO CANDLE CARD — appears on ground tap; tapping opens full form ── */}
+      <AnimatePresence>
+        {showMicro && !showForm && (
+          <MicroCandleCard
+            key="micro-card"
+            onOpen={() => { setShowMicro(false); setShowForm(true); }}
+            onDismiss={() => { setShowMicro(false); setPendingPos(null); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── LIGHT A CANDLE FORM — unwraps from micro card via layoutId ── */}
       <AnimatePresence>
         {showForm && (
           <LightCandleForm
