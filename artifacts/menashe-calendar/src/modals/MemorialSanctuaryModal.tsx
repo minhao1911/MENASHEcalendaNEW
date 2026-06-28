@@ -10,6 +10,7 @@ import {
 import { useLanguage } from "../context/LanguageContext";
 import type { SceneViewType, CameraState } from "../components/MemorialValley3D";
 import { MinimapOverlay } from "../features/memorial/components/MinimapOverlay";
+import { MemorialBrowserPanel } from "./MemorialBrowserPanel";
 
 const MemorialValley3D = lazy(() => import("../components/MemorialValley3D"));
 
@@ -1753,7 +1754,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const totalLit      = entries.length;
   const totalVisitors = hashNum("global-visitors", 4000, 6000);
   const panelOpen     = showForm || !!selectedEntry;
-  const showStrip     = activeNav === "memorials" && !searchQuery && !panelOpen;
+  const showBrowse    = activeNav === "memorials" && !panelOpen;
   const showMusic     = activeNav === "music"   && !panelOpen;
   const showFlowers   = activeNav === "flowers" && !panelOpen;
   const showHome      = activeNav === "home"    && !panelOpen;
@@ -1857,8 +1858,8 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         )}
       </AnimatePresence>
 
-      {/* ── LEFT STATS — shown when a non-home nav is active ── */}
-      {!panelOpen && !showHome && (
+      {/* ── LEFT STATS — shown when a non-home, non-browse nav is active ── */}
+      {!panelOpen && !showHome && !showBrowse && (
         <LeftStatsPanel
           candleCount={24832 + totalLit}
           visitorCount={8947 + totalVisitors}
@@ -1878,7 +1879,6 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
           active={activeNav}
           onSelect={nav => {
             setActiveNav(prev => prev === nav ? "home" : nav);
-            if (nav === "memorials") setTimeout(() => searchRef.current?.focus(), 80);
           }}
         />
       )}
@@ -1905,13 +1905,10 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
       {/* ── INTERACTION HINTS ── */}
       {!panelOpen && <InteractionHints visible={showHints} />}
 
-      {/* ── MEMORIAL SCROLL STRIP ── */}
+      {/* ── MEMORIAL BROWSER PANEL (replaces scroll strip) ── */}
       <AnimatePresence>
-        {showStrip && (
-          <MemorialScrollStrip
-            entries={entries.slice(0, 20)}
-            onSelect={e => { setSelectedEntry(e); setActiveNav("home"); }}
-          />
+        {showBrowse && (
+          <MemorialBrowserPanel onClose={() => setActiveNav("home")} />
         )}
       </AnimatePresence>
 
