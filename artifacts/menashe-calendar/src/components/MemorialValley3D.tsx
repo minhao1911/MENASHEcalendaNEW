@@ -340,7 +340,8 @@ const TREE_POS = Array.from({ length: 70 }, () => {
   const ang = R_TREE() * Math.PI * 2;
   const rad = 20 + R_TREE() * 20;
   return [Math.cos(ang) * rad, Math.sin(ang) * rad] as [number, number];
-});
+/* Clear the Sacred Avenue approach corridor — no trees between the user and the altar */
+}).filter(([x, z]) => !(Math.abs(x) < 14 && z > 4));
 
 const R_BG    = makeLCG(7);
 const BG_CANDLES: [number, number, number][] = [];
@@ -929,7 +930,7 @@ const R_VEG = makeLCG(53);
 const CYPRESS_POS = Array.from({ length: 22 }, () => {
   const a = R_VEG() * Math.PI * 2, r = 16 + R_VEG() * 18;
   return [Math.cos(a) * r, Math.sin(a) * r] as [number, number];
-});
+}).filter(([x, z]) => !(Math.abs(x) < 14 && z > 4));
 const LAVENDER_BEDS = [
   { cx: -9, cz: -8,  count: 28, radius: 3.2 },
   { cx:  9, cz: 12,  count: 28, radius: 3.0 },
@@ -1268,13 +1269,19 @@ function AAAStonePathways() {
 
   return (
     <>
-      {/* Main cross paths — 2 draw calls, large slabs */}
-      <mesh position={[0, 0.08, 4]} receiveShadow>
-        <boxGeometry args={[3.2, 0.1, 34]} />
-        <meshStandardMaterial color="#cfc5a8" roughness={0.84} metalness={0.04} />
+      {/* ── Sacred Avenue — wide limestone road from user entry (z=25) to altar ── */}
+      <mesh position={[0, 0.10, 1]} receiveShadow>
+        <boxGeometry args={[5.5, 0.14, 52]} />
+        <meshStandardMaterial color="#ddd0a8" roughness={0.78} metalness={0.06} />
       </mesh>
-      <mesh position={[0, 0.08, 4]} receiveShadow>
-        <boxGeometry args={[34, 0.1, 3.2]} />
+      {/* Avenue centre line — lighter inlaid strip for visual depth cue */}
+      <mesh position={[0, 0.115, 1]} receiveShadow>
+        <boxGeometry args={[0.7, 0.04, 52]} />
+        <meshStandardMaterial color="#ece0bc" roughness={0.70} metalness={0.08} />
+      </mesh>
+      {/* Cross transept path */}
+      <mesh position={[0, 0.09, 4]} receiveShadow>
+        <boxGeometry args={[40, 0.11, 3.6]} />
         <meshStandardMaterial color="#cfc5a8" roughness={0.84} metalness={0.04} />
       </mesh>
       {/* Diagonal paths */}
@@ -3314,15 +3321,20 @@ function AAAWaterLilies() {
    SPR-031: FLOWERING TREES — cherry/almond blossoms, seasonal beauty
 ══════════════════════════════════════════════════════════════════════════ */
 const R_FTREE = makeLCG(127);
-const FTREE_DATA = Array.from({ length: 18 }, () => {
-  const a = R_FTREE() * Math.PI * 2;
-  const r = 9 + R_FTREE() * 16;
-  return {
-    x: Math.cos(a) * r, z: Math.sin(a) * r,
-    sc: 0.78 + R_FTREE() * 0.52, phase: R_FTREE() * Math.PI * 2,
-    pink: R_FTREE() > 0.44,
-  };
-});
+const FTREE_DATA = [
+  ...Array.from({ length: 18 }, () => {
+    const a = R_FTREE() * Math.PI * 2;
+    const r = 9 + R_FTREE() * 16;
+    return {
+      x: Math.cos(a) * r, z: Math.sin(a) * r,
+      sc: 0.78 + R_FTREE() * 0.52, phase: R_FTREE() * Math.PI * 2,
+      pink: R_FTREE() > 0.44,
+    };
+  }).filter(t => !(Math.abs(t.x) < 12 && t.z > 4)),
+  /* Welcoming cherry trees flanking the Sacred Avenue entrance */
+  { x: -7.5, z: 20.5, sc: 1.3, phase: 0,        pink: true  },
+  { x:  7.5, z: 20.5, sc: 1.3, phase: Math.PI,   pink: true  },
+];
 
 function AAAFloweringTrees() {
   const canA   = useMemo(() => new THREE.SphereGeometry(1.45, 9, 7), []);
@@ -3400,7 +3412,7 @@ const SAPLING_DATA = Array.from({ length: 32 }, () => {
     x: Math.cos(a) * r, z: Math.sin(a) * r,
     h: 0.7 + R_SAP() * 1.5, colIdx: Math.floor(R_SAP() * 3),
   };
-});
+}).filter(s => !(Math.abs(s.x) < 10 && s.z > 4));
 
 function AAASaplings() {
   const leafGeo = useMemo(() => new THREE.SphereGeometry(0.36, 6, 5), []);
@@ -3652,6 +3664,72 @@ function AAATallCandleVariety() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SACRED AVENUE TORCHES — paired glowing stone lanterns guiding the path
+══════════════════════════════════════════════════════════════════════════ */
+const AVENUE_TORCH_PAIRS: [number, number][] = [
+  [4, 0.0], [8, 0.4], [12, 0.8], [16, 1.2], [20, 1.6],
+];
+
+function AAAAvenueTorches() {
+  const postGeo  = useMemo(() => new THREE.CylinderGeometry(0.085, 0.125, 2.1, 8, 2), []);
+  const baseGeo  = useMemo(() => new THREE.CylinderGeometry(0.22, 0.30, 0.30, 8, 1), []);
+  const flameGeo = useMemo(() => new THREE.SphereGeometry(0.20, 7, 5), []);
+  const capGeo   = useMemo(() => new THREE.CylinderGeometry(0.24, 0.20, 0.13, 8, 1), []);
+
+  const flameRefs = useRef<(THREE.Mesh | null)[]>([]);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    flameRefs.current.forEach((m, i) => {
+      if (!m) return;
+      const s = 0.86 + Math.sin(t * 4.2 + i * 0.73) * 0.11 + Math.sin(t * 7.8 + i * 1.31) * 0.05;
+      m.scale.setScalar(s);
+    });
+  });
+
+  let idx = 0;
+  return (
+    <>
+      {AVENUE_TORCH_PAIRS.flatMap(([z, pOff]) =>
+        ([-3.6, 3.6] as number[]).map(x => {
+          const i = idx++;
+          const phOff = pOff + (x < 0 ? 0 : 0.3);
+          return (
+            <group key={i} position={[x, 0, z]}>
+              <mesh position={[0, 0.15, 0]} geometry={baseGeo} castShadow receiveShadow>
+                <meshStandardMaterial color="#afa090" roughness={0.93} metalness={0.04} />
+              </mesh>
+              <mesh position={[0, 1.20, 0]} geometry={postGeo} castShadow>
+                <meshStandardMaterial color="#8a7c68" roughness={0.91} metalness={0.05} />
+              </mesh>
+              <mesh position={[0, 2.26, 0]} geometry={capGeo} castShadow>
+                <meshStandardMaterial color="#9e907c" roughness={0.89} metalness={0.06} />
+              </mesh>
+              <mesh
+                ref={el => { flameRefs.current[i] = el; }}
+                position={[0, 2.52 + Math.sin(phOff) * 0.04, 0]}
+                geometry={flameGeo}
+              >
+                <meshStandardMaterial
+                  color="#ffb040"
+                  emissive={new THREE.Color("#ff6800")}
+                  emissiveIntensity={3.2}
+                  roughness={0.28}
+                  metalness={0.0}
+                  transparent
+                  opacity={0.90}
+                  depthWrite={false}
+                />
+              </mesh>
+            </group>
+          );
+        })
+      )}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    PHASE 3: SCENE CAMERA DRIVER — smooth scene-tab camera transitions
 ══════════════════════════════════════════════════════════════════════════ */
 function AAASceneCameraDriver({ sceneView, ctrlRef }: {
@@ -3816,6 +3894,9 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 
       {/* SPR-031: Weathered ruins and prayer pavilion */}
       <AAAMossRuins />
+
+      {/* Sacred Avenue torch guides — lead user from entry toward altar */}
+      <AAAAvenueTorches />
 
       {/* Trees */}
       <AAAOliveTrees />
