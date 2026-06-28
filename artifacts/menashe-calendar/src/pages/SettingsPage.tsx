@@ -1380,6 +1380,25 @@ export default function SettingsPage({
           </div>
         )}
 
+        {/* User ID (for admin setup) */}
+        {user?.id && (
+          <div style={{ textAlign: "center", padding: "0 16px 12px" }}>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.5, marginBottom: 4, letterSpacing: "0.05em" }}>YOUR USER ID</div>
+            <div
+              style={{
+                fontSize: 11, color: "var(--text-muted)", background: "var(--elevated)",
+                border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px",
+                fontFamily: "monospace", wordBreak: "break-all", cursor: "pointer",
+              }}
+              onClick={() => { navigator.clipboard.writeText(user.id); }}
+              title="Click to copy"
+            >
+              {user.id}
+            </div>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.4, marginTop: 4 }}>tap to copy · share with admin to get access</div>
+          </div>
+        )}
+
         {/* Version */}
         <div style={{ textAlign: "center", padding: "8px 0 16px", opacity: 0.4 }}>
           <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.settingsVersion} · v1.2</div>
