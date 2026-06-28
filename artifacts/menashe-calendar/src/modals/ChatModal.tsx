@@ -25,6 +25,27 @@ const PROVIDER_LABEL: Record<NonNullable<AiProvider>, string> = {
   grok:   "Grok",
 };
 
+/* ── Typing indicator: three pulsing dots shown before the first token ───── */
+function TypingDots() {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 0" }}>
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          style={{
+            display: "inline-block",
+            width: 7, height: 7,
+            borderRadius: "50%",
+            background: "#D4AF37",
+            opacity: 0.85,
+            animation: `typingBounce 1.2s ease-in-out ${i * 0.18}s infinite`,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
 export default function ChatModal({ onClose }: Props) {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
