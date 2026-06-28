@@ -3249,7 +3249,7 @@ function AiChatFAB() {
         title="Restore AI chat"
         style={{
           position: "fixed",
-          bottom: 24,
+          bottom: "calc(70px + env(safe-area-inset-bottom, 0px) + 12px)",
           left: 16,
           display: "flex",
           alignItems: "center",
@@ -3676,7 +3676,7 @@ function AiChatFAB() {
 
       {/* FAB wrapper — hover reveals minimize button */}
       <div
-        style={{ position: "fixed", bottom: 24, left: 24, zIndex: 451 }}
+        style={{ position: "fixed", bottom: "calc(70px + env(safe-area-inset-bottom, 0px) + 12px)", left: 24, zIndex: 451 }}
         onMouseEnter={() => setFabHovered(true)}
         onMouseLeave={() => setFabHovered(false)}
       >

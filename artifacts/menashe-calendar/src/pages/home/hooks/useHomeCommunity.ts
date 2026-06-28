@@ -16,7 +16,8 @@ export function useHomeCommunity() {
         if (typeof p.x === "number" && typeof p.y === "number") return p;
       }
     } catch {}
-    return { x: window.innerWidth - 92, y: window.innerHeight - 188 };
+    /* Default: top-right area, safely above the 70px bottom nav + safe area */
+    return { x: window.innerWidth - 92, y: window.innerHeight - 280 };
   });
   const drag = useRef({
     active: false, startX: 0, startY: 0, initX: 0, initY: 0, moved: false,
@@ -119,9 +120,11 @@ export function useHomeCommunity() {
       setShowHint(false);
       try { localStorage.setItem(FAB_HINT_KEY, "1"); } catch {}
     }
+    /* Clamp x within screen, clamp y so FAB can't be dragged into the bottom nav zone
+       (70px nav + ~34px safe area + 10px buffer = ~114px from bottom = innerHeight - 214) */
     setPos({
       x: Math.max(0, Math.min(window.innerWidth - 80, drag.current.initX + dx)),
-      y: Math.max(0, Math.min(window.innerHeight - 110, drag.current.initY + dy)),
+      y: Math.max(0, Math.min(window.innerHeight - 214, drag.current.initY + dy)),
     });
   }
 
