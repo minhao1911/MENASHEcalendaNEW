@@ -1855,12 +1855,18 @@ function MemorialScrollStrip({
 /* ═══════════════════ MOBILE SANCTUARY VIEW ═════════════════════════════════
  * Shown on screens < 768 px instead of the heavy 3D WebGL scene.
  * Full-featured: candle lighting, memorial browsing, dedications — 2D only.
+ *
+ * Layout architecture (top → bottom):
+ *   1. Sticky header strip  — breadcrumb + title + close (56px)
+ *   2. Hero band            — candle glow + Hebrew verse + stats row (~140px)
+ *   3. Action + Search bar  — CTA + search input (fixed section)
+ *   4. Scrollable body      — section label → rich cards OR empty-state invite
  * ══════════════════════════════════════════════════════════════════════════ */
-const MOBILE_STARS = Array.from({ length: 44 }, (_, i) => ({
+const MOBILE_STARS = Array.from({ length: 28 }, (_, i) => ({
   left:    ((i * 73 + 17) % 97) + "%",
-  top:     ((i * 41 + 7)  % 58) + "%",
-  opacity: 0.2 + ((i * 31) % 10) / 14,
-  size:    1 + (i % 3),
+  top:     ((i * 41 + 7)  % 40) + "%",   /* only in top 40% — hero zone */
+  opacity: 0.15 + ((i * 31) % 10) / 18,
+  size:    1 + (i % 2),
 }));
 
 function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) {
@@ -1933,102 +1939,149 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
     } finally { setDedicateSaving(false); }
   }
 
+  const totalCandles = (24_832 + entries.length).toLocaleString();
+
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 9999,
+      position: "fixed", inset: 0,
+      /* z-index 10001: sits above PWA install banner (10000) and all other overlays */
+      zIndex: 10001,
       fontFamily: "Inter,-apple-system,sans-serif",
-      background: "linear-gradient(180deg,#04010e 0%,#090320 45%,#0e0b1c 100%)",
-      overflow: "hidden", display: "flex", flexDirection: "column",
+      background: "linear-gradient(170deg,#04010e 0%,#07031a 55%,#0c0820 100%)",
+      display: "flex", flexDirection: "column", overflow: "hidden",
     }}>
       <style>{STYLES}</style>
 
-      {/* ── Starfield ── */}
+      {/* ── Background: sparse stars only in hero zone (top 40%) ── */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
         {MOBILE_STARS.map((s, i) => (
           <div key={i} style={{
             position: "absolute",
             width: s.size, height: s.size,
-            borderRadius: "50%",
-            background: "#fff",
-            left: s.left, top: s.top,
-            opacity: s.opacity,
+            borderRadius: "50%", background: "#fff",
+            left: s.left, top: s.top, opacity: s.opacity,
           }} />
         ))}
-        {/* Soft gold glow at top */}
-        <div style={{
-          position: "absolute", top: -80, left: "50%", transform: "translateX(-50%)",
-          width: 320, height: 320, borderRadius: "50%",
-          background: "radial-gradient(ellipse,rgba(212,175,55,0.12) 0%,transparent 70%)",
-          pointerEvents: "none",
-        }} />
       </div>
 
-      {/* ── Header ── */}
+      {/* ════════════════════════════════════════════════════════
+          ZONE 1 — STICKY HEADER STRIP
+          Compact, 56px. Breadcrumb + title + close.
+          ════════════════════════════════════════════════════════ */}
+      <div style={{
+        position: "relative", zIndex: 3, flexShrink: 0,
+        paddingTop: "max(env(safe-area-inset-top),14px)",
+        paddingLeft: 18, paddingRight: 18, paddingBottom: 10,
+        borderBottom: "1px solid rgba(212,175,55,0.10)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.20em", color: "rgba(212,175,55,0.55)", marginBottom: 1 }}>
+            🕯 VALLEY OF REMEMBRANCE
+          </div>
+          <div style={{ fontSize: 19, fontWeight: 800, color: "#fff", letterSpacing: "0.01em", lineHeight: 1.15 }}>
+            {t.memShellWelcome}
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+            border: "1px solid rgba(255,255,255,0.14)",
+            background: "rgba(255,255,255,0.06)",
+            color: "rgba(255,255,255,0.65)", fontSize: 18,
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >×</button>
+      </div>
+
+      {/* ════════════════════════════════════════════════════════
+          ZONE 2 — HERO BAND
+          Candle glow orb + Hebrew memory verse + two stat pills.
+          Fixed height ~138px — no wasted void below.
+          ════════════════════════════════════════════════════════ */}
       <div style={{
         position: "relative", zIndex: 2, flexShrink: 0,
-        padding: "max(env(safe-area-inset-top),16px) 16px 0",
+        padding: "14px 18px 16px",
+        background: "linear-gradient(180deg,rgba(212,175,55,0.06) 0%,transparent 100%)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 10 }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(212,175,55,0.65)", marginBottom: 2 }}>
-              🕯 VALLEY OF REMEMBRANCE
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "0.01em" }}>
-              {t.memShellWelcome}
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            style={{
-              width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.7)", fontSize: 20,
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >×</button>
-        </div>
+        {/* Central candle glow + verse */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+          {/* Candle orb */}
+          <div style={{
+            width: 56, height: 56, flexShrink: 0, borderRadius: "50%",
+            background: "radial-gradient(circle,rgba(212,175,55,0.22) 0%,rgba(212,175,55,0.04) 60%,transparent 100%)",
+            border: "1px solid rgba(212,175,55,0.28)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 26,
+            animation: "ms-pulse-gold 3.2s ease-in-out infinite",
+          }}>🕯</div>
 
-        {/* Stats */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-          <div style={{
-            flex: 1, background: "rgba(212,175,55,0.07)",
-            border: "1px solid rgba(212,175,55,0.22)", borderRadius: 14,
-            padding: "10px 12px", textAlign: "center",
-          }}>
-            <div style={{ fontSize: 19, fontWeight: 900, color: "#D4AF37", lineHeight: 1 }}>
-              {(24_832 + entries.length).toLocaleString()}
+          {/* Verse */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 15, fontWeight: 700, color: "rgba(212,175,55,0.92)",
+              letterSpacing: "0.03em", marginBottom: 3,
+              direction: "rtl", textAlign: "right",
+            }}>
+              זִכְרוֹנוֹ לִבְרָכָה
             </div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.42)", marginTop: 3, letterSpacing: "0.08em" }}>
-              CANDLES LIT
-            </div>
-          </div>
-          <div style={{
-            flex: 1, background: "rgba(167,139,250,0.07)",
-            border: "1px solid rgba(167,139,250,0.22)", borderRadius: 14,
-            padding: "10px 12px", textAlign: "center",
-          }}>
-            <div style={{ fontSize: 19, fontWeight: 900, color: "#a78bfa", lineHeight: 1 }}>
-              {entries.length}
-            </div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.42)", marginTop: 3, letterSpacing: "0.08em" }}>
-              SOULS REMEMBERED
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.42)", lineHeight: 1.45 }}>
+              May their memory be a blessing.{"\n"}
+              Light a candle. Say their name.
             </div>
           </div>
         </div>
 
-        {/* Light a candle CTA */}
+        {/* Stat pills — horizontal, compact, no giant boxes */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <div style={{
+            flex: 1, display: "flex", alignItems: "center", gap: 7,
+            background: "rgba(212,175,55,0.08)",
+            border: "1px solid rgba(212,175,55,0.20)", borderRadius: 10,
+            padding: "8px 12px",
+          }}>
+            <span style={{ fontSize: 14 }}>🕯</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: "#D4AF37", lineHeight: 1 }}>{totalCandles}</div>
+              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.38)", letterSpacing: "0.06em", marginTop: 1 }}>CANDLES LIT</div>
+            </div>
+          </div>
+          <div style={{
+            flex: 1, display: "flex", alignItems: "center", gap: 7,
+            background: "rgba(167,139,250,0.08)",
+            border: "1px solid rgba(167,139,250,0.20)", borderRadius: 10,
+            padding: "8px 12px",
+          }}>
+            <span style={{ fontSize: 14 }}>✡️</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: "#a78bfa", lineHeight: 1 }}>{entries.length}</div>
+              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.38)", letterSpacing: "0.06em", marginTop: 1 }}>SOULS REMEMBERED</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════════════════════
+          ZONE 3 — ACTION + SEARCH BAR
+          Full-width CTA, then search below. Fixed, not scrollable.
+          ════════════════════════════════════════════════════════ */}
+      <div style={{
+        position: "relative", zIndex: 2, flexShrink: 0,
+        padding: "10px 18px 12px",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
+      }}>
         <motion.button
           onClick={() => setShowForm(true)}
           whileTap={{ scale: 0.97 }}
           style={{
-            width: "100%", padding: "15px 0", marginBottom: 12,
+            width: "100%", padding: "14px 0", marginBottom: 10,
             background: "linear-gradient(135deg,#D4AF37 0%,#a07828 100%)",
-            border: "none", borderRadius: 18,
+            border: "none", borderRadius: 16,
             fontSize: 15, fontWeight: 800, color: "#fff",
             cursor: "pointer",
-            boxShadow: "0 4px 28px rgba(212,175,55,0.32)",
+            boxShadow: "0 4px 24px rgba(212,175,55,0.30)",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}
         >
@@ -2036,101 +2089,210 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
         </motion.button>
 
         {/* Search */}
-        <div style={{ position: "relative", marginBottom: 12 }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          background: "rgba(255,255,255,0.05)",
+          border: "1px solid rgba(255,255,255,0.10)", borderRadius: 12,
+          padding: "0 14px",
+        }}>
+          <span style={{ fontSize: 14, color: "rgba(255,255,255,0.32)", flexShrink: 0 }}>🔍</span>
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder={t.memSearchPlaceholder}
             style={{
-              width: "100%", boxSizing: "border-box",
-              padding: "12px 40px 12px 16px",
-              borderRadius: 14,
-              border: "1px solid rgba(255,255,255,0.11)",
-              background: "rgba(255,255,255,0.06)",
-              color: "#fff", fontSize: 14, outline: "none",
+              flex: 1, background: "transparent", border: "none", outline: "none",
+              color: "#fff", fontSize: 14, padding: "11px 0",
+              fontFamily: "inherit",
             }}
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
               style={{
-                position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
                 background: "none", border: "none",
-                color: "rgba(255,255,255,0.38)", fontSize: 20,
-                cursor: "pointer", padding: "4px 6px", lineHeight: 1,
+                color: "rgba(255,255,255,0.35)", fontSize: 18,
+                cursor: "pointer", padding: "4px", lineHeight: 1, flexShrink: 0,
               }}
             >×</button>
           )}
         </div>
       </div>
 
-      {/* ── Memorial List ── */}
+      {/* ════════════════════════════════════════════════════════
+          ZONE 4 — SCROLLABLE BODY
+          Section label + memorial cards OR full empty-state invite.
+          This zone fills all remaining height.
+          ════════════════════════════════════════════════════════ */}
       <div style={{
-        flex: 1, overflowY: "auto",
-        position: "relative", zIndex: 2,
-        padding: "0 16px",
-        paddingBottom: "max(env(safe-area-inset-bottom),28px)",
+        flex: 1, overflowY: "auto", position: "relative", zIndex: 2,
+        padding: "0 18px",
+        paddingBottom: "max(env(safe-area-inset-bottom),32px)",
+        WebkitOverflowScrolling: "touch" as const,
       }}>
-        {filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: "52px 0 32px", color: "rgba(255,255,255,0.32)", fontSize: 14 }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🕯</div>
-            {searchQuery ? t.memNoResults : t.memShellRecentEmpty}
+
+        {/* Section label (only when there are entries) */}
+        {filtered.length > 0 && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "14px 0 10px",
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.10em" }}>
+              SOULS REMEMBERED
+            </div>
+            <div style={{
+              fontSize: 10, fontWeight: 800, color: "rgba(212,175,55,0.85)",
+              background: "rgba(212,175,55,0.10)", borderRadius: 6,
+              padding: "2px 7px", border: "1px solid rgba(212,175,55,0.22)",
+            }}>
+              {filtered.length}
+            </div>
+            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
           </div>
         )}
+
+        {/* ── Empty state: rich, inviting, spiritual ── */}
+        {filtered.length === 0 && (
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", textAlign: "center",
+            padding: "48px 24px 32px",
+            gap: 0,
+          }}>
+            {/* Animated candle */}
+            <div style={{
+              width: 80, height: 80, borderRadius: "50%", marginBottom: 20,
+              background: "radial-gradient(circle,rgba(212,175,55,0.18) 0%,rgba(212,175,55,0.04) 60%,transparent 100%)",
+              border: "1px solid rgba(212,175,55,0.22)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 38, animation: "ms-pulse-gold 2.8s ease-in-out infinite",
+            }}>🕯</div>
+
+            {/* Hebrew heading */}
+            <div style={{
+              fontSize: 18, fontWeight: 700, color: "rgba(212,175,55,0.85)",
+              letterSpacing: "0.04em", marginBottom: 8,
+              direction: "rtl",
+            }}>
+              {searchQuery ? "לא נמצאו תוצאות" : "בֵּית הַזִּיכָּרוֹן"}
+            </div>
+
+            {/* Subtitle */}
+            <div style={{
+              fontSize: 13, color: "rgba(255,255,255,0.42)", lineHeight: 1.65,
+              maxWidth: 240, marginBottom: 28,
+            }}>
+              {searchQuery
+                ? t.memNoResults
+                : "No souls have been remembered yet.\nLight the first candle and honour a loved one from our community."
+              }
+            </div>
+
+            {/* CTA (only when not searching) */}
+            {!searchQuery && (
+              <motion.button
+                onClick={() => setShowForm(true)}
+                whileTap={{ scale: 0.97 }}
+                style={{
+                  padding: "13px 32px",
+                  background: "linear-gradient(135deg,#D4AF37 0%,#a07828 100%)",
+                  border: "none", borderRadius: 14,
+                  fontSize: 14, fontWeight: 800, color: "#fff",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 20px rgba(212,175,55,0.28)",
+                }}
+              >
+                🕯 Light the first candle
+              </motion.button>
+            )}
+          </div>
+        )}
+
+        {/* ── Memorial Cards ── */}
         {filtered.map((entry, i) => {
           const name    = entry.deceasedName.split("·")[0].trim();
+          const hebrewN = entry.deceasedName.includes("·") ? entry.deceasedName.split("·")[1]?.trim() : null;
           const candleN = hashNum(entry.id, 3, 28);
           return (
             <motion.div
               key={entry.id}
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.04, 0.5) }}
+              transition={{ delay: Math.min(i * 0.035, 0.4) }}
               onClick={() => setSelectedEntry(entry)}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.985 }}
               style={{
                 marginBottom: 10, cursor: "pointer",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(212,175,55,0.14)",
+                background: "rgba(255,255,255,0.035)",
+                border: "1px solid rgba(212,175,55,0.13)",
                 borderRadius: 18, padding: "14px 16px",
                 display: "flex", alignItems: "center", gap: 14,
-                backdropFilter: "blur(8px)",
+                backdropFilter: "blur(10px)",
+                transition: "border-color 0.2s",
               }}
             >
-              {/* Avatar */}
+              {/* Avatar circle */}
               <div style={{
-                width: 46, height: 46, borderRadius: "50%", flexShrink: 0,
-                background: "linear-gradient(135deg,#D4AF37,#7a5800)",
+                width: 50, height: 50, borderRadius: "50%", flexShrink: 0,
+                background: "linear-gradient(135deg,#D4AF37 0%,#7a5800 100%)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 16, fontWeight: 900, color: "#fff",
+                boxShadow: "0 0 0 1px rgba(212,175,55,0.25)",
               }}>
                 {initials(name)}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {/* Primary name */}
+                <div style={{
+                  fontSize: 14, fontWeight: 700, color: "#fff",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  marginBottom: hebrewN ? 1 : 3,
+                }}>
                   {name}
                 </div>
-                {entry.displayDate && (
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.36)", marginBottom: 4 }}>
-                    📅 {entry.displayDate}
+                {/* Hebrew name (if present) */}
+                {hebrewN && (
+                  <div style={{
+                    fontSize: 11, color: "rgba(212,175,55,0.65)",
+                    marginBottom: 4, direction: "rtl", textAlign: "left",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {hebrewN}
                   </div>
                 )}
-                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ fontSize: 11 }}>🕯</span>
-                  <span style={{ fontSize: 11, color: "rgba(212,175,55,0.82)", fontWeight: 700 }}>
+                {/* Date */}
+                {entry.displayDate && (
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.32)", marginBottom: 4 }}>
+                    {entry.displayDate}
+                  </div>
+                )}
+                {/* Candle count + message indicator */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 10 }}>🕯</span>
+                  <span style={{ fontSize: 11, color: "rgba(212,175,55,0.80)", fontWeight: 700 }}>
                     {candleN} {t.memCandlesCount}
                   </span>
                   {entry.message && (
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginLeft: 4 }}>
-                      · 💬
+                    <span style={{
+                      fontSize: 9, color: "rgba(255,255,255,0.30)",
+                      background: "rgba(255,255,255,0.07)", borderRadius: 4, padding: "1px 5px",
+                    }}>
+                      💬
                     </span>
                   )}
                 </div>
               </div>
 
-              <div style={{ color: "rgba(255,255,255,0.18)", fontSize: 20, flexShrink: 0 }}>›</div>
+              {/* Chevron */}
+              <div style={{
+                width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "rgba(255,255,255,0.30)", fontSize: 14,
+              }}>›</div>
             </motion.div>
           );
         })}
