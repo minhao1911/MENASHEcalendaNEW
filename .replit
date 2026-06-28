@@ -97,8 +97,8 @@ EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_cHJlc2VudC1waXBlZmlzaC0xNy5jbGVyay5
 VITE_CLERK_PUBLISHABLE_KEY = "pk_test_cHJlc2VudC1waXBlZmlzaC0xNy5jbGVyay5hY2NvdW50cy5kZXYk"
 ADMIN_PIN = "1948"
 VITE_ADMIN_PIN = "1948"
-ADMIN_USER_ID = "user_3FY97P9A6kElvpsVl74YZxr1giS"
-VITE_ADMIN_USER_ID = "user_3FY97P9A6kElvpsVl74YZxr1giS"
+ADMIN_USER_ID = "user_3FPrdIHD0jHZYORFdutfQ4aspal"
+VITE_ADMIN_USER_ID = "user_3FPrdIHD0jHZYORFdutfQ4aspal"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-c5b161bf-7380-4234-b117-63cabc6e63ee"
