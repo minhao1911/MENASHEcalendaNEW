@@ -1,3 +1,4 @@
+- [Chat SSE abort pattern](chat-sse-abort-pattern.md) — use res.on("close") not req.on("close") in SSE routes; express.json() closes req stream immediately after body parse.
 - [Offline service worker](offline-sw.md) — git-safe offline mode: static public/sw.js, two caches (shell + assets), no build manifests, SW registered in main.tsx on startup.
 - [Bilingual system (EN + TK)](bilingual-system.md) — all UI text must go through LanguageContext; never hardcode English-only strings
 - [Clerk API auth in apiFetch](clerk-api-auth.md) — cookies alone don't work through Replit's proxy; always attach Bearer token via window.Clerk?.session?.getToken()

@@ -55,7 +55,12 @@ router.post("/chat", aiRateLimiter, async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
 
   const controller = new AbortController();
-  req.on("close", () => controller.abort());
+  // Use res.on("close") — NOT req.on("close").
+  // express.json() consumes the request body before this handler runs, which
+  // causes the req readable-stream to close immediately and fire "close" even
+  // while the client is still connected.  res "close" fires only when the
+  // actual response connection drops (client disconnects or response ends).
+  res.on("close", () => controller.abort());
 
   try {
     const { provider, stream } = await gatewayStream(

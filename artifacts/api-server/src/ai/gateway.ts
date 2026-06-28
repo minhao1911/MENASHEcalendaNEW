@@ -104,7 +104,12 @@ export async function gatewayStream(
     } catch (err: unknown) {
       const errorType = classifyError(err);
       const diag = recordFailure(p.name, errorType);
-      logger.warn(diag, "AI Gateway: provider failed, trying next");
+      // Log a sanitized excerpt of the error message (first 120 chars) to aid
+      // debugging without risking secret leakage in log aggregators.
+      const errMsg = err instanceof Error
+        ? err.message.slice(0, 120).replace(/sk-[A-Za-z0-9-_]+/g, "[KEY]")
+        : "non-Error thrown";
+      logger.warn({ ...diag, errMsg }, "AI Gateway: provider failed, trying next");
       tried.push({ name: p.name, reason: errorType });
     }
   }
