@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect, useState, useCallback } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { PointerLockControls, Instances, Instance, Text, Html } from "@react-three/drei";
+import { OrbitControls, PointerLockControls, Instances, Instance, Text, Html } from "@react-three/drei";
 import * as THREE from "three";
 import type { CommunityYahrzeitEntry } from "../lib/userApi";
 import {
@@ -1917,11 +1917,11 @@ function FootstepParticles({ particlesRef }: { particlesRef: React.MutableRefObj
    • Click-to-walk overlay when pointer is not locked
 ══════════════════════════════════════════════════════════════════════════ */
 function FirstPersonController({
-  fakeCtrlRef,
+  ctrlRef,
   particlesRef,
 }: {
-  fakeCtrlRef:   React.MutableRefObject<{ target: THREE.Vector3; update: () => void } | null>;
-  particlesRef:  React.MutableRefObject<FootstepPt[]>;
+  ctrlRef:      React.MutableRefObject<any>;
+  particlesRef: React.MutableRefObject<FootstepPt[]>;
 }) {
   const { camera } = useThree();
   const plcRef = useRef<any>(null);
@@ -1948,10 +1948,10 @@ function FirstPersonController({
     vel.current.set(0, 0, 0);
   }, []);
 
-  /* Initialise the fake ctrl so CameraStateTracker + AAASceneCameraDriver work */
+  /* Initialise the ctrl so CameraStateTracker + AAASceneCameraDriver work */
   useEffect(() => {
-    fakeCtrlRef.current = { target: new THREE.Vector3(0, 1.7, 0), update: () => {} };
-  }, [fakeCtrlRef]);
+    ctrlRef.current = { target: new THREE.Vector3(0, 1.7, 0), update: () => {} };
+  }, [ctrlRef]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -1985,8 +1985,8 @@ function FirstPersonController({
     fwdVec.current.y = 0;
     if (fwdVec.current.lengthSq() < 0.001) fwdVec.current.set(0, 0, -1);
     fwdVec.current.normalize();
-    if (fakeCtrlRef.current) {
-      fakeCtrlRef.current.target.set(cx + fwdVec.current.x * 8, wantY, cz + fwdVec.current.z * 8);
+    if (ctrlRef.current) {
+      ctrlRef.current.target.set(cx + fwdVec.current.x * 8, wantY, cz + fwdVec.current.z * 8);
     }
 
     if (!isLocked.current) {
@@ -3565,17 +3565,68 @@ interface SceneProps {
 
 function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, onGroundClick, onCandleClick, selectedId, sceneView, cameraStateRef }: SceneProps) {
   const litEntries   = useMemo(() => entries.slice(0, ENTRY_POSITIONS.length), [entries]);
-  const fakeCtrlRef  = useRef<{ target: THREE.Vector3; update: () => void } | null>(null);
+  const ctrlRef      = useRef<any>(null);
   const particlesRef = useRef<FootstepPt[]>([]);
+  const [walkMode, setWalkMode] = useState(false);
 
   return (
     <>
       <AAACamera />
-      <FirstPersonController fakeCtrlRef={fakeCtrlRef} particlesRef={particlesRef} />
-      <FootstepParticles particlesRef={particlesRef} />
-      <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={fakeCtrlRef} sceneView={sceneView} />
-      <AAASceneCameraDriver sceneView={sceneView} ctrlRef={fakeCtrlRef} />
-      {cameraStateRef && <CameraStateTracker stateRef={cameraStateRef} ctrlRef={fakeCtrlRef} />}
+
+      {/* ── Camera controls: orbit (default) or first-person walk ── */}
+      {walkMode ? (
+        <>
+          <FirstPersonController ctrlRef={ctrlRef} particlesRef={particlesRef} />
+          <FootstepParticles particlesRef={particlesRef} />
+        </>
+      ) : (
+        <OrbitControls
+          ref={ctrlRef}
+          enableRotate enablePan enableZoom
+          enableDamping dampingFactor={0.055}
+          rotateSpeed={0.42} panSpeed={0.9} zoomSpeed={0.72}
+          minDistance={3} maxDistance={48}
+          mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
+          touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
+          maxPolarAngle={Math.PI / 2.06} minPolarAngle={Math.PI / 12}
+          target={[0, 2.0, 0]}
+        />
+      )}
+
+      {/* ── Mode-toggle overlay button ── */}
+      <Html fullscreen zIndexRange={[9, 0]}>
+        <div style={{ position: "absolute", bottom: 96, right: 16, pointerEvents: "none" }}>
+          <button
+            onClick={() => setWalkMode(m => !m)}
+            style={{
+              pointerEvents: "all",
+              background: "rgba(0,0,0,0.70)",
+              border: `1.5px solid ${walkMode ? "rgba(100,220,120,0.65)" : "rgba(212,175,55,0.60)"}`,
+              borderRadius: 12,
+              padding: "9px 18px",
+              color: walkMode ? "#6fdc78" : "#D4AF37",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              userSelect: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 4px 18px rgba(0,0,0,0.40)",
+              transition: "all 0.2s",
+            }}
+          >
+            <span style={{ fontSize: 17 }}>{walkMode ? "🔭" : "🚶"}</span>
+            <span>{walkMode ? "Exit Walk" : "Walk Mode"}</span>
+          </button>
+        </div>
+      </Html>
+
+      <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlRef} sceneView={sceneView} />
+      <AAASceneCameraDriver sceneView={sceneView} ctrlRef={ctrlRef} />
+      {cameraStateRef && <CameraStateTracker stateRef={cameraStateRef} ctrlRef={ctrlRef} />}
 
       {/* ── Phase 3: Day/night sky dome (renders behind everything) ── */}
       <AAASkyDome />
@@ -3695,8 +3746,6 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 
       {/* Ground click */}
       <GroundClickPlane onGroundClick={onGroundClick} />
-
-      {/* First-person controls handled by FirstPersonController above */}
 
       {/* ── Phase 1 Foundation: post-processing pipeline (SPR-031: stronger bloom) ── */}
       <PostProcessingPipeline
