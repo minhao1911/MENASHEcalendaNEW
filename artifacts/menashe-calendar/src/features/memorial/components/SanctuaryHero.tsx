@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { GOLD } from "../../../lib/theme";
 
 interface SanctuaryHeroProps {
@@ -37,173 +38,250 @@ export function SanctuaryHero({
   isOffline,
   offlineMessage = "You are offline",
 }: SanctuaryHeroProps) {
+  const [minimised, setMinimised] = useState(false);
+
   return (
     <div>
+      {/* ── Minimised bar ── */}
+      {minimised && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "11px 16px",
+            background: "linear-gradient(90deg, rgba(4,10,22,0.97) 0%, rgba(8,16,28,0.97) 100%)",
+            borderBottom: `1px solid rgba(212,168,67,0.13)`,
+          }}
+        >
+          <span style={{ fontSize: 18, filter: "drop-shadow(0 0 4px rgba(212,168,67,0.6))" }}>
+            🕯
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 800,
+                color: GOLD,
+                letterSpacing: "0.05em",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {title}
+            </div>
+          </div>
+          <button
+            onClick={() => setMinimised(false)}
+            aria-label="Expand welcome"
+            title="Expand"
+            style={{
+              flexShrink: 0,
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: "rgba(212,168,67,0.1)",
+              border: "1px solid rgba(212,168,67,0.22)",
+              color: GOLD,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* ── Cinematic landscape hero ── */}
-      <div
-        style={{
-          position: "relative",
-          height: 230,
-          overflow: "hidden",
-          background: "linear-gradient(180deg, #020810 0%, #04111f 40%, #061624 70%, #091c20 100%)",
-        }}
-      >
-        {/* Stars */}
-        {STARS.map((s, i) => (
+      {!minimised && (
+        <div
+          style={{
+            position: "relative",
+            height: 230,
+            overflow: "hidden",
+            background: "linear-gradient(180deg, #020810 0%, #04111f 40%, #061624 70%, #091c20 100%)",
+          }}
+        >
+          {/* Stars */}
+          {STARS.map((s, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                top: s.top,
+                left: s.left,
+                width: s.r * 2,
+                height: s.r * 2,
+                borderRadius: "50%",
+                background: "#fff",
+                opacity: s.o,
+                boxShadow: `0 0 ${s.r * 2}px rgba(255,255,255,${s.o * 0.6})`,
+              }}
+            />
+          ))}
+
+          {/* Moon glow */}
           <div
-            key={i}
             style={{
               position: "absolute",
-              top: s.top,
-              left: s.left,
-              width: s.r * 2,
-              height: s.r * 2,
+              top: -20,
+              right: "22%",
+              width: 90,
+              height: 90,
               borderRadius: "50%",
-              background: "#fff",
-              opacity: s.o,
-              boxShadow: `0 0 ${s.r * 2}px rgba(255,255,255,${s.o * 0.6})`,
+              background: "radial-gradient(circle, rgba(232,213,163,0.14) 0%, transparent 70%)",
+              filter: "blur(14px)",
             }}
           />
-        ))}
 
-        {/* Moon glow */}
-        <div
-          style={{
-            position: "absolute",
-            top: -20,
-            right: "22%",
-            width: 90,
-            height: 90,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(232,213,163,0.14) 0%, transparent 70%)",
-            filter: "blur(14px)",
-          }}
-        />
+          {/* Far mountain ridge */}
+          <svg
+            viewBox="0 0 400 100"
+            preserveAspectRatio="none"
+            style={{ position: "absolute", bottom: 52, left: 0, width: "100%", height: 80 }}
+          >
+            <polygon
+              points="0,100 50,38 100,62 160,20 220,50 280,26 340,46 400,32 400,100"
+              fill="#0b1f12"
+              opacity="0.9"
+            />
+          </svg>
 
-        {/* Far mountain ridge */}
-        <svg
-          viewBox="0 0 400 100"
-          preserveAspectRatio="none"
-          style={{
-            position: "absolute",
-            bottom: 52,
-            left: 0,
-            width: "100%",
-            height: 80,
-          }}
-        >
-          <polygon
-            points="0,100 50,38 100,62 160,20 220,50 280,26 340,46 400,32 400,100"
-            fill="#0b1f12"
-            opacity="0.9"
-          />
-        </svg>
+          {/* Near mountain ridge */}
+          <svg
+            viewBox="0 0 400 100"
+            preserveAspectRatio="none"
+            style={{ position: "absolute", bottom: 28, left: 0, width: "100%", height: 65 }}
+          >
+            <polygon
+              points="0,100 35,55 80,70 140,42 200,64 255,38 310,58 370,44 400,52 400,100"
+              fill="#071409"
+            />
+          </svg>
 
-        {/* Near mountain ridge */}
-        <svg
-          viewBox="0 0 400 100"
-          preserveAspectRatio="none"
-          style={{
-            position: "absolute",
-            bottom: 28,
-            left: 0,
-            width: "100%",
-            height: 65,
-          }}
-        >
-          <polygon
-            points="0,100 35,55 80,70 140,42 200,64 255,38 310,58 370,44 400,52 400,100"
-            fill="#071409"
-          />
-        </svg>
-
-        {/* Ground */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 32,
-            background: "#060f08",
-          }}
-        />
-
-        {/* Candle glow bloom — foreground */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 20,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 160,
-            height: 60,
-            background: "radial-gradient(ellipse at 50% 100%, rgba(212,168,67,0.28) 0%, transparent 70%)",
-            filter: "blur(8px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: 22,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 80,
-            height: 40,
-            background: "radial-gradient(ellipse at 50% 100%, rgba(245,200,100,0.32) 0%, transparent 65%)",
-            filter: "blur(5px)",
-          }}
-        />
-
-        {/* Bottom gradient fade */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(to top, rgba(8,14,26,0.82) 0%, transparent 55%)",
-          }}
-        />
-
-        {/* Title overlay */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 18,
-            left: 18,
-            right: 18,
-          }}
-        >
+          {/* Ground */}
           <div
             style={{
-              fontSize: 20,
-              fontWeight: 900,
-              color: "#e8d5a3",
-              letterSpacing: "0.04em",
-              lineHeight: 1.2,
-              textShadow: "0 2px 16px rgba(0,0,0,0.9), 0 1px 4px rgba(0,0,0,0.8)",
-              marginBottom: 4,
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 32,
+              background: "#060f08",
             }}
-          >
-            {title}
-          </div>
+          />
+
+          {/* Candle glow bloom */}
           <div
             style={{
-              fontSize: 12,
-              color: "rgba(212,168,67,0.6)",
-              letterSpacing: "0.06em",
-              textShadow: "0 1px 8px rgba(0,0,0,0.9)",
+              position: "absolute",
+              bottom: 20,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 160,
+              height: 60,
+              background: "radial-gradient(ellipse at 50% 100%, rgba(212,168,67,0.28) 0%, transparent 70%)",
+              filter: "blur(8px)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: 22,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 80,
+              height: 40,
+              background: "radial-gradient(ellipse at 50% 100%, rgba(245,200,100,0.32) 0%, transparent 65%)",
+              filter: "blur(5px)",
+            }}
+          />
+
+          {/* Bottom gradient fade */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(to top, rgba(8,14,26,0.82) 0%, transparent 55%)",
+            }}
+          />
+
+          {/* Title overlay */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 18,
+              left: 18,
+              right: 60,
             }}
           >
-            {subtitle}
+            <div
+              style={{
+                fontSize: 20,
+                fontWeight: 900,
+                color: "#e8d5a3",
+                letterSpacing: "0.04em",
+                lineHeight: 1.2,
+                textShadow: "0 2px 16px rgba(0,0,0,0.9), 0 1px 4px rgba(0,0,0,0.8)",
+                marginBottom: 4,
+              }}
+            >
+              {title}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "rgba(212,168,67,0.6)",
+                letterSpacing: "0.06em",
+                textShadow: "0 1px 8px rgba(0,0,0,0.9)",
+              }}
+            >
+              {subtitle}
+            </div>
           </div>
+
+          {/* ── Minimise button ── */}
+          <button
+            onClick={() => setMinimised(true)}
+            aria-label="Minimise welcome"
+            title="Minimise"
+            style={{
+              position: "absolute",
+              top: 12,
+              right: 12,
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              background: "rgba(0,0,0,0.42)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.65)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              zIndex: 4,
+              transition: "background 0.15s, color 0.15s",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
         </div>
-      </div>
+      )}
 
       {/* ── Floating search bar ── */}
       <div
         style={{
           padding: "0 16px",
-          marginTop: -22,
+          marginTop: minimised ? 14 : -22,
           position: "relative",
           zIndex: 2,
         }}
@@ -231,7 +309,9 @@ export function SanctuaryHero({
             position: "relative",
             borderRadius: 16,
             overflow: "hidden",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,168,67,0.14)",
+            boxShadow: minimised
+              ? "none"
+              : "0 4px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,168,67,0.14)",
           }}
         >
           <div
