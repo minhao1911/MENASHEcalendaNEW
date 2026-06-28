@@ -206,6 +206,8 @@ function formatTime() {
  * ══════════════════════════════════════════════════════════════════════════ */
 const FLOWER_PALETTE = ["#ff6b8a","#ff99bb","#c778e8","#ff8833","#55ccaa","#f0c030","#e855a0","#7799ff"];
 const FLOWER_NAMES   = ["Rose","Blush","Violet","Marigold","Mint","Sunflower","Peony","Iris"];
+const FLOWER_EMOJIS  = ["🌸","🌺","💜","🌼","🌿","🌻","🌹","💐"];
+const MAX_MOBILE_FLOWERS = 40;
 
 function MusicPanel({ sound }: { sound: ReturnType<typeof useAmbientSound> }) {
   return (
@@ -1882,6 +1884,9 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
   const [dedicateForm, setDedicateForm]   = useState({ learnerName: "", studySubject: "" });
   const [dedicateSaving, setDedicateSaving]   = useState(false);
   const [dedicateSuccess, setDedicateSuccess] = useState(false);
+  const [mobileFlowers, setMobileFlowers]     = useState<{colorIdx: number; id: string}[]>([]);
+  const [showFlowerPicker, setShowFlowerPicker] = useState(false);
+  const [selectedFlowerColor, setSelectedFlowerColor] = useState(0);
 
   const load = useCallback(async () => {
     const data = await fetchCommunityYahrzeit();
@@ -2072,21 +2077,44 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
         padding: "10px 18px 12px",
         borderBottom: "1px solid rgba(255,255,255,0.05)",
       }}>
-        <motion.button
-          onClick={() => setShowForm(true)}
-          whileTap={{ scale: 0.97 }}
-          style={{
-            width: "100%", padding: "14px 0", marginBottom: 10,
-            background: "linear-gradient(135deg,#D4AF37 0%,#a07828 100%)",
-            border: "none", borderRadius: 16,
-            fontSize: 15, fontWeight: 800, color: "#fff",
-            cursor: "pointer",
-            boxShadow: "0 4px 24px rgba(212,175,55,0.30)",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          }}
-        >
-          🕯 {t.memLightCandle}
-        </motion.button>
+        {/* ── CTA Row: Light Candle + Flowers ── */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+          <motion.button
+            onClick={() => { setShowForm(true); setShowFlowerPicker(false); }}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              flex: 1, padding: "14px 0",
+              background: "linear-gradient(135deg,#D4AF37 0%,#a07828 100%)",
+              border: "none", borderRadius: 16,
+              fontSize: 14, fontWeight: 800, color: "#fff",
+              cursor: "pointer",
+              boxShadow: "0 4px 24px rgba(212,175,55,0.28)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+            }}
+          >
+            🕯 {t.memLightCandle}
+          </motion.button>
+
+          <motion.button
+            onClick={() => setShowFlowerPicker(v => !v)}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              flexShrink: 0, width: 96, padding: "14px 0",
+              background: showFlowerPicker
+                ? "linear-gradient(135deg,#ff6b8a 0%,#c778e8 100%)"
+                : "rgba(255,107,138,0.12)",
+              border: `1.5px solid ${showFlowerPicker ? "transparent" : "rgba(255,107,138,0.40)"}`,
+              borderRadius: 16,
+              fontSize: 13, fontWeight: 800,
+              color: showFlowerPicker ? "#fff" : "rgba(255,107,138,0.90)",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              transition: "all 0.2s",
+            }}
+          >
+            🌸 {t.memFlowersBtn}
+          </motion.button>
+        </div>
 
         {/* Search */}
         <div style={{
@@ -2121,6 +2149,120 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
       </div>
 
       {/* ════════════════════════════════════════════════════════
+          ZONE 3.5 — FLOWER PICKER PANEL
+          Slides in below Zone 3 when "Flowers" button is active.
+          Lets the user choose a colour and place a virtual flower.
+          ════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showFlowerPicker && (
+          <motion.div
+            key="flower-picker"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: "spring", damping: 30, stiffness: 320 }}
+            style={{ overflow: "hidden", flexShrink: 0, zIndex: 3, position: "relative" }}
+          >
+            <div style={{
+              padding: "14px 18px 16px",
+              background: "linear-gradient(180deg,rgba(30,8,24,0.98) 0%,rgba(18,4,22,0.98) 100%)",
+              borderBottom: "1px solid rgba(255,107,138,0.20)",
+            }}>
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(248,113,113,0.80)" }}>
+                    🌸 {t.memPlaceFlower.toUpperCase()}
+                  </div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.38)", marginTop: 2 }}>
+                    {t.memChooseFlowerColor}
+                  </div>
+                </div>
+                {mobileFlowers.length > 0 && (
+                  <div style={{
+                    fontSize: 10, color: "rgba(248,113,113,0.70)",
+                    background: "rgba(248,113,113,0.10)",
+                    border: "1px solid rgba(248,113,113,0.22)",
+                    borderRadius: 50, padding: "4px 10px", fontWeight: 700,
+                  }}>
+                    🌸 {mobileFlowers.length} {t.memFlowersInGarden}
+                  </div>
+                )}
+              </div>
+
+              {/* Colour swatches — 8 across */}
+              <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                {FLOWER_PALETTE.map((col, i) => (
+                  <motion.button
+                    key={i}
+                    onClick={() => setSelectedFlowerColor(i)}
+                    whileTap={{ scale: 0.88 }}
+                    title={FLOWER_NAMES[i]}
+                    style={{
+                      flex: 1, aspectRatio: "1", borderRadius: 10, border: "none",
+                      background: col, cursor: "pointer",
+                      boxShadow: selectedFlowerColor === i
+                        ? `0 0 0 3px #fff, 0 0 14px ${col}`
+                        : "0 2px 6px rgba(0,0,0,0.35)",
+                      opacity: selectedFlowerColor === i ? 1 : 0.50,
+                      transition: "all 0.15s",
+                      position: "relative",
+                    }}
+                  >
+                    {selectedFlowerColor === i && (
+                      <span style={{
+                        position: "absolute", inset: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 13,
+                      }}>
+                        {FLOWER_EMOJIS[i]}
+                      </span>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* Selected label + Place button */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{
+                  flex: 1, fontSize: 12, fontWeight: 700,
+                  color: "rgba(255,255,255,0.50)",
+                }}>
+                  {FLOWER_EMOJIS[selectedFlowerColor]}{" "}
+                  <span style={{ color: FLOWER_PALETTE[selectedFlowerColor] }}>
+                    {FLOWER_NAMES[selectedFlowerColor]}
+                  </span>
+                </div>
+                <motion.button
+                  onClick={() => {
+                    if (mobileFlowers.length >= MAX_MOBILE_FLOWERS) return;
+                    setMobileFlowers(prev => [
+                      ...prev,
+                      { colorIdx: selectedFlowerColor, id: `mf-${Date.now()}-${Math.random().toString(36).slice(2)}` },
+                    ]);
+                  }}
+                  whileTap={{ scale: 0.93 }}
+                  disabled={mobileFlowers.length >= MAX_MOBILE_FLOWERS}
+                  style={{
+                    padding: "11px 22px", borderRadius: 14, border: "none",
+                    background: mobileFlowers.length >= MAX_MOBILE_FLOWERS
+                      ? "rgba(255,255,255,0.08)"
+                      : `linear-gradient(135deg,${FLOWER_PALETTE[selectedFlowerColor]} 0%,${FLOWER_PALETTE[(selectedFlowerColor + 2) % 8]} 100%)`,
+                    color: mobileFlowers.length >= MAX_MOBILE_FLOWERS ? "rgba(255,255,255,0.30)" : "#fff",
+                    fontSize: 13, fontWeight: 800, cursor: mobileFlowers.length >= MAX_MOBILE_FLOWERS ? "default" : "pointer",
+                    boxShadow: mobileFlowers.length >= MAX_MOBILE_FLOWERS ? "none" : "0 4px 16px rgba(0,0,0,0.40)",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {t.memPlaceFlowerBtn}
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ════════════════════════════════════════════════════════
           ZONE 4 — SCROLLABLE BODY
           Section label + memorial cards OR full empty-state invite.
           This zone fills all remaining height.
@@ -2131,6 +2273,77 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
         paddingBottom: "max(env(safe-area-inset-bottom),32px)",
         WebkitOverflowScrolling: "touch" as const,
       }}>
+
+        {/* ── Flower Garden strip — appears when flowers have been placed ── */}
+        <AnimatePresence>
+          {mobileFlowers.length > 0 && (
+            <motion.div
+              key="flower-garden"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              style={{
+                marginTop: 14, marginBottom: 4,
+                background: "linear-gradient(90deg,rgba(255,107,138,0.06) 0%,rgba(199,120,232,0.06) 100%)",
+                border: "1px solid rgba(255,107,138,0.18)",
+                borderRadius: 16, padding: "12px 14px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(248,113,113,0.70)" }}>
+                  🌸 FLOWER GARDEN
+                </div>
+                <button
+                  onClick={() => setMobileFlowers([])}
+                  style={{
+                    background: "none", border: "none",
+                    color: "rgba(255,255,255,0.28)", fontSize: 11,
+                    cursor: "pointer", padding: "2px 6px",
+                    borderRadius: 6, lineHeight: 1,
+                  }}
+                >
+                  clear
+                </button>
+              </div>
+              {/* Flower dot row — scrollable horizontally */}
+              <div style={{
+                display: "flex", gap: 6, overflowX: "auto",
+                scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as const,
+                paddingBottom: 2,
+              }}>
+                {mobileFlowers.map((f, i) => (
+                  <motion.div
+                    key={f.id}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", delay: Math.min(i * 0.02, 0.3) }}
+                    style={{
+                      flexShrink: 0, width: 34, height: 34,
+                      borderRadius: "50%",
+                      background: `radial-gradient(circle at 40% 35%, ${FLOWER_PALETTE[f.colorIdx]}, ${FLOWER_PALETTE[(f.colorIdx + 2) % 8]}88)`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 16,
+                      boxShadow: `0 2px 10px ${FLOWER_PALETTE[f.colorIdx]}55`,
+                    }}
+                  >
+                    {FLOWER_EMOJIS[f.colorIdx]}
+                  </motion.div>
+                ))}
+                {/* Remaining slots indicator */}
+                {mobileFlowers.length < MAX_MOBILE_FLOWERS && (
+                  <div style={{
+                    flexShrink: 0, width: 34, height: 34, borderRadius: "50%",
+                    border: "1.5px dashed rgba(248,113,113,0.25)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, color: "rgba(248,113,113,0.40)", fontWeight: 700,
+                  }}>
+                    +{MAX_MOBILE_FLOWERS - mobileFlowers.length}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Section label (only when there are entries) */}
         {filtered.length > 0 && (

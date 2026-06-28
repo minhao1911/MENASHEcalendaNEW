@@ -475,6 +475,11 @@ export interface Translations {
   memClearSearch: string;
   memCandlesCount: string;
   memLitBy: string;
+  memPlaceFlower: string;
+  memFlowersBtn: string;
+  memChooseFlowerColor: string;
+  memPlaceFlowerBtn: string;
+  memFlowersInGarden: string;
   /* ── Memorial Shell (SPR-015) ── */
   memShellWelcome: string;
   memShellWelcomeSub: string;
@@ -1031,6 +1036,11 @@ export const en: Translations = {
   memClearSearch: "Clear search",
   memCandlesCount: "candles",
   memLitBy: "LIT BY",
+  memPlaceFlower: "Place a Flower",
+  memFlowersBtn: "Flowers",
+  memChooseFlowerColor: "Choose a colour",
+  memPlaceFlowerBtn: "Place Flower",
+  memFlowersInGarden: "flowers in the garden",
   /* ── Memorial Shell (SPR-015) ── */
   memShellWelcome: "Memorial Sanctuary",
   memShellWelcomeSub: "A sacred space to honor and remember loved ones of the Bnei Menashe community",
@@ -1586,6 +1596,11 @@ export const tk: Translations = {
   memClearSearch: "Zawng chhiat rawh",
   memCandlesCount: "damdawi",
   memLitBy: "HLUAT TU",
+  memPlaceFlower: "Pangpar Chhuah",
+  memFlowersBtn: "Pangpar",
+  memChooseFlowerColor: "Pangpar hrang dang rawh",
+  memPlaceFlowerBtn: "Pangpar Chhuah Rawh",
+  memFlowersInGarden: "pangpar hmun ah",
   /* ── Memorial Shell (SPR-015) ── */
   memShellWelcome: "Memorial Sanctuary",
   memShellWelcomeSub: "Bnei Menashe mipui leh in chungchang thu hrechhuak leh ngaihtuah dan inn",
