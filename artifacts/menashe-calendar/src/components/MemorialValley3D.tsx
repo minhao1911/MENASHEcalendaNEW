@@ -391,6 +391,58 @@ const ENTRY_POSITIONS = buildEntryPositions();
 /* AAALighting replaced by scene/lighting/GoldenHourLighting — see AAAValleyScene */
 
 /* ══════════════════════════════════════════════════════════════════════════
+   TERRACE WALLS — SPR-030: 3 tiers × 48 stones = 144 DC → 3 InstancedMesh
+══════════════════════════════════════════════════════════════════════════ */
+function AAATerraceWalls() {
+  const TIERS = useMemo(() => [
+    { rad: 8,  color: "#c4b898", y: 0.28, h: 0.58 },
+    { rad: 14, color: "#bdb090", y: 0.83, h: 0.66 },
+    { rad: 20, color: "#b8ac8c", y: 1.38, h: 0.74 },
+  ], []);
+  const N = 48;
+
+  /* One InstancedMesh per tier (different height = different geometry) */
+  const tier0Ref = useRef<THREE.InstancedMesh>(null!);
+  const tier1Ref = useRef<THREE.InstancedMesh>(null!);
+  const tier2Ref = useRef<THREE.InstancedMesh>(null!);
+  const refs = [tier0Ref, tier1Ref, tier2Ref];
+
+  const geos = useMemo(() => TIERS.map(t => new THREE.BoxGeometry(0.68, t.h, 0.32)), [TIERS]);
+
+  const matrixSets = useMemo(() => {
+    const dum = new THREE.Object3D();
+    return TIERS.map(t => {
+      const mats: THREE.Matrix4[] = [];
+      for (let j = 0; j < N; j++) {
+        const a = (j / N) * Math.PI * 2;
+        dum.position.set(Math.cos(a) * t.rad, t.y, Math.sin(a) * t.rad + 4);
+        dum.rotation.set(0, a + Math.PI / 2, 0);
+        dum.updateMatrix();
+        mats.push(dum.matrix.clone());
+      }
+      return mats;
+    });
+  }, [TIERS]);
+
+  useEffect(() => {
+    refs.forEach((r, ti) => {
+      matrixSets[ti].forEach((m, i) => r.current?.setMatrixAt(i, m));
+      if (r.current) r.current.instanceMatrix.needsUpdate = true;
+    });
+  }, [matrixSets]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <>
+      {TIERS.map((t, ti) => (
+        <instancedMesh key={ti} ref={refs[ti]} args={[geos[ti], undefined, N]} castShadow receiveShadow>
+          <meshStandardMaterial color={t.color} roughness={0.88} metalness={0.04} />
+        </instancedMesh>
+      ))}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    PHASE 2 TERRAIN — Sculpted valley with vertex colours + natural zones
 ══════════════════════════════════════════════════════════════════════════ */
 function AAATerrain() {
@@ -491,22 +543,8 @@ function AAATerrain() {
         </mesh>
       ))}
 
-      {/* Stone retaining walls — vertical faces below each terrace */}
-      {[8, 14, 20].map((rad, i) =>
-        Array.from({ length: 48 }, (_, j) => {
-          const a  = (j / 48) * Math.PI * 2;
-          const wx = Math.cos(a) * rad + 0;
-          const wz = Math.sin(a) * rad + 4;
-          return (
-            <mesh key={`${i}-${j}`} position={[wx, 0.28 + i * 0.55, wz]}
-              rotation={[0, a + Math.PI / 2, 0]} castShadow receiveShadow>
-              <boxGeometry args={[0.68, 0.58 + i * 0.08, 0.32]} />
-              <meshStandardMaterial color={i === 0 ? "#c4b898" : i === 1 ? "#bdb090" : "#b8ac8c"}
-                roughness={0.88} metalness={0.04} />
-            </mesh>
-          );
-        })
-      )}
+      {/* Stone retaining walls — SPR-030: 144 individual meshes → 3 InstancedMesh */}
+      <AAATerraceWalls />
     </>
   );
 }
@@ -1160,58 +1198,107 @@ function AAAPollenParticles() {
 
 /* ══════════════════════════════════════════════════════════════════════════
    STONE PATHWAYS — detailed limestone paths
+   SPR-030: Circular stones, edging, terrace edges converted to InstancedMesh.
+   Reduction: ~208 individual draw calls → 3 draw calls.
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAStonePathways() {
-  const pathMat = <meshStandardMaterial color="#cfc5a8" roughness={0.84} metalness={0.04} />;
-  const cobbleMat = <meshStandardMaterial color="#b8ad98" roughness={0.88} metalness={0.04} />;
+  /* Geometries */
+  const circGeo  = useMemo(() => new THREE.BoxGeometry(0.85, 0.1,  0.52), []);
+  const edgeGeo  = useMemo(() => new THREE.BoxGeometry(0.40, 0.22, 0.40), []);
+  const stepGeo  = useMemo(() => new THREE.BoxGeometry(0.70, 0.25, 0.42), []);
+
+  /* Pre-compute instance matrices */
+  const { circMats, edgeMats, stepMats } = useMemo(() => {
+    const dum = new THREE.Object3D();
+    const N_CIRC = 56, N_EDGE = 32, N_STEP_RING = 40;
+
+    /* Circular pool path (56) */
+    const circMats: THREE.Matrix4[] = [];
+    for (let i = 0; i < N_CIRC; i++) {
+      const a = (i / N_CIRC) * Math.PI * 2;
+      dum.position.set(Math.cos(a) * 7.5, 0.09, Math.sin(a) * 10.5 + 4);
+      dum.rotation.set(0, a, 0);
+      dum.updateMatrix();
+      circMats.push(dum.matrix.clone());
+    }
+
+    /* Stone edging (32) */
+    const edgeMats: THREE.Matrix4[] = [];
+    for (let i = 0; i < N_EDGE; i++) {
+      const a = (i / N_EDGE) * Math.PI * 2;
+      dum.position.set(Math.cos(a) * 8.5, 0.12, Math.sin(a) * 11.5 + 4);
+      dum.rotation.set(0, 0, 0);
+      dum.updateMatrix();
+      edgeMats.push(dum.matrix.clone());
+    }
+
+    /* Terrace step edges (3 rings × 40 = 120) */
+    const RINGS = [8.5, 14.5, 20.5];
+    const stepMats: THREE.Matrix4[] = [];
+    RINGS.forEach((r, ri) => {
+      for (let j = 0; j < N_STEP_RING; j++) {
+        const a = (j / N_STEP_RING) * Math.PI * 2;
+        dum.position.set(Math.cos(a) * r, 0.14 + ri * 0.55, Math.sin(a) * r + 4);
+        dum.rotation.set(0, a, 0);
+        dum.updateMatrix();
+        stepMats.push(dum.matrix.clone());
+      }
+    });
+
+    return { circMats, edgeMats, stepMats };
+  }, []);
+
+  /* Apply matrices via refs */
+  const circRef = useRef<THREE.InstancedMesh>(null!);
+  const edgeRef = useRef<THREE.InstancedMesh>(null!);
+  const stepRef = useRef<THREE.InstancedMesh>(null!);
+
+  useEffect(() => {
+    circMats.forEach((m, i) => circRef.current?.setMatrixAt(i, m));
+    if (circRef.current) circRef.current.instanceMatrix.needsUpdate = true;
+  }, [circMats]);
+  useEffect(() => {
+    edgeMats.forEach((m, i) => edgeRef.current?.setMatrixAt(i, m));
+    if (edgeRef.current) edgeRef.current.instanceMatrix.needsUpdate = true;
+  }, [edgeMats]);
+  useEffect(() => {
+    stepMats.forEach((m, i) => stepRef.current?.setMatrixAt(i, m));
+    if (stepRef.current) stepRef.current.instanceMatrix.needsUpdate = true;
+  }, [stepMats]);
 
   return (
     <>
-      {/* Main cross paths */}
+      {/* Main cross paths — 2 draw calls, large slabs */}
       <mesh position={[0, 0.08, 4]} receiveShadow>
-        <boxGeometry args={[3.2, 0.1, 34]} />{pathMat}
+        <boxGeometry args={[3.2, 0.1, 34]} />
+        <meshStandardMaterial color="#cfc5a8" roughness={0.84} metalness={0.04} />
       </mesh>
       <mesh position={[0, 0.08, 4]} receiveShadow>
-        <boxGeometry args={[34, 0.1, 3.2]} />{pathMat}
+        <boxGeometry args={[34, 0.1, 3.2]} />
+        <meshStandardMaterial color="#cfc5a8" roughness={0.84} metalness={0.04} />
       </mesh>
       {/* Diagonal paths */}
       {[45, -45].map((deg, i) => (
         <mesh key={i} position={[0, 0.07, 4]} rotation={[0, (deg * Math.PI) / 180, 0]} receiveShadow>
-          <boxGeometry args={[2.4, 0.09, 28]} />{cobbleMat}
+          <boxGeometry args={[2.4, 0.09, 28]} />
+          <meshStandardMaterial color="#b8ad98" roughness={0.88} metalness={0.04} />
         </mesh>
       ))}
-      {/* Circular path around pool */}
-      {Array.from({ length: 56 }, (_, i) => {
-        const a = (i / 56) * Math.PI * 2;
-        return (
-          <mesh key={i} position={[Math.cos(a) * 7.5, 0.09, Math.sin(a) * 10.5 + 4]} receiveShadow>
-            <boxGeometry args={[0.85, 0.1, 0.52]} />
-            <meshStandardMaterial color="#cac0a8" roughness={0.84} metalness={0.04} />
-          </mesh>
-        );
-      })}
-      {/* Stone edging */}
-      {Array.from({ length: 32 }, (_, i) => {
-        const a = (i / 32) * Math.PI * 2;
-        return (
-          <mesh key={i} position={[Math.cos(a) * 8.5, 0.12, Math.sin(a) * 11.5 + 4]} receiveShadow>
-            <boxGeometry args={[0.4, 0.22, 0.4]} />
-            <meshStandardMaterial color="#b0a898" roughness={0.85} metalness={0.04} />
-          </mesh>
-        );
-      })}
-      {/* Terrace step edges */}
-      {[8.5, 14.5, 20.5].map((r, i) => (
-        Array.from({ length: 40 }, (_, j) => {
-          const a = (j / 40) * Math.PI * 2;
-          return (
-            <mesh key={`${i}-${j}`} position={[Math.cos(a) * r, 0.14 + i * 0.55, Math.sin(a) * r + 4]}>
-              <boxGeometry args={[0.7, 0.25, 0.42]} />
-              <meshStandardMaterial color="#c8bda8" roughness={0.82} metalness={0.05} />
-            </mesh>
-          );
-        })
-      ))}
+
+      {/* Circular pool path — 56 stones as 1 draw call */}
+      <instancedMesh ref={circRef} args={[circGeo, undefined, circMats.length]} receiveShadow>
+        <meshStandardMaterial color="#cac0a8" roughness={0.84} metalness={0.04} />
+      </instancedMesh>
+
+      {/* Stone edging — 32 blocks as 1 draw call */}
+      <instancedMesh ref={edgeRef} args={[edgeGeo, undefined, edgeMats.length]} receiveShadow>
+        <meshStandardMaterial color="#b0a898" roughness={0.85} metalness={0.04} />
+      </instancedMesh>
+
+      {/* Terrace step edges — 120 stones as 1 draw call */}
+      <instancedMesh ref={stepRef} args={[stepGeo, undefined, stepMats.length]} receiveShadow>
+        <meshStandardMaterial color="#c8bda8" roughness={0.82} metalness={0.05} />
+      </instancedMesh>
     </>
   );
 }
@@ -1305,7 +1392,7 @@ function AAAEternalAltar() {
           transparent depthWrite={false} side={THREE.DoubleSide}
         />
       </mesh>
-      <pointLight ref={lightRef} position={[0, 3.2, 0]} color="#ff8822" intensity={5.0} distance={18} decay={2} castShadow />
+      <pointLight ref={lightRef} position={[0, 3.2, 0]} color="#ff8822" intensity={5.0} distance={18} decay={2} />
       <Text position={[0, 0.4, 1.95]} fontSize={0.22} color="#D4AF37" anchorX="center">
         נֵר תָּמִיד
       </Text>
@@ -1701,6 +1788,58 @@ function AAACamera() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   CAMERA IDLE DRIFT — SPR-030: subtle cinematic breathing when idle ≥3s
+   Applies a gentle Y/X oscillation that fades in over 2 s of inactivity.
+   Reverts cleanly the moment the user interacts again.
+══════════════════════════════════════════════════════════════════════════ */
+function CameraIdleDrift({ ctrlRef }: { ctrlRef: React.MutableRefObject<any> }) {
+  const { camera } = useThree();
+  const lastInteract = useRef(Date.now());
+  const basePos      = useRef(new THREE.Vector3());
+  const drifting     = useRef(false);
+
+  useEffect(() => {
+    const onInput = () => {
+      lastInteract.current = Date.now();
+      if (drifting.current) {
+        /* Snap base back to current real position so there's no jump */
+        basePos.current.copy(camera.position);
+        drifting.current = false;
+      }
+    };
+    window.addEventListener("pointerdown", onInput, { passive: true });
+    window.addEventListener("wheel",       onInput, { passive: true });
+    return () => {
+      window.removeEventListener("pointerdown", onInput);
+      window.removeEventListener("wheel",       onInput);
+    };
+  }, [camera]);
+
+  useFrame(({ clock }) => {
+    const idleSec = (Date.now() - lastInteract.current) / 1000;
+    if (idleSec < 3) {
+      /* Keep updating base while user is active */
+      basePos.current.copy(camera.position);
+      return;
+    }
+    drifting.current = true;
+    const t     = clock.getElapsedTime();
+    const blend = Math.min(1, (idleSec - 3) / 2.5); // fade in over 2.5 s
+    /* Very subtle oscillation — approx ±0.06 units, imperceptible but alive */
+    const dy = Math.sin(t * 0.13) * 0.06 * blend;
+    const dx = Math.sin(t * 0.09 + 0.7) * 0.04 * blend;
+    camera.position.set(
+      basePos.current.x + dx,
+      basePos.current.y + dy,
+      basePos.current.z,
+    );
+    ctrlRef.current?.update();
+  });
+
+  return null;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    CAMERA STATE TRACKER — writes position + target to a ref every frame
    (zero React re-renders; the minimap overlay reads this directly)
 ══════════════════════════════════════════════════════════════════════════ */
@@ -1991,7 +2130,7 @@ function AAAGrassBlades() {
     <instancedMesh ref={ref} args={[undefined, undefined, activeGrass.length]}>
       <planeGeometry args={[1, 1]} />
       <meshStandardMaterial color="#548030" roughness={0.88} side={THREE.DoubleSide}
-        transparent opacity={0.88} />
+        transparent opacity={0.88} depthWrite={false} />
     </instancedMesh>
   );
 }
@@ -2266,8 +2405,8 @@ function DayNightLighting() {
         intensity={2.2}
         position={[38, 22, 28]}
         castShadow
-        shadow-mapSize-width={4096}
-        shadow-mapSize-height={4096}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
         shadow-camera-near={1}
         shadow-camera-far={140}
         shadow-camera-left={-60}
@@ -2428,6 +2567,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
   return (
     <>
       <AAACamera />
+      <CameraIdleDrift ctrlRef={ctrlsRef} />
       <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlsRef} sceneView={sceneView} />
       <AAASceneCameraDriver sceneView={sceneView} ctrlRef={ctrlsRef} />
       {cameraStateRef && <CameraStateTracker stateRef={cameraStateRef} ctrlRef={ctrlsRef} />}
