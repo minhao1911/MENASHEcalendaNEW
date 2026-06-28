@@ -2025,15 +2025,27 @@ function FirstPersonController({
   const lookLast   = useRef<{ x: number; y: number } | null>(null);
   const LOOK_SENS  = 0.0035;
 
+  /* ── Desktop passive look (no pointer-lock required) ── */
+  const passiveLook = useRef({ yaw: Math.PI, pitch: -0.08 });
+  const lastMouseXY = useRef<{ x: number; y: number } | null>(null);
+  const PASSIVE_SENS = 0.0022;
+
   /* ── Stable desktop callbacks ── */
   const handleLock = useCallback(() => {
     isLocked.current = true; setLocked(true);
-  }, []);
+    /* Sync passive look → pointer-lock so there's no jump */
+    passiveLook.current.yaw   = camera.rotation.y;
+    passiveLook.current.pitch = camera.rotation.x;
+  }, [camera]);
   const handleUnlock = useCallback(() => {
     isLocked.current = false; setLocked(false);
     keys.current = { w: false, a: false, s: false, d: false };
     vel.current.set(0, 0, 0);
-  }, []);
+    /* Sync pointer-lock → passive look so there's no jump on release */
+    passiveLook.current.yaw   = camera.rotation.y;
+    passiveLook.current.pitch = camera.rotation.x;
+    lastMouseXY.current = null;
+  }, [camera]);
 
   /* ── Touch look callbacks ── */
   const onLookDown = useCallback((e: React.PointerEvent) => {
@@ -2068,6 +2080,24 @@ function FirstPersonController({
     }
   }, [ctrlRef, camera]);
 
+  /* ── Desktop passive mouse-look — works before pointer-lock is acquired ── */
+  useEffect(() => {
+    if (isTouch.current) return;
+    const onMove = (e: MouseEvent) => {
+      if (isLocked.current) return; // PointerLockControls owns rotation when locked
+      if (!lastMouseXY.current) { lastMouseXY.current = { x: e.clientX, y: e.clientY }; return; }
+      const dx = e.clientX - lastMouseXY.current.x;
+      const dy = e.clientY - lastMouseXY.current.y;
+      lastMouseXY.current = { x: e.clientX, y: e.clientY };
+      passiveLook.current.yaw  -= dx * PASSIVE_SENS;
+      passiveLook.current.pitch = Math.max(-1.0, Math.min(0.35,
+        passiveLook.current.pitch - dy * PASSIVE_SENS
+      ));
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => window.removeEventListener("mousemove", onMove);
+  }, [PASSIVE_SENS]);
+
   /* ── Desktop keyboard ── */
   useEffect(() => {
     if (isTouch.current) return;
@@ -2096,11 +2126,15 @@ function FirstPersonController({
     const groundY = terrainHeightAt(cx, cz);
     const wantY   = groundY + 1.7;
 
-    /* Apply touch look angles directly to camera */
+    /* Apply look angles — touch swipe OR desktop passive (pre-pointer-lock) */
     if (isTouch.current) {
       camera.rotation.order = "YXZ";
       camera.rotation.y = touchLook.current.yaw;
       camera.rotation.x = touchLook.current.pitch;
+    } else if (!isLocked.current) {
+      camera.rotation.order = "YXZ";
+      camera.rotation.y = passiveLook.current.yaw;
+      camera.rotation.x = passiveLook.current.pitch;
     }
 
     /* Forward direction (works for both desktop + touch) */
@@ -3793,7 +3827,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
   const litEntries   = useMemo(() => entries.slice(0, ENTRY_POSITIONS.length), [entries]);
   const ctrlRef      = useRef<any>(null);
   const particlesRef = useRef<FootstepPt[]>([]);
-  const [walkMode, setWalkMode] = useState(false);
+  const [walkMode, setWalkMode] = useState(true);
 
   return (
     <>
@@ -3845,7 +3879,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
             }}
           >
             <span style={{ fontSize: 17 }}>{walkMode ? "🔭" : "🚶"}</span>
-            <span>{walkMode ? "Exit Walk" : "Walk Mode"}</span>
+            <span>{walkMode ? "Overview" : "Walk"}</span>
           </button>
         </div>
       </Html>
