@@ -99,7 +99,6 @@ ADMIN_PIN = "1948"
 VITE_ADMIN_PIN = "1948"
 ADMIN_USER_ID = "user_3FY97P9A6kElvpsVl74YZxr1giS"
 VITE_ADMIN_USER_ID = "user_3FY97P9A6kElvpsVl74YZxr1giS"
-ALLOWED_ORIGINS = "https://f9c15f53-13a1-431f-9cdf-dd4c27135d35-00-3nzd0ziqwk0p0.sisko.replit.dev"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-c5b161bf-7380-4234-b117-63cabc6e63ee"
