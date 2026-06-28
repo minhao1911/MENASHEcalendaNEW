@@ -1701,6 +1701,33 @@ function AAACamera() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   CAMERA STATE TRACKER — writes position + target to a ref every frame
+   (zero React re-renders; the minimap overlay reads this directly)
+══════════════════════════════════════════════════════════════════════════ */
+interface CameraState {
+  px: number; py: number; pz: number;
+  tx: number; ty: number; tz: number;
+}
+
+function CameraStateTracker({
+  stateRef,
+  ctrlRef,
+}: {
+  stateRef: React.MutableRefObject<CameraState | null>;
+  ctrlRef:  React.MutableRefObject<any>;
+}) {
+  const { camera } = useThree();
+  useFrame(() => {
+    const tgt = ctrlRef.current?.target;
+    stateRef.current = {
+      px: camera.position.x, py: camera.position.y, pz: camera.position.z,
+      tx: tgt?.x ?? 0, ty: tgt?.y ?? 0, tz: tgt?.z ?? 0,
+    };
+  });
+  return null;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    PHASE 3: BIRD FLOCK — 7 birds soaring, lazy circles, flapping wings
 ══════════════════════════════════════════════════════════════════════════ */
 function AAABirdFlock() {
@@ -2391,9 +2418,10 @@ interface SceneProps {
   onCandleClick:  (entry: CommunityYahrzeitEntry) => void;
   selectedId:     string | null;
   sceneView:      SceneViewType;
+  cameraStateRef?: React.MutableRefObject<CameraState | null>;
 }
 
-function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, onGroundClick, onCandleClick, selectedId, sceneView }: SceneProps) {
+function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, onGroundClick, onCandleClick, selectedId, sceneView, cameraStateRef }: SceneProps) {
   const litEntries = useMemo(() => entries.slice(0, ENTRY_POSITIONS.length), [entries]);
   const ctrlsRef   = useRef<any>(null);
 
@@ -2402,6 +2430,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       <AAACamera />
       <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlsRef} sceneView={sceneView} />
       <AAASceneCameraDriver sceneView={sceneView} ctrlRef={ctrlsRef} />
+      {cameraStateRef && <CameraStateTracker stateRef={cameraStateRef} ctrlRef={ctrlsRef} />}
 
       {/* ── Phase 3: Day/night sky dome (renders behind everything) ── */}
       <AAASkyDome />
@@ -2577,6 +2606,8 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView }: {
 /* ══════════════════════════════════════════════════════════════════════════
    PUBLIC EXPORT
 ══════════════════════════════════════════════════════════════════════════ */
+export type { CameraState };
+
 export interface MemorialValley3DProps {
   entries:        CommunityYahrzeitEntry[];
   placedCandles:  { pos: [number, number, number]; name: string }[];
@@ -2586,6 +2617,7 @@ export interface MemorialValley3DProps {
   onCandleClick:  (entry: CommunityYahrzeitEntry) => void;
   selectedId:     string | null;
   sceneView:      SceneViewType;
+  cameraStateRef?: React.MutableRefObject<CameraState | null>;
 }
 
 export default function MemorialValley3D(props: MemorialValley3DProps) {

@@ -8,7 +8,8 @@ import {
   type CommunityYahrzeitEntry,
 } from "../lib/userApi";
 import { useLanguage } from "../context/LanguageContext";
-import type { SceneViewType } from "../components/MemorialValley3D";
+import type { SceneViewType, CameraState } from "../components/MemorialValley3D";
+import { MinimapOverlay } from "../features/memorial/components/MinimapOverlay";
 
 const MemorialValley3D = lazy(() => import("../components/MemorialValley3D"));
 
@@ -1668,7 +1669,8 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
    */
   const [canRender3D, setCanRender3D] = useState(false);
 
-  const searchRef = useRef<HTMLInputElement>(null!);
+  const searchRef      = useRef<HTMLInputElement>(null!);
+  const cameraStateRef = useRef<CameraState | null>(null);
 
   // Mount guard — runs after the real (non-discarded) first commit
   useEffect(() => { setCanRender3D(true); }, []);
@@ -1793,6 +1795,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
                 onGroundClick={handleGroundClick}
                 selectedId={selectedEntry?.id ?? null}
                 sceneView={activeScene as SceneViewType}
+                cameraStateRef={cameraStateRef}
               />
             </Suspense>
           </R3FErrorBoundary>
@@ -1800,6 +1803,9 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
           <ValleyLoading />
         )}
       </div>
+
+      {/* ── MINIMAP OVERLAY — PUBG-style position compass ── */}
+      <MinimapOverlay cameraRef={cameraStateRef} hidden={panelOpen || !!searchQuery} />
 
       {/* ── TOP HEADER ── */}
       <TopHeader
