@@ -3224,6 +3224,7 @@ function AiChatFAB() {
     messages, setMessages,
     input, setInput,
     loading,
+    provider,
     minimized,
     fabHovered, setFabHovered,
     isListening,
@@ -3643,8 +3644,31 @@ function AiChatFAB() {
                 >↑</button>
               )}
             </div>
-            <div style={{ textAlign: "center", color: "#3A2A1A", fontSize: 9, marginTop: 6 }}>
-              {t.chatDisclaimer}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                marginTop: 6,
+              }}
+            >
+              <div style={{ color: "#3A2A1A", fontSize: 9 }}>{t.chatDisclaimer}</div>
+              {provider && !loading && (
+                <div
+                  style={{
+                    fontSize: 8,
+                    color: "#4A5A7A",
+                    background: "rgba(74,90,122,0.12)",
+                    border: "1px solid rgba(74,90,122,0.22)",
+                    borderRadius: 6,
+                    padding: "1px 5px",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  via {provider === "gemini" ? "Gemini" : "Grok"}
+                </div>
+              )}
             </div>
           </div>
         </div>

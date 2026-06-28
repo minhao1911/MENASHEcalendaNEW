@@ -17,12 +17,19 @@ async function getAuthToken(): Promise<string | null> {
   return (await (window as any).Clerk?.session?.getToken()) ?? null;
 }
 
+type AiProvider = "gemini" | "grok" | null;
+
+const PROVIDER_LABEL: Record<NonNullable<AiProvider>, string> = {
+  gemini: "Gemini",
+  grok:   "Grok",
+};
 
 export default function ChatModal({ onClose }: Props) {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [provider, setProvider] = useState<AiProvider>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -43,6 +50,7 @@ export default function ChatModal({ onClose }: Props) {
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
+    setProvider(null);
 
     const assistantMsg: Message = { role: "assistant", content: "", streaming: true };
     setMessages([...nextMessages, assistantMsg]);
@@ -86,20 +94,23 @@ export default function ChatModal({ onClose }: Props) {
           if (payload === "[DONE]") break;
           try {
             const parsed = JSON.parse(payload);
-            if (parsed.error) {
+            if (parsed.provider) {
+              setProvider(parsed.provider as AiProvider);
+            } else if (parsed.error) {
               accumulated = parsed.error;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: "assistant", content: accumulated, streaming: true };
+                return updated;
+              });
             } else if (parsed.text) {
               accumulated += parsed.text;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: "assistant", content: accumulated, streaming: true };
+                return updated;
+              });
             }
-            setMessages((prev) => {
-              const updated = [...prev];
-              updated[updated.length - 1] = {
-                role: "assistant",
-                content: accumulated,
-                streaming: true,
-              };
-              return updated;
-            });
           } catch {}
         }
       }
@@ -117,11 +128,7 @@ export default function ChatModal({ onClose }: Props) {
       if (err.name === "AbortError") return;
       setMessages((prev) => {
         const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: t.chatError,
-          streaming: false,
-        };
+        updated[updated.length - 1] = { role: "assistant", content: t.chatError, streaming: false };
         return updated;
       });
     } finally {
@@ -143,9 +150,7 @@ export default function ChatModal({ onClose }: Props) {
     setMessages((prev) => {
       const updated = [...prev];
       const last = updated[updated.length - 1];
-      if (last?.streaming) {
-        updated[updated.length - 1] = { ...last, streaming: false };
-      }
+      if (last?.streaming) updated[updated.length - 1] = { ...last, streaming: false };
       return updated;
     });
   }
@@ -213,14 +218,9 @@ export default function ChatModal({ onClose }: Props) {
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: 8,
               color: "#A89070",
-              width: 32,
-              height: 32,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              fontSize: 16,
-              flexShrink: 0,
+              width: 32, height: 32,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", fontSize: 16, flexShrink: 0,
             }}
           >
             ✕
@@ -247,14 +247,7 @@ export default function ChatModal({ onClose }: Props) {
               <div style={{ color: "#8A7A5A", fontSize: 13, lineHeight: 1.6, marginBottom: 20, maxWidth: 340, margin: "0 auto 20px" }}>
                 {t.chatWelcomeDesc}
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  justifyContent: "center",
-                }}
-              >
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
                 {t.chatSuggestedQuestions.map((q) => (
                   <button
                     key={q}
@@ -269,12 +262,8 @@ export default function ChatModal({ onClose }: Props) {
                       cursor: "pointer",
                       transition: "background 0.15s",
                     }}
-                    onMouseOver={(e) =>
-                      ((e.target as HTMLElement).style.background = "rgba(212,175,55,0.16)")
-                    }
-                    onMouseOut={(e) =>
-                      ((e.target as HTMLElement).style.background = "rgba(212,175,55,0.08)")
-                    }
+                    onMouseOver={(e) => ((e.target as HTMLElement).style.background = "rgba(212,175,55,0.16)")}
+                    onMouseOut={(e)  => ((e.target as HTMLElement).style.background = "rgba(212,175,55,0.08)")}
                   >
                     {q}
                   </button>
@@ -296,16 +285,11 @@ export default function ChatModal({ onClose }: Props) {
               {msg.role === "assistant" && (
                 <div
                   style={{
-                    width: 30,
-                    height: 30,
+                    width: 30, height: 30,
                     borderRadius: "50%",
                     background: "linear-gradient(135deg,#D4AF37,#A0821A)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 14,
-                    flexShrink: 0,
-                    marginBottom: 2,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 14, flexShrink: 0, marginBottom: 2,
                   }}
                 >
                   ✡
@@ -315,18 +299,11 @@ export default function ChatModal({ onClose }: Props) {
                 style={{
                   maxWidth: "78%",
                   padding: "10px 14px",
-                  borderRadius:
-                    msg.role === "user"
-                      ? "18px 18px 4px 18px"
-                      : "18px 18px 18px 4px",
-                  background:
-                    msg.role === "user"
-                      ? "linear-gradient(135deg,#D4AF37,#A0821A)"
-                      : "rgba(255,255,255,0.06)",
-                  border:
-                    msg.role === "user"
-                      ? "none"
-                      : "1px solid rgba(212,175,55,0.12)",
+                  borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                  background: msg.role === "user"
+                    ? "linear-gradient(135deg,#D4AF37,#A0821A)"
+                    : "rgba(255,255,255,0.06)",
+                  border: msg.role === "user" ? "none" : "1px solid rgba(212,175,55,0.12)",
                   color: msg.role === "user" ? "#0F1829" : "#E8DCC8",
                   fontSize: 14,
                   lineHeight: 1.65,
@@ -340,8 +317,7 @@ export default function ChatModal({ onClose }: Props) {
                   <span
                     style={{
                       display: "inline-block",
-                      width: 8,
-                      height: 14,
+                      width: 8, height: 14,
                       background: "#D4AF37",
                       marginLeft: 3,
                       borderRadius: 2,
@@ -406,18 +382,14 @@ export default function ChatModal({ onClose }: Props) {
               <button
                 onClick={handleStop}
                 style={{
-                  width: 36,
-                  height: 36,
+                  width: 36, height: 36,
                   borderRadius: "50%",
                   background: "rgba(220,60,60,0.2)",
                   border: "1px solid rgba(220,60,60,0.4)",
                   color: "#E05555",
                   cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
-                  flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 14, flexShrink: 0,
                 }}
               >
                 ◼
@@ -427,8 +399,7 @@ export default function ChatModal({ onClose }: Props) {
                 onClick={() => sendMessage(input)}
                 disabled={!input.trim()}
                 style={{
-                  width: 36,
-                  height: 36,
+                  width: 36, height: 36,
                   borderRadius: "50%",
                   background: input.trim()
                     ? "linear-gradient(135deg,#D4AF37,#A0821A)"
@@ -436,11 +407,8 @@ export default function ChatModal({ onClose }: Props) {
                   border: "none",
                   color: input.trim() ? "#0F1829" : "#5A4A2A",
                   cursor: input.trim() ? "pointer" : "default",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 16,
-                  flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 16, flexShrink: 0,
                   transition: "background 0.15s",
                 }}
               >
@@ -448,8 +416,32 @@ export default function ChatModal({ onClose }: Props) {
               </button>
             )}
           </div>
-          <div style={{ textAlign: "center", color: "#4A3A2A", fontSize: 10, marginTop: 8 }}>
-            {t.chatDisclaimer}
+          {/* Footer: disclaimer + provider badge */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              marginTop: 8,
+            }}
+          >
+            <div style={{ color: "#4A3A2A", fontSize: 10 }}>{t.chatDisclaimer}</div>
+            {provider && !loading && (
+              <div
+                style={{
+                  fontSize: 9,
+                  color: "#5A6A8A",
+                  background: "rgba(90,106,138,0.12)",
+                  border: "1px solid rgba(90,106,138,0.22)",
+                  borderRadius: 8,
+                  padding: "2px 7px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                via {PROVIDER_LABEL[provider]}
+              </div>
+            )}
           </div>
         </div>
 

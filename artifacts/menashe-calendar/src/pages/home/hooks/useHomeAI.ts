@@ -8,6 +8,8 @@ export interface AiMessage {
   streaming?: boolean;
 }
 
+export type AiProvider = "gemini" | "grok" | null;
+
 async function getAiToken(): Promise<string | null> {
   return (await (window as any).Clerk?.session?.getToken()) ?? null;
 }
@@ -26,6 +28,7 @@ export function useHomeAI() {
   });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [provider, setProvider] = useState<AiProvider>(null);
   const [minimized, setMinimized] = useState<boolean>(() => {
     try { return localStorage.getItem(AI_CHAT_MINIMIZED_KEY) === "1"; } catch { return false; }
   });
@@ -43,12 +46,10 @@ export function useHomeAI() {
     typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
-  // Persist minimized state
   useEffect(() => {
     try { localStorage.setItem(AI_CHAT_MINIMIZED_KEY, minimized ? "1" : "0"); } catch {}
   }, [minimized]);
 
-  // Persist chat history
   useEffect(() => {
     try {
       const toSave = messages.filter(m => !m.streaming).slice(-60);
@@ -56,12 +57,10 @@ export function useHomeAI() {
     } catch {}
   }, [messages]);
 
-  // Scroll to latest message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input when chat opens
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 120);
   }, [open]);
@@ -73,6 +72,7 @@ export function useHomeAI() {
     setMessages(nextMsgs);
     setInput("");
     setLoading(true);
+    setProvider(null);
 
     const assistant: AiMessage = { role: "assistant", content: "", streaming: true };
     setMessages([...nextMsgs, assistant]);
@@ -107,13 +107,23 @@ export function useHomeAI() {
           if (payload === "[DONE]") break;
           try {
             const p = JSON.parse(payload);
-            if (p.error) acc = p.error;
-            else if (p.text) acc += p.text;
-            setMessages(prev => {
-              const u = [...prev];
-              u[u.length - 1] = { role: "assistant", content: acc, streaming: true };
-              return u;
-            });
+            if (p.provider) {
+              setProvider(p.provider as AiProvider);
+            } else if (p.error) {
+              acc = p.error;
+              setMessages(prev => {
+                const u = [...prev];
+                u[u.length - 1] = { role: "assistant", content: acc, streaming: true };
+                return u;
+              });
+            } else if (p.text) {
+              acc += p.text;
+              setMessages(prev => {
+                const u = [...prev];
+                u[u.length - 1] = { role: "assistant", content: acc, streaming: true };
+                return u;
+              });
+            }
           } catch {}
         }
       }
@@ -164,10 +174,7 @@ export function useHomeAI() {
       setTimeout(() => setVoiceError(null), 3000);
       return;
     }
-    if (isListening) {
-      recognitionRef.current?.stop();
-      return;
-    }
+    if (isListening) { recognitionRef.current?.stop(); return; }
     setVoiceError(null);
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const rec = new SR();
@@ -178,20 +185,18 @@ export function useHomeAI() {
 
     let finalTranscript = "";
 
-    rec.onstart = () => setIsListening(true);
-    rec.onend = () => {
+    rec.onstart  = () => setIsListening(true);
+    rec.onend    = () => {
       setIsListening(false);
       if (finalTranscript.trim()) {
         setInput(prev => {
-          const joined = prev.trim()
-            ? prev.trim() + " " + finalTranscript.trim()
-            : finalTranscript.trim();
+          const joined = prev.trim() ? prev.trim() + " " + finalTranscript.trim() : finalTranscript.trim();
           return joined;
         });
         setTimeout(() => inputRef.current?.focus(), 80);
       }
     };
-    rec.onerror = (e: any) => {
+    rec.onerror  = (e: any) => {
       setIsListening(false);
       if (e.error !== "aborted" && e.error !== "no-speech") {
         setVoiceError(t.chatVoiceUnsupported);
@@ -210,32 +215,23 @@ export function useHomeAI() {
     rec.start();
   }
 
-  function minimize() {
-    setOpen(false);
-    setMinimized(true);
-  }
-
-  function restore() {
-    setMinimized(false);
-  }
+  function minimize() { setOpen(false); setMinimized(true); }
+  function restore()  { setMinimized(false); }
 
   return {
-    // state
     open, setOpen,
     messages, setMessages,
     input, setInput,
     loading,
+    provider,
     minimized,
     fabHovered, setFabHovered,
     isListening,
     voiceError,
     copiedIdx,
-    // refs
     bottomRef,
     inputRef,
-    // computed
     voiceSupported,
-    // handlers
     sendMessage,
     handleStop,
     shareMessage,
