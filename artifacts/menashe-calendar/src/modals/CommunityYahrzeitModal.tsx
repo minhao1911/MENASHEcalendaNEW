@@ -13,8 +13,11 @@ import {
   type YartzeitEntryApi,
 } from "../lib/userApi";
 
-/* ── Verified Jerusalem / memorial images ──────────────────────────────────── */
+import sanctuaryHeroBg from "@assets/image_1782640129704.png";
+
+/* ── Hero images — sanctuary image is featured first ──────────────────────── */
 const HERO_IMAGES = [
+  sanctuaryHeroBg,
   "https://p1.hippopx.com/preview/477/140/925/israel-jerusalem-holy-city-city-royalty-free-thumbnail.jpg",
   "https://upload.wikimedia.org/wikipedia/commons/2/2b/The_Western_Wall_and_Dome_of_the_rock_in_the_old_city_of_Jerusalem.jpg",
   "https://p1.hippopx.com/preview/626/67/758/jerusalem-holy-land-old-city-religion-royalty-free-thumbnail.jpg",
@@ -477,25 +480,53 @@ export default function CommunityYahrzeitModal({ onClose, userName }: Props) {
               <button
                 onClick={() => setShowSanctuary(true)}
                 style={{
-                  width: "100%", padding: "16px 20px", marginBottom: 22,
-                  background: "linear-gradient(135deg, #D4AF37 0%, #c9a227 40%, #e8c84a 100%)",
-                  border: "none", borderRadius: 16,
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                  animation: "cy-cta-pulse 3s ease-in-out infinite",
+                  width: "100%", padding: "0", marginBottom: 22,
+                  border: "none", borderRadius: 18,
+                  cursor: "pointer",
                   position: "relative", overflow: "hidden",
+                  animation: "cy-cta-pulse 3s ease-in-out infinite",
+                  boxShadow: "0 8px 32px rgba(212,175,55,0.35), 0 2px 8px rgba(0,0,0,0.6)",
+                  display: "block",
                 }}
               >
-                {/* Shimmer sweep on button */}
+                {/* Sanctuary image backdrop */}
+                <img
+                  src={sanctuaryHeroBg}
+                  alt=""
+                  draggable={false}
+                  style={{
+                    position: "absolute", inset: 0,
+                    width: "100%", height: "100%",
+                    objectFit: "cover", objectPosition: "center 30%",
+                    pointerEvents: "none",
+                  }}
+                />
+
+                {/* Gold gradient overlay for legibility */}
                 <div style={{
                   position: "absolute", inset: 0, pointerEvents: "none",
-                  background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%)",
+                  background: "linear-gradient(135deg, rgba(180,130,20,0.72) 0%, rgba(100,70,0,0.62) 50%, rgba(180,130,20,0.72) 100%)",
+                }} />
+
+                {/* Shimmer sweep */}
+                <div style={{
+                  position: "absolute", inset: 0, pointerEvents: "none",
+                  background: "linear-gradient(105deg, transparent 25%, rgba(255,255,255,0.18) 50%, transparent 75%)",
                   backgroundSize: "200% 100%",
                   animation: "cy-shimmer-slide 3s linear infinite",
                 }} />
-                <span style={{ fontSize: 20, position: "relative" }}>🕯</span>
-                <span style={{ fontSize: 15, fontWeight: 900, color: "#1a0f00", letterSpacing: "0.04em", position: "relative" }}>
-                  Enter Memorial Sanctuary
-                </span>
+
+                {/* Button label content */}
+                <div style={{
+                  position: "relative", zIndex: 1,
+                  padding: "16px 20px",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                }}>
+                  <span style={{ fontSize: 22 }}>🕯</span>
+                  <span style={{ fontSize: 15, fontWeight: 900, color: "#fff", letterSpacing: "0.06em", textShadow: "0 1px 8px rgba(0,0,0,0.7)" }}>
+                    Enter Memorial Sanctuary
+                  </span>
+                </div>
               </button>
 
               {/* ── Loading ── */}
