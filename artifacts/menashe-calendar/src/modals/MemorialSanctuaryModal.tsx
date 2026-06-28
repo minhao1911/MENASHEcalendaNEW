@@ -321,7 +321,11 @@ function FlowersPanel({ onSelectColor, selectedColor, placedCount }: {
   );
 }
 
-/* ═══════════════════ SANCTUARY HOME PANEL ══════════════════════════════════ */
+/* ═══════════════════ SANCTUARY ENTRANCE CARD ═══════════════════════════════
+ * Replaces the old SanctuaryHomePanel.
+ * Compact / collapsed by default; expands on tap; can be dismissed.
+ * Remembers collapsed state across renders via sessionStorage.
+ * ══════════════════════════════════════════════════════════════════════════ */
 const DAILY_INTENTIONS = [
   { he: "יהי זכרם ברוך",                        en: "May their memory be a blessing"              },
   { he: 'תנצב"ה',                                 en: "May their soul be bound in the bond of life" },
@@ -342,7 +346,7 @@ function todayYahrzeits(entries: CommunityYahrzeitEntry[]): CommunityYahrzeitEnt
   } catch { return []; }
 }
 
-function SanctuaryHomePanel({ entries, candleCount, visitorCount, onLightCandle, onSelectEntry, soundPlaying, onSoundToggle }: {
+function EntranceCard({ entries, candleCount, visitorCount, onLightCandle, onSelectEntry, soundPlaying, onSoundToggle }: {
   entries: CommunityYahrzeitEntry[];
   candleCount: number; visitorCount: number;
   onLightCandle: () => void;
@@ -350,287 +354,245 @@ function SanctuaryHomePanel({ entries, candleCount, visitorCount, onLightCandle,
   soundPlaying: boolean;
   onSoundToggle: () => void;
 }) {
+  const [expanded, setExpanded] = useState(() => {
+    try { return sessionStorage.getItem("ms-entrance-expanded") !== "false"; } catch { return true; }
+  });
+  const [dismissed, setDismissed] = useState(false);
+
   const hDateStr         = getHebrewDateStr();
   const todayRemembering = todayYahrzeits(entries);
-  const recentEntries    = entries.slice(0, 6);
+  const recentEntries    = entries.slice(0, 8);
   const flowerCount      = hashNum("global-flowers", 1200, 2800);
   const dayIdx           = new Date().getDay();
   const intention        = DAILY_INTENTIONS[dayIdx % DAILY_INTENTIONS.length];
-  const [minimised, setMinimised] = useState(false);
+
+  const toggle = () => {
+    const next = !expanded;
+    setExpanded(next);
+    try { sessionStorage.setItem("ms-entrance-expanded", String(next)); } catch { /* ignore */ }
+  };
+
+  if (dismissed) return null;
 
   return (
     <motion.div
-      key="home-panel"
+      key="entrance-card"
       initial={{ x: -48, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -48, opacity: 0 }}
       transition={{ type: "spring", damping: 28, stiffness: 260 }}
       onClick={e => e.stopPropagation()}
-      className={minimised ? undefined : "ms-scroll-strip ms-home-panel-override"}
+      className="ms-scroll-strip ms-entrance-card"
       style={{
         position: "absolute", left: 14, top: 72,
-        zIndex: 22, width: minimised ? 220 : 268,
-        maxHeight: minimised ? "none" : "calc(100dvh - 148px)",
-        overflowY: minimised ? "visible" : "auto",
+        zIndex: 22,
+        width: expanded ? "min(272px, calc(100vw - 28px))" : "min(216px, calc(100vw - 28px))",
+        maxHeight: expanded ? "calc(100dvh - 148px)" : "none",
+        overflowY: expanded ? "auto" : "visible",
         overflowX: "hidden",
-        background: "rgba(4,2,14,0.94)",
+        background: "rgba(4,2,14,0.92)",
         backdropFilter: "blur(32px) saturate(1.9)",
         border: "1px solid rgba(212,175,55,0.20)",
-        borderRadius: minimised ? 16 : 24,
-        boxShadow: "0 24px 80px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.2)",
+        borderRadius: expanded ? 24 : 50,
+        boxShadow: "0 24px 80px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.06)",
+        transition: "border-radius 0.3s ease, width 0.3s ease",
       }}
     >
-      {/* ─ Date & greeting ─ */}
-      <div style={{
-        padding: minimised ? "10px 14px" : "18px 18px 14px",
-        background: "linear-gradient(180deg,rgba(212,175,55,0.08) 0%,transparent 100%)",
-        borderBottom: minimised ? "none" : "1px solid rgba(255,255,255,0.055)",
-        display: "flex",
-        alignItems: minimised ? "center" : "flex-start",
-        gap: minimised ? 10 : 0,
-      }}>
-        {/* Minimised slim-bar layout */}
-        {minimised ? (
-          <>
-            <span style={{ fontSize: 16, filter: "drop-shadow(0 0 4px rgba(212,175,55,0.7))", flexShrink: 0 }}>🕯</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#D4AF37", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "0.03em" }}>
-                Memorial Sanctuary
-              </div>
+      {/* ── Collapsed pill ── */}
+      {!expanded ? (
+        <button
+          onClick={toggle}
+          aria-label="Open Memorial Sanctuary panel"
+          style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 10,
+            padding: "12px 14px", background: "none", border: "none", cursor: "pointer",
+            minHeight: 44,
+          }}
+        >
+          <span style={{ fontSize: 16, filter: "drop-shadow(0 0 4px rgba(212,175,55,0.7))", flexShrink: 0 }}>🕊</span>
+          <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#D4AF37", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "0.03em" }}>
+              Memorial Sanctuary
             </div>
-            <button
-              onClick={() => setMinimised(false)}
-              aria-label="Expand panel"
-              style={{
-                flexShrink: 0, width: 28, height: 28, borderRadius: 8,
-                background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.28)",
-                color: "#D4AF37", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>
-            </button>
-          </>
-        ) : (
-          /* Expanded header */
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 3 }}>
+            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.38)", marginTop: 1, letterSpacing: "0.04em" }}>
+              A Valley of Remembrance
+            </div>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.7)" strokeWidth="2.5" strokeLinecap="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      ) : (
+        /* ── Expanded header ── */
+        <div style={{
+          padding: "14px 14px 12px",
+          background: "linear-gradient(180deg,rgba(212,175,55,0.08) 0%,transparent 100%)",
+          borderBottom: "1px solid rgba(255,255,255,0.055)",
+        }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ flex: 1 }}>
               {hDateStr && (
-                <div style={{ fontFamily: "'Noto Serif Hebrew',serif", fontSize: 14, color: "rgba(212,175,55,0.78)", textAlign: "right", lineHeight: 1.4, direction: "rtl", flex: 1 }}>
+                <div style={{ fontFamily: "'Noto Serif Hebrew',serif", fontSize: 13, color: "rgba(212,175,55,0.78)", direction: "rtl", lineHeight: 1.4 }}>
                   {hDateStr}
                 </div>
               )}
-              {/* ── Minimise button ── */}
+              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.30)", letterSpacing: "0.05em", marginTop: 2 }}>
+                {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 5, flexShrink: 0, marginLeft: 8 }}>
               <button
-                onClick={() => setMinimised(true)}
-                aria-label="Minimise panel"
-                title="Minimise"
-                style={{
-                  flexShrink: 0, width: 28, height: 28, borderRadius: 8, marginLeft: 8,
-                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-                  color: "rgba(255,255,255,0.5)", cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}
+                onClick={toggle}
+                aria-label="Collapse panel"
+                style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>
               </button>
-            </div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.32)", letterSpacing: "0.06em", marginBottom: 12 }}>
-              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", lineHeight: 1.22, marginBottom: 6 }}>
-              Welcome to the<br/>
-              <span style={{ color: "#D4AF37" }}>Memorial Sanctuary</span>
-            </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.38)", lineHeight: 1.65 }}>
-              A sacred space of memory, love,<br/>and eternal connection.
+              <button
+                onClick={() => setDismissed(true)}
+                aria-label="Dismiss panel"
+                style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.28)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}
+              >✕</button>
             </div>
           </div>
-        )}
-      </div>
+          <div style={{ fontSize: 17, fontWeight: 900, color: "#fff", lineHeight: 1.22, marginBottom: 3 }}>
+            🕊 <span style={{ color: "#D4AF37" }}>Memorial Sanctuary</span>
+          </div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.36)", lineHeight: 1.6 }}>
+            A sacred Valley of Remembrance & Love
+          </div>
+        </div>
+      )}
 
-      {/* ─ Body sections — hidden when minimised ─ */}
-      {!minimised && (
+      {/* ── Expanded body ── */}
+      {expanded && (
         <>
-          {/* ─ Community stats ─ */}
-          <div style={{ padding: "14px 18px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(212,175,55,0.52)", marginBottom: 10 }}>
-              COMMUNITY TODAY
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7 }}>
-              {[
-                { icon: "🕯️", value: candleCount.toLocaleString(), label: "Candles" },
-                { icon: "🌸", value: flowerCount.toLocaleString(), label: "Flowers" },
-                { icon: "👥", value: visitorCount.toLocaleString(), label: "Visitors" },
-              ].map(s => (
-                <div key={s.label} style={{ padding: "10px 6px", textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14 }}>
-                  <div style={{ fontSize: 18, marginBottom: 4 }}>{s.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 900, color: "#fff", lineHeight: 1, animation: "ms-shimmer 5s ease-in-out infinite" }}>{s.value}</div>
-                  <div style={{ fontSize: 7, color: "rgba(255,255,255,0.28)", marginTop: 3, letterSpacing: "0.06em" }}>{s.label.toUpperCase()}</div>
-                </div>
-              ))}
-            </div>
+          {/* Stats chips — horizontal row */}
+          <div style={{ padding: "9px 12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {[
+              { icon: "🕯", value: candleCount.toLocaleString(), label: "Candles" },
+              { icon: "🌸", value: flowerCount.toLocaleString(), label: "Flowers" },
+              { icon: "👥", value: visitorCount.toLocaleString(), label: "Visitors" },
+            ].map(s => (
+              <div key={s.label} style={{
+                display: "flex", alignItems: "center", gap: 4,
+                padding: "4px 9px", borderRadius: 20,
+                background: "rgba(212,175,55,0.07)", border: "1px solid rgba(212,175,55,0.16)",
+                fontSize: 10, color: "rgba(212,175,55,0.88)", fontWeight: 700,
+              }}>
+                <span style={{ fontSize: 11 }}>{s.icon}</span>
+                <span>{s.value}</span>
+                <span style={{ fontSize: 7.5, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{s.label}</span>
+              </div>
+            ))}
           </div>
 
-          {/* ─ Today's Yahrzeit ─ */}
-          {todayRemembering.length > 0 && (
-            <div style={{ padding: "12px 18px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(248,113,113,0.7)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ animation: "ms-flicker 2s ease-in-out infinite" }}>🕯</span>
-                TODAY'S REMEMBRANCE
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {todayRemembering.slice(0, 3).map(e => {
-                  const name = e.deceasedName.split("·")[0].trim();
-                  return (
-                    <motion.div key={e.id} onClick={() => onSelectEntry(e)}
-                      whileHover={{ scale: 1.01, borderColor: "rgba(248,113,113,0.42)" }}
-                      whileTap={{ scale: 0.98 }}
-                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", borderRadius: 13, background: "rgba(248,113,113,0.055)", border: "1px solid rgba(248,113,113,0.16)", cursor: "pointer", transition: "all 0.2s" }}
-                    >
-                      <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, background: "linear-gradient(135deg,#f87171,#be123c)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#fff" }}>{initials(name)}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
-                        {e.passingYear && <div style={{ fontSize: 9, color: "rgba(255,255,255,0.32)", marginTop: 1 }}>{e.passingYear}</div>}
-                      </div>
-                      <span style={{ fontSize: 12 }}>🕯</span>
-                    </motion.div>
-                  );
-                })}
-                {todayRemembering.length > 3 && (
-                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", textAlign: "center", paddingTop: 2 }}>
-                    +{todayRemembering.length - 3} more remembered today
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ─ Recently lit ─ */}
-          {recentEntries.length > 0 && (
-            <div style={{ padding: "12px 18px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(255,255,255,0.32)", marginBottom: 10 }}>
-                RECENTLY LIT
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {recentEntries.map((e, i) => {
-                  const name = e.deceasedName.split("·")[0].trim();
-                  return (
-                    <motion.div key={e.id}
-                      initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                      onClick={() => onSelectEntry(e)}
-                      whileHover={{ background: "rgba(212,175,55,0.07)" }}
-                      style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 9px", borderRadius: 11, background: "rgba(255,255,255,0.02)", cursor: "pointer", transition: "background 0.2s" }}
-                    >
-                      <div style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: "linear-gradient(135deg,#D4AF37,#7a5800)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#fff" }}>{initials(name)}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.75)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
-                        {e.passingYear && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.26)", marginTop: 1 }}>{e.passingYear}</div>}
-                      </div>
-                      <span style={{ fontSize: 11, opacity: 0.6 }}>🕯</span>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ─ Daily intention ─ */}
-          <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(167,139,250,0.58)", marginBottom: 10 }}>
-              DAILY INTENTION
-            </div>
-            <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.15)", textAlign: "center" }}>
-              <div style={{ fontFamily: "'Noto Serif Hebrew',serif", fontSize: 17, color: "rgba(212,175,55,0.85)", lineHeight: 1.5, marginBottom: 8, direction: "rtl" }}>
+          {/* Daily intention */}
+          <div style={{ padding: "10px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+            <div style={{ padding: "10px 12px", borderRadius: 14, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.12)", textAlign: "center" }}>
+              <div style={{ fontFamily: "'Noto Serif Hebrew',serif", fontSize: 14, color: "rgba(212,175,55,0.85)", lineHeight: 1.5, marginBottom: 5, direction: "rtl" }}>
                 {intention.he}
               </div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", fontStyle: "italic", lineHeight: 1.65 }}>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.36)", fontStyle: "italic", lineHeight: 1.6 }}>
                 {intention.en}
               </div>
             </div>
           </div>
 
-          {/* ─ Light a candle CTA ─ */}
-          <div style={{ padding: "14px 18px 14px" }}>
+          {/* Today's Remembrance — horizontal portrait chips */}
+          {todayRemembering.length > 0 && (
+            <div style={{ padding: "9px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+              <div style={{ fontSize: 7, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(248,113,113,0.72)", marginBottom: 7, display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ animation: "ms-flicker 2s ease-in-out infinite" }}>🕯</span> TODAY'S REMEMBRANCE
+              </div>
+              <div className="ms-scroll-strip" style={{ display: "flex", overflowX: "auto", gap: 6, paddingBottom: 2 }}>
+                {todayRemembering.slice(0, 5).map(e => {
+                  const name = e.deceasedName.split("·")[0].trim();
+                  return (
+                    <motion.button key={e.id} onClick={() => onSelectEntry(e)}
+                      whileTap={{ scale: 0.95 }}
+                      style={{
+                        flexShrink: 0, minWidth: 76, padding: "8px 8px 7px",
+                        background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.16)",
+                        borderRadius: 13, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                        minHeight: 44,
+                      }}
+                    >
+                      <span style={{ fontSize: 15 }}>🕯</span>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 64 }}>{name}</div>
+                      {e.passingYear && <div style={{ fontSize: 7, color: "rgba(255,255,255,0.28)" }}>{e.passingYear}</div>}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Recently Remembered — horizontal portrait strip */}
+          {recentEntries.length > 0 && (
+            <div style={{ padding: "9px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+              <div style={{ fontSize: 7, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(255,255,255,0.30)", marginBottom: 7 }}>
+                RECENTLY REMEMBERED
+              </div>
+              <div className="ms-scroll-strip" style={{ display: "flex", overflowX: "auto", gap: 7, paddingBottom: 2 }}>
+                {recentEntries.map((e, i) => {
+                  const name = e.deceasedName.split("·")[0].trim();
+                  const candleN = hashNum(e.id, 3, 28);
+                  return (
+                    <motion.button key={e.id}
+                      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                      onClick={() => onSelectEntry(e)}
+                      whileTap={{ scale: 0.94 }}
+                      style={{
+                        flexShrink: 0, width: 76, cursor: "pointer",
+                        background: "rgba(6,3,18,0.6)", backdropFilter: "blur(12px)",
+                        border: "1px solid rgba(212,175,55,0.16)", borderRadius: 14,
+                        padding: "10px 7px 8px", textAlign: "center",
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                        minHeight: 44,
+                      }}
+                    >
+                      <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#D4AF37,#7a5800)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#fff", flexShrink: 0 }}>{initials(name)}</div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{name}</div>
+                      <div style={{ fontSize: 7, color: "rgba(212,175,55,0.7)" }}>🕯 {candleN}</div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* CTA */}
+          <div style={{ padding: "11px 12px 13px" }}>
             <motion.button
               onClick={onLightCandle}
               whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(212,175,55,0.45)" }}
               whileTap={{ scale: 0.97 }}
-              style={{ width: "100%", padding: "14px 0", background: "linear-gradient(135deg,rgba(212,175,55,0.92),rgba(138,96,0,0.96))", border: "none", borderRadius: 16, fontSize: 14, fontWeight: 800, color: "#0F1829", cursor: "pointer", boxShadow: "0 6px 24px rgba(212,175,55,0.28)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "box-shadow 0.25s" }}
+              style={{ width: "100%", padding: "13px 0", background: "linear-gradient(135deg,rgba(212,175,55,0.92),rgba(138,96,0,0.96))", border: "none", borderRadius: 15, fontSize: 14, fontWeight: 800, color: "#0F1829", cursor: "pointer", boxShadow: "0 6px 24px rgba(212,175,55,0.28)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44 }}
             >
               <span style={{ animation: "ms-flicker 1.8s ease-in-out infinite", fontSize: 16 }}>🕯</span>
               Light a Candle
             </motion.button>
-            <div style={{ textAlign: "center", fontSize: 9, color: "rgba(255,255,255,0.22)", marginTop: 10, letterSpacing: "0.04em", lineHeight: 1.5 }}>
-              Or tap anywhere on the ground<br/>in the sanctuary
-            </div>
-          </div>
 
-          {/* ─ Sound + Feedback rows ─ */}
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "10px 18px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
             {/* Sound toggle */}
             <button
               onClick={onSoundToggle}
               style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "9px 12px",
-                borderRadius: 12,
+                width: "100%", marginTop: 7,
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "9px 12px", borderRadius: 12, minHeight: 44,
                 background: soundPlaying ? "rgba(212,175,55,0.07)" : "transparent",
                 border: `1px solid ${soundPlaying ? "rgba(212,175,55,0.22)" : "rgba(255,255,255,0.07)"}`,
-                cursor: "pointer",
-                transition: "background 0.15s, border-color 0.15s",
+                cursor: "pointer", transition: "background 0.15s, border-color 0.15s",
               }}
             >
               <span style={{ fontSize: 15 }}>{soundPlaying ? "🔊" : "🔇"}</span>
-              <span style={{ flex: 1, textAlign: "left", fontSize: 11, fontWeight: 600, color: soundPlaying ? "rgba(212,175,55,0.75)" : "rgba(255,255,255,0.35)", letterSpacing: "0.02em" }}>
-                {soundPlaying ? "Ambient sound on" : "Ambient sound off"}
+              <span style={{ flex: 1, textAlign: "left", fontSize: 11, fontWeight: 600, color: soundPlaying ? "rgba(212,175,55,0.75)" : "rgba(255,255,255,0.35)" }}>
+                {soundPlaying ? "Ambient on" : "Ambient off"}
               </span>
-              {/* Toggle pill */}
-              <div style={{
-                flexShrink: 0,
-                width: 34, height: 20,
-                borderRadius: 10,
-                background: soundPlaying ? "rgba(212,175,55,0.55)" : "rgba(255,255,255,0.1)",
-                position: "relative",
-                transition: "background 0.2s",
-              }}>
-                <div style={{
-                  position: "absolute",
-                  top: 3, left: soundPlaying ? 16 : 3,
-                  width: 14, height: 14,
-                  borderRadius: "50%",
-                  background: soundPlaying ? "#D4AF37" : "rgba(255,255,255,0.4)",
-                  transition: "left 0.2s, background 0.2s",
-                }} />
+              <div style={{ flexShrink: 0, width: 34, height: 20, borderRadius: 10, background: soundPlaying ? "rgba(212,175,55,0.55)" : "rgba(255,255,255,0.1)", position: "relative", transition: "background 0.2s" }}>
+                <div style={{ position: "absolute", top: 3, left: soundPlaying ? 16 : 3, width: 14, height: 14, borderRadius: "50%", background: soundPlaying ? "#D4AF37" : "rgba(255,255,255,0.4)", transition: "left 0.2s, background 0.2s" }} />
               </div>
-            </button>
-
-            {/* Feedback */}
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("menashe:open-feedback"))}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "9px 12px",
-                borderRadius: 12,
-                background: "transparent",
-                border: "1px solid rgba(255,255,255,0.07)",
-                cursor: "pointer",
-                transition: "background 0.15s",
-              }}
-            >
-              <span style={{ fontSize: 15, opacity: 0.7 }}>★</span>
-              <span style={{ flex: 1, textAlign: "left", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.38)", letterSpacing: "0.02em" }}>
-                Share feedback
-              </span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2.5">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
             </button>
           </div>
         </>
@@ -754,10 +716,15 @@ const STYLES = `
     *[style*="animation"] { animation: none !important; }
     .ms-tab-btn, .ms-rnav-btn { transition: none !important; }
   }
-  /* Mobile panel stacking — narrow viewports */
+  /* Entrance card — no horizontal overflow on narrow viewports */
+  .ms-entrance-card { box-sizing: border-box; }
   @media (max-width: 480px) {
-    .ms-home-panel-override { width: calc(100vw - 28px) !important; }
+    .ms-entrance-card { width: calc(100vw - 28px) !important; }
     .ms-right-panel-override { right: 66px !important; width: calc(100vw - 80px) !important; }
+  }
+  /* Safe-area keyboard avoidance for bottom sheets */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .ms-bottom-sheet { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
   }
 `;
 
@@ -964,32 +931,34 @@ function InteractionHints({ visible }: { visible: boolean }) {
   );
 }
 
-/* ═══════════════════ LEFT STATS PANEL ═══════════════════════════════════════ */
-function LeftStatsPanel({ candleCount, visitorCount }: { candleCount: number; visitorCount: number }) {
+/* ═══════════════════ STATS CHIP ROW ════════════════════════════════════════
+ * Replaces the old LeftStatsPanel. Subtle horizontal chips instead of large
+ * dominating stat blocks — keeps the 3D world visible.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+function StatsChipRow({ candleCount, visitorCount }: { candleCount: number; visitorCount: number }) {
+  const flowerCount = hashNum("global-flowers", 1200, 2800);
   return (
     <div style={{
       position: "absolute", left: 14, top: 76, zIndex: 20,
-      display: "flex", flexDirection: "column", gap: 8,
+      display: "flex", flexDirection: "column", gap: 6,
     }}>
       {[
-        { icon: "🕯️", value: candleCount.toLocaleString(), label: "Candles Lit" },
-        { icon: "👥", value: visitorCount.toLocaleString(), label: "Visitors Today" },
+        { icon: "🕯️", value: candleCount.toLocaleString(), label: "Candles" },
+        { icon: "🌸", value: flowerCount.toLocaleString(), label: "Flowers" },
+        { icon: "👥", value: visitorCount.toLocaleString(), label: "Visitors" },
       ].map(({ icon, value, label }) => (
         <div key={label} style={{
-          background: "rgba(6,3,18,0.82)",
+          background: "rgba(6,3,18,0.80)",
           backdropFilter: "blur(22px) saturate(1.5)",
-          border: "1px solid rgba(255,255,255,0.11)",
-          borderRadius: 16,
-          padding: "10px 16px",
-          display: "flex", alignItems: "center", gap: 12,
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
-          minWidth: 148,
+          border: "1px solid rgba(212,175,55,0.16)",
+          borderRadius: 50,
+          padding: "7px 14px",
+          display: "flex", alignItems: "center", gap: 8,
+          boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
         }}>
-          <span style={{ fontSize: 24 }}>{icon}</span>
-          <div>
-            <div style={{ fontSize: 19, fontWeight: 900, color: "#fff", lineHeight: 1, animation: "ms-shimmer 4s ease-in-out infinite" }}>{value}</div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em", marginTop: 3 }}>{label}</div>
-          </div>
+          <span style={{ fontSize: 14 }}>{icon}</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{value}</span>
+          <span style={{ fontSize: 8, color: "rgba(255,255,255,0.38)", letterSpacing: "0.05em" }}>{label.toUpperCase()}</span>
         </div>
       ))}
     </div>
@@ -1174,7 +1143,18 @@ function SearchResults({
   );
 }
 
-/* ═══════════════════ LIGHT A CANDLE FORM ════════════════════════════════════ */
+/* ═══════════════════ LIGHT A CANDLE FORM ════════════════════════════════════
+ * SPR-026: Added donation tiers + anonymous toggle.
+ * APIs unchanged — donation tier is captured locally for UX only (future
+ * Razorpay integration hook is left as a comment for the payment sprint).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+const DONATION_TIERS = [
+  { id: "free",    label: "Free / Donate Later",    amount: 0,    badge: ""         },
+  { id: "t1",      label: "₹108 — Tikkun Olam",      amount: 108,  badge: "🕯"       },
+  { id: "t2",      label: "₹360 — Zecher Livracha",  amount: 360,  badge: "🕯🕯"     },
+  { id: "t3",      label: "₹1080 — Eternal Light",   amount: 1080, badge: "✨"       },
+] as const;
+
 function LightCandleForm({
   form, setForm, saving, success, onSubmit, onClose,
 }: {
@@ -1183,6 +1163,9 @@ function LightCandleForm({
   saving: boolean; success: boolean;
   onSubmit: () => void; onClose: () => void;
 }) {
+  const [donationTier, setDonationTier] = useState<typeof DONATION_TIERS[number]["id"]>("free");
+  const [anonymous, setAnonymous] = useState(false);
+
   return (
     <motion.div
       key="candle-form"
@@ -1197,25 +1180,29 @@ function LightCandleForm({
         background: "linear-gradient(180deg, rgba(6,3,20,0.98) 0%, rgba(4,2,14,1) 100%)",
         backdropFilter: "blur(30px)",
         border: "1px solid rgba(212,175,55,0.3)", borderBottom: "none",
-        maxHeight: "80dvh", overflowY: "auto",
+        maxHeight: "88dvh", overflowY: "auto",
         boxShadow: "0 -20px 70px rgba(0,0,0,0.65), 0 -1px 0 rgba(212,175,55,0.15)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
+      {/* Drag handle */}
       <div style={{ display: "flex", justifyContent: "center", padding: "14px 0 4px" }}>
         <div style={{ width: 44, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.1)" }} />
       </div>
-      <div style={{ padding: "6px 22px 40px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+
+      <div style={{ padding: "6px 20px 36px" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 19, fontWeight: 900, color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ animation: "ms-flicker 1.8s infinite" }}>🕯</span> Light a Candle
             </div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.36)", marginTop: 4 }}>Honor a loved one in the sanctuary</div>
           </div>
-          <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 14 }}>✕</button>
+          <button onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✕</button>
         </div>
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {success ? (
             <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
               style={{ textAlign: "center", padding: "32px 0" }}>
@@ -1228,31 +1215,91 @@ function LightCandleForm({
             </motion.div>
           ) : (
             <motion.div key="form">
+              {/* Form fields */}
               {[
-                { label: "FULL NAME *", key: "name", placeholder: "Name of the departed", type: "text" },
-                { label: "HEBREW NAME", key: "hebrewName", placeholder: "שם בעברית (optional)", type: "text" },
-                { label: "DATE OF PASSING *", key: "date", placeholder: "", type: "date" },
+                { label: "FULL NAME *", key: "name",       placeholder: "Name of the departed",     type: "text" },
+                { label: "HEBREW NAME",  key: "hebrewName", placeholder: "שם בעברית (optional)",     type: "text" },
+                { label: "DATE OF PASSING *", key: "date", placeholder: "",                          type: "date" },
               ].map(f => (
-                <div key={f.key} style={{ marginBottom: 14 }}>
+                <div key={f.key} style={{ marginBottom: 13 }}>
                   <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.65)", marginBottom: 6 }}>{f.label}</div>
                   <input type={f.type} value={(form as any)[f.key]}
                     onChange={e => setForm((p: any) => ({ ...p, [f.key]: e.target.value }))}
                     placeholder={f.placeholder} className="ms-input" />
                 </div>
               ))}
-              <div style={{ marginBottom: 20 }}>
+
+              <div style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.65)", marginBottom: 6 }}>MEMORIAL MESSAGE</div>
                 <textarea value={form.message}
                   onChange={e => setForm((p: any) => ({ ...p, message: e.target.value }))}
                   placeholder="Share a memory or blessing..." rows={3} className="ms-input" />
               </div>
+
+              {/* Anonymous toggle */}
+              <button
+                onClick={() => setAnonymous(a => !a)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 12,
+                  padding: "10px 14px", borderRadius: 13, marginBottom: 18, minHeight: 44,
+                  background: anonymous ? "rgba(167,139,250,0.08)" : "rgba(255,255,255,0.03)",
+                  border: `1px solid rgba(167,139,250,${anonymous ? "0.35" : "0.12"})`,
+                  cursor: "pointer", transition: "background 0.18s, border-color 0.18s",
+                }}
+              >
+                <span style={{ fontSize: 15 }}>{anonymous ? "👤" : "🙂"}</span>
+                <span style={{ flex: 1, textAlign: "left", fontSize: 12, fontWeight: 600, color: anonymous ? "rgba(167,139,250,0.9)" : "rgba(255,255,255,0.5)" }}>
+                  Light anonymously
+                </span>
+                <div style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, background: anonymous ? "rgba(167,139,250,0.55)" : "rgba(255,255,255,0.1)", position: "relative", transition: "background 0.2s" }}>
+                  <div style={{ position: "absolute", top: 3, left: anonymous ? 18 : 3, width: 14, height: 14, borderRadius: "50%", background: anonymous ? "#a78bfa" : "rgba(255,255,255,0.4)", transition: "left 0.2s" }} />
+                </div>
+              </button>
+
+              {/* Donation tiers */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.65)", marginBottom: 10 }}>DEDICATION</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  {DONATION_TIERS.map(tier => (
+                    <button
+                      key={tier.id}
+                      onClick={() => setDonationTier(tier.id)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 12,
+                        padding: "11px 14px", borderRadius: 13, minHeight: 44,
+                        background: donationTier === tier.id ? "rgba(212,175,55,0.10)" : "rgba(255,255,255,0.03)",
+                        border: `1px solid rgba(212,175,55,${donationTier === tier.id ? "0.45" : "0.12"})`,
+                        cursor: "pointer", transition: "background 0.18s, border-color 0.18s", width: "100%",
+                      }}
+                    >
+                      {/* Radio dot */}
+                      <div style={{
+                        width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
+                        border: `2px solid rgba(212,175,55,${donationTier === tier.id ? "0.85" : "0.3"})`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "border-color 0.18s",
+                      }}>
+                        {donationTier === tier.id && (
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#D4AF37" }} />
+                        )}
+                      </div>
+                      <span style={{ flex: 1, textAlign: "left", fontSize: 12, fontWeight: donationTier === tier.id ? 700 : 500, color: donationTier === tier.id ? "rgba(212,175,55,0.92)" : "rgba(255,255,255,0.55)" }}>
+                        {tier.label}
+                      </span>
+                      {tier.badge && <span style={{ fontSize: 14 }}>{tier.badge}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Submit */}
               <motion.button
                 onClick={onSubmit}
                 disabled={saving || !form.name.trim() || !form.date}
                 whileHover={!saving ? { scale: 1.015 } : {}}
                 whileTap={!saving ? { scale: 0.985 } : {}}
                 style={{
-                  width: "100%", padding: "16px 0",
+                  width: "100%", padding: "16px 0", minHeight: 52,
                   background: saving ? "rgba(212,175,55,0.25)" : "linear-gradient(135deg,#D4AF37 0%,#8a6000 100%)",
                   border: "none", borderRadius: 16, fontSize: 15, fontWeight: 800,
                   color: saving ? "rgba(255,255,255,0.5)" : "#0F1829",
@@ -1262,7 +1309,8 @@ function LightCandleForm({
                   transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}
               >
-                <span>🕯</span>{saving ? "Lighting candle…" : "Light the Candle"}
+                <span>🕯</span>
+                {saving ? "Lighting candle…" : donationTier === "free" ? "Light the Candle" : `Light the Candle · ₹${DONATION_TIERS.find(t => t.id === donationTier)?.amount}`}
               </motion.button>
             </motion.div>
           )}
@@ -1843,10 +1891,10 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         )}
       </AnimatePresence>
 
-      {/* ── HOME PANEL — shows instead of left stats when Home nav active ── */}
+      {/* ── ENTRANCE CARD — shows instead of left stats when Home nav active ── */}
       <AnimatePresence>
         {showHome && (
-          <SanctuaryHomePanel
+          <EntranceCard
             entries={entries}
             candleCount={24832 + totalLit}
             visitorCount={8947 + totalVisitors}
@@ -1858,9 +1906,9 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         )}
       </AnimatePresence>
 
-      {/* ── LEFT STATS — shown when a non-home, non-browse nav is active ── */}
+      {/* ── STATS CHIP ROW — shown when a non-home, non-browse nav is active ── */}
       {!panelOpen && !showHome && !showBrowse && (
-        <LeftStatsPanel
+        <StatsChipRow
           candleCount={24832 + totalLit}
           visitorCount={8947 + totalVisitors}
         />
