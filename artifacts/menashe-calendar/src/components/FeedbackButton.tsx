@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
 type Category = "bug" | "ux" | "content" | "perf" | "suggest";
@@ -41,6 +41,12 @@ export default function FeedbackButton() {
     { value: "medium",   label: t.feedbackPriorityMedium },
     { value: "low",      label: t.feedbackPriorityLow },
   ];
+
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("menashe:open-feedback", handler);
+    return () => window.removeEventListener("menashe:open-feedback", handler);
+  }, []);
 
   const reset = () => {
     setCategory("bug");
