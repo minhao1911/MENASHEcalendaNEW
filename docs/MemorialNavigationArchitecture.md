@@ -1,8 +1,13 @@
 # Memorial Navigation Architecture
 
-> **Document type:** Read-only architecture map — no code changes.
-> **Date:** 2026-06-28
+> **Document type:** Architecture reference.
+> **Date:** 2026-06-28 — updated SPR-034A (dead code elimination)
 > **Scope:** Web app (`artifacts/menashe-calendar`) + API server (`artifacts/api-server`)
+
+> **⚠️ SPR-034A:** `MemorialSanctuaryPage`, `MemorialProfilePage`, and all their exclusive sub-components (`SanctuaryHeader`, `SanctuaryHero`, `SanctuaryWorldPreview`, `MemorialPlaceholderCard`, `LoadingState`) have been **deleted**. They were never wired into routing or navigation and were confirmed unreachable dead code.
+>
+> **Memorial Sanctuary now has one production implementation:**
+> `CommunityYahrzeitModal` → `MemorialSanctuaryModal` → `MemorialValley3D` (3D scene, lazy-loaded).
 
 ---
 

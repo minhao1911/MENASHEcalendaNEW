@@ -1,2 +1,1 @@
-export { default as MemorialSanctuaryPage } from "./MemorialSanctuaryPage";
-export { default as MemorialProfilePage } from "./MemorialProfilePage";
+// No public page exports — Memorial Sanctuary is accessed via MemorialSanctuaryModal.

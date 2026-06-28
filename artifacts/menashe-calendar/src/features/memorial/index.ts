@@ -3,19 +3,12 @@
 // Import everything consumers need from here — never reach into sub-folders
 // directly from outside this module.
 
-// Components
+// Components (shared UI primitives)
 export {
-  SanctuaryHeader,
-  SanctuaryHero,
   SectionTitle,
   GlassPanel,
-  MemorialPlaceholderCard,
   EmptyState,
-  LoadingState,
 } from "./components";
-
-// Pages
-export { MemorialSanctuaryPage } from "./pages";
 
 // Types
 export type {
@@ -91,7 +84,6 @@ export {
 // Stores
 export {
   useMemorialUIStore,
-  useCreateMemorialFormStore,
 } from "./stores/memorialStore";
 
 // Utils

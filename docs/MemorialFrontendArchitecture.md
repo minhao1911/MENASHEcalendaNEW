@@ -1,8 +1,14 @@
 # Memorial Frontend Architecture
 
-**Sprint:** SPR-017 (Living Memorial Experience) builds on SPR-016 (profile page) / SPR-015 (sanctuary shell)
-**Status:** Living Memorial Experience complete (SPR-017)
+**Sprint:** SPR-017 (Living Memorial Experience) builds on SPR-016 (profile page) / SPR-015 (sanctuary shell) — **updated SPR-034A (dead code elimination)**
+**Status:** Living Memorial Experience complete (SPR-017). Dead code removed (SPR-034A).
 **Scope:** Frontend only. Backend APIs, DB schema, and 3D scene are out of scope for this document.
+
+> **SPR-034A — One Production Implementation:**
+> `MemorialSanctuaryPage`, `MemorialProfilePage`, and their exclusive sub-components (`SanctuaryHeader`, `SanctuaryHero`, `SanctuaryWorldPreview`, `MemorialPlaceholderCard`, `LoadingState`) have been deleted. They were never reachable via routing or navigation.
+>
+> **Memorial Sanctuary now has one production implementation:**
+> `CommunityYahrzeitModal` → `MemorialSanctuaryModal` → `MemorialValley3D`.
 
 ---
 
