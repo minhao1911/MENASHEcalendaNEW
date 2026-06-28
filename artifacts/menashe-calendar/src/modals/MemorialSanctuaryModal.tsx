@@ -8,6 +8,7 @@ import {
   type CommunityYahrzeitEntry,
 } from "../lib/userApi";
 import { useLanguage } from "../context/LanguageContext";
+import { useIsMobile } from "../hooks/use-mobile";
 import type { SceneViewType, CameraState } from "../components/MemorialValley3D";
 import { MinimapOverlay } from "../features/memorial/components/MinimapOverlay";
 import { MemorialBrowserPanel } from "./MemorialBrowserPanel";
@@ -1851,8 +1852,325 @@ function MemorialScrollStrip({
   );
 }
 
+/* ═══════════════════ MOBILE SANCTUARY VIEW ═════════════════════════════════
+ * Shown on screens < 768 px instead of the heavy 3D WebGL scene.
+ * Full-featured: candle lighting, memorial browsing, dedications — 2D only.
+ * ══════════════════════════════════════════════════════════════════════════ */
+const MOBILE_STARS = Array.from({ length: 44 }, (_, i) => ({
+  left:    ((i * 73 + 17) % 97) + "%",
+  top:     ((i * 41 + 7)  % 58) + "%",
+  opacity: 0.2 + ((i * 31) % 10) / 14,
+  size:    1 + (i % 3),
+}));
+
+function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) {
+  const { t } = useLanguage();
+  const [entries, setEntries]             = useState<CommunityYahrzeitEntry[]>(initialEntries);
+  const [searchQuery, setSearchQuery]     = useState("");
+  const [selectedEntry, setSelectedEntry] = useState<CommunityYahrzeitEntry | null>(null);
+  const [showForm, setShowForm]           = useState(false);
+  const [form, setForm]                   = useState({ name: "", hebrewName: "", message: "", date: "" });
+  const [saving, setSaving]               = useState(false);
+  const [success, setSuccess]             = useState(false);
+  const [showDedicate, setShowDedicate]   = useState(false);
+  const [dedicateForm, setDedicateForm]   = useState({ learnerName: "", studySubject: "" });
+  const [dedicateSaving, setDedicateSaving]   = useState(false);
+  const [dedicateSuccess, setDedicateSuccess] = useState(false);
+
+  const load = useCallback(async () => {
+    const data = await fetchCommunityYahrzeit();
+    setEntries(data);
+  }, []);
+  useEffect(() => { if (initialEntries.length === 0) load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const iv = setInterval(load, 30_000); return () => clearInterval(iv); }, [load]);
+
+  const filtered = searchQuery.trim()
+    ? entries.filter(e =>
+        e.deceasedName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.donorDisplayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (e.message ?? "").toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : entries;
+
+  async function handleSubmit() {
+    if (!form.name.trim() || !form.date) return;
+    setSaving(true);
+    try {
+      const d  = new Date(form.date + "T12:00:00");
+      const hd = new HDate(d);
+      await createCommunityYahrzeit({
+        id: `cy-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        deceasedName: form.hebrewName.trim()
+          ? `${form.name.trim()} · ${form.hebrewName.trim()}`
+          : form.name.trim(),
+        hebrewDay: hd.getDate(),
+        hebrewMonth: hd.getMonth(),
+        displayDate: d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+        passingYear: d.getFullYear(),
+        message: form.message.trim(),
+        donorDisplayName: userName ?? "Community Member",
+      });
+      setSuccess(true);
+      await load();
+      setTimeout(() => {
+        setSuccess(false); setShowForm(false);
+        setForm({ name: "", hebrewName: "", message: "", date: "" });
+      }, 3200);
+    } finally { setSaving(false); }
+  }
+
+  async function handleDedicate() {
+    if (!selectedEntry || !dedicateForm.learnerName.trim() || !dedicateForm.studySubject.trim()) return;
+    setDedicateSaving(true);
+    try {
+      await dedicateLearning(selectedEntry.id, dedicateForm.learnerName.trim(), dedicateForm.studySubject.trim());
+      setDedicateSuccess(true);
+      await load();
+      setTimeout(() => {
+        setDedicateSuccess(false); setShowDedicate(false);
+        setDedicateForm({ learnerName: "", studySubject: "" });
+      }, 2800);
+    } finally { setDedicateSaving(false); }
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      fontFamily: "Inter,-apple-system,sans-serif",
+      background: "linear-gradient(180deg,#04010e 0%,#090320 45%,#0e0b1c 100%)",
+      overflow: "hidden", display: "flex", flexDirection: "column",
+    }}>
+      <style>{STYLES}</style>
+
+      {/* ── Starfield ── */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+        {MOBILE_STARS.map((s, i) => (
+          <div key={i} style={{
+            position: "absolute",
+            width: s.size, height: s.size,
+            borderRadius: "50%",
+            background: "#fff",
+            left: s.left, top: s.top,
+            opacity: s.opacity,
+          }} />
+        ))}
+        {/* Soft gold glow at top */}
+        <div style={{
+          position: "absolute", top: -80, left: "50%", transform: "translateX(-50%)",
+          width: 320, height: 320, borderRadius: "50%",
+          background: "radial-gradient(ellipse,rgba(212,175,55,0.12) 0%,transparent 70%)",
+          pointerEvents: "none",
+        }} />
+      </div>
+
+      {/* ── Header ── */}
+      <div style={{
+        position: "relative", zIndex: 2, flexShrink: 0,
+        padding: "max(env(safe-area-inset-top),16px) 16px 0",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 10 }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(212,175,55,0.65)", marginBottom: 2 }}>
+              🕯 VALLEY OF REMEMBRANCE
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "0.01em" }}>
+              {t.memShellWelcome}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.7)", fontSize: 20,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >×</button>
+        </div>
+
+        {/* Stats */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+          <div style={{
+            flex: 1, background: "rgba(212,175,55,0.07)",
+            border: "1px solid rgba(212,175,55,0.22)", borderRadius: 14,
+            padding: "10px 12px", textAlign: "center",
+          }}>
+            <div style={{ fontSize: 19, fontWeight: 900, color: "#D4AF37", lineHeight: 1 }}>
+              {(24_832 + entries.length).toLocaleString()}
+            </div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.42)", marginTop: 3, letterSpacing: "0.08em" }}>
+              CANDLES LIT
+            </div>
+          </div>
+          <div style={{
+            flex: 1, background: "rgba(167,139,250,0.07)",
+            border: "1px solid rgba(167,139,250,0.22)", borderRadius: 14,
+            padding: "10px 12px", textAlign: "center",
+          }}>
+            <div style={{ fontSize: 19, fontWeight: 900, color: "#a78bfa", lineHeight: 1 }}>
+              {entries.length}
+            </div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.42)", marginTop: 3, letterSpacing: "0.08em" }}>
+              SOULS REMEMBERED
+            </div>
+          </div>
+        </div>
+
+        {/* Light a candle CTA */}
+        <motion.button
+          onClick={() => setShowForm(true)}
+          whileTap={{ scale: 0.97 }}
+          style={{
+            width: "100%", padding: "15px 0", marginBottom: 12,
+            background: "linear-gradient(135deg,#D4AF37 0%,#a07828 100%)",
+            border: "none", borderRadius: 18,
+            fontSize: 15, fontWeight: 800, color: "#fff",
+            cursor: "pointer",
+            boxShadow: "0 4px 28px rgba(212,175,55,0.32)",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          🕯 {t.memLightCandle}
+        </motion.button>
+
+        {/* Search */}
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder={t.memSearchPlaceholder}
+            style={{
+              width: "100%", boxSizing: "border-box",
+              padding: "12px 40px 12px 16px",
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,0.11)",
+              background: "rgba(255,255,255,0.06)",
+              color: "#fff", fontSize: 14, outline: "none",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                background: "none", border: "none",
+                color: "rgba(255,255,255,0.38)", fontSize: 20,
+                cursor: "pointer", padding: "4px 6px", lineHeight: 1,
+              }}
+            >×</button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Memorial List ── */}
+      <div style={{
+        flex: 1, overflowY: "auto",
+        position: "relative", zIndex: 2,
+        padding: "0 16px",
+        paddingBottom: "max(env(safe-area-inset-bottom),28px)",
+      }}>
+        {filtered.length === 0 && (
+          <div style={{ textAlign: "center", padding: "52px 0 32px", color: "rgba(255,255,255,0.32)", fontSize: 14 }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🕯</div>
+            {searchQuery ? t.memNoResults : t.memShellRecentEmpty}
+          </div>
+        )}
+        {filtered.map((entry, i) => {
+          const name    = entry.deceasedName.split("·")[0].trim();
+          const candleN = hashNum(entry.id, 3, 28);
+          return (
+            <motion.div
+              key={entry.id}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.04, 0.5) }}
+              onClick={() => setSelectedEntry(entry)}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                marginBottom: 10, cursor: "pointer",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(212,175,55,0.14)",
+                borderRadius: 18, padding: "14px 16px",
+                display: "flex", alignItems: "center", gap: 14,
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              {/* Avatar */}
+              <div style={{
+                width: 46, height: 46, borderRadius: "50%", flexShrink: 0,
+                background: "linear-gradient(135deg,#D4AF37,#7a5800)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 16, fontWeight: 900, color: "#fff",
+              }}>
+                {initials(name)}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {name}
+                </div>
+                {entry.displayDate && (
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.36)", marginBottom: 4 }}>
+                    📅 {entry.displayDate}
+                  </div>
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ fontSize: 11 }}>🕯</span>
+                  <span style={{ fontSize: 11, color: "rgba(212,175,55,0.82)", fontWeight: 700 }}>
+                    {candleN} {t.memCandlesCount}
+                  </span>
+                  {entry.message && (
+                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginLeft: 4 }}>
+                      · 💬
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ color: "rgba(255,255,255,0.18)", fontSize: 20, flexShrink: 0 }}>›</div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* ── Light a Candle Form ── */}
+      <AnimatePresence>
+        {showForm && (
+          <LightCandleForm
+            form={form} setForm={setForm}
+            saving={saving} success={success}
+            onSubmit={handleSubmit}
+            onClose={() => setShowForm(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Memorial Profile Sheet ── */}
+      <AnimatePresence>
+        {selectedEntry && !showForm && (
+          <MemorialProfileSheet
+            entry={selectedEntry}
+            onClose={() => { setSelectedEntry(null); setShowDedicate(false); setDedicateSuccess(false); }}
+            showDedicate={showDedicate}
+            setShowDedicate={setShowDedicate}
+            dedicateForm={dedicateForm}
+            setDedicateForm={setDedicateForm}
+            dedicateSaving={dedicateSaving}
+            dedicateSuccess={dedicateSuccess}
+            onDedicate={handleDedicate}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /* ═══════════════════ MAIN COMPONENT ════════════════════════════════════════ */
 export default function MemorialSanctuaryModal({ onClose, userName, initialEntries = [] }: Props) {
+  const isMobile = useIsMobile();
   const [entries, setEntries]               = useState<CommunityYahrzeitEntry[]>(initialEntries);
   const [placedCandles, setPlacedCandles]   = useState<Candle[]>([]);
   const [selectedEntry, setSelectedEntry]   = useState<CommunityYahrzeitEntry | null>(null);
@@ -2044,6 +2362,17 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
     setShowForm(true);
     setShowHints(false);
   }, []);
+
+  /* ── Mobile branch: skip the 3D scene entirely on small screens ── */
+  if (isMobile) {
+    return (
+      <MobileSanctuaryView
+        onClose={onClose}
+        userName={userName}
+        initialEntries={initialEntries}
+      />
+    );
+  }
 
   return (
     <div
