@@ -14,71 +14,120 @@ import { MemorialBrowserPanel } from "./MemorialBrowserPanel";
 
 const MemorialValley3D = lazy(() => import("../components/MemorialValley3D"));
 
-/* ═══════════════════ AMBIENT SOUND HOOK ════════════════════════════════════ */
+/* ═══════════════════ AMBIENT SOUND HOOK ════════════════════════════════════
+ * Single ambient loop — gentle wind/water brown noise at very low volume.
+ * Auto-starts on first user interaction; gracefully handles autoplay block.
+ * No visible player controls — just a mute toggle.
+ * ══════════════════════════════════════════════════════════════════════════ */
+const AMBIENT_VOLUME = 0.08;
+
 function useAmbientSound() {
-  const [playing, setPlaying]    = useState(false);
-  const [volume, setVolumeState] = useState(0.38);
-  const ctxRef    = useRef<AudioContext | null>(null);
-  const masterRef = useRef<GainNode | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const ctxRef     = useRef<AudioContext | null>(null);
+  const masterRef  = useRef<GainNode | null>(null);
+  const startedRef = useRef(false);
 
-  const start = useCallback(() => {
-    /* Idempotent guard — never open a second context while one exists */
-    if (ctxRef.current) return;
-    const ctx = new AudioContext();
-    ctxRef.current   = ctx;
-    const master     = ctx.createGain();
-    master.gain.value = volume;
-    master.connect(ctx.destination);
-    masterRef.current = master;
-
-    /* Brown noise — wind & water ambience */
-    const bufLen = ctx.sampleRate * 6;
-    const buffer = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-    const data   = buffer.getChannelData(0);
-    let last = 0;
-    for (let i = 0; i < bufLen; i++) {
-      const w = Math.random() * 2 - 1;
-      last = (last + 0.02 * w) / 1.02;
-      data[i] = last * 3.5;
+  const buildAndStart = useCallback(() => {
+    if (startedRef.current) {
+      /* Already built — just resume if suspended (guard against "closed" state after HMR) */
+      const ctx = ctxRef.current;
+      if (ctx && ctx.state !== "closed") {
+        if (ctx.state === "suspended") ctx.resume().then(() => setPlaying(true)).catch(() => {});
+      } else {
+        /* Context was closed (e.g. HMR cleanup) — reset so we can rebuild */
+        startedRef.current = false;
+        ctxRef.current = null;
+        masterRef.current = null;
+      }
+      if (startedRef.current) return;
     }
-    const noise  = ctx.createBufferSource();
-    noise.buffer = buffer; noise.loop = true;
-    const nFilt  = ctx.createBiquadFilter();
-    nFilt.type = "lowpass"; nFilt.frequency.value = 720;
-    const nGain = ctx.createGain(); nGain.gain.value = 0.13;
-    noise.connect(nFilt); nFilt.connect(nGain); nGain.connect(master);
-    noise.start();
+    startedRef.current = true;
+    try {
+      const ctx = new AudioContext();
+      ctxRef.current = ctx;
+      const master = ctx.createGain();
+      master.gain.value = AMBIENT_VOLUME;
+      master.connect(ctx.destination);
+      masterRef.current = master;
 
-    /* D-major pentatonic drones with LFO tremolo */
-    [146.83, 185.00, 220.00, 277.18, 329.63].forEach((f, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine"; osc.frequency.value = f;
-      const g = ctx.createGain(); g.gain.value = 0.016 + i * 0.002;
-      const lfo = ctx.createOscillator(); lfo.type = "sine";
-      lfo.frequency.value = 0.10 + i * 0.032;
-      const lg = ctx.createGain(); lg.gain.value = 0.005;
-      lfo.connect(lg); lg.connect(g.gain); lfo.start();
-      osc.connect(g); g.connect(master); osc.start();
-    });
+      /* ── Brown noise: gentle wind & flowing water ── */
+      const bufLen = ctx.sampleRate * 8;
+      const buffer = ctx.createBuffer(2, bufLen, ctx.sampleRate); // stereo
+      for (let ch = 0; ch < 2; ch++) {
+        const data = buffer.getChannelData(ch);
+        let last = 0;
+        for (let i = 0; i < bufLen; i++) {
+          const w = Math.random() * 2 - 1;
+          last = (last + 0.02 * w) / 1.02;
+          data[i] = last * 3.2;
+        }
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer; noise.loop = true;
 
-    setPlaying(true);
-  }, [volume]);
+      /* Low-pass to make it sound like distant wind/water */
+      const filt = ctx.createBiquadFilter();
+      filt.type = "lowpass"; filt.frequency.value = 660; filt.Q.value = 0.7;
+      const nGain = ctx.createGain(); nGain.gain.value = 0.11;
+      noise.connect(filt); filt.connect(nGain); nGain.connect(master);
+      noise.start();
 
-  const stop = useCallback(() => {
-    ctxRef.current?.close();
-    ctxRef.current = null; masterRef.current = null;
-    setPlaying(false);
+      /* ── Soft wind whistle — barely perceptible high-shelf ── */
+      const wFilt = ctx.createBiquadFilter();
+      wFilt.type = "bandpass"; wFilt.frequency.value = 1200; wFilt.Q.value = 0.4;
+      const wGain = ctx.createGain(); wGain.gain.value = 0.018;
+      noise.connect(wFilt); wFilt.connect(wGain); wGain.connect(master);
+
+      ctx.resume().then(() => setPlaying(true)).catch(() => {
+        /* Browser blocked autoplay — wait for first user gesture */
+        setPlaying(false);
+      });
+    } catch { /* AudioContext not supported */ }
   }, []);
 
-  const toggle = useCallback(() => { playing ? stop() : start(); }, [playing, start, stop]);
+  /* Auto-start: try immediately after mount; on failure, wait for first gesture */
+  useEffect(() => {
+    const onGesture = () => { buildAndStart(); };
+    const t = setTimeout(() => {
+      buildAndStart();
+      /* If still suspended after 500ms, hook into first gesture */
+      setTimeout(() => {
+        if (!ctxRef.current || ctxRef.current.state === "suspended") {
+          document.addEventListener("pointerdown", onGesture, { once: true });
+          document.addEventListener("keydown",     onGesture, { once: true });
+        }
+      }, 500);
+    }, 1200);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener("pointerdown", onGesture);
+      document.removeEventListener("keydown", onGesture);
+    };
+  }, [buildAndStart]);
 
-  const setVolume = useCallback((v: number) => {
-    setVolumeState(v);
-    if (masterRef.current) masterRef.current.gain.value = v;
+  const toggle = useCallback(() => {
+    if (!masterRef.current) { buildAndStart(); return; }
+    if (playing) {
+      /* Mute: ramp down smoothly, don't close context */
+      masterRef.current.gain.setTargetAtTime(0, ctxRef.current!.currentTime, 0.3);
+      setPlaying(false);
+    } else {
+      masterRef.current.gain.setTargetAtTime(AMBIENT_VOLUME, ctxRef.current!.currentTime, 0.5);
+      ctxRef.current?.resume();
+      setPlaying(true);
+    }
+  }, [playing, buildAndStart]);
+
+  useEffect(() => () => {
+    startedRef.current = false;
+    const ctx = ctxRef.current;
+    if (ctx && ctx.state !== "closed") {
+      ctx.close().catch(() => {});
+    }
+    ctxRef.current  = null;
+    masterRef.current = null;
   }, []);
-
-  useEffect(() => () => { ctxRef.current?.close(); }, []);
-  return { playing, toggle, volume, setVolume };
+  return { playing, toggle };
 }
 
 /* ═══════════════════ R3F ERROR BOUNDARY ════════════════════════════════════
@@ -150,17 +199,14 @@ function formatTime() {
   return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
-/* ═══════════════════ MUSIC PANEL ═══════════════════════════════════════════ */
+/* ═══════════════════ SOUND PANEL ═══════════════════════════════════════════
+ * Minimal sound panel — single ambient loop, mute/unmute only.
+ * No playlist, no volume slider.
+ * ══════════════════════════════════════════════════════════════════════════ */
 const FLOWER_PALETTE = ["#ff6b8a","#ff99bb","#c778e8","#ff8833","#55ccaa","#f0c030","#e855a0","#7799ff"];
 const FLOWER_NAMES   = ["Rose","Blush","Violet","Marigold","Mint","Sunflower","Peony","Iris"];
 
 function MusicPanel({ sound }: { sound: ReturnType<typeof useAmbientSound> }) {
-  const tracks = [
-    { icon: "💨", label: "Wind & Leaves",  desc: "Gentle breeze through olive trees" },
-    { icon: "💧", label: "Flowing Water",   desc: "River and waterfall ambience"      },
-    { icon: "🎹", label: "Soft Piano",      desc: "Peaceful pentatonic melody"        },
-    { icon: "🐦", label: "Birdsong",        desc: "Morning birds at sunrise"          },
-  ];
   return (
     <motion.div
       key="music-panel"
@@ -171,7 +217,7 @@ function MusicPanel({ sound }: { sound: ReturnType<typeof useAmbientSound> }) {
       onClick={e => e.stopPropagation()}
       style={{
         position: "absolute", right: 80, top: "50%", transform: "translateY(-50%)",
-        zIndex: 25, width: 230,
+        zIndex: 25, width: 218,
         background: "rgba(6,3,20,0.95)",
         backdropFilter: "blur(28px) saturate(1.6)",
         border: "1px solid rgba(212,175,55,0.28)",
@@ -180,66 +226,57 @@ function MusicPanel({ sound }: { sound: ReturnType<typeof useAmbientSound> }) {
       }}
     >
       <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(212,175,55,0.75)", marginBottom: 14 }}>
-        🎵  SANCTUARY SOUNDSCAPE
+        🎵 AMBIENT SOUND
+      </div>
+
+      {/* Single ambient indicator */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "12px 14px", borderRadius: 14, marginBottom: 14,
+        background: sound.playing ? "rgba(212,175,55,0.07)" : "rgba(255,255,255,0.03)",
+        border: `1px solid rgba(212,175,55,${sound.playing ? "0.22" : "0.08"})`,
+      }}>
+        <span style={{ fontSize: 22, flexShrink: 0 }}>
+          {sound.playing ? "🔊" : "🔇"}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: sound.playing ? "#D4AF37" : "rgba(255,255,255,0.5)" }}>
+            Wind &amp; Water
+          </div>
+          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", marginTop: 2 }}>
+            Gentle valley ambience
+          </div>
+        </div>
+        {sound.playing && (
+          <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 18, flexShrink: 0 }}>
+            {[1,2,3,2,1].map((h, j) => (
+              <div key={j} style={{ width: 3, height: h * 4 + 2, borderRadius: 2, background: "#D4AF37", animation: `ms-shimmer ${0.45 + j * 0.12}s ease-in-out infinite` }} />
+            ))}
+          </div>
+        )}
       </div>
 
       <motion.button
         onClick={sound.toggle}
-        whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+        aria-label={sound.playing ? "Mute ambient sound" : "Unmute ambient sound"}
         style={{
-          width: "100%", padding: "13px 0", marginBottom: 14,
+          width: "100%", padding: "12px 0",
           background: sound.playing
-            ? "linear-gradient(135deg,#D4AF37 0%,#8a6000 100%)"
-            : "rgba(212,175,55,0.1)",
-          border: `1px solid rgba(212,175,55,${sound.playing ? 0 : 0.28})`,
-          borderRadius: 14, fontSize: 14, fontWeight: 800,
-          color: sound.playing ? "#0f1829" : "#D4AF37",
-          cursor: "pointer", transition: "all 0.25s",
+            ? "linear-gradient(135deg,rgba(212,175,55,0.18),rgba(212,175,55,0.06))"
+            : "rgba(212,175,55,0.08)",
+          border: `1px solid rgba(212,175,55,${sound.playing ? 0.35 : 0.18})`,
+          borderRadius: 14, fontSize: 13, fontWeight: 800,
+          color: "#D4AF37", cursor: "pointer", transition: "all 0.22s",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
         }}
       >
-        {sound.playing ? "⏸ Pause" : "▶ Play Ambient"}
+        {sound.playing ? "🔇 Mute" : "🔊 Unmute"}
       </motion.button>
 
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.38)" }}>VOLUME</span>
-          <span style={{ fontSize: 9, color: "rgba(212,175,55,0.7)", fontVariantNumeric: "tabular-nums" }}>{Math.round(sound.volume * 100)}%</span>
-        </div>
-        <input type="range" min={0} max={1} step={0.01}
-          value={sound.volume}
-          onChange={e => sound.setVolume(Number(e.target.value))}
-          style={{ width: "100%", accentColor: "#D4AF37", cursor: "pointer" }}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {tracks.map((tr, i) => (
-          <div key={i} style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "8px 10px", borderRadius: 11,
-            background: i === 0 && sound.playing ? "rgba(212,175,55,0.08)" : "rgba(255,255,255,0.03)",
-            border: `1px solid rgba(255,255,255,${i === 0 && sound.playing ? "0.10" : "0.04"})`,
-          }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>{tr.icon}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: i === 0 && sound.playing ? "#D4AF37" : "rgba(255,255,255,0.7)" }}>{tr.label}</div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", marginTop: 1 }}>{tr.desc}</div>
-            </div>
-            {i === 0 && sound.playing && (
-              <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 18 }}>
-                {[1,2,3,2,1].map((h, j) => (
-                  <div key={j} style={{ width: 3, height: h * 4 + 2, borderRadius: 2, background: "#D4AF37", animation: `ms-shimmer ${0.45 + j * 0.12}s ease-in-out infinite` }} />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ marginTop: 14, padding: "10px", borderRadius: 11, background: "rgba(255,255,255,0.025)", textAlign: "center" }}>
-        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.26)", lineHeight: 1.7 }}>
-          Procedural ambient — generated<br/>for peaceful remembrance
+      <div style={{ marginTop: 12, textAlign: "center" }}>
+        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.22)", lineHeight: 1.7 }}>
+          Procedural — very low volume<br/>Works without sound enabled
         </div>
       </div>
     </motion.div>
@@ -681,6 +718,7 @@ const STYLES = `
   @keyframes ms-glow-heart { 0%,100%{filter:drop-shadow(0 0 3px rgba(255,100,100,0.5))} 50%{filter:drop-shadow(0 0 10px rgba(255,60,60,1))} }
   @keyframes ms-shimmer { 0%{opacity:0.52} 50%{opacity:1} 100%{opacity:0.52} }
   @keyframes ms-timeline-dot { 0%,100%{transform:scale(1)} 50%{transform:scale(1.35)} }
+  @keyframes ms-breath { 0%,100%{opacity:0.45} 50%{opacity:0.85} }
   .ms-input {
     width:100%; padding:12px 15px; box-sizing:border-box;
     background:rgba(8,4,22,0.78); border:1px solid rgba(212,175,55,0.22);
@@ -711,10 +749,23 @@ const STYLES = `
   .ms-rnav-btn:hover { background:rgba(255,255,255,0.08); }
   .ms-rnav-btn:focus-visible { outline:2px solid rgba(212,175,55,0.7); outline-offset:2px; }
   .ms-scroll-strip::-webkit-scrollbar { display:none; }
-  /* Reduced-motion: disable all decorative animations */
+  /* ── Reflection mode: all UI fades out with smooth transition ── */
+  .ms-ui-layer {
+    transition: opacity 1.4s ease;
+  }
+  .ms-ui-layer.ms-ui-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  .ms-ui-layer.ms-ui-hidden * {
+    pointer-events: none !important;
+  }
+  /* Reduced-motion: disable all decorative animations + reflection fade */
   @media (prefers-reduced-motion: reduce) {
     *[style*="animation"] { animation: none !important; }
     .ms-tab-btn, .ms-rnav-btn { transition: none !important; }
+    .ms-ui-layer { transition: none !important; }
+    .ms-ui-layer.ms-ui-hidden { opacity: 0 !important; }
   }
   /* Entrance card — no horizontal overflow on narrow viewports */
   .ms-entrance-card { box-sizing: border-box; }
@@ -1820,10 +1871,45 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const [showMicro, setShowMicro]           = useState(false);
   const sound = useAmbientSound();
 
-  /* Phase 4: keyboard handler — Escape closes any open panel */
+  /* ── Task 6: Reflection Mode ──────────────────────────────────────────────
+   * After REFLECTION_DELAY ms of stillness → hide all UI overlays.
+   * Any pointer/touch/key activity resets the timer and restores the UI.
+   * ──────────────────────────────────────────────────────────────────────── */
+  const REFLECTION_DELAY = 25000; // 25 seconds
+  const [reflectionMode, setReflectionMode]   = useState(false);
+  const reflectionModeRef   = useRef(false);   // sync ref to avoid stale closures
+  const idleTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastExitRef         = useRef(0);       // timestamp of last reflection-exit
+  const panelOpenRef        = useRef(false);   // don't enter reflection while a panel is open
+
+  const resetIdle = useCallback(() => {
+    /* Exit reflection mode immediately */
+    if (reflectionModeRef.current) {
+      reflectionModeRef.current = false;
+      lastExitRef.current = Date.now();
+      setReflectionMode(false);
+    }
+    /* Restart the idle countdown */
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      if (panelOpenRef.current) return;        // don't enter if form/profile is open
+      reflectionModeRef.current = true;
+      setReflectionMode(true);
+    }, REFLECTION_DELAY);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Start idle timer on mount; clear on unmount */
+  useEffect(() => {
+    resetIdle();
+    return () => { if (idleTimerRef.current) clearTimeout(idleTimerRef.current); };
+  }, [resetIdle]);
+
+  /* Keyboard handler — Escape closes panels; also exits reflection mode */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      resetIdle(); // any keypress resets idle timer
       if (e.key !== "Escape") return;
+      if (reflectionModeRef.current) return;   // Escape already handled by resetIdle
       if (selectedEntry) { setSelectedEntry(null); setShowDedicate(false); setDedicateSuccess(false); return; }
       if (showForm) { setShowForm(false); setPendingPos(null); return; }
       if (showMicro) { setShowMicro(false); setPendingPos(null); return; }
@@ -1832,7 +1918,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedEntry, showForm, showMicro, activeNav, onClose]);
+  }, [selectedEntry, showForm, showMicro, activeNav, onClose, resetIdle]);
   /**
    * canRender3D — mount guard for R3F v9 + React 19 Strict Mode.
    *
@@ -1873,6 +1959,8 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   }, []);
 
   const handleGroundClick = useCallback((pos: [number, number, number]) => {
+    /* First tap after exiting reflection mode should ONLY restore UI, not open a form */
+    if (Date.now() - lastExitRef.current < 500) return;
     if (showForm || selectedEntry || showMicro) return;
     /* If flowers nav is active — place a flower instead of opening candle form */
     if (activeNav === "flowers") {
@@ -1932,6 +2020,8 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const totalLit      = entries.length;
   const totalVisitors = hashNum("global-visitors", 4000, 6000);
   const panelOpen     = showForm || !!selectedEntry;
+  /* Keep panelOpenRef in sync — used inside the idle timeout callback (ref avoids stale closure) */
+  useEffect(() => { panelOpenRef.current = panelOpen; }, [panelOpen]);
   const showBrowse    = activeNav === "memorials" && !panelOpen;
   const showMusic     = activeNav === "music"   && !panelOpen;
   const showFlowers   = activeNav === "flowers" && !panelOpen;
@@ -1951,8 +2041,13 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
 
   return (
     <div
-      onClick={e => e.stopPropagation()}
+      onClick={e => { e.stopPropagation(); resetIdle(); }}
+      onPointerMove={resetIdle}
+      onPointerDown={resetIdle}
+      onTouchStart={resetIdle}
       style={{ position: "fixed", inset: 0, zIndex: 9999, overflow: "hidden", userSelect: "none", fontFamily: "Inter,-apple-system,sans-serif" }}
+      role="region"
+      aria-label="Memorial Sanctuary 3D scene"
     >
       <style>{STYLES}</style>
 
@@ -1983,119 +2078,163 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         )}
       </div>
 
-      {/* ── MINIMAP OVERLAY — PUBG-style position compass ── */}
-      <MinimapOverlay cameraRef={cameraStateRef} hidden={panelOpen || !!searchQuery} />
+      {/* ══════════════════════════════════════════════════════════════════════
+          UI OVERLAY LAYER — fades to opacity:0 in Reflection Mode.
+          All UI elements live here except forms/sheets that stay on top.
+          ════════════════════════════════════════════════════════════════════ */}
+      <div
+        className={`ms-ui-layer${reflectionMode ? " ms-ui-hidden" : ""}`}
+        aria-hidden={reflectionMode}
+        style={{ position: "absolute", inset: 0, zIndex: 1 }}
+      >
+        {/* ── MINIMAP OVERLAY — PUBG-style position compass ── */}
+        <MinimapOverlay cameraRef={cameraStateRef} hidden={panelOpen || !!searchQuery} />
 
-      {/* ── TOP HEADER ── */}
-      <TopHeader
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        searchRef={searchRef}
-        onClose={onClose}
-      />
+        {/* ── TOP HEADER ── */}
+        <TopHeader
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          searchRef={searchRef}
+          onClose={onClose}
+        />
 
-      {/* ── SEARCH RESULTS ── */}
-      <AnimatePresence>
-        {searchQuery.trim().length > 0 && (
-          <SearchResults
-            results={filtered}
-            onSelect={e => { setSelectedEntry(e); setSearchQuery(""); }}
-            onClose={() => setSearchQuery("")}
+        {/* ── SEARCH RESULTS ── */}
+        <AnimatePresence>
+          {searchQuery.trim().length > 0 && (
+            <SearchResults
+              results={filtered}
+              onSelect={e => { setSelectedEntry(e); setSearchQuery(""); }}
+              onClose={() => setSearchQuery("")}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ── BACKGROUND DIM when profile open ── */}
+        <AnimatePresence>
+          {panelOpen && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+              style={{
+                position: "absolute", inset: 0, zIndex: 40,
+                background: "rgba(0,0,0,0.42)",
+                backdropFilter: "blur(2px)",
+                pointerEvents: "none",
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ── ENTRANCE CARD — shows instead of left stats when Home nav active ── */}
+        <AnimatePresence>
+          {showHome && (
+            <EntranceCard
+              entries={entries}
+              candleCount={24832 + totalLit}
+              visitorCount={8947 + totalVisitors}
+              onLightCandle={handleHomePanelLightCandle}
+              onSelectEntry={e => { setSelectedEntry(e); setActiveNav("home"); }}
+              soundPlaying={sound.playing}
+              onSoundToggle={sound.toggle}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ── STATS CHIP ROW — shown when a non-home, non-browse nav is active ── */}
+        {!panelOpen && !showHome && !showBrowse && (
+          <StatsChipRow
+            candleCount={24832 + totalLit}
+            visitorCount={8947 + totalVisitors}
           />
         )}
-      </AnimatePresence>
 
-      {/* ── BACKGROUND DIM when profile open ── */}
-      <AnimatePresence>
-        {panelOpen && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
-            style={{
-              position: "absolute", inset: 0, zIndex: 40,
-              background: "rgba(0,0,0,0.42)",
-              backdropFilter: "blur(2px)",
-              pointerEvents: "none",
+        {/* ── FLOATING MEMORIAL NAME TOOLTIP ── */}
+        <AnimatePresence>
+          {selectedEntry && !panelOpen && (
+            <FloatingMemorialTooltip entry={selectedEntry} />
+          )}
+        </AnimatePresence>
+
+        {/* ── RIGHT NAV ── */}
+        {!panelOpen && (
+          <RightNavPanel
+            active={activeNav}
+            onSelect={nav => {
+              setActiveNav(prev => prev === nav ? "home" : nav);
             }}
           />
         )}
-      </AnimatePresence>
 
-      {/* ── ENTRANCE CARD — shows instead of left stats when Home nav active ── */}
+        {/* ── MUSIC PANEL ── */}
+        <AnimatePresence>
+          {showMusic && <MusicPanel sound={sound} />}
+        </AnimatePresence>
+
+        {/* ── FLOWERS PANEL ── */}
+        <AnimatePresence>
+          {showFlowers && (
+            <FlowersPanel
+              onSelectColor={setSelectedFlowerColor}
+              selectedColor={selectedFlowerColor}
+              placedCount={virtualFlowers.length}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ── AMBIENT COMMUNITY NOTIFICATIONS — suppressed in reflection mode ── */}
+        <AmbientNotification entries={entries} paused={panelOpen || showForm || reflectionMode} />
+
+        {/* ── INTERACTION HINTS ── */}
+        {!panelOpen && <InteractionHints visible={showHints} />}
+
+        {/* ── MEMORIAL BROWSER PANEL ── */}
+        <AnimatePresence>
+          {showBrowse && (
+            <MemorialBrowserPanel onClose={() => setActiveNav("home")} />
+          )}
+        </AnimatePresence>
+
+        {/* ── BOTTOM SCENE TABS ── */}
+        {!panelOpen && (
+          <BottomSceneTabs active={activeScene} onSelect={setActiveScene} />
+        )}
+      </div>
+      {/* ── END UI OVERLAY LAYER ── */}
+
+      {/* ── REFLECTION MODE HINT — shown only when UI is hidden ── */}
       <AnimatePresence>
-        {showHome && (
-          <EntranceCard
-            entries={entries}
-            candleCount={24832 + totalLit}
-            visitorCount={8947 + totalVisitors}
-            onLightCandle={handleHomePanelLightCandle}
-            onSelectEntry={e => { setSelectedEntry(e); setActiveNav("home"); }}
-            soundPlaying={sound.playing}
-            onSoundToggle={sound.toggle}
-          />
+        {reflectionMode && (
+          <motion.button
+            key="reflection-hint"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            onClick={resetIdle}
+            aria-label="Tap to restore the interface"
+            style={{
+              position: "absolute", bottom: 32, left: "50%", transform: "translateX(-50%)",
+              zIndex: 30,
+              background: "rgba(4,2,12,0.55)",
+              backdropFilter: "blur(16px) saturate(1.4)",
+              border: "1px solid rgba(212,175,55,0.22)",
+              borderRadius: 50,
+              padding: "10px 22px",
+              display: "flex", alignItems: "center", gap: 10,
+              cursor: "pointer",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+              animation: "ms-breath 3s ease-in-out infinite",
+            }}
+          >
+            <span style={{ fontSize: 14, filter: "drop-shadow(0 0 6px rgba(212,175,55,0.6))" }}>🕯</span>
+            <span style={{ fontSize: 11, color: "rgba(212,175,55,0.75)", fontWeight: 600, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+              Tap anywhere to continue
+            </span>
+          </motion.button>
         )}
       </AnimatePresence>
 
-      {/* ── STATS CHIP ROW — shown when a non-home, non-browse nav is active ── */}
-      {!panelOpen && !showHome && !showBrowse && (
-        <StatsChipRow
-          candleCount={24832 + totalLit}
-          visitorCount={8947 + totalVisitors}
-        />
-      )}
-
-      {/* ── FLOATING MEMORIAL NAME TOOLTIP ── */}
-      <AnimatePresence>
-        {selectedEntry && !panelOpen && (
-          <FloatingMemorialTooltip entry={selectedEntry} />
-        )}
-      </AnimatePresence>
-
-      {/* ── RIGHT NAV ── */}
-      {!panelOpen && (
-        <RightNavPanel
-          active={activeNav}
-          onSelect={nav => {
-            setActiveNav(prev => prev === nav ? "home" : nav);
-          }}
-        />
-      )}
-
-      {/* ── MUSIC PANEL ── */}
-      <AnimatePresence>
-        {showMusic && <MusicPanel sound={sound} />}
-      </AnimatePresence>
-
-      {/* ── FLOWERS PANEL ── */}
-      <AnimatePresence>
-        {showFlowers && (
-          <FlowersPanel
-            onSelectColor={setSelectedFlowerColor}
-            selectedColor={selectedFlowerColor}
-            placedCount={virtualFlowers.length}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* ── AMBIENT COMMUNITY NOTIFICATIONS ── */}
-      <AmbientNotification entries={entries} paused={panelOpen || showForm} />
-
-      {/* ── INTERACTION HINTS ── */}
-      {!panelOpen && <InteractionHints visible={showHints} />}
-
-      {/* ── MEMORIAL BROWSER PANEL (replaces scroll strip) ── */}
-      <AnimatePresence>
-        {showBrowse && (
-          <MemorialBrowserPanel onClose={() => setActiveNav("home")} />
-        )}
-      </AnimatePresence>
-
-      {/* ── BOTTOM SCENE TABS ── */}
-      {!panelOpen && (
-        <BottomSceneTabs active={activeScene} onSelect={setActiveScene} />
-      )}
-
-      {/* ── MICRO CANDLE CARD — appears on ground tap; tapping opens full form ── */}
+      {/* ── MICRO CANDLE CARD — always above UI layer ── */}
       <AnimatePresence>
         {showMicro && !showForm && (
           <MicroCandleCard
