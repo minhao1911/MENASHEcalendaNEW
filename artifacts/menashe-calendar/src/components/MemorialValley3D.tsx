@@ -1709,26 +1709,44 @@ function AAAGoldenDust() {
    MOVING CLOUDS
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAMovingClouds() {
-  const ref0 = useRef<THREE.Group>(null!);
-  const ref1 = useRef<THREE.Group>(null!);
-  const ref2 = useRef<THREE.Group>(null!);
-  const ref3 = useRef<THREE.Group>(null!);
-  const cloudData = [
-    { r: ref0, y: 22, z: -12, speed: 1.0, scale: 1.4 },
-    { r: ref1, y: 25, z: 8,   speed: 0.7, scale: 1.1 },
-    { r: ref2, y: 19, z: -28, speed: 1.3, scale: 1.7 },
-    { r: ref3, y: 21, z: 18,  speed: 0.85, scale: 0.9 },
+  /* Layer A — main cloud bank, mid-altitude */
+  const refA0 = useRef<THREE.Group>(null!); const refA1 = useRef<THREE.Group>(null!);
+  const refA2 = useRef<THREE.Group>(null!); const refA3 = useRef<THREE.Group>(null!);
+  const refA4 = useRef<THREE.Group>(null!); const refA5 = useRef<THREE.Group>(null!);
+  /* Layer B — high cirrus wisps */
+  const refB0 = useRef<THREE.Group>(null!); const refB1 = useRef<THREE.Group>(null!);
+  const refB2 = useRef<THREE.Group>(null!);
+  /* Layer C — low atmospheric haze bands */
+  const refC0 = useRef<THREE.Group>(null!); const refC1 = useRef<THREE.Group>(null!);
+
+  const layerA = [
+    { r: refA0, y: 22, z: -12, speed: 1.00, scale: 1.40, op: 0.74 },
+    { r: refA1, y: 25, z:   8, speed: 0.70, scale: 1.10, op: 0.68 },
+    { r: refA2, y: 19, z: -28, speed: 1.30, scale: 1.70, op: 0.78 },
+    { r: refA3, y: 21, z:  18, speed: 0.85, scale: 0.90, op: 0.65 },
+    { r: refA4, y: 24, z: -42, speed: 0.92, scale: 1.55, op: 0.72 },
+    { r: refA5, y: 20, z:  34, speed: 1.10, scale: 1.25, op: 0.70 },
+  ];
+  const layerB = [
+    { r: refB0, y: 36, z: -18, speed: 1.60, scale: 2.20, op: 0.32 },
+    { r: refB1, y: 38, z:  12, speed: 1.20, scale: 2.80, op: 0.26 },
+    { r: refB2, y: 34, z:  30, speed: 1.90, scale: 1.80, op: 0.30 },
+  ];
+  const layerC = [
+    { r: refC0, y: 14, z: -35, speed: 0.40, scale: 3.50, op: 0.14 },
+    { r: refC1, y: 13, z:  22, speed: 0.30, scale: 4.00, op: 0.12 },
   ];
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    cloudData.forEach(d => {
-      if (d.r.current) d.r.current.position.x = -40 + ((t * d.speed * 0.75) % 100);
-    });
+    layerA.forEach(d => { if (d.r.current) d.r.current.position.x = -50 + ((t * d.speed * 0.75) % 110); });
+    layerB.forEach(d => { if (d.r.current) d.r.current.position.x = -55 + ((t * d.speed * 0.60) % 120); });
+    layerC.forEach(d => { if (d.r.current) d.r.current.position.x = -45 + ((t * d.speed * 0.50) % 100); });
   });
 
-  const Cloud = ({ scale, opacity }: { scale: number; opacity: number }) => {
-    const m = <meshStandardMaterial color="white" transparent opacity={opacity} roughness={1} metalness={0} />;
+  /* Dense cumulus cloud — 7 spheres */
+  const Cumulus = ({ scale, opacity }: { scale: number; opacity: number }) => {
+    const m = <meshStandardMaterial color="#f8f8ff" transparent opacity={opacity} roughness={1} metalness={0} />;
     return (
       <group>
         <mesh scale={scale}><sphereGeometry args={[2.4, 10, 8]} />{m}</mesh>
@@ -1736,15 +1754,50 @@ function AAAMovingClouds() {
         <mesh position={[-2.2*scale, -0.4*scale, 0]} scale={scale}><sphereGeometry args={[1.5, 9, 7]} />{m}</mesh>
         <mesh position={[0.8*scale, 1.1*scale, 0]} scale={scale}><sphereGeometry args={[1.4, 9, 7]} />{m}</mesh>
         <mesh position={[-0.6*scale, 0.9*scale, 0.5*scale]} scale={scale*0.75}><sphereGeometry args={[1.2, 8, 6]} />{m}</mesh>
+        <mesh position={[1.4*scale, 1.3*scale, 0.3*scale]} scale={scale*0.65}><sphereGeometry args={[1.1, 8, 6]} />{m}</mesh>
+        <mesh position={[-1.6*scale, 0.5*scale, -0.4*scale]} scale={scale*0.60}><sphereGeometry args={[1.0, 7, 5]} />{m}</mesh>
+      </group>
+    );
+  };
+
+  /* Stretched cirrus wisp — thin elongated puffs */
+  const Cirrus = ({ scale, opacity }: { scale: number; opacity: number }) => {
+    const m = <meshStandardMaterial color="#eef2ff" transparent opacity={opacity} roughness={1} metalness={0} />;
+    return (
+      <group>
+        <mesh scale={[scale * 3.5, scale * 0.45, scale]}><sphereGeometry args={[1.8, 9, 6]} />{m}</mesh>
+        <mesh position={[4.0*scale, 0.1*scale, 0.5*scale]} scale={[scale*2.2, scale*0.35, scale*0.9]}><sphereGeometry args={[1.5, 8, 5]} />{m}</mesh>
+        <mesh position={[-3.5*scale, -0.1*scale, -0.3*scale]} scale={[scale*1.8, scale*0.30, scale*0.85]}><sphereGeometry args={[1.4, 7, 5]} />{m}</mesh>
+      </group>
+    );
+  };
+
+  /* Haze band — very large, very faint */
+  const HazeBand = ({ scale, opacity }: { scale: number; opacity: number }) => {
+    const m = <meshStandardMaterial color="#ffe8d8" transparent opacity={opacity} roughness={1} metalness={0} />;
+    return (
+      <group>
+        <mesh scale={[scale * 5.0, scale * 0.30, scale * 1.5]}><sphereGeometry args={[2.0, 8, 5]} />{m}</mesh>
+        <mesh position={[7.0*scale, 0, 0.8*scale]} scale={[scale*4.0, scale*0.22, scale*1.2]}><sphereGeometry args={[1.8, 7, 5]} />{m}</mesh>
       </group>
     );
   };
 
   return (
     <>
-      {cloudData.map((d, i) => (
-        <group key={i} ref={d.r} position={[-40, d.y, d.z]}>
-          <Cloud scale={d.scale} opacity={0.72} />
+      {layerA.map((d, i) => (
+        <group key={`a${i}`} ref={d.r} position={[-50, d.y, d.z]}>
+          <Cumulus scale={d.scale} opacity={d.op} />
+        </group>
+      ))}
+      {layerB.map((d, i) => (
+        <group key={`b${i}`} ref={d.r} position={[-55, d.y, d.z]}>
+          <Cirrus scale={d.scale} opacity={d.op} />
+        </group>
+      ))}
+      {layerC.map((d, i) => (
+        <group key={`c${i}`} ref={d.r} position={[-45, d.y, d.z]}>
+          <HazeBand scale={d.scale} opacity={d.op} />
         </group>
       ))}
     </>
@@ -2045,7 +2098,7 @@ function AAAGodRays() {
     });
     ref.current.instanceMatrix.needsUpdate = true;
     if (mat.current) {
-      mat.current.opacity = Math.max(0, sunStr * 0.044 * (0.92 + Math.sin(t * 0.14) * 0.08));
+      mat.current.opacity = Math.max(0, sunStr * 0.088 * (0.92 + Math.sin(t * 0.14) * 0.08));
     }
   });
 
@@ -2522,6 +2575,672 @@ function GroundClickPlane({ onGroundClick }: { onGroundClick: (pos: [number, num
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SPR-031: DISTANT MOUNTAINS — background ridge silhouettes for depth
+══════════════════════════════════════════════════════════════════════════ */
+function AAADistantMountains() {
+  const farPeaks = [
+    { x: -82, z: -68, h: 30, w: 30 }, { x: -58, z: -75, h: 40, w: 34 },
+    { x: -32, z: -70, h: 34, w: 27 }, { x: -8,  z: -78, h: 46, w: 32 },
+    { x: 18,  z: -72, h: 38, w: 30 }, { x: 44,  z: -76, h: 44, w: 36 },
+    { x: 68,  z: -67, h: 32, w: 28 }, { x: 90,  z: -62, h: 24, w: 24 },
+  ];
+  const nearRidge = [
+    { x: -72, z: -50, h: 18, w: 22 }, { x: -46, z: -56, h: 24, w: 26 },
+    { x: -22, z: -53, h: 19, w: 20 }, { x: 6,   z: -58, h: 26, w: 24 },
+    { x: 32,  z: -54, h: 21, w: 22 }, { x: 58,  z: -56, h: 19, w: 24 },
+    { x: 78,  z: -48, h: 15, w: 20 },
+  ];
+  /* Side ridges — east and west */
+  const eastRidge = [
+    { x: 78, z: -20, h: 22, w: 24 }, { x: 82, z: 4,  h: 18, w: 20 },
+    { x: 80, z: 26, h: 20, w: 22 },
+  ];
+  const westRidge = [
+    { x: -80, z: -16, h: 20, w: 22 }, { x: -84, z: 6,  h: 16, w: 18 },
+    { x: -78, z: 28, h: 18, w: 20 },
+  ];
+
+  return (
+    <group>
+      {/* Far cool-blue range */}
+      {farPeaks.map(({ x, z, h, w }, i) => (
+        <mesh key={`far-${i}`} position={[x, h * 0.5 - 2, z]} castShadow={false} receiveShadow={false}>
+          <coneGeometry args={[w, h, 5, 1]} />
+          <meshStandardMaterial color="#7888a4" roughness={0.95} metalness={0.0} envMapIntensity={0.1} />
+        </mesh>
+      ))}
+      {/* Near warm-stone ridge */}
+      {nearRidge.map(({ x, z, h, w }, i) => (
+        <mesh key={`near-${i}`} position={[x, h * 0.5 - 1, z]} castShadow={false} receiveShadow={false}>
+          <coneGeometry args={[w, h, 4, 1]} />
+          <meshStandardMaterial color="#9e8f7c" roughness={0.92} metalness={0.0} />
+        </mesh>
+      ))}
+      {/* Side ridges */}
+      {[...eastRidge, ...westRidge].map(({ x, z, h, w }, i) => (
+        <mesh key={`side-${i}`} position={[x, h * 0.5 - 1, z]} castShadow={false} receiveShadow={false}>
+          <coneGeometry args={[w, h, 4, 1]} />
+          <meshStandardMaterial color="#92827a" roughness={0.93} metalness={0.0} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-031: TREE OF REMEMBRANCE — giant ancient olive, the central landmark
+══════════════════════════════════════════════════════════════════════════ */
+function AAATreeOfRemembrance() {
+  const trunkGeo = useMemo(() => {
+    const g = new THREE.CylinderGeometry(0.42, 0.88, 7.0, 14, 7);
+    const pos = g.attributes.position!;
+    for (let i = 0; i < pos.count; i++) {
+      const y  = pos.getY(i);
+      const tN = (y + 3.5) / 7.0;
+      const tw = Math.sin(tN * Math.PI * 3.8) * 0.32 + Math.cos(tN * Math.PI * 2.4) * 0.20;
+      pos.setX(i, pos.getX(i) + tw + Math.sin(i * 0.77) * 0.14);
+      pos.setZ(i, pos.getZ(i) + Math.cos(tN * Math.PI * 2.9) * 0.24);
+    }
+    g.computeVertexNormals();
+    return g;
+  }, []);
+
+  const rootGeo = useMemo(() => {
+    const g = new THREE.CylinderGeometry(0.07, 0.52, 2.4, 6, 2);
+    const pos = g.attributes.position!;
+    for (let i = 0; i < pos.count; i++) pos.setX(i, pos.getX(i) + pos.getY(i) * 0.28);
+    g.computeVertexNormals();
+    return g;
+  }, []);
+
+  const canA = useMemo(() => new THREE.SphereGeometry(5.0, 12, 9), []);
+  const canB = useMemo(() => new THREE.SphereGeometry(3.8, 11, 8), []);
+  const canC = useMemo(() => new THREE.SphereGeometry(3.0, 10, 8), []);
+  const canD = useMemo(() => new THREE.SphereGeometry(2.2, 9,  7), []);
+  const canE = useMemo(() => new THREE.SphereGeometry(1.5, 8,  6), []);
+
+  const canopyRef = useRef<THREE.Group>(null!);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const sw = Math.sin(t * 0.30) * 0.016 + Math.sin(t * 0.88) * 0.006;
+    if (canopyRef.current) { canopyRef.current.rotation.x = sw; canopyRef.current.rotation.z = sw * 0.72; }
+  });
+
+  return (
+    <group position={[-9, 0, -4]}>
+      {/* Root buttresses */}
+      {Array.from({ length: 6 }, (_, i) => {
+        const a = (i / 6) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 0.72, -0.3, Math.sin(a) * 0.72]}
+            rotation={[0, a, Math.PI * 0.13]} geometry={rootGeo}>
+            <meshStandardMaterial color="#2a1a08" roughness={0.97} metalness={0.0} />
+          </mesh>
+        );
+      })}
+      {/* Main trunk */}
+      <mesh position={[0, 3.5, 0]} geometry={trunkGeo} castShadow>
+        <meshStandardMaterial color="#2e1a0a" roughness={0.97} metalness={0.0} />
+      </mesh>
+      {/* Major branches */}
+      {[
+        { pos: [0.9, 5.0, 0.5] as [number,number,number], rot: [0.45, 0.3, 0.22] as [number,number,number], len: 3.0 },
+        { pos: [-0.7, 5.5, 0.7] as [number,number,number], rot: [-0.32, 0.8, 0.12] as [number,number,number], len: 2.6 },
+        { pos: [0.5, 6.2, -0.9] as [number,number,number], rot: [0.22, 1.4, -0.18] as [number,number,number], len: 2.4 },
+        { pos: [-0.8, 6.8, -0.4] as [number,number,number], rot: [-0.15, 2.1, 0.28] as [number,number,number], len: 2.0 },
+      ].map((b, i) => (
+        <mesh key={i} position={b.pos} rotation={b.rot} castShadow>
+          <cylinderGeometry args={[0.07, 0.17, b.len, 8]} />
+          <meshStandardMaterial color="#332010" roughness={0.96} metalness={0.0} />
+        </mesh>
+      ))}
+      {/* Massive multi-layered crown */}
+      <group ref={canopyRef}>
+        <mesh position={[0, 9.0, 0]} geometry={canA} castShadow>
+          <meshStandardMaterial color="#243c12" roughness={0.92} metalness={0.0} envMapIntensity={0.4} />
+        </mesh>
+        <mesh position={[2.0, 10.2, -1.4]} geometry={canB} castShadow>
+          <meshStandardMaterial color="#304e1c" roughness={0.89} metalness={0.0} />
+        </mesh>
+        <mesh position={[-2.4, 9.6, 1.2]} geometry={canB} castShadow>
+          <meshStandardMaterial color="#2b481a" roughness={0.90} metalness={0.0} />
+        </mesh>
+        <mesh position={[0.6, 12.0, 1.0]} geometry={canC} castShadow>
+          <meshStandardMaterial color="#3c5c22" roughness={0.87} metalness={0.0} />
+        </mesh>
+        <mesh position={[-1.2, 12.8, -1.0]} geometry={canD}>
+          <meshStandardMaterial color="#507830" roughness={0.85} metalness={0.0}
+            emissive={new THREE.Color("#1a3008")} emissiveIntensity={0.14} />
+        </mesh>
+        <mesh position={[2.2, 12.4, 0.5]} geometry={canD}>
+          <meshStandardMaterial color="#4c7030" roughness={0.85} metalness={0.0} />
+        </mesh>
+        {/* Silver-green sunlit tips */}
+        <mesh position={[0, 14.2, 0]} geometry={canE}>
+          <meshStandardMaterial color="#78a850" roughness={0.82} metalness={0.0}
+            emissive={new THREE.Color("#2a5010")} emissiveIntensity={0.22} />
+        </mesh>
+        <mesh position={[-1.4, 13.5, 0.8]} geometry={canE}>
+          <meshStandardMaterial color="#6ea046" roughness={0.83} metalness={0.0}
+            emissive={new THREE.Color("#244808")} emissiveIntensity={0.18} />
+        </mesh>
+      </group>
+      {/* Moss ring at base */}
+      <mesh position={[0, 0.55, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.85, 1.75, 18]} />
+        <meshStandardMaterial color="#2e5a18" roughness={0.95} metalness={0.0} transparent opacity={0.72} />
+      </mesh>
+      {/* Carved stone plaque */}
+      <mesh position={[0.96, 1.3, 0]} rotation={[0, -Math.PI / 2, 0]} castShadow>
+        <boxGeometry args={[0.04, 0.52, 0.72]} />
+        <meshStandardMaterial color="#c8b860" roughness={0.5} metalness={0.5}
+          emissive={new THREE.Color("#8a7020")} emissiveIntensity={0.32} />
+      </mesh>
+      <Text position={[1.02, 1.3, 0]} fontSize={0.11} color="#D4AF37" anchorX="center" rotation={[0, Math.PI / 2, 0]}>
+        עץ הזיכרון
+      </Text>
+      {/* Warm glow from the ancient tree */}
+      <pointLight color="#ff9944" intensity={1.8} distance={14} decay={2} position={[0, 2.5, 0]} />
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-031: MEMORIAL GATE — ceremonial entrance arch at the valley entrance
+══════════════════════════════════════════════════════════════════════════ */
+function AAAMemorialGate() {
+  const flameU = useRef({ uTime: { value: 0 }, uOffset: { value: 0 } });
+  const flameU2 = useRef({ uTime: { value: 0 }, uOffset: { value: 1.7 } });
+  useFrame(({ clock }) => {
+    flameU.current.uTime.value  = clock.getElapsedTime();
+    flameU2.current.uTime.value = clock.getElapsedTime();
+  });
+
+  return (
+    <group position={[0, 0, 21]}>
+      {/* Left pillar */}
+      <mesh position={[-3.6, 3.2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.25, 6.4, 1.25]} />
+        <meshStandardMaterial color="#d0c4a0" roughness={0.84} metalness={0.05} />
+      </mesh>
+      {/* Right pillar */}
+      <mesh position={[3.6, 3.2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.25, 6.4, 1.25]} />
+        <meshStandardMaterial color="#d0c4a0" roughness={0.84} metalness={0.05} />
+      </mesh>
+      {/* Pillar caps */}
+      {[-3.6, 3.6].map((x, i) => (
+        <mesh key={i} position={[x, 6.75, 0]} castShadow>
+          <boxGeometry args={[1.65, 0.72, 1.65]} />
+          <meshStandardMaterial color="#beb290" roughness={0.80} metalness={0.06} />
+        </mesh>
+      ))}
+      {/* Lintel beam */}
+      <mesh position={[0, 7.05, 0]} castShadow>
+        <boxGeometry args={[9.0, 0.68, 1.30]} />
+        <meshStandardMaterial color="#cfc5a4" roughness={0.82} metalness={0.05} />
+      </mesh>
+      {/* Decorative top rail */}
+      <mesh position={[0, 7.58, 0]}>
+        <boxGeometry args={[7.2, 0.42, 1.12]} />
+        <meshStandardMaterial color="#bdb08e" roughness={0.82} metalness={0.05} />
+      </mesh>
+      {/* Central Star of David emblem */}
+      <mesh position={[0, 7.34, 0.71]}>
+        <cylinderGeometry args={[0.30, 0.30, 0.11, 6]} />
+        <meshStandardMaterial color="#D4AF37" roughness={0.32} metalness={0.78}
+          emissive={new THREE.Color("#9a7800")} emissiveIntensity={0.6} />
+      </mesh>
+      {/* Moss weathering on pillars */}
+      {[-3.6, 3.6].map((x, i) => (
+        <mesh key={i} position={[x + (i === 0 ? 0.63 : -0.63), 1.9, 0.1]}>
+          <boxGeometry args={[0.02, 1.5, 0.85]} />
+          <meshStandardMaterial color="#3e621a" roughness={0.95} metalness={0.0} transparent opacity={0.72} />
+        </mesh>
+      ))}
+      {/* Flanking eternal flame pillars */}
+      {[-5.0, 5.0].map((x, i) => (
+        <group key={i} position={[x, 0, 0]}>
+          <mesh position={[0, 0.8, 0]} castShadow>
+            <cylinderGeometry args={[0.22, 0.28, 1.6, 10]} />
+            <meshStandardMaterial color="#c8ba98" roughness={0.78} metalness={0.08} />
+          </mesh>
+          <mesh position={[0, 1.7, 0]}>
+            <cylinderGeometry args={[0.30, 0.22, 0.32, 10]} />
+            <meshStandardMaterial color="#d4c8a0" roughness={0.72} metalness={0.1} />
+          </mesh>
+          {/* Flame */}
+          <mesh position={[0, 2.0, 0]}>
+            <coneGeometry args={[0.12, 0.32, 10, 1, true]} />
+            <shaderMaterial
+              uniforms={i === 0 ? flameU.current : flameU2.current}
+              vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
+              transparent depthWrite={false} side={THREE.DoubleSide}
+            />
+          </mesh>
+          <pointLight color="#ff9933" intensity={3.2} distance={9} decay={2} position={[0, 2.1, 0]} />
+        </group>
+      ))}
+      {/* Hebrew inscription */}
+      <Text position={[0, 5.9, 0.78]} fontSize={0.30} color="#D4AF37" anchorX="center">
+        בֵּית עוֹלַם
+      </Text>
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-031: WATER LILIES — floating pads and blossoms on the reflection pool
+══════════════════════════════════════════════════════════════════════════ */
+const R_LILY = makeLCG(113);
+const LILY_DATA = Array.from({ length: 16 }, () => {
+  const a = R_LILY() * Math.PI * 2;
+  const r = 1.0 + R_LILY() * 3.8;
+  return {
+    x: Math.cos(a) * r, z: 4 + Math.sin(a) * r * 0.72,
+    size: 0.26 + R_LILY() * 0.24, phase: R_LILY() * Math.PI * 2,
+    bloom: R_LILY() > 0.58, pink: R_LILY() > 0.5,
+  };
+});
+
+function AAAWaterLilies() {
+  const padGeo    = useMemo(() => new THREE.CircleGeometry(1, 12), []);
+  const petalGeo  = useMemo(() => new THREE.SphereGeometry(0.12, 6, 4), []);
+  const centerGeo = useMemo(() => new THREE.SphereGeometry(0.16, 7, 5), []);
+
+  const padRefs = useRef<THREE.Mesh[]>([]);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    LILY_DATA.forEach((l, i) => {
+      const m = padRefs.current[i];
+      if (m) m.position.y = 0.41 + Math.sin(t * 0.45 + l.phase) * 0.018;
+    });
+  });
+
+  return (
+    <>
+      {LILY_DATA.map((l, i) => (
+        <group key={i}>
+          {/* Pad */}
+          <mesh
+            ref={el => { if (el) padRefs.current[i] = el; }}
+            position={[l.x, 0.41, l.z]}
+            rotation={[-Math.PI / 2, 0, l.phase]}
+            scale={l.size}
+            geometry={padGeo}
+          >
+            <meshStandardMaterial color="#2a6216" roughness={0.84} metalness={0.0}
+              emissive={new THREE.Color("#0c3006")} emissiveIntensity={0.14} />
+          </mesh>
+          {/* Flower on every third lily */}
+          {l.bloom && (
+            <group position={[l.x, 0.50, l.z]}>
+              {Array.from({ length: 7 }, (_, j) => {
+                const a = (j / 7) * Math.PI * 2;
+                return (
+                  <mesh key={j} position={[Math.cos(a) * 0.14, 0.02, Math.sin(a) * 0.14]} scale={l.size * 0.85} geometry={petalGeo}>
+                    <meshStandardMaterial
+                      color={l.pink ? "#f8e4f0" : "#fff8e8"}
+                      roughness={0.55}
+                      emissive={new THREE.Color(l.pink ? "#d090b8" : "#d4aa40")}
+                      emissiveIntensity={0.42}
+                    />
+                  </mesh>
+                );
+              })}
+              <mesh position={[0, 0.09, 0]} scale={l.size * 0.9} geometry={centerGeo}>
+                <meshStandardMaterial color="#ffe060" emissive={new THREE.Color("#ddaa00")} emissiveIntensity={1.4} roughness={0.4} />
+              </mesh>
+            </group>
+          )}
+        </group>
+      ))}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-031: FLOWERING TREES — cherry/almond blossoms, seasonal beauty
+══════════════════════════════════════════════════════════════════════════ */
+const R_FTREE = makeLCG(127);
+const FTREE_DATA = Array.from({ length: 18 }, () => {
+  const a = R_FTREE() * Math.PI * 2;
+  const r = 9 + R_FTREE() * 16;
+  return {
+    x: Math.cos(a) * r, z: Math.sin(a) * r,
+    sc: 0.78 + R_FTREE() * 0.52, phase: R_FTREE() * Math.PI * 2,
+    pink: R_FTREE() > 0.44,
+  };
+});
+
+function AAAFloweringTrees() {
+  const canA   = useMemo(() => new THREE.SphereGeometry(1.45, 9, 7), []);
+  const canB   = useMemo(() => new THREE.SphereGeometry(1.05, 8, 6), []);
+  const canC   = useMemo(() => new THREE.SphereGeometry(0.72, 7, 5), []);
+  const blosGeo = useMemo(() => new THREE.SphereGeometry(0.075, 5, 4), []);
+
+  /* Pre-compute blossom cloud positions per tree */
+  const blossomClouds = useMemo(() => FTREE_DATA.map(t => {
+    const r = makeLCG(Math.round(t.phase * 100) + 44);
+    return Array.from({ length: 26 }, () => ({
+      dx: (r() - 0.5) * 3.0 * t.sc,
+      dy: 2.2 + r() * 3.0 * t.sc,
+      dz: (r() - 0.5) * 3.0 * t.sc,
+      sc: 0.55 + r() * 0.9,
+    }));
+  }), []);
+
+  const swayRef = useRef<THREE.Group>(null!);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const sw = Math.sin(t * 0.44) * 0.014 + Math.sin(t * 1.12) * 0.005;
+    if (swayRef.current) { swayRef.current.rotation.x = sw; swayRef.current.rotation.z = sw * 0.65; }
+  });
+
+  return (
+    <group ref={swayRef}>
+      {FTREE_DATA.map((tree, ti) => {
+        const col     = tree.pink ? "#f4b8cc" : "#fae0b4";
+        const emCol   = tree.pink ? "#c85888" : "#c89028";
+        const tipCol  = tree.pink ? "#fff0f4" : "#fffaf0";
+        return (
+          <group key={ti} position={[tree.x, 0, tree.z]}>
+            {/* Trunk */}
+            <mesh position={[0, 1.5, 0]} castShadow>
+              <cylinderGeometry args={[0.07, 0.15, 3.0, 8, 3]} />
+              <meshStandardMaterial color="#3a2010" roughness={0.95} metalness={0.0} />
+            </mesh>
+            {/* Canopy clusters */}
+            <mesh position={[0, 3.6 * tree.sc, 0]} geometry={canA}>
+              <meshStandardMaterial color={col} roughness={0.74} metalness={0.0}
+                emissive={new THREE.Color(emCol)} emissiveIntensity={0.30} />
+            </mesh>
+            <mesh position={[0.75 * tree.sc, 4.4 * tree.sc, -0.55 * tree.sc]} geometry={canB}>
+              <meshStandardMaterial color={col} roughness={0.71} metalness={0.0}
+                emissive={new THREE.Color(emCol)} emissiveIntensity={0.32} />
+            </mesh>
+            <mesh position={[-0.65 * tree.sc, 4.8 * tree.sc, 0.55 * tree.sc]} geometry={canC}>
+              <meshStandardMaterial color={tipCol} roughness={0.67} metalness={0.0}
+                emissive={new THREE.Color(emCol)} emissiveIntensity={0.42} />
+            </mesh>
+            {/* Blossom cloud particles */}
+            {blossomClouds[ti].map((b, bi) => (
+              <mesh key={bi} position={[b.dx, b.dy, b.dz]} scale={b.sc * 0.52} geometry={blosGeo}>
+                <meshStandardMaterial color={col} roughness={0.60}
+                  emissive={new THREE.Color(emCol)} emissiveIntensity={0.52}
+                  transparent opacity={0.80} depthWrite={false} />
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-031: SAPLINGS — young small trees scattered organically
+══════════════════════════════════════════════════════════════════════════ */
+const R_SAP = makeLCG(143);
+const SAPLING_DATA = Array.from({ length: 32 }, () => {
+  const a = R_SAP() * Math.PI * 2;
+  const r = 7 + R_SAP() * 28;
+  return {
+    x: Math.cos(a) * r, z: Math.sin(a) * r,
+    h: 0.7 + R_SAP() * 1.5, colIdx: Math.floor(R_SAP() * 3),
+  };
+});
+
+function AAASaplings() {
+  const leafGeo = useMemo(() => new THREE.SphereGeometry(0.36, 6, 5), []);
+  const COLS = ["#4e7820", "#3a6218", "#567e2e"];
+
+  return (
+    <>
+      {SAPLING_DATA.map((s, i) => (
+        <group key={i} position={[s.x, 0, s.z]}>
+          <mesh position={[0, s.h * 0.5, 0]} castShadow>
+            <cylinderGeometry args={[0.03, 0.07, s.h, 6, 2]} />
+            <meshStandardMaterial color="#3a2010" roughness={0.95} metalness={0.0} />
+          </mesh>
+          <mesh position={[0, s.h * 1.12, 0]} scale={[s.h * 0.55, s.h * 0.68, s.h * 0.55]} geometry={leafGeo}>
+            <meshStandardMaterial color={COLS[s.colIdx]} roughness={0.88} metalness={0.0} />
+          </mesh>
+          {/* Tiny secondary cluster */}
+          {s.h > 1.4 && (
+            <mesh position={[s.h * 0.22, s.h * 0.98, s.h * 0.14]} scale={s.h * 0.32} geometry={leafGeo}>
+              <meshStandardMaterial color={COLS[(s.colIdx + 1) % 3]} roughness={0.88} metalness={0.0} />
+            </mesh>
+          )}
+        </group>
+      ))}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-031: MOSS RUINS — weathered ancient columns, carved walls, pavilion
+══════════════════════════════════════════════════════════════════════════ */
+function AAAMossRuins() {
+  const stone  = { color: "#bab098", roughness: 0.90, metalness: 0.03 } as const;
+  const dark   = { color: "#9a9080", roughness: 0.92, metalness: 0.03 } as const;
+  const mossC  = "#4a7030";
+  const flameU = useRef({ uTime: { value: 0 }, uOffset: { value: 0.8 } });
+  useFrame(({ clock }) => { flameU.current.uTime.value = clock.getElapsedTime(); });
+
+  return (
+    <>
+      {/* Broken column cluster — west side */}
+      <group position={[-23, 0, -6]}>
+        <mesh position={[0, 2.9, 0]} rotation={[0.04, 0, -0.07]} castShadow>
+          <cylinderGeometry args={[0.38, 0.46, 5.8, 11]} />
+          <meshStandardMaterial {...stone} />
+        </mesh>
+        <mesh position={[0, 6.05, 0]} castShadow>
+          <boxGeometry args={[1.05, 0.42, 1.05]} />
+          <meshStandardMaterial {...dark} />
+        </mesh>
+        {/* Fallen drum section */}
+        <mesh position={[2.0, 0.40, 0.6]} rotation={[0, 0.38, Math.PI / 2]} castShadow>
+          <cylinderGeometry args={[0.36, 0.40, 4.0, 11]} />
+          <meshStandardMaterial {...stone} />
+        </mesh>
+        {/* Base disc */}
+        <mesh position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.72, 12]} />
+          <meshStandardMaterial {...dark} />
+        </mesh>
+        {/* Moss stripe */}
+        <mesh position={[0.45, 1.4, 0.1]}>
+          <boxGeometry args={[0.03, 2.0, 0.58]} />
+          <meshStandardMaterial color={mossC} roughness={0.95} metalness={0.0} transparent opacity={0.70} />
+        </mesh>
+      </group>
+
+      {/* Column cluster — east side */}
+      <group position={[25, 0, -9]}>
+        <mesh position={[0, 1.6, 0]} castShadow>
+          <cylinderGeometry args={[0.33, 0.40, 3.2, 11]} />
+          <meshStandardMaterial {...stone} />
+        </mesh>
+        <mesh position={[2.3, 0.32, -0.9]} rotation={[0, 0.52, Math.PI / 2]} castShadow>
+          <cylinderGeometry args={[0.30, 0.35, 3.4, 10]} />
+          <meshStandardMaterial {...dark} />
+        </mesh>
+        <mesh position={[-1.6, 0.28, 1.3]} rotation={[0, -0.28, Math.PI / 2.2]} castShadow>
+          <cylinderGeometry args={[0.28, 0.33, 3.0, 9]} />
+          <meshStandardMaterial {...stone} />
+        </mesh>
+        {/* Carved stone block */}
+        <mesh position={[0.6, 0.38, 2.2]} castShadow>
+          <boxGeometry args={[1.5, 0.75, 0.90]} />
+          <meshStandardMaterial {...dark} />
+        </mesh>
+        {/* Moss on standing column */}
+        <mesh position={[0.34, 1.2, 0.2]}>
+          <boxGeometry args={[0.03, 1.4, 0.48]} />
+          <meshStandardMaterial color={mossC} roughness={0.95} metalness={0.0} transparent opacity={0.68} />
+        </mesh>
+      </group>
+
+      {/* Ancient carved memorial wall */}
+      <group position={[-19, 0, 15]}>
+        <mesh position={[0, 1.45, 0]} castShadow receiveShadow>
+          <boxGeometry args={[5.8, 2.9, 0.68]} />
+          <meshStandardMaterial {...stone} />
+        </mesh>
+        {/* Arch relief */}
+        <mesh position={[0, 1.95, 0.36]} castShadow>
+          <boxGeometry args={[2.3, 1.9, 0.13]} />
+          <meshStandardMaterial color="#ccc09e" roughness={0.84} metalness={0.04} />
+        </mesh>
+        <mesh position={[0, 2.98, 0.36]}>
+          <cylinderGeometry args={[1.14, 1.14, 0.13, 14, 1, false, 0, Math.PI]} />
+          <meshStandardMaterial color="#ccc09e" roughness={0.84} metalness={0.04} />
+        </mesh>
+        <Text position={[0, 1.52, 0.46]} fontSize={0.23} color="#9a8870" anchorX="center">
+          לזכר עולם
+        </Text>
+        {/* Moss cornice */}
+        <mesh position={[0, 2.92, 0.35]}>
+          <boxGeometry args={[5.9, 0.20, 0.09]} />
+          <meshStandardMaterial color={mossC} roughness={0.95} transparent opacity={0.62} />
+        </mesh>
+        {/* Candle at wall base */}
+        <mesh position={[2.2, 0.5, 0.5]} castShadow>
+          <cylinderGeometry args={[0.09, 0.12, 1.0, 8]} />
+          <meshStandardMaterial color="#f5edd0" roughness={0.55} metalness={0.0} />
+        </mesh>
+        <mesh position={[2.2, 1.1, 0.5]}>
+          <coneGeometry args={[0.08, 0.22, 8, 1, true]} />
+          <shaderMaterial uniforms={flameU.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
+            transparent depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+        <pointLight color="#ff9933" intensity={1.8} distance={6} decay={2} position={[2.2, 1.2, 0.6]} />
+      </group>
+
+      {/* Prayer Pavilion — quiet shelter on east side */}
+      <group position={[21, 0, 9]}>
+        {/* 4 corner pillars */}
+        {([-1.9, 1.9] as number[]).flatMap(x => ([-1.9, 1.9] as number[]).map(z => ({ x, z }))).map(({ x, z }, i) => (
+          <mesh key={i} position={[x, 2.1, z]} castShadow>
+            <cylinderGeometry args={[0.19, 0.24, 4.2, 11]} />
+            <meshStandardMaterial {...stone} />
+          </mesh>
+        ))}
+        {/* Flat roof slab */}
+        <mesh position={[0, 4.4, 0]} castShadow>
+          <boxGeometry args={[5.0, 0.38, 5.0]} />
+          <meshStandardMaterial {...dark} />
+        </mesh>
+        {/* Canopy overhang */}
+        <mesh position={[0, 4.60, 0]} castShadow>
+          <boxGeometry args={[6.0, 0.18, 6.0]} />
+          <meshStandardMaterial color="#c6b88e" roughness={0.82} metalness={0.04} />
+        </mesh>
+        {/* Central altar */}
+        <mesh position={[0, 0.55, 0]} castShadow>
+          <cylinderGeometry args={[0.58, 0.72, 1.1, 12]} />
+          <meshStandardMaterial color="#d2ca9e" roughness={0.78} metalness={0.06} />
+        </mesh>
+        {/* Inner stone benches */}
+        {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((a, i) => (
+          <mesh key={i} position={[Math.cos(a) * 1.35, 0.38, Math.sin(a) * 1.35]} castShadow>
+            <boxGeometry args={[1.05, 0.18, 0.40]} />
+            <meshStandardMaterial {...stone} />
+          </mesh>
+        ))}
+        {/* Pavilion ambient glow */}
+        <pointLight color="#ffcc88" intensity={1.8} distance={8} decay={2} position={[0, 3.9, 0]} />
+      </group>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-031: ENHANCED CANDLE VARIETY — tall pillars, grouped clusters, bowls
+══════════════════════════════════════════════════════════════════════════ */
+const R_TALL = makeLCG(157);
+const TALL_CANDLES = Array.from({ length: 24 }, () => {
+  const a = R_TALL() * Math.PI * 2;
+  const r = 5 + R_TALL() * 18;
+  return {
+    x: Math.cos(a) * r, z: Math.sin(a) * r,
+    h: 0.7 + R_TALL() * 1.1,   // varied heights
+    phase: R_TALL() * Math.PI * 2,
+    wax: R_TALL() > 0.5 ? "#f0e8d8" : (R_TALL() > 0.25 ? "#fef6ee" : "#ffe8d0"),
+  };
+});
+
+function AAATallCandleVariety() {
+  const flameU = useRef({ uTime: { value: 0 }, uOffset: { value: 0 } });
+  const lightRef1 = useRef<THREE.PointLight>(null!);
+  const lightRef2 = useRef<THREE.PointLight>(null!);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    flameU.current.uTime.value = t;
+    if (lightRef1.current) lightRef1.current.intensity = 2.8 + Math.sin(t * 3.8) * 0.9;
+    if (lightRef2.current) lightRef2.current.intensity = 2.4 + Math.sin(t * 4.2 + 1.1) * 0.8;
+  });
+
+  return (
+    <>
+      {/* Varied-height candles */}
+      {TALL_CANDLES.map((c, i) => (
+        <group key={i} position={[c.x, 0, c.z]}>
+          <mesh position={[0, c.h * 0.5, 0]} castShadow>
+            <cylinderGeometry args={[0.055 + c.h * 0.02, 0.075 + c.h * 0.02, c.h, 8]} />
+            <meshStandardMaterial color={c.wax} roughness={0.58} metalness={0.0} />
+          </mesh>
+          <mesh position={[0, c.h + 0.14, 0]}>
+            <coneGeometry args={[0.075, 0.21, 8, 1, true]} />
+            <shaderMaterial uniforms={flameU.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
+              transparent depthWrite={false} side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      ))}
+      {/* Eternal flame bowls — 2 large focal points */}
+      <group position={[8, 0, -6]}>
+        <mesh position={[0, 0.6, 0]} castShadow>
+          <cylinderGeometry args={[0.55, 0.38, 0.8, 12]} />
+          <meshStandardMaterial color="#c4a850" roughness={0.55} metalness={0.45} />
+        </mesh>
+        <mesh position={[0, 1.04, 0]}>
+          <sphereGeometry args={[0.42, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+          <meshStandardMaterial color="#D4AF37" roughness={0.4} metalness={0.6}
+            emissive={new THREE.Color("#8a6000")} emissiveIntensity={0.4} />
+        </mesh>
+        {/* Bowl flame */}
+        <mesh position={[0, 1.28, 0]}>
+          <coneGeometry args={[0.32, 0.68, 10, 1, true]} />
+          <shaderMaterial uniforms={flameU.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
+            transparent depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+        <pointLight ref={lightRef1} color="#ff8811" intensity={2.8} distance={10} decay={2} position={[0, 1.5, 0]} />
+      </group>
+      <group position={[-8, 0, 12]}>
+        <mesh position={[0, 0.6, 0]} castShadow>
+          <cylinderGeometry args={[0.55, 0.38, 0.8, 12]} />
+          <meshStandardMaterial color="#c4a850" roughness={0.55} metalness={0.45} />
+        </mesh>
+        <mesh position={[0, 1.04, 0]}>
+          <sphereGeometry args={[0.42, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+          <meshStandardMaterial color="#D4AF37" roughness={0.4} metalness={0.6}
+            emissive={new THREE.Color("#8a6000")} emissiveIntensity={0.4} />
+        </mesh>
+        <mesh position={[0, 1.28, 0]}>
+          <coneGeometry args={[0.32, 0.68, 10, 1, true]} />
+          <shaderMaterial uniforms={flameU.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
+            transparent depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+        <pointLight ref={lightRef2} color="#ff8811" intensity={2.4} distance={10} decay={2} position={[0, 1.5, 0]} />
+      </group>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    PHASE 3: SCENE CAMERA DRIVER — smooth scene-tab camera transitions
 ══════════════════════════════════════════════════════════════════════════ */
 function AAASceneCameraDriver({ sceneView, ctrlRef }: {
@@ -2619,11 +3338,29 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       <AAABridge position={[-4.5, -0.15, 12]} span={7} rotation={0.15} />
       <AAABridge position={[4.5, -0.15, -6]} span={6} rotation={-0.12} />
 
+      {/* SPR-031: Distant mountains — background depth */}
+      <AAADistantMountains />
+
       {/* Architecture */}
       <AAAArchitecture />
 
+      {/* SPR-031: Landmark — memorial gate at valley entrance */}
+      <AAAMemorialGate />
+
+      {/* SPR-031: Landmark — Tree of Remembrance */}
+      <AAATreeOfRemembrance />
+
+      {/* SPR-031: Weathered ruins and prayer pavilion */}
+      <AAAMossRuins />
+
       {/* Trees */}
       <AAAOliveTrees />
+
+      {/* SPR-031: Flowering trees — cherry/almond blossoms */}
+      <AAAFloweringTrees />
+
+      {/* SPR-031: Young saplings scattered organically */}
+      <AAASaplings />
 
       {/* Phase 2: Mediterranean vegetation */}
       <AAAMediterraneanVegetation />
@@ -2631,9 +3368,15 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       {/* Benches */}
       <AAAStoneBenches />
 
+      {/* SPR-031: Water lilies on the reflection pool */}
+      <AAAWaterLilies />
+
       {/* Candle systems */}
       <AAAEternalAltar />
       <AAABackgroundCandles />
+
+      {/* SPR-031: Tall pillar candles + eternal flame bowls */}
+      <AAATallCandleVariety />
 
       {/* Per-memorial candles */}
       {litEntries.map((entry, i) => (
@@ -2701,13 +3444,13 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
         target={[0, 2.0, 0]}
       />
 
-      {/* ── Phase 1 Foundation: post-processing pipeline ── */}
+      {/* ── Phase 1 Foundation: post-processing pipeline (SPR-031: stronger bloom) ── */}
       <PostProcessingPipeline
         enableSMAA
         enableBloom
         enableSSAO={false}
-        bloomIntensity={1.4}
-        bloomThreshold={0.28}
+        bloomIntensity={2.2}
+        bloomThreshold={0.20}
       />
     </>
   );
