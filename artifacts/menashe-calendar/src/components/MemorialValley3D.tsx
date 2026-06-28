@@ -1,6 +1,6 @@
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useState, useCallback } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Instances, Instance, Text } from "@react-three/drei";
+import { PointerLockControls, Instances, Instance, Text, Html } from "@react-three/drei";
 import * as THREE from "three";
 import type { CommunityYahrzeitEntry } from "../lib/userApi";
 import {
@@ -1836,8 +1836,271 @@ function AAAStoneBenches() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAACamera() {
   const { camera } = useThree();
-  useEffect(() => { camera.position.set(0, 4.2, 18); camera.lookAt(0, 2.0, 0); }, [camera]);
+  useEffect(() => { camera.position.set(0, 1.7, 18); camera.lookAt(0, 1.7, 0); }, [camera]);
   return null;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TERRAIN HEIGHT HELPER — analytical approximation (no raycasting needed)
+   Matches AAATerrain geometry exactly (drops per-vertex LCG noise ±0.1)
+══════════════════════════════════════════════════════════════════════════ */
+function terrainHeightAt(x: number, z: number): number {
+  const d = Math.sqrt(x * x + z * z);
+  const terrace    = Math.floor(d / 8) * 0.55;
+  const blend      = (d / 8) - Math.floor(d / 8);
+  const smoothStep = blend * blend * (3 - 2 * blend);
+  const rim        = Math.max(0, (d - 18) / 14);
+  const noise      =
+    Math.sin(x * 0.11) * 0.65 + Math.cos(z * 0.15) * 0.55
+    + Math.sin(x * 0.33 + z * 0.25) * 0.28
+    + Math.sin(x * 0.72 - z * 0.58) * 0.14
+    + Math.sin(x * 1.4  + z * 0.9)  * 0.07;
+  const cliffAngle = Math.atan2(z, x);
+  const cliffBoost = Math.max(0, Math.sin(cliffAngle + 0.8)) * Math.max(0, (d - 32) / 10) * 2.5;
+  const h          = terrace + smoothStep * 0.55 + rim * 6.0 + noise * 0.4 + cliffBoost;
+  const riverDist  = Math.abs(x + 4) < 3.5 ? (3.5 - Math.abs(x + 4)) / 3.5 : 0;
+  const deprDist   = Math.max(0, 1 - Math.sqrt((x - 18) ** 2 + (z - 14) ** 2) / 7) * 0.9;
+  return h - riverDist * 1.3 - deprDist;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FOOTSTEP PARTICLES — dust motes that puff at the feet while walking
+══════════════════════════════════════════════════════════════════════════ */
+interface FootstepPt { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; }
+
+function FootstepParticles({ particlesRef }: { particlesRef: React.MutableRefObject<FootstepPt[]> }) {
+  const meshRef = useRef<THREE.Points>(null!);
+  const MAX_P   = 80;
+  const positions = useMemo(() => new Float32Array(MAX_P * 3), []);
+  const geo = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    return g;
+  }, [positions]);
+
+  useFrame((_, delta) => {
+    const pts = particlesRef.current;
+    for (let i = pts.length - 1; i >= 0; i--) {
+      const p = pts[i];
+      p.life -= delta * 2.4;
+      p.x += p.vx * delta;
+      p.y += p.vy * delta;
+      p.z += p.vz * delta;
+      p.vy -= 2.2 * delta;
+      if (p.life <= 0) pts.splice(i, 1);
+    }
+    const count = Math.min(pts.length, MAX_P);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = pts[i].x; positions[i * 3 + 1] = pts[i].y; positions[i * 3 + 2] = pts[i].z;
+    }
+    for (let i = count; i < MAX_P; i++) positions[i * 3 + 1] = -999;
+    if (meshRef.current) {
+      (meshRef.current.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    }
+  });
+
+  return (
+    <points ref={meshRef} geometry={geo} frustumCulled={false}>
+      <pointsMaterial size={0.07} color="#c8b87a" transparent opacity={0.50} depthWrite={false} sizeAttenuation />
+    </points>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FIRST-PERSON CONTROLLER
+   • PointerLockControls for mouse look
+   • WASD with smooth acceleration / deceleration
+   • Eye-height = terrain_y + 1.7 via analytical terrainHeightAt()
+   • Head bob (sin wave ±0.044 units) when moving
+   • Footstep dust particles every ~0.28s while walking
+   • Soft boundary clamp at world radius 44
+   • Click-to-walk overlay when pointer is not locked
+══════════════════════════════════════════════════════════════════════════ */
+function FirstPersonController({
+  fakeCtrlRef,
+  particlesRef,
+}: {
+  fakeCtrlRef:   React.MutableRefObject<{ target: THREE.Vector3; update: () => void } | null>;
+  particlesRef:  React.MutableRefObject<FootstepPt[]>;
+}) {
+  const { camera } = useThree();
+  const plcRef = useRef<any>(null);
+
+  const [locked, setLocked] = useState(false);
+  const isLocked   = useRef(false);
+  const keys       = useRef({ w: false, a: false, s: false, d: false });
+  const vel        = useRef(new THREE.Vector3());
+  const bobT       = useRef(0);
+  const stepTimer  = useRef(0);
+  const fwdVec     = useRef(new THREE.Vector3());
+  const rightVec   = useRef(new THREE.Vector3());
+  const UP         = new THREE.Vector3(0, 1, 0);
+
+  /* Stable callbacks — prevent PointerLockControls from remounting */
+  const handleLock = useCallback(() => {
+    isLocked.current = true;
+    setLocked(true);
+  }, []);
+  const handleUnlock = useCallback(() => {
+    isLocked.current = false;
+    setLocked(false);
+    keys.current = { w: false, a: false, s: false, d: false };
+    vel.current.set(0, 0, 0);
+  }, []);
+
+  /* Initialise the fake ctrl so CameraStateTracker + AAASceneCameraDriver work */
+  useEffect(() => {
+    fakeCtrlRef.current = { target: new THREE.Vector3(0, 1.7, 0), update: () => {} };
+  }, [fakeCtrlRef]);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (!isLocked.current) return;
+      if (e.code === "KeyW") keys.current.w = true;
+      if (e.code === "KeyA") keys.current.a = true;
+      if (e.code === "KeyS") keys.current.s = true;
+      if (e.code === "KeyD") keys.current.d = true;
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code === "KeyW") keys.current.w = false;
+      if (e.code === "KeyA") keys.current.a = false;
+      if (e.code === "KeyS") keys.current.s = false;
+      if (e.code === "KeyD") keys.current.d = false;
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup",   up);
+    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+  }, []);
+
+  useFrame((_, delta) => {
+    const dt      = Math.min(delta, 0.05);
+    const cx      = camera.position.x;
+    const cz      = camera.position.z;
+    const groundY = terrainHeightAt(cx, cz);
+    const EYE_H   = 1.7;
+    const wantY   = groundY + EYE_H;
+
+    /* Keep fake target updated so minimap / CameraStateTracker see a valid target */
+    camera.getWorldDirection(fwdVec.current);
+    fwdVec.current.y = 0;
+    if (fwdVec.current.lengthSq() < 0.001) fwdVec.current.set(0, 0, -1);
+    fwdVec.current.normalize();
+    if (fakeCtrlRef.current) {
+      fakeCtrlRef.current.target.set(cx + fwdVec.current.x * 8, wantY, cz + fwdVec.current.z * 8);
+    }
+
+    if (!isLocked.current) {
+      /* Gentle ground-snap even when not locked so scene feels grounded */
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY, 0.06);
+      return;
+    }
+
+    /* ── WASD Movement ─────────────────────────────────────────────────── */
+    rightVec.current.crossVectors(fwdVec.current, UP).normalize();
+    const moveDir = new THREE.Vector3();
+    if (keys.current.w) moveDir.addScaledVector(fwdVec.current,  1);
+    if (keys.current.s) moveDir.addScaledVector(fwdVec.current, -1);
+    if (keys.current.a) moveDir.addScaledVector(rightVec.current, -1);
+    if (keys.current.d) moveDir.addScaledVector(rightVec.current,  1);
+    const isMoving = moveDir.lengthSq() > 0.01;
+
+    const SPEED = 5.5;
+    const ACCEL = 14;
+    const DECEL = 11;
+    const ZERO  = new THREE.Vector3();
+
+    if (isMoving) {
+      moveDir.normalize();
+      vel.current.lerp(moveDir.clone().multiplyScalar(SPEED), ACCEL * dt);
+    } else {
+      vel.current.lerp(ZERO, DECEL * dt);
+    }
+
+    /* Apply horizontal movement */
+    const nx = cx + vel.current.x * dt;
+    const nz = cz + vel.current.z * dt;
+
+    /* World-boundary soft clamp */
+    const WORLD_R = 43;
+    const nd = Math.sqrt(nx * nx + nz * nz);
+    camera.position.x = nd > WORLD_R ? nx * WORLD_R / nd : nx;
+    camera.position.z = nd > WORLD_R ? nz * WORLD_R / nd : nz;
+
+    /* ── Ground following + head bob ───────────────────────────────────── */
+    const speed = vel.current.length();
+    let bobOffset = 0;
+    if (isMoving && speed > 0.5) {
+      bobT.current += dt * 9.0;
+      bobOffset = Math.sin(bobT.current) * 0.044;
+    } else {
+      bobT.current *= 0.80;
+    }
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.20);
+
+    /* ── Footstep dust particles ────────────────────────────────────────── */
+    if (isMoving && speed > 0.4) {
+      stepTimer.current += dt;
+      if (stepTimer.current > 0.28) {
+        stepTimer.current = 0;
+        for (let i = 0; i < 5; i++) {
+          particlesRef.current.push({
+            x:  camera.position.x + (Math.random() - 0.5) * 0.5,
+            y:  groundY + 0.04,
+            z:  camera.position.z + (Math.random() - 0.5) * 0.5,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: 0.20 + Math.random() * 0.35,
+            vz: (Math.random() - 0.5) * 0.5,
+            life: 1.0,
+          });
+        }
+      }
+    }
+  });
+
+  return (
+    <>
+      <PointerLockControls ref={plcRef} onLock={handleLock} onUnlock={handleUnlock} />
+
+      {/* Click-to-walk prompt — shown only when pointer is not locked */}
+      <Html fullscreen zIndexRange={[8, 0]}>
+        <div style={{
+          position: "absolute", inset: 0,
+          display: locked ? "none" : "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          paddingBottom: 88,
+          pointerEvents: "none",
+        }}>
+          <button
+            onClick={() => plcRef.current?.lock()}
+            style={{
+              pointerEvents: "all",
+              background: "rgba(0,0,0,0.72)",
+              border: "1.5px solid rgba(212,175,55,0.60)",
+              borderRadius: 14,
+              padding: "11px 26px",
+              color: "#D4AF37",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              userSelect: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              letterSpacing: "0.01em",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.45)",
+            }}
+          >
+            <span style={{ fontSize: 20 }}>🚶</span>
+            <span>Click to Walk</span>
+            <span style={{ opacity: 0.55, fontWeight: 400, fontSize: 12 }}>WASD · Mouse Look · Esc to Exit</span>
+          </button>
+        </div>
+      </Html>
+    </>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -3301,16 +3564,18 @@ interface SceneProps {
 }
 
 function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, onGroundClick, onCandleClick, selectedId, sceneView, cameraStateRef }: SceneProps) {
-  const litEntries = useMemo(() => entries.slice(0, ENTRY_POSITIONS.length), [entries]);
-  const ctrlsRef   = useRef<any>(null);
+  const litEntries   = useMemo(() => entries.slice(0, ENTRY_POSITIONS.length), [entries]);
+  const fakeCtrlRef  = useRef<{ target: THREE.Vector3; update: () => void } | null>(null);
+  const particlesRef = useRef<FootstepPt[]>([]);
 
   return (
     <>
       <AAACamera />
-      <CameraIdleDrift ctrlRef={ctrlsRef} />
-      <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlsRef} sceneView={sceneView} />
-      <AAASceneCameraDriver sceneView={sceneView} ctrlRef={ctrlsRef} />
-      {cameraStateRef && <CameraStateTracker stateRef={cameraStateRef} ctrlRef={ctrlsRef} />}
+      <FirstPersonController fakeCtrlRef={fakeCtrlRef} particlesRef={particlesRef} />
+      <FootstepParticles particlesRef={particlesRef} />
+      <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={fakeCtrlRef} sceneView={sceneView} />
+      <AAASceneCameraDriver sceneView={sceneView} ctrlRef={fakeCtrlRef} />
+      {cameraStateRef && <CameraStateTracker stateRef={cameraStateRef} ctrlRef={fakeCtrlRef} />}
 
       {/* ── Phase 3: Day/night sky dome (renders behind everything) ── */}
       <AAASkyDome />
@@ -3431,18 +3696,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       {/* Ground click */}
       <GroundClickPlane onGroundClick={onGroundClick} />
 
-      {/* Camera controls — cinematic damping for premium feel */}
-      <OrbitControls
-        ref={ctrlsRef}
-        enableRotate={true} enablePan={true} enableZoom={true}
-        enableDamping dampingFactor={0.055}
-        rotateSpeed={0.42} panSpeed={0.9} zoomSpeed={0.72}
-        minDistance={3} maxDistance={48}
-        mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
-        touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
-        maxPolarAngle={Math.PI / 2.06} minPolarAngle={Math.PI / 12}
-        target={[0, 2.0, 0]}
-      />
+      {/* First-person controls handled by FirstPersonController above */}
 
       {/* ── Phase 1 Foundation: post-processing pipeline (SPR-031: stronger bloom) ── */}
       <PostProcessingPipeline
@@ -3467,40 +3721,55 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView }: {
   ctrlRef:    React.MutableRefObject<any>;
   sceneView:  SceneViewType;
 }) {
+  const { camera } = useThree();
   const animating  = useRef(false);
   const progress   = useRef(0);
   const fromTarget = useRef(new THREE.Vector3(0, 0, 4));
   const toTarget   = useRef(new THREE.Vector3(0, 0, 4));
+  const fromCam    = useRef(new THREE.Vector3());
+  const toCam      = useRef(new THREE.Vector3());
 
   useEffect(() => {
     const ctrl = ctrlRef.current;
     if (!ctrl) return;
 
-    /* Capture the current target as the start of the animation */
     fromTarget.current.copy(ctrl.target);
+    fromCam.current.copy(camera.position);
 
     if (selectedId) {
       const idx = entries.findIndex(e => e.id === selectedId);
       if (idx >= 0 && idx < ENTRY_POSITIONS.length) {
         const [cx, cy, cz] = ENTRY_POSITIONS[idx];
         toTarget.current.set(cx, cy + 0.5, cz);
+        /* Walk camera 3 units in front of the candle at eye height */
+        const dx = camera.position.x - cx;
+        const dz = camera.position.z - cz;
+        const hd = Math.max(Math.sqrt(dx * dx + dz * dz), 0.01);
+        toCam.current.set(
+          cx + (dx / hd) * 3.2,
+          terrainHeightAt(cx + (dx / hd) * 3.2, cz + (dz / hd) * 3.2) + 1.7,
+          cz + (dz / hd) * 3.2,
+        );
       }
     } else {
-      /* Restore to the active scene view's target, not always the valley home */
       const sceneTarget = SCENE_VIEWS[sceneView]?.target ?? [0, 0, 4];
       toTarget.current.set(...sceneTarget);
+      const sv = SCENE_VIEWS[sceneView];
+      if (sv) toCam.current.set(...sv.cam);
+      else toCam.current.copy(camera.position);
     }
     progress.current = 0;
     animating.current = true;
-  }, [selectedId, entries, ctrlRef, sceneView]);
+  }, [selectedId, entries, ctrlRef, sceneView, camera]);
 
   useFrame((_, delta) => {
     if (!animating.current || !ctrlRef.current) return;
-    /* Advance progress ~1.4 units/second — full pan in ~0.7 s */
-    progress.current = Math.min(1, progress.current + delta * 1.4);
-    /* Smoothstep: starts slow, accelerates, decelerates */
+    progress.current = Math.min(1, progress.current + delta * 1.2);
     const t = progress.current * progress.current * (3 - 2 * progress.current);
     ctrlRef.current.target.lerpVectors(fromTarget.current, toTarget.current, t);
+    /* Also walk the camera position toward the candle (FPS-friendly) */
+    camera.position.x = THREE.MathUtils.lerp(fromCam.current.x, toCam.current.x, t);
+    camera.position.z = THREE.MathUtils.lerp(fromCam.current.z, toCam.current.z, t);
     if (progress.current >= 1) animating.current = false;
   });
 
@@ -3527,7 +3796,7 @@ export interface MemorialValley3DProps {
 export default function MemorialValley3D(props: MemorialValley3DProps) {
   return (
     <QualityProvider>
-      <SceneFoundation fov={65}>
+      <SceneFoundation fov={75}>
         <AAAValleyScene {...props} />
       </SceneFoundation>
     </QualityProvider>
