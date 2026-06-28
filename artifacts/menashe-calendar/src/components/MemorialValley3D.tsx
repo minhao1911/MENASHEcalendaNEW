@@ -2166,7 +2166,7 @@ function FirstPersonController({
       if (keys.current.d) moveDir.addScaledVector(rightVec.current,  1);
     }
     const isMoving = moveDir.lengthSq() > 0.01;
-    const SPEED = 5.5, ACCEL = 14, DECEL = 11;
+    const SPEED = 4.0, ACCEL = 10, DECEL = 8;
     const ZERO  = new THREE.Vector3();
     if (isMoving) {
       moveDir.normalize();
@@ -2187,12 +2187,14 @@ function FirstPersonController({
     const speed = vel.current.length();
     let bobOffset = 0;
     if (isMoving && speed > 0.5) {
-      bobT.current += dt * 9.0;
-      bobOffset = Math.sin(bobT.current) * 0.044;
+      bobT.current += dt * 7.0;
+      bobOffset = Math.sin(bobT.current) * 0.028;
     } else {
-      bobT.current *= 0.80;
+      /* Decay angular accumulator so bob settles smoothly back to 0 */
+      bobT.current *= 0.85;
     }
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.20);
+    /* Smooth ground follow — 0.10 for gentle terrain hugging */
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.10);
 
     /* Footstep dust particles */
     if (isMoving && speed > 0.4) {
@@ -2256,7 +2258,7 @@ function FirstPersonController({
     );
   }
 
-  /* ── DESKTOP OVERLAY — WASD hint + optional pointer-lock for mouse look ── */
+  /* ── DESKTOP OVERLAY — walk hint pill (fades after 6 s) ── */
   return (
     <>
       <PointerLockControls ref={plcRef} onLock={handleLock} onUnlock={handleUnlock} />
@@ -2265,40 +2267,24 @@ function FirstPersonController({
           position: "absolute", inset: 0,
           display: locked ? "none" : "flex",
           alignItems: "flex-end", justifyContent: "center",
-          paddingBottom: 88, pointerEvents: "none",
+          paddingBottom: 152, pointerEvents: "none",
         }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            {/* Always-available WASD hint */}
-            <div style={{
-              background: "rgba(0,0,0,0.65)",
-              border: "1px solid rgba(212,175,55,0.40)",
-              borderRadius: 12, padding: "8px 20px",
-              color: "rgba(212,175,55,0.90)", fontSize: 12, fontWeight: 600,
-              letterSpacing: "0.04em", pointerEvents: "none",
-              backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+          <div style={{
+            background: "rgba(4,2,12,0.72)",
+            border: "1px solid rgba(212,175,55,0.35)",
+            borderRadius: 50,
+            padding: "9px 22px",
+            display: "flex", alignItems: "center", gap: 10,
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.50)",
+          }}>
+            <span style={{ fontSize: 15 }}>🚶</span>
+            <span style={{
+              color: "rgba(212,175,55,0.88)", fontSize: 12, fontWeight: 600,
+              letterSpacing: "0.05em", whiteSpace: "nowrap",
             }}>
-              🚶 WASD to walk · Mouse to look
-            </div>
-            {/* Optional pointer-lock for captured mouse look */}
-            <button
-              onClick={() => plcRef.current?.lock()}
-              style={{
-                pointerEvents: "all",
-                background: "rgba(0,0,0,0.72)",
-                border: "1.5px solid rgba(212,175,55,0.60)",
-                borderRadius: 14, padding: "9px 22px",
-                color: "#D4AF37", fontSize: 12, fontWeight: 700,
-                cursor: "pointer",
-                backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-                userSelect: "none", display: "flex", alignItems: "center",
-                gap: 8, letterSpacing: "0.01em",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.45)",
-              }}
-            >
-              <span style={{ fontSize: 16 }}>🖱️</span>
-              <span>Click for captured mouse look</span>
-              <span style={{ opacity: 0.55, fontWeight: 400, fontSize: 11 }}>Esc to release</span>
-            </button>
+              WASD · walk &nbsp;|&nbsp; Mouse · look
+            </span>
           </div>
         </div>
       </Html>
@@ -2328,9 +2314,12 @@ function CameraIdleDrift({ ctrlRef }: { ctrlRef: React.MutableRefObject<any> }) 
     };
     window.addEventListener("pointerdown", onInput, { passive: true });
     window.addEventListener("wheel",       onInput, { passive: true });
+    /* Also reset on keydown so WASD walking doesn't trigger idle drift */
+    window.addEventListener("keydown",     onInput, { passive: true });
     return () => {
       window.removeEventListener("pointerdown", onInput);
       window.removeEventListener("wheel",       onInput);
+      window.removeEventListener("keydown",     onInput);
     };
   }, [camera]);
 
@@ -3780,9 +3769,10 @@ function AAAAvenueTorches() {
 /* ══════════════════════════════════════════════════════════════════════════
    PHASE 3: SCENE CAMERA DRIVER — smooth scene-tab camera transitions
 ══════════════════════════════════════════════════════════════════════════ */
-function AAASceneCameraDriver({ sceneView, ctrlRef }: {
+function AAASceneCameraDriver({ sceneView, ctrlRef, walkMode }: {
   sceneView: SceneViewType;
   ctrlRef:   React.MutableRefObject<any>;
+  walkMode:  boolean;
 }) {
   const { camera } = useThree();
   const fromCam    = useRef(new THREE.Vector3(0, 4.2, 22));
@@ -3794,6 +3784,8 @@ function AAASceneCameraDriver({ sceneView, ctrlRef }: {
   const prevView   = useRef<SceneViewType>(sceneView);
 
   useEffect(() => {
+    /* In walk mode the player controls the camera — don't auto-fly */
+    if (walkMode) return;
     if (sceneView === prevView.current) return;
     prevView.current = sceneView;
     const ctrl = ctrlRef.current;
@@ -3806,10 +3798,10 @@ function AAASceneCameraDriver({ sceneView, ctrlRef }: {
     toTarget.current.set(...v.target);
     progress.current = 0;
     animating.current = true;
-  }, [sceneView, camera, ctrlRef]);
+  }, [sceneView, walkMode, camera, ctrlRef]);
 
   useFrame((_, delta) => {
-    if (!animating.current || !ctrlRef.current) return;
+    if (!animating.current || !ctrlRef.current || walkMode) return;
     progress.current = Math.min(1, progress.current + delta * 0.75);
     /* Smooth cubic ease in-out */
     const t = progress.current * progress.current * (3 - 2 * progress.current);
@@ -3899,7 +3891,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       </Html>
 
       <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlRef} sceneView={sceneView} />
-      <AAASceneCameraDriver sceneView={sceneView} ctrlRef={ctrlRef} />
+      <AAASceneCameraDriver sceneView={sceneView} ctrlRef={ctrlRef} walkMode={walkMode} />
       {cameraStateRef && <CameraStateTracker stateRef={cameraStateRef} ctrlRef={ctrlRef} />}
 
       {/* ── Phase 3: Day/night sky dome (renders behind everything) ── */}
