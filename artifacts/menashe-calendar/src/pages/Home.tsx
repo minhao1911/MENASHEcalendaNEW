@@ -2703,6 +2703,56 @@ function ShabbatCountdownBar({
 
 // ── Announcement Strip ───────────────────────────────────────────────────────
 
+/* ─── Memorial Sanctuary Entry Card ─────────────────────────────────────────
+ * A prominent, atmospheric entry point into the Community Memorial Sanctuary.
+ * Lives between CommunitySection and PrayerSection in the home journey.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function MemorialSanctuaryEntry({ onEnter }: { onEnter: () => void }) {
+  const { t } = useLanguage();
+  return (
+    <div
+      onClick={onEnter}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => e.key === "Enter" && onEnter()}
+      style={{
+        marginBottom: 12, borderRadius: 20, overflow: "hidden", cursor: "pointer",
+        background: "linear-gradient(135deg, rgba(4,2,14,0.97) 0%, rgba(10,5,26,0.96) 100%)",
+        border: "1px solid rgba(212,175,55,0.22)",
+        boxShadow: "0 6px 28px rgba(0,0,0,0.38), inset 0 1px 0 rgba(212,175,55,0.1)",
+        padding: "16px 18px",
+        display: "flex", alignItems: "center", gap: 14,
+        position: "relative",
+        transition: "border-color 0.2s, box-shadow 0.2s",
+        WebkitTapHighlightColor: "transparent",
+      }}
+    >
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "radial-gradient(ellipse 55% 70% at 12% 50%, rgba(212,175,55,0.07) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+      <div style={{ fontSize: 34, flexShrink: 0, filter: "drop-shadow(0 0 10px rgba(212,175,55,0.55))" }}>
+        🕯️
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "#D4AF37", letterSpacing: "0.07em", marginBottom: 3 }}>
+          {t.memShellWelcome.toUpperCase()}
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.48)", lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+          {t.memShellWelcomeSub}
+        </div>
+      </div>
+      <div style={{
+        flexShrink: 0, width: 30, height: 30, borderRadius: "50%",
+        background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.22)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 16, color: "rgba(212,175,55,0.8)",
+      }}>›</div>
+    </div>
+  );
+}
+
 export default function Home({
   location, theme, isPremium, candleEnabled,
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
@@ -3000,6 +3050,16 @@ export default function Home({
           <DailyBriefingCard today={today} hdate={hdate} omerDay={omerDay} onShowOmer={onShowOmer} />
         </LearningSection>
 
+        {/* ── Community Section: celebrations, community ── */}
+        <CommunitySection
+          onShowMembers={onShowMembers}
+          onShowCommunity={onShowCommunity}
+          onShowCensus={onShowCensus}
+        />
+
+        {/* ── Memorial Sanctuary entry ── */}
+        <MemorialSanctuaryEntry onEnter={onShowCommunityYahrzeit} />
+
         {/* ── Prayer Section: siddur ── */}
         <PrayerSection onOpenSiddur={onOpenSiddur} />
 
@@ -3011,13 +3071,6 @@ export default function Home({
           onShowDafYomi={onShowDafYomi}
           onShowPremium={onShowPremium}
           onMoreTools={onMoreTools}
-        />
-
-        {/* ── Community Section: celebrations, community ── */}
-        <CommunitySection
-          onShowMembers={onShowMembers}
-          onShowCommunity={onShowCommunity}
-          onShowCensus={onShowCensus}
         />
 
       </div>

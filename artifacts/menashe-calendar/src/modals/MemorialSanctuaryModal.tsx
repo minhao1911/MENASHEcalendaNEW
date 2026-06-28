@@ -175,10 +175,6 @@ type RightNav = "home" | "memorials" | "flowers" | "messages" | "music";
 function initials(name: string) {
   return name.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("") || "?";
 }
-function hashNum(id: string, base = 30, spread = 120) {
-  let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return base + (h % spread);
-}
 function filterEntries(list: CommunityYahrzeitEntry[], q: string, yr: string) {
   let r = list;
   if (q.trim()) {
@@ -386,9 +382,9 @@ function todayYahrzeits(entries: CommunityYahrzeitEntry[]): CommunityYahrzeitEnt
   } catch { return []; }
 }
 
-function EntranceCard({ entries, candleCount, visitorCount, onLightCandle, onSelectEntry, soundPlaying, onSoundToggle }: {
+function EntranceCard({ entries, candleCount, onLightCandle, onSelectEntry, soundPlaying, onSoundToggle }: {
   entries: CommunityYahrzeitEntry[];
-  candleCount: number; visitorCount: number;
+  candleCount: number;
   onLightCandle: () => void;
   onSelectEntry: (e: CommunityYahrzeitEntry) => void;
   soundPlaying: boolean;
@@ -402,7 +398,6 @@ function EntranceCard({ entries, candleCount, visitorCount, onLightCandle, onSel
   const hDateStr         = getHebrewDateStr();
   const todayRemembering = todayYahrzeits(entries);
   const recentEntries    = entries.slice(0, 8);
-  const flowerCount      = hashNum("global-flowers", 1200, 2800);
   const dayIdx           = new Date().getDay();
   const intention        = DAILY_INTENTIONS[dayIdx % DAILY_INTENTIONS.length];
 
@@ -507,24 +502,22 @@ function EntranceCard({ entries, candleCount, visitorCount, onLightCandle, onSel
       {/* ── Expanded body ── */}
       {expanded && (
         <>
-          {/* Stats chips — horizontal row */}
+          {/* Stats chip — real candle count only */}
           <div style={{ padding: "9px 12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 5, flexWrap: "wrap" }}>
-            {[
-              { icon: "🕯", value: candleCount.toLocaleString(), label: "Candles" },
-              { icon: "🌸", value: flowerCount.toLocaleString(), label: "Flowers" },
-              { icon: "👥", value: visitorCount.toLocaleString(), label: "Visitors" },
-            ].map(s => (
-              <div key={s.label} style={{
+            {candleCount > 0 ? (
+              <div style={{
                 display: "flex", alignItems: "center", gap: 4,
                 padding: "4px 9px", borderRadius: 20,
                 background: "rgba(212,175,55,0.07)", border: "1px solid rgba(212,175,55,0.16)",
                 fontSize: 10, color: "rgba(212,175,55,0.88)", fontWeight: 700,
               }}>
-                <span style={{ fontSize: 11 }}>{s.icon}</span>
-                <span>{s.value}</span>
-                <span style={{ fontSize: 7.5, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{s.label}</span>
+                <span style={{ fontSize: 11 }}>🕯</span>
+                <span>{candleCount.toLocaleString()}</span>
+                <span style={{ fontSize: 7.5, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>Candles</span>
               </div>
-            ))}
+            ) : (
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", fontStyle: "italic" }}>No recent activity yet.</div>
+            )}
           </div>
 
           {/* Daily intention */}
@@ -577,7 +570,6 @@ function EntranceCard({ entries, candleCount, visitorCount, onLightCandle, onSel
               <div className="ms-scroll-strip" style={{ display: "flex", overflowX: "auto", gap: 7, paddingBottom: 2 }}>
                 {recentEntries.map((e, i) => {
                   const name = e.deceasedName.split("·")[0].trim();
-                  const candleN = hashNum(e.id, 3, 28);
                   return (
                     <motion.button key={e.id}
                       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
@@ -594,7 +586,6 @@ function EntranceCard({ entries, candleCount, visitorCount, onLightCandle, onSel
                     >
                       <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#D4AF37,#7a5800)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#fff", flexShrink: 0 }}>{initials(name)}</div>
                       <div style={{ fontSize: 9, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{name}</div>
-                      <div style={{ fontSize: 7, color: "rgba(212,175,55,0.7)" }}>🕯 {candleN}</div>
                     </motion.button>
                   );
                 })}
@@ -641,76 +632,12 @@ function EntranceCard({ entries, candleCount, visitorCount, onLightCandle, onSel
   );
 }
 
-/* ═══════════════════ AMBIENT NOTIFICATION ══════════════════════════════════ */
-const NOTIF_NAMES  = ["Sarah","David","Miriam","Yosef","Rachel","Moshe","Leah","Aharon","Devorah","Shimon","Rivka","Binyamin","Chana","Shlomo","Naomi","Eliyahu"];
-const NOTIF_CITIES = ["Jerusalem","Tel Aviv","New York","London","Mumbai","Toronto","Sydney","Los Angeles","Melbourne","Paris","Chicago","Haifa","Miami","Montreal"];
-
-function buildNotifText(entries: CommunityYahrzeitEntry[]): string {
-  const r     = Math.random();
-  const city  = NOTIF_CITIES[Math.floor(Math.random() * NOTIF_CITIES.length)];
-  const fName = NOTIF_NAMES[Math.floor(Math.random() * NOTIF_NAMES.length)];
-  const entryName = entries.length
-    ? entries[Math.floor(Math.random() * Math.min(entries.length, 20))].deceasedName.split("·")[0].trim()
-    : null;
-  if (r < 0.28 && entryName) return `${fName} lit a candle for ${entryName}`;
-  if (r < 0.50) return `A visitor from ${city} lit a candle`;
-  if (r < 0.65) return `${fName} from ${city} left flowers`;
-  if (r < 0.78) return `Someone from ${city} offered a prayer`;
-  if (r < 0.88 && entryName) return `${fName} is remembering ${entryName}`;
-  return `${fName} from ${city} joined the sanctuary`;
-}
-
-function AmbientNotification({ entries, paused }: { entries: CommunityYahrzeitEntry[]; paused: boolean }) {
-  const [notif, setNotif] = useState<{ text: string; id: number } | null>(null);
-  const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const entriesRef = useRef(entries);
-  /* Keep ref up-to-date on every render so fire() always reads latest entries */
-  useEffect(() => { entriesRef.current = entries; }, [entries]);
-
-  useEffect(() => {
-    if (paused) { setNotif(null); return; }
-    let hideTimer: ReturnType<typeof setTimeout>;
-    const fire = () => {
-      setNotif({ text: buildNotifText(entriesRef.current), id: Date.now() });
-      hideTimer = setTimeout(() => setNotif(null), 5400);
-    };
-    const initialDelay = setTimeout(() => {
-      fire();
-      timerRef.current = setInterval(fire, 28000 + Math.random() * 18000);
-    }, 20000);
-    return () => {
-      clearTimeout(initialDelay);
-      clearTimeout(hideTimer);
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [paused]);
-
-  return (
-    <AnimatePresence>
-      {notif && (
-        <motion.div
-          key={notif.id}
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
-          transition={{ type: "spring", damping: 28, stiffness: 320 }}
-          style={{
-            position: "absolute", left: 14, bottom: 72, zIndex: 28,
-            background: "rgba(4,2,14,0.93)",
-            backdropFilter: "blur(22px) saturate(1.7)",
-            border: "1px solid rgba(212,175,55,0.20)",
-            borderRadius: 50, padding: "10px 18px",
-            display: "flex", alignItems: "center", gap: 10,
-            boxShadow: "0 8px 36px rgba(0,0,0,0.55)",
-            pointerEvents: "none", maxWidth: 300,
-          }}
-        >
-          <span style={{ fontSize: 14, animation: "ms-flicker 2s ease-in-out infinite", flexShrink: 0 }}>🕯</span>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: 500, lineHeight: 1.4 }}>{notif.text}</span>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+/* ═══════════════════ AMBIENT NOTIFICATION ══════════════════════════════════
+ * SPR-035 Truth & Trust: fabricated activity notifications removed.
+ * No mock names, cities, or simulated engagement are displayed.
+ * ══════════════════════════════════════════════════════════════════════════ */
+function AmbientNotification({ entries: _entries, paused: _paused }: { entries: CommunityYahrzeitEntry[]; paused: boolean }) {
+  return null;
 }
 
 /* ═══════════════════ KEYFRAMES ═════════════════════════════════════════════ */
@@ -868,15 +795,15 @@ function FloatingMemorialTooltip({ entry }: { entry: CommunityYahrzeitEntry }) {
 }
 
 /* ═══════════════════ RIGHT NAV PANEL ════════════════════════════════════════ */
-const R_NAV_ITEMS: { key: RightNav; icon: string; label: string }[] = [
-  { key: "home",      icon: "🏛️", label: "Home" },
-  { key: "memorials", icon: "🕯️", label: "Memorials" },
-  { key: "flowers",   icon: "🌸", label: "Flowers" },
-  { key: "messages",  icon: "💬", label: "Messages" },
-  { key: "music",     icon: "🎵", label: "Music" },
-];
-
 function RightNavPanel({ active, onSelect }: { active: RightNav; onSelect: (k: RightNav) => void }) {
+  const { t } = useLanguage();
+  const R_NAV_ITEMS: { key: RightNav; icon: string; label: string }[] = [
+    { key: "home",      icon: "🏛️", label: t.memNavHome },
+    { key: "memorials", icon: "🕯️", label: t.memNavMemorials },
+    { key: "flowers",   icon: "🌸", label: t.memNavFlowers },
+    { key: "messages",  icon: "💬", label: t.memNavMessages },
+    { key: "music",     icon: "🎵", label: t.memNavMusic },
+  ];
   return (
     <div style={{
       position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
@@ -917,15 +844,15 @@ function RightNavPanel({ active, onSelect }: { active: RightNav; onSelect: (k: R
 }
 
 /* ═══════════════════ BOTTOM SCENE TABS ══════════════════════════════════════ */
-const SCENE_TABS: { key: SceneTab; icon: string; label: string }[] = [
-  { key: "valley",    icon: "🏔️", label: "Valley" },
-  { key: "garden",    icon: "🌿", label: "Garden" },
-  { key: "waterfall", icon: "💧", label: "Waterfall" },
-  { key: "sanctuary", icon: "🕍", label: "Sanctuary" },
-  { key: "sunset",    icon: "🌅", label: "Sunset" },
-];
-
 function BottomSceneTabs({ active, onSelect }: { active: SceneTab; onSelect: (s: SceneTab) => void }) {
+  const { t } = useLanguage();
+  const SCENE_TABS: { key: SceneTab; icon: string; label: string }[] = [
+    { key: "valley",    icon: "🏔️", label: t.memSceneValley },
+    { key: "garden",    icon: "🌿", label: t.memSceneGarden },
+    { key: "waterfall", icon: "💧", label: t.memSceneWaterfall },
+    { key: "sanctuary", icon: "🕍", label: t.memSceneSanctuary },
+    { key: "sunset",    icon: "🌅", label: t.memSceneSunset },
+  ];
   return (
     <div style={{
       position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 20,
@@ -956,6 +883,7 @@ function BottomSceneTabs({ active, onSelect }: { active: SceneTab; onSelect: (s:
 
 /* ═══════════════════ INTERACTION HINTS ══════════════════════════════════════ */
 function InteractionHints({ visible }: { visible: boolean }) {
+  const { t } = useLanguage();
   return (
     <AnimatePresence>
       {visible && (
@@ -976,9 +904,9 @@ function InteractionHints({ visible }: { visible: boolean }) {
           }}
         >
           {[
-            { icon: "🤚", text: "Drag to pan" },
-            { icon: "🤌", text: "Pinch to zoom" },
-            { icon: "🕯️", text: "Tap to light candle" },
+            { icon: "🤚", text: t.memHintDrag },
+            { icon: "🤌", text: t.memHintPinch },
+            { icon: "🕯️", text: t.memHintTap },
           ].map(({ icon, text }) => (
             <div key={text} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 16 }}>{icon}</span>
@@ -995,32 +923,25 @@ function InteractionHints({ visible }: { visible: boolean }) {
  * Replaces the old LeftStatsPanel. Subtle horizontal chips instead of large
  * dominating stat blocks — keeps the 3D world visible.
  * ═══════════════════════════════════════════════════════════════════════════ */
-function StatsChipRow({ candleCount, visitorCount }: { candleCount: number; visitorCount: number }) {
-  const flowerCount = hashNum("global-flowers", 1200, 2800);
+function StatsChipRow({ candleCount }: { candleCount: number }) {
   return (
     <div style={{
       position: "absolute", left: 14, top: 76, zIndex: 20,
       display: "flex", flexDirection: "column", gap: 6,
     }}>
-      {[
-        { icon: "🕯️", value: candleCount.toLocaleString(), label: "Candles" },
-        { icon: "🌸", value: flowerCount.toLocaleString(), label: "Flowers" },
-        { icon: "👥", value: visitorCount.toLocaleString(), label: "Visitors" },
-      ].map(({ icon, value, label }) => (
-        <div key={label} style={{
-          background: "rgba(6,3,18,0.80)",
-          backdropFilter: "blur(22px) saturate(1.5)",
-          border: "1px solid rgba(212,175,55,0.16)",
-          borderRadius: 50,
-          padding: "7px 14px",
-          display: "flex", alignItems: "center", gap: 8,
-          boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
-        }}>
-          <span style={{ fontSize: 14 }}>{icon}</span>
-          <span style={{ fontSize: 12, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{value}</span>
-          <span style={{ fontSize: 8, color: "rgba(255,255,255,0.38)", letterSpacing: "0.05em" }}>{label.toUpperCase()}</span>
-        </div>
-      ))}
+      <div style={{
+        background: "rgba(6,3,18,0.80)",
+        backdropFilter: "blur(22px) saturate(1.5)",
+        border: "1px solid rgba(212,175,55,0.16)",
+        borderRadius: 50,
+        padding: "7px 14px",
+        display: "flex", alignItems: "center", gap: 8,
+        boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
+      }}>
+        <span style={{ fontSize: 14 }}>🕯️</span>
+        <span style={{ fontSize: 12, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{candleCount.toLocaleString()}</span>
+        <span style={{ fontSize: 8, color: "rgba(255,255,255,0.38)", letterSpacing: "0.05em" }}>CANDLES</span>
+      </div>
     </div>
   );
 }
@@ -1528,23 +1449,13 @@ function MemorialProfileSheet({
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (shareTimerRef.current) clearTimeout(shareTimerRef.current); }, []);
 
+  const { t } = useLanguage();
   const name     = entry.deceasedName.split("·")[0].trim();
   const hebrew   = entry.deceasedName.includes("·") ? entry.deceasedName.split("·")[1]?.trim() : null;
-  const candleN  = hashNum(entry.id, 100, 1200);
-  const flowerN  = hashNum(entry.id + "f", 50, 400);
-  const visitorN = hashNum(entry.id + "v", 500, 9000);
 
-  /* Life timeline */
-  const birthYear = entry.passingYear
-    ? entry.passingYear - (58 + hashNum(entry.id + "age", 0, 38))
-    : null;
-  const midYear = birthYear && entry.passingYear
-    ? birthYear + Math.floor((entry.passingYear - birthYear) * 0.45)
-    : null;
+  /* Life timeline — only real data */
   const timelineEvents = [
-    birthYear && { year: birthYear, icon: "⭐", label: "Born",          color: "#D4AF37",              desc: "Beginning of a beautiful life" },
-    midYear   && { year: midYear,   icon: "🌿", label: "Life's Journey", color: "rgba(100,200,130,0.8)", desc: "Years of love and community"    },
-    entry.passingYear && { year: entry.passingYear, icon: "🕯️", label: "Remembered", color: "rgba(255,255,255,0.65)", desc: "Passed into eternal memory" },
+    entry.passingYear && { year: entry.passingYear, icon: "🕯️", label: t.memTimelineRemembered, color: "rgba(255,255,255,0.65)", desc: t.memMemoryBlessing },
   ].filter(Boolean) as { year: number; icon: string; label: string; color: string; desc: string }[];
 
   const handleShare = async () => {
@@ -1649,25 +1560,10 @@ function MemorialProfileSheet({
           )}
         </AnimatePresence>
 
-        {/* ── Stats ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 9, marginBottom: 20 }}>
-          {[
-            { icon: "🕯️", label: "Candles", value: candleN.toLocaleString(), color: "#D4AF37" },
-            { icon: "🌹", label: "Flowers",  value: flowerN.toLocaleString(), color: "#f87171" },
-            { icon: "👥", label: "Visitors", value: visitorN.toLocaleString(), color: "rgba(255,255,255,0.72)" },
-          ].map(s => (
-            <div key={s.label} style={{ background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "13px 8px", textAlign: "center" }}>
-              <div style={{ fontSize: 22, marginBottom: 6 }}>{s.icon}</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.28)", marginTop: 4, letterSpacing: "0.07em" }}>{s.label.toUpperCase()}</div>
-            </div>
-          ))}
-        </div>
-
         {/* ── Life Timeline ── */}
         {timelineEvents.length > 0 && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.55)", marginBottom: 12 }}>LIFE TIMELINE</div>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(212,175,55,0.55)", marginBottom: 12 }}>{t.memTimelineTitle}</div>
             <div style={{ position: "relative", paddingLeft: 28 }}>
               {/* Vertical line */}
               <div style={{ position: "absolute", left: 10, top: 8, bottom: 8, width: 1, background: "linear-gradient(to bottom, rgba(212,175,55,0.5), rgba(212,175,55,0.08))" }} />
@@ -1814,7 +1710,6 @@ function MemorialScrollStrip({
     >
       {entries.map((entry, i) => {
         const name = entry.deceasedName.split("·")[0].trim();
-        const candleN = hashNum(entry.id, 3, 28);
         return (
           <motion.div key={entry.id}
             initial={{ opacity: 0, y: 16 }}
@@ -1845,7 +1740,6 @@ function MemorialScrollStrip({
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <span style={{ fontSize: 10 }}>🕯</span>
-              <span style={{ fontSize: 10, color: "rgba(212,175,55,0.8)", fontWeight: 700 }}>{candleN} candles</span>
             </div>
           </motion.div>
         );
@@ -2426,7 +2320,6 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
         {filtered.map((entry, i) => {
           const name    = entry.deceasedName.split("·")[0].trim();
           const hebrewN = entry.deceasedName.includes("·") ? entry.deceasedName.split("·")[1]?.trim() : null;
-          const candleN = hashNum(entry.id, 3, 28);
           return (
             <motion.div
               key={entry.id}
@@ -2485,7 +2378,7 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 10 }}>🕯</span>
                   <span style={{ fontSize: 11, color: "rgba(212,175,55,0.80)", fontWeight: 700 }}>
-                    {candleN} {t.memCandlesCount}
+                    {t.memCandlesLit}
                   </span>
                   {entry.message && (
                     <span style={{
@@ -2717,7 +2610,6 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
 
   const filtered      = filterEntries(entries, searchQuery, filterYear);
   const totalLit      = entries.length;
-  const totalVisitors = hashNum("global-visitors", 4000, 6000);
   const panelOpen     = showForm || !!selectedEntry;
   /* Keep panelOpenRef in sync — used inside the idle timeout callback (ref avoids stale closure) */
   useEffect(() => { panelOpenRef.current = panelOpen; }, [panelOpen]);
@@ -2840,8 +2732,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
           {showHome && (
             <EntranceCard
               entries={entries}
-              candleCount={24832 + totalLit}
-              visitorCount={8947 + totalVisitors}
+              candleCount={totalLit}
               onLightCandle={handleHomePanelLightCandle}
               onSelectEntry={e => { setSelectedEntry(e); setActiveNav("home"); }}
               soundPlaying={sound.playing}
@@ -2853,8 +2744,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         {/* ── STATS CHIP ROW — shown when a non-home, non-browse nav is active ── */}
         {!panelOpen && !showHome && !showBrowse && (
           <StatsChipRow
-            candleCount={24832 + totalLit}
-            visitorCount={8947 + totalVisitors}
+            candleCount={totalLit}
           />
         )}
 

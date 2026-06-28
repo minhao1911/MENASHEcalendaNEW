@@ -403,7 +403,7 @@ export default function CommunityScreen() {
 
           {/* ── FORM ── */}
           {screen === "form" && (
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
               <View style={{ gap: 14 }}>
                 {/* Deceased name */}
                 <View>

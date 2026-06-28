@@ -26,3 +26,7 @@ src/pages/home/index.tsx, HomeProps.ts, hooks/, data/, cards/ (13 files), overla
 
 ## Backward compat
 Existing `import Home from './pages/Home'` preserved by re-export from src/pages/home/index.tsx
+
+## SPR-035 section order (canonical)
+CalendarSection → LearningSection → CommunitySection → MemorialSanctuaryEntry → PrayerSection → QuickActionsSection
+`MemorialSanctuaryEntry` is defined as a component inside Home.tsx (above the default export); calls `onShowCommunityYahrzeit` on tap.

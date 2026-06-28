@@ -574,6 +574,24 @@ export interface Translations {
   memColUpcomingYahrzeit: string;
   memColCommunityPicks: string;
   memLoadMore: string;
+  /* ── Memorial Sanctuary SPR-035 ── */
+  memNavFlowers: string;
+  memNavMessages: string;
+  memNavMusic: string;
+  memSceneValley: string;
+  memSceneGarden: string;
+  memSceneWaterfall: string;
+  memSceneSanctuary: string;
+  memSceneSunset: string;
+  memAmbientOn: string;
+  memAmbientOff: string;
+  memNoRecentActivity: string;
+  memTodayRemembrance: string;
+  memLightFirstCandle: string;
+  memSceneLoadError: string;
+  memTimelineTitle: string;
+  memTimelineJourney: string;
+  memTimelineRemembered: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -1135,6 +1153,24 @@ export const en: Translations = {
   memColUpcomingYahrzeit: "Upcoming Yahrzeit",
   memColCommunityPicks: "Community Picks",
   memLoadMore: "Load more",
+  /* ── Memorial Sanctuary SPR-035 ── */
+  memNavFlowers: "Flowers",
+  memNavMessages: "Messages",
+  memNavMusic: "Music",
+  memSceneValley: "Valley",
+  memSceneGarden: "Garden",
+  memSceneWaterfall: "Waterfall",
+  memSceneSanctuary: "Sanctuary",
+  memSceneSunset: "Sunset",
+  memAmbientOn: "Ambient on",
+  memAmbientOff: "Ambient off",
+  memNoRecentActivity: "No recent activity yet.",
+  memTodayRemembrance: "TODAY'S REMEMBRANCE",
+  memLightFirstCandle: "Light the first candle",
+  memSceneLoadError: "3D scene could not be loaded",
+  memTimelineTitle: "LIFE TIMELINE",
+  memTimelineJourney: "Life's Journey",
+  memTimelineRemembered: "Remembered",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1695,6 +1731,24 @@ export const tk: Translations = {
   memColUpcomingYahrzeit: "Yahrzeit Hung Hnai",
   memColCommunityPicks: "Mipui Thlang",
   memLoadMore: "Zawk load rawh",
+  /* ── Memorial Sanctuary SPR-035 ── */
+  memNavFlowers: "Pathian Thu",
+  memNavMessages: "Thu Gen",
+  memNavMusic: "Hla",
+  memSceneValley: "Luang",
+  memSceneGarden: "Zung",
+  memSceneWaterfall: "Tui Thlak",
+  memSceneSanctuary: "Inn Thianghlim",
+  memSceneSunset: "Ni Tlai",
+  memAmbientOn: "Ambient on",
+  memAmbientOff: "Ambient off",
+  memNoRecentActivity: "Thil thar om lo.",
+  memTodayRemembrance: "NI TIN THILSIM",
+  memLightFirstCandle: "Meihal a hmawhna hmat rawh",
+  memSceneLoadError: "3D scene a lo thei lo",
+  memTimelineTitle: "NUNPUI THILOM",
+  memTimelineJourney: "Nunpui Lamka",
+  memTimelineRemembered: "Nunnem",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

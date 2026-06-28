@@ -1,3 +1,11 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MENASHE CALENDAR — Mobile Design Tokens
+   Canonical source of truth for the React Native / Expo frontend.
+   The web app uses artifacts/menashe-calendar/src/lib/theme.ts.
+
+   GOLD: #d4a843 (warm amber — primary brand gold, consistent with web)
+   ════════════════════════════════════════════════════════════════════════════ */
+
 const colors = {
   light: {
     text: "#0F1829",
@@ -64,6 +72,40 @@ const colors = {
   },
   radius: 12,
 };
+
+/* ── Spacing Scale (React Native dp) ─────────────────────────────────────── */
+export const SPACE = {
+  1:  4,
+  2:  8,
+  3:  12,
+  4:  16,
+  5:  20,
+  6:  24,
+  8:  32,
+  10: 40,
+  12: 48,
+} as const;
+
+/* ── Typography Scale ────────────────────────────────────────────────────── */
+export const TEXT = {
+  xs:   10,
+  sm:   12,
+  base: 14,
+  md:   16,
+  lg:   18,
+  xl:   22,
+  "2xl": 26,
+  "3xl": 32,
+} as const;
+
+/* ── Border Radii ────────────────────────────────────────────────────────── */
+export const RADIUS = {
+  sm:  8,
+  md:  12,
+  lg:  16,
+  xl:  20,
+  full: 9999,
+} as const;
 
 export type ThemeKey = "dark" | "light" | "sapphire";
 
