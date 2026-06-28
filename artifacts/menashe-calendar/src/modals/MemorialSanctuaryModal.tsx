@@ -340,11 +340,13 @@ function todayYahrzeits(entries: CommunityYahrzeitEntry[]): CommunityYahrzeitEnt
   } catch { return []; }
 }
 
-function SanctuaryHomePanel({ entries, candleCount, visitorCount, onLightCandle, onSelectEntry }: {
+function SanctuaryHomePanel({ entries, candleCount, visitorCount, onLightCandle, onSelectEntry, soundPlaying, onSoundToggle }: {
   entries: CommunityYahrzeitEntry[];
   candleCount: number; visitorCount: number;
   onLightCandle: () => void;
   onSelectEntry: (e: CommunityYahrzeitEntry) => void;
+  soundPlaying: boolean;
+  onSoundToggle: () => void;
 }) {
   const hDateStr         = getHebrewDateStr();
   const todayRemembering = todayYahrzeits(entries);
@@ -562,8 +564,49 @@ function SanctuaryHomePanel({ entries, candleCount, visitorCount, onLightCandle,
             </div>
           </div>
 
-          {/* ─ Feedback row ─ */}
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "10px 18px 16px" }}>
+          {/* ─ Sound + Feedback rows ─ */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "10px 18px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+            {/* Sound toggle */}
+            <button
+              onClick={onSoundToggle}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "9px 12px",
+                borderRadius: 12,
+                background: soundPlaying ? "rgba(212,175,55,0.07)" : "transparent",
+                border: `1px solid ${soundPlaying ? "rgba(212,175,55,0.22)" : "rgba(255,255,255,0.07)"}`,
+                cursor: "pointer",
+                transition: "background 0.15s, border-color 0.15s",
+              }}
+            >
+              <span style={{ fontSize: 15 }}>{soundPlaying ? "🔊" : "🔇"}</span>
+              <span style={{ flex: 1, textAlign: "left", fontSize: 11, fontWeight: 600, color: soundPlaying ? "rgba(212,175,55,0.75)" : "rgba(255,255,255,0.35)", letterSpacing: "0.02em" }}>
+                {soundPlaying ? "Ambient sound on" : "Ambient sound off"}
+              </span>
+              {/* Toggle pill */}
+              <div style={{
+                flexShrink: 0,
+                width: 34, height: 20,
+                borderRadius: 10,
+                background: soundPlaying ? "rgba(212,175,55,0.55)" : "rgba(255,255,255,0.1)",
+                position: "relative",
+                transition: "background 0.2s",
+              }}>
+                <div style={{
+                  position: "absolute",
+                  top: 3, left: soundPlaying ? 16 : 3,
+                  width: 14, height: 14,
+                  borderRadius: "50%",
+                  background: soundPlaying ? "#D4AF37" : "rgba(255,255,255,0.4)",
+                  transition: "left 0.2s, background 0.2s",
+                }} />
+              </div>
+            </button>
+
+            {/* Feedback */}
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("menashe:open-feedback"))}
               style={{
@@ -1802,6 +1845,8 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
             visitorCount={8947 + totalVisitors}
             onLightCandle={handleHomePanelLightCandle}
             onSelectEntry={e => { setSelectedEntry(e); setActiveNav("home"); }}
+            soundPlaying={sound.playing}
+            onSoundToggle={sound.toggle}
           />
         )}
       </AnimatePresence>
