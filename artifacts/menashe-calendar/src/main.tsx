@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import SplashScreen from "./components/SplashScreen";
 import OnboardingFlow, { hasSeenOnboarding } from "./components/OnboardingFlow";
 import OfflineBanner from "./components/OfflineBanner";
+import PWAInstallBanner from "./components/PWAInstallBanner";
 import "./index.css";
 
 /* ─── Suppress R3F v9 + React 19 Strict Mode transient error ────────────────
@@ -76,6 +77,7 @@ function Root() {
   return (
     <>
       <OfflineBanner />
+      <PWAInstallBanner />
       {!splashDone && <SplashScreen onFinished={onSplashFinished} />}
       {splashDone && !onboardingDone && (
         <OnboardingFlow onFinished={onOnboardingFinished} />

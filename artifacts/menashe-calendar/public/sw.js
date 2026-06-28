@@ -6,8 +6,8 @@
    Git-safe: no build manifest, no hashed filenames hardcoded.
    ============================================================ */
 
-const SHELL_CACHE  = "menashe-shell-v3";
-const ASSET_CACHE  = "menashe-assets-v3";
+const SHELL_CACHE  = "menashe-shell-v4";
+const ASSET_CACHE  = "menashe-assets-v4";
 const KNOWN_CACHES = [SHELL_CACHE, ASSET_CACHE];
 
 const SHELL_URLS = [
