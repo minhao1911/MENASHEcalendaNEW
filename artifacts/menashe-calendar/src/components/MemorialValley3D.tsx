@@ -2489,11 +2489,32 @@ function AAAGroundMist() {
 
 /* ══════════════════════════════════════════════════════════════════════════
    GROUND CLICK PLANE
+   Drag-guard: only fires onGroundClick when the pointer moved < 10 px
+   between pointerdown and click — prevents unintentional triggers during
+   camera pan / rotate gestures.
 ══════════════════════════════════════════════════════════════════════════ */
+const DRAG_THRESHOLD_PX = 10;
 function GroundClickPlane({ onGroundClick }: { onGroundClick: (pos: [number, number, number]) => void }) {
+  const downPos = useRef<{ x: number; y: number } | null>(null);
+
   return (
-    <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.05, 0]}
-      onClick={e => { e.stopPropagation(); const { x, y, z } = e.point; onGroundClick([x, y + 0.15, z]); }}>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 0.05, 0]}
+      onPointerDown={e => {
+        downPos.current = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY };
+      }}
+      onClick={e => {
+        e.stopPropagation();
+        if (downPos.current) {
+          const dx = e.nativeEvent.clientX - downPos.current.x;
+          const dy = e.nativeEvent.clientY - downPos.current.y;
+          if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD_PX) return;
+        }
+        const { x, y, z } = e.point;
+        onGroundClick([x, y + 0.15, z]);
+      }}
+    >
       <planeGeometry args={[100, 100]} />
       <meshStandardMaterial transparent opacity={0} />
     </mesh>

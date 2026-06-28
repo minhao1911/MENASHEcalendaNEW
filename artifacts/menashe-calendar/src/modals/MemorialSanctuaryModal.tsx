@@ -1153,6 +1153,11 @@ function MicroCandleCard({ onOpen, onDismiss }: { onOpen: () => void; onDismiss:
   const [progress, setProgress] = useState(100);
   const AUTO_DISMISS_MS = 6000;
 
+  /* Haptic feedback — fires once when the card mounts */
+  useEffect(() => {
+    try { navigator.vibrate?.([12, 40, 8]); } catch { /* ignore on desktop */ }
+  }, []);
+
   useEffect(() => {
     const start = Date.now();
     const iv = setInterval(() => {
