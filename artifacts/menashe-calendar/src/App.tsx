@@ -60,8 +60,6 @@ import NotificationDrawer from "./components/NotificationDrawer";
 import InstallPrompt from "./components/InstallPrompt";
 import ShabbatBanner from "./components/ShabbatBanner";
 import WhatsNewModal, { APP_VERSION, VERSION_KEY } from "./modals/WhatsNewModal";
-import MemorialSanctuaryPage from "./features/memorial/pages/MemorialSanctuaryPage";
-import MemorialProfilePage from "./features/memorial/pages/MemorialProfilePage";
 
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
@@ -201,7 +199,7 @@ const darkCardAppearance = {
   },
 };
 
-type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium" | "memorial";
+type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium";
 type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
@@ -374,7 +372,6 @@ function AppShell() {
   const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
 
   const [activePage, setActivePage] = useState<Page>("home");
-  const [memorialSlug, setMemorialSlug] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [dayModal, setDayModal] = useState<DayInfo>(null);
@@ -618,22 +615,6 @@ function AppShell() {
             onBack={() => setActivePage("home")}
           />
         );
-      case "memorial":
-        if (memorialSlug) {
-          return (
-            <MemorialProfilePage
-              slug={memorialSlug}
-              onBack={() => setMemorialSlug(null)}
-            />
-          );
-        }
-        return (
-          <MemorialSanctuaryPage
-            onBack={() => setActivePage("home")}
-            onEnter3D={() => setModal("memorial-3d" as any)}
-            onSelectMemorial={(slug) => setMemorialSlug(slug)}
-          />
-        );
     }
   }
 
@@ -834,7 +815,7 @@ function AppShell() {
                   onMembers={() => setModal("members")}
                   onPrayerBoard={() => setModal("prayers-board")}
                   onTorahTracker={() => setModal("torah-tracker")}
-                  onMemorial={() => { setActivePage("memorial"); setModal(null); }}
+                  onMemorial={() => setModal("community-yahrzeit")}
                   isPremium={isPremium}
                   candleEnabled={candleEnabled}
                   onToggleCandle={onToggleCandle}
