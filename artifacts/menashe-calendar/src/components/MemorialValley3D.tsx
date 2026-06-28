@@ -3895,13 +3895,11 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       {/* Ground click */}
       <GroundClickPlane onGroundClick={onGroundClick} />
 
-      {/* ── Phase 1 Foundation: post-processing pipeline (SPR-031: stronger bloom) ── */}
+      {/* ── Phase 1 Foundation: post-processing pipeline (quality-aware) ── */}
       <PostProcessingPipeline
         enableSMAA
         enableBloom
         enableSSAO={false}
-        bloomIntensity={2.2}
-        bloomThreshold={0.20}
       />
     </>
   );
@@ -3988,12 +3986,15 @@ export interface MemorialValley3DProps {
   selectedId:     string | null;
   sceneView:      SceneViewType;
   cameraStateRef?: React.MutableRefObject<CameraState | null>;
+  /** Pass the root modal container ref so R3F uses it as the event source,
+   *  preventing the canvas from blocking UI overlay pointer events. */
+  eventSource?:   React.RefObject<HTMLElement | null>;
 }
 
-export default function MemorialValley3D(props: MemorialValley3DProps) {
+export default function MemorialValley3D({ eventSource, ...props }: MemorialValley3DProps) {
   return (
     <QualityProvider>
-      <SceneFoundation fov={75}>
+      <SceneFoundation fov={75} eventSource={eventSource}>
         <AAAValleyScene {...props} />
       </SceneFoundation>
     </QualityProvider>

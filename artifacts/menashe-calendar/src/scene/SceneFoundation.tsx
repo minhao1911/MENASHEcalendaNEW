@@ -48,13 +48,20 @@ const GL_PROPS: React.ComponentProps<typeof Canvas>["gl"] = {
 };
 
 interface SceneFoundationProps {
-  children:   ReactNode;
-  fov?:       number;
-  className?: string;
-  style?:     React.CSSProperties;
+  children:     ReactNode;
+  fov?:         number;
+  className?:   string;
+  style?:       React.CSSProperties;
+  /**
+   * Optional DOM element to use as the R3F event source.
+   * When set, the Canvas receives pointer-events:none and R3F listens on
+   * this element instead — allowing UI overlays to sit above the canvas
+   * and receive their own pointer events without 3D-raycast interference.
+   */
+  eventSource?: React.RefObject<HTMLElement | null>;
 }
 
-export function SceneFoundation({ children, fov = 44, className, style }: SceneFoundationProps) {
+export function SceneFoundation({ children, fov = 44, className, style, eventSource }: SceneFoundationProps) {
   const q = useQuality();
 
   return (
@@ -66,7 +73,12 @@ export function SceneFoundation({ children, fov = 44, className, style }: SceneF
       frameloop="always"
       performance={{ min: 0.5 }}
       className={className}
-      style={{ width: "100%", height: "100%", touchAction: "none", ...style }}
+      eventSource={eventSource as React.RefObject<HTMLElement> | undefined}
+      eventPrefix={eventSource ? "client" : undefined}
+      style={{
+        width: "100%", height: "100%",
+        ...style,
+      }}
     >
       <LoaderSetup />
       <RendererConfig />

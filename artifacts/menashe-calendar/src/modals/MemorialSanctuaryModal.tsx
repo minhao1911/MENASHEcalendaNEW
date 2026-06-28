@@ -739,12 +739,14 @@ const STYLES = `
     background:none; border:none; cursor:pointer;
     display:flex; flex-direction:column; align-items:center; gap:4px;
     padding:8px 0; transition:opacity 0.2s;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
   }
   .ms-tab-btn:focus-visible { outline:2px solid rgba(212,175,55,0.7); outline-offset:4px; border-radius:8px; }
   .ms-rnav-btn {
     background:none; border:none; cursor:pointer;
     display:flex; flex-direction:column; align-items:center; gap:4px;
     padding:10px 6px; transition:all 0.2s; border-radius:12px; width:56px;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
   }
   .ms-rnav-btn:hover { background:rgba(255,255,255,0.08); }
   .ms-rnav-btn:focus-visible { outline:2px solid rgba(212,175,55,0.7); outline-offset:2px; }
@@ -883,6 +885,8 @@ function RightNavPanel({ active, onSelect }: { active: RightNav; onSelect: (k: R
       display: "flex", flexDirection: "column", alignItems: "center",
       padding: "6px 0",
       boxShadow: "0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
+      pointerEvents: "auto",
+      touchAction: "manipulation",
     }}>
       {R_NAV_ITEMS.map(({ key, icon, label }, i) => (
         <button
@@ -928,6 +932,8 @@ function BottomSceneTabs({ active, onSelect }: { active: SceneTab; onSelect: (s:
       display: "flex", alignItems: "center", justifyContent: "space-around",
       paddingBottom: "calc(6px + env(safe-area-inset-bottom, 0px))",
       paddingTop: 4,
+      pointerEvents: "auto",
+      touchAction: "manipulation",
     }}>
       {SCENE_TABS.map(({ key, icon, label }) => (
         <button key={key} className="ms-tab-btn" onClick={() => onSelect(key)} style={{ flex: 1 }}>

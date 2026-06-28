@@ -88,10 +88,16 @@ function detectTier(): QualityTier {
   const touch  = navigator.maxTouchPoints > 1;
   const px     = window.innerWidth * window.innerHeight * (window.devicePixelRatio ?? 1);
 
-  /* Battery signals: very few cores, low RAM, small pixel count on touch device */
-  if (cores <= 2 || mem <= 2 || (touch && px < 800_000))   return "battery";
-  /* Medium signals: moderate hardware or high-pixel touch screen */
-  if (cores <= 4 || mem <= 4 || (touch && px < 2_000_000)) return "medium";
+  /* Battery signals: very few cores, low RAM, or small touch-device screen */
+  if (cores <= 2 || mem <= 2 || (touch && px < 800_000)) return "battery";
+
+  /* Touch devices (phones/tablets) are capped at medium regardless of core/RAM count.
+   * The Memorial Valley 3D scene is heavy: bloom + particles + shadows on mobile GPU
+   * will cause frame drops and unresponsive UI even on high-end phones. */
+  if (touch) return "medium";
+
+  /* Desktop: medium on moderate hardware, high on powerful machines */
+  if (cores <= 4 || mem <= 4) return "medium";
   return "high";
 }
 
