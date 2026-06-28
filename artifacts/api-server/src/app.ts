@@ -68,14 +68,27 @@ app.use(cors({ credentials: true, origin: allowedOrigins }));
 app.use(express.json({ limit: "512kb" }));
 app.use(express.urlencoded({ extended: true, limit: "512kb" }));
 
-app.use(
-  clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
-    ),
-  })),
-);
+// Guard: clerkMiddleware throws assertValidSecretKey when CLERK_SECRET_KEY is
+// absent, which returns HTTP 500 for every request and blocks all routes —
+// including unauthenticated ones like POST /chat.  Only attach it when the
+// key is actually present; routes using requireAuth will still return 401
+// correctly because getAuth(req) gracefully returns null auth when the
+// middleware was not installed.
+if (process.env.CLERK_SECRET_KEY) {
+  app.use(
+    clerkMiddleware((req) => ({
+      publishableKey: publishableKeyFromHost(
+        getClerkProxyHost(req) ?? "",
+        process.env.CLERK_PUBLISHABLE_KEY,
+      ),
+    })),
+  );
+} else {
+  logger.warn(
+    "CLERK_SECRET_KEY not set — Clerk authentication middleware disabled; " +
+    "authenticated routes will return 401 until the key is provided.",
+  );
+}
 
 app.use(globalRateLimiter);
 
