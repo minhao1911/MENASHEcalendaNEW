@@ -3,6 +3,20 @@ import { getAuth } from "@clerk/express";
 import { auditLog } from "./auditLog";
 
 /**
+ * safeGetAuth — wraps getAuth in a try-catch so it never throws when
+ * clerkMiddleware is absent (e.g. CLERK_SECRET_KEY not set).
+ * Always returns an object; userId is null when auth is unavailable.
+ */
+export function safeGetAuth(req: Request): { userId: string | null } {
+  try {
+    const auth = getAuth(req);
+    return { userId: auth?.userId ?? null };
+  } catch {
+    return { userId: null };
+  }
+}
+
+/**
  * isAdminUser — returns true if the Clerk session carries org:admin role.
  * orgRole is populated automatically by Clerk when the user is an org member.
  */
@@ -16,8 +30,7 @@ export function isAdminUser(userId: string | null | undefined, orgRole?: string 
  * Requires a valid Clerk session. Sets req.userId.
  */
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  const auth = getAuth(req);
-  const userId = auth?.userId;
+  const { userId } = safeGetAuth(req);
   if (!userId) {
     auditLog.record({ event: "admin.permission_denied", actorId: "anonymous", metadata: { path: req.path } }).catch(() => {});
     res.status(401).json({ error: "Unauthorized" });
@@ -33,9 +46,16 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
  * Sets req.userId.
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  const auth = getAuth(req);
-  const userId = auth?.userId;
-  const orgRole = (auth as any)?.orgRole as string | null | undefined;
+  let orgRole: string | null | undefined;
+  let userId: string | null;
+  try {
+    const auth = getAuth(req);
+    userId = auth?.userId ?? null;
+    orgRole = (auth as any)?.orgRole as string | null | undefined;
+  } catch {
+    userId = null;
+    orgRole = null;
+  }
 
   if (!userId) {
     auditLog.record({ event: "admin.permission_denied", actorId: "anonymous", metadata: { path: req.path } }).catch(() => {});

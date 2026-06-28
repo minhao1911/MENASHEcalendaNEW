@@ -3,8 +3,7 @@ import { db } from "@workspace/db";
 import { booksTable, insertBookSchema, updateBookSchema } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { requireAdmin } from "../lib/requireAdmin";
-import { getAuth } from "@clerk/express";
-import { isAdminUser } from "../lib/authorization";
+import { safeGetAuth, isAdminUser } from "../lib/authorization";
 import { apiError } from "../lib/apiError";
 
 const router = Router();
@@ -12,8 +11,8 @@ const router = Router();
 router.get("/books", async (req, res) => {
   try {
     const { category } = req.query;
-    const auth = getAuth(req);
-    const isAdmin = isAdminUser(auth?.userId);
+    const auth = safeGetAuth(req);
+    const isAdmin = isAdminUser(auth.userId);
 
     let rows = await db
       .select()
@@ -39,8 +38,8 @@ router.get("/books/:id", async (req, res) => {
     const id = parseInt(String(req.params.id));
     if (isNaN(id)) return apiError.badRequest(res, "Invalid id");
 
-    const auth = getAuth(req);
-    const isAdmin = isAdminUser(auth?.userId);
+    const auth = safeGetAuth(req);
+    const isAdmin = isAdminUser(auth.userId);
 
     const [book] = await db.select().from(booksTable).where(eq(booksTable.id, id));
     if (!book) return apiError.notFound(res);

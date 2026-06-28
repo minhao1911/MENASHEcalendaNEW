@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { getAuth } from "@clerk/express";
+import { safeGetAuth } from "../lib/authorization";
 import { requireAuth } from "../lib/requireAuth";
 import { apiError } from "../lib/apiError";
 import { memorialService } from "../memorial/services/MemorialService";
@@ -101,7 +101,7 @@ router.get("/memorials/search", async (req, res) => {
   }
 
   try {
-    const auth = getAuth(req);
+    const auth = safeGetAuth(req);
     const { q, sort, page, limit } = parsed.data;
 
     if (q.trim().length > 0 && q.trim().length < 2) {
@@ -124,7 +124,7 @@ router.get("/memorials/search", async (req, res) => {
 
 router.get("/memorials/:id", async (req, res) => {
   const id = String(req.params.id);
-  const auth = getAuth(req);
+  const auth = safeGetAuth(req);
   const viewerUserId = auth?.userId ?? null;
 
   try {
@@ -195,7 +195,7 @@ router.get("/memorials/:id/candles", async (req, res) => {
 
 router.post("/memorials/:id/candles", async (req, res) => {
   const memorialId = String(req.params.id);
-  const auth = getAuth(req);
+  const auth = safeGetAuth(req);
   const userId = auth?.userId ?? null;
 
   const parsed = insertCandleSchema.safeParse(req.body);
@@ -233,7 +233,7 @@ router.post("/memorials/:id/candles", async (req, res) => {
 
 router.get("/memorials/:id/tributes", async (req, res) => {
   const memorialId = String(req.params.id);
-  const auth = getAuth(req);
+  const auth = safeGetAuth(req);
   const viewerUserId = auth?.userId ?? null;
 
   const parsed = paginationSchema.safeParse(req.query);
@@ -268,7 +268,7 @@ router.get("/memorials/:id/tributes", async (req, res) => {
 
 router.post("/memorials/:id/tributes", async (req, res) => {
   const memorialId = String(req.params.id);
-  const auth = getAuth(req);
+  const auth = safeGetAuth(req);
   const userId = auth?.userId ?? null;
 
   const parsed = insertTributeSchema.safeParse(req.body);
@@ -336,7 +336,7 @@ router.post(
 
 router.get("/memorials/:id/photos", async (req, res) => {
   const memorialId = String(req.params.id);
-  const auth = getAuth(req);
+  const auth = safeGetAuth(req);
   const viewerUserId = auth?.userId ?? null;
 
   try {

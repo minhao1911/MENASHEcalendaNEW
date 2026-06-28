@@ -1,9 +1,29 @@
 import { Router } from "express";
 import { z } from "zod";
+import type { Request } from "express";
 import { pool } from "@workspace/db";
 import { requireAuth } from "../lib/requireAuth";
 import { requireAdmin } from "../lib/requireAdmin";
+import { safeGetAuth } from "../lib/authorization";
 import { apiError } from "../lib/apiError";
+
+/**
+ * resolveUserId — returns the authenticated Clerk userId when available,
+ * otherwise returns a stable-per-IP-per-day anonymous identifier.
+ *
+ * Using IP+day gives each client a consistent identity within a calendar day
+ * (so dedicate-cleanup DELETEs work correctly) while keeping different clients
+ * isolated (no shared "guest" collision). When CLERK_SECRET_KEY is present
+ * and the user is signed in, the real Clerk userId is always preferred.
+ */
+function resolveUserId(req: Request): string {
+  const authed = safeGetAuth(req).userId;
+  if (authed) return authed;
+  const raw = String(req.headers["x-forwarded-for"] ?? req.socket?.remoteAddress ?? "");
+  const ip = (raw.split(",")[0]?.trim() || "unknown").replace(/[^a-z0-9.:_-]/gi, "_");
+  const day = new Date().toISOString().slice(0, 10);
+  return `anon-${ip}-${day}`;
+}
 
 const router = Router();
 
@@ -78,9 +98,9 @@ router.get("/yahrzeit", async (req, res) => {
   }
 });
 
-/* ── POST /yahrzeit — create + immediately light a candle (auth) ── */
-router.post("/yahrzeit", requireAuth, async (req, res) => {
-  const userId = (req as any).userId;
+/* ── POST /yahrzeit — create + immediately light a candle (optional auth) ── */
+router.post("/yahrzeit", async (req, res) => {
+  const userId = resolveUserId(req);
   const parsed = yahrzeitCreateSchema.safeParse(req.body);
   if (!parsed.success) {
     return apiError.badRequest(res, "Invalid yahrzeit data", parsed.error.issues);
@@ -102,9 +122,9 @@ router.post("/yahrzeit", requireAuth, async (req, res) => {
   }
 });
 
-/* ── POST /yahrzeit/:id/light — light a candle (auth) ── */
-router.post("/yahrzeit/:id/light", requireAuth, async (req, res) => {
-  const userId = (req as any).userId;
+/* ── POST /yahrzeit/:id/light — light a candle (optional auth) ── */
+router.post("/yahrzeit/:id/light", async (req, res) => {
+  const userId = resolveUserId(req);
   const { id } = req.params;
   const parsed = lightSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -143,9 +163,9 @@ router.delete("/yahrzeit/:id", requireAuth, async (req, res) => {
   }
 });
 
-/* ── POST /yahrzeit/:id/dedicate — dedicate current learning to a candle (auth) ── */
-router.post("/yahrzeit/:id/dedicate", requireAuth, async (req, res) => {
-  const userId = (req as any).userId;
+/* ── POST /yahrzeit/:id/dedicate — dedicate current learning to a candle (optional auth) ── */
+router.post("/yahrzeit/:id/dedicate", async (req, res) => {
+  const userId = resolveUserId(req);
   const { id } = req.params;
   const parsed = dedicateSchema.safeParse(req.body);
   if (!parsed.success) {

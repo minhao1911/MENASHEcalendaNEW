@@ -2,8 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { feedbackTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { getAuth } from "@clerk/express";
-import { isAdminUser } from "../lib/authorization";
+import { safeGetAuth, isAdminUser } from "../lib/authorization";
 import { apiError } from "../lib/apiError";
 import { z } from "zod/v4";
 import { requireAdmin } from "../lib/requireAdmin";
@@ -28,7 +27,7 @@ const patchSchema = z.object({
 });
 
 router.post("/feedback", async (req, res) => {
-  const auth = getAuth(req);
+  const auth = safeGetAuth(req);
   const parsed = submitSchema.safeParse(req.body);
   if (!parsed.success) return apiError.badRequest(res, "Invalid feedback payload");
 
