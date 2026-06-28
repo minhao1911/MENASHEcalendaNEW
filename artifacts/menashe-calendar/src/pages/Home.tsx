@@ -1712,21 +1712,6 @@ function YahrzeitReminderCard({ onShowYartzeit }: { onShowYartzeit: () => void }
         </div>
       </div>
 
-      {/* Empty state */}
-      {entries.length === 0 && (
-        <button
-          onClick={onShowYartzeit}
-          style={{
-            width: "100%", padding: "14px 16px",
-            background: "rgba(212,168,67,0.06)", border: "1.5px dashed rgba(212,168,67,0.25)",
-            borderRadius: 11, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-          }}
-        >
-          <span style={{ fontSize: 20 }}>🕯</span>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#d4a843" }}>{t.yartzeitCardSetup}</span>
-        </button>
-      )}
 
       {/* TODAY entries */}
       {todayEntries.map(({ entry }) => (
