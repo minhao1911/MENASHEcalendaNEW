@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useUser } from "@clerk/react";
+import { useUser, useOrganization } from "@clerk/react";
 import type { Book } from "../pages/SiddurPage";
 import { useUpload } from "@workspace/object-storage-web";
 import {
@@ -155,7 +155,8 @@ const defaultForm = {
 
 export default function AdminModal({ onClose, onRefresh }: Props) {
   const { user } = useUser();
-  const isAdmin = user?.id === import.meta.env.VITE_ADMIN_USER_ID;
+  const { membership } = useOrganization();
+  const isAdmin = membership?.role === "org:admin";
   const [panelTab, setPanelTab] = useState<PanelTab>("books");
   const [mode, setMode] = useState<FormMode>("list");
   const [books, setBooks] = useState<Book[]>([]);

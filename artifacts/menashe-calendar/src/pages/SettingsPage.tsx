@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useUser } from "@clerk/react";
+import { useUser, useOrganization } from "@clerk/react";
 import { HDate } from "@hebcal/core";
 import { Location } from "../lib/locations";
 import { NotificationPrefs, LeadTime, LEAD_TIME_OPTIONS } from "../hooks/useNotifications";
@@ -25,8 +25,6 @@ async function adminFetch(path: string, options: RequestInit = {}) {
 }
 
 function AdminAlertSetup() {
-  const clerkUserId: string = (window as any).Clerk?.user?.id ?? "";
-  const [copied, setCopied] = useState(false);
   return (
     <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 12, background: "rgba(212,168,67,0.05)", border: "1px solid rgba(212,168,67,0.2)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -34,31 +32,8 @@ function AdminAlertSetup() {
         <div style={{ fontSize: 12, fontWeight: 800, color: "#d4a843", letterSpacing: "0.06em" }}>ADMIN PUSH ALERTS</div>
       </div>
       <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10, lineHeight: 1.6 }}>
-        To receive push notifications when users request Premium, set{" "}
-        <code style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4, fontSize: 11 }}>ADMIN_USER_ID</code>{" "}
-        on the server to your User ID below. Also ensure push notifications are enabled in Settings.
+        Admin access is managed via your Clerk Organization. Go to the Clerk dashboard → your Org → Members and set the role to <strong>Admin</strong> to grant admin access.
       </div>
-      {clerkUserId ? (
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{
-            flex: 1, padding: "8px 10px", borderRadius: 8,
-            background: "rgba(0,0,0,0.3)", border: "1px solid rgba(212,168,67,0.2)",
-            fontFamily: "monospace", fontSize: 11, color: "#d4a843",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>{clerkUserId}</div>
-          <button
-            onClick={() => { navigator.clipboard.writeText(clerkUserId).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-            style={{
-              padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700,
-              background: copied ? "rgba(74,222,128,0.15)" : "var(--elevated)",
-              border: `1px solid ${copied ? "rgba(74,222,128,0.4)" : "var(--border)"}`,
-              color: copied ? "#4ade80" : "var(--text-muted)", flexShrink: 0,
-            }}
-          >{copied ? "✓ Copied" : "Copy"}</button>
-        </div>
-      ) : (
-        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Sign in to see your User ID.</div>
-      )}
     </div>
   );
 }
@@ -173,7 +148,8 @@ export default function SettingsPage({
   pushSubscribed, pushSupported, pushLoading, pushError, onSubscribePush, onUnsubscribePush, onTestPush,
 }: SettingsPageProps) {
   const { user } = useUser();
-  const isAdminUser = user?.id === import.meta.env.VITE_ADMIN_USER_ID;
+  const { membership } = useOrganization();
+  const isAdminUser = membership?.role === "org:admin";
   const { lang, setLang, t } = useLanguage();
   const [showHebrew, setShowHebrew] = useState(true);
   const [pendingKey, setPendingKey] = useState<keyof NotificationPrefs | null>(null);

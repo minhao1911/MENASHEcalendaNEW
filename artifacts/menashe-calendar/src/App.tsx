@@ -6,6 +6,7 @@ import {
   Show,
   useClerk,
   useUser,
+  useOrganization,
 } from "@clerk/react";
 import { fetchUserProfile, saveUserProfile, fetchPublicProfile, type PublicProfile } from "./lib/userApi";
 import { dark } from "@clerk/themes";
@@ -367,6 +368,7 @@ function SignUpPage() {
 
 function AppShell() {
   const { user, isLoaded: userLoaded } = useUser();
+  const { membership } = useOrganization();
   const { signOut } = useClerk();
   const profileSyncedRef = useRef(false);
   const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
@@ -464,7 +466,7 @@ function AppShell() {
   const { unreadCount: announcementCount, unreadAnnouncements, markAllRead: markAnnouncementsRead } = useUnreadAnnouncements();
 
   const isLight = theme === "light";
-  const isAdmin = !!user?.id && user.id === import.meta.env.VITE_ADMIN_USER_ID;
+  const isAdmin = membership?.role === "org:admin";
 
   function showToast(msg: string) {
     setToast(msg);

@@ -2,19 +2,13 @@ import type { Request, Response, NextFunction } from "express";
 import { getAuth } from "@clerk/express";
 import { auditLog } from "./auditLog";
 
-const ADMIN_USER_ID = process.env["ADMIN_USER_ID"];
-
-if (!ADMIN_USER_ID) {
-  console.warn("[authorization] WARNING: ADMIN_USER_ID env var is not set. Admin routes will reject all requests.");
-}
-
 /**
- * isAdminUser — returns true if the given userId matches the configured ADMIN_USER_ID.
- * Use this for inline read-path branching (e.g. filtering data differently for admin vs. public).
+ * isAdminUser — returns true if the Clerk session carries org:admin role.
+ * orgRole is populated automatically by Clerk when the user is an org member.
  */
-export function isAdminUser(userId: string | null | undefined): boolean {
-  if (!userId || !ADMIN_USER_ID) return false;
-  return userId === ADMIN_USER_ID;
+export function isAdminUser(userId: string | null | undefined, orgRole?: string | null): boolean {
+  if (!userId) return false;
+  return orgRole === "org:admin";
 }
 
 /**
@@ -35,12 +29,13 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
 /**
  * requireAdmin — Express middleware.
- * Requires a valid Clerk session AND the user must match ADMIN_USER_ID.
+ * Requires a valid Clerk session AND the user must have org:admin role in the Clerk Organization.
  * Sets req.userId.
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   const auth = getAuth(req);
   const userId = auth?.userId;
+  const orgRole = (auth as any)?.orgRole as string | null | undefined;
 
   if (!userId) {
     auditLog.record({ event: "admin.permission_denied", actorId: "anonymous", metadata: { path: req.path } }).catch(() => {});
@@ -48,8 +43,8 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
-  if (!isAdminUser(userId)) {
-    auditLog.record({ event: "admin.permission_denied", actorId: userId, metadata: { path: req.path } }).catch(() => {});
+  if (orgRole !== "org:admin") {
+    auditLog.record({ event: "admin.permission_denied", actorId: userId, metadata: { path: req.path, orgRole: orgRole ?? "none" } }).catch(() => {});
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -60,14 +55,11 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
 }
 
 /**
- * requireModerator — Placeholder for future moderator role support.
- * Currently delegates to requireAdmin until moderator roles are implemented in Clerk.
+ * requireModerator — delegates to requireAdmin until moderator roles are added.
  */
 export const requireModerator = requireAdmin;
 
 /**
- * requireCommunityAdmin — Placeholder for future community administrator role support.
- * Currently delegates to requireAuth (any authenticated user).
- * Future sprint: check a "community_admin" claim in the Clerk session token.
+ * requireCommunityAdmin — any authenticated user for now.
  */
 export const requireCommunityAdmin = requireAuth;
