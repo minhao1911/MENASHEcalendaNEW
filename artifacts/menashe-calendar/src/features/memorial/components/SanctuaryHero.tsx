@@ -12,21 +12,26 @@ interface SanctuaryHeroProps {
 }
 
 const STARS = [
-  { top: "6%",  left: "8%",   r: 1.2, o: 0.85 },
-  { top: "12%", left: "19%",  r: 0.9, o: 0.65 },
-  { top: "4%",  left: "33%",  r: 1.6, o: 0.9  },
-  { top: "18%", left: "47%",  r: 0.8, o: 0.55 },
-  { top: "7%",  left: "61%",  r: 1.3, o: 0.8  },
-  { top: "14%", left: "74%",  r: 1,   o: 0.7  },
-  { top: "3%",  left: "88%",  r: 1.5, o: 0.9  },
-  { top: "22%", left: "15%",  r: 0.8, o: 0.5  },
-  { top: "9%",  left: "42%",  r: 1,   o: 0.6  },
-  { top: "16%", left: "55%",  r: 1.2, o: 0.75 },
-  { top: "20%", left: "82%",  r: 0.9, o: 0.6  },
-  { top: "5%",  left: "96%",  r: 1.1, o: 0.8  },
-  { top: "25%", left: "68%",  r: 0.8, o: 0.45 },
-  { top: "10%", left: "26%",  r: 1.4, o: 0.7  },
-  { top: "19%", left: "92%",  r: 1,   o: 0.65 },
+  { top: "4%",  left: "4%",   r: 1.0, o: 0.82 },
+  { top: "9%",  left: "14%",  r: 0.7, o: 0.55 },
+  { top: "2%",  left: "27%",  r: 1.5, o: 0.92 },
+  { top: "14%", left: "38%",  r: 0.8, o: 0.48 },
+  { top: "6%",  left: "52%",  r: 1.2, o: 0.78 },
+  { top: "11%", left: "64%",  r: 0.9, o: 0.62 },
+  { top: "3%",  left: "78%",  r: 1.4, o: 0.88 },
+  { top: "16%", left: "88%",  r: 0.7, o: 0.44 },
+  { top: "7%",  left: "43%",  r: 0.8, o: 0.60 },
+  { top: "12%", left: "22%",  r: 1.1, o: 0.70 },
+  { top: "18%", left: "58%",  r: 0.7, o: 0.40 },
+  { top: "5%",  left: "91%",  r: 1.0, o: 0.75 },
+  { top: "21%", left: "72%",  r: 0.8, o: 0.38 },
+  { top: "8%",  left: "33%",  r: 1.3, o: 0.68 },
+  { top: "15%", left: "81%",  r: 0.9, o: 0.58 },
+  { top: "1%",  left: "68%",  r: 1.2, o: 0.84 },
+  { top: "20%", left: "46%",  r: 0.7, o: 0.36 },
+  { top: "10%", left: "7%",   r: 0.9, o: 0.52 },
+  { top: "13%", left: "96%",  r: 1.1, o: 0.66 },
+  { top: "22%", left: "17%",  r: 0.8, o: 0.42 },
 ];
 
 export function SanctuaryHero({
@@ -97,17 +102,17 @@ export function SanctuaryHero({
         </div>
       )}
 
-      {/* ── Cinematic landscape hero ── */}
+      {/* ── Cinematic ground-level immersive hero ── */}
       {!minimised && (
         <div
           style={{
             position: "relative",
-            height: 230,
+            height: 272,
             overflow: "hidden",
-            background: "linear-gradient(180deg, #020810 0%, #04111f 40%, #061624 70%, #091c20 100%)",
+            background: "linear-gradient(180deg, #010509 0%, #020c18 28%, #041522 55%, #061a1c 78%, #071510 100%)",
           }}
         >
-          {/* Stars */}
+          {/* ── LAYER 1: Night sky stars ── */}
           {STARS.map((s, i) => (
             <div
               key={i}
@@ -120,124 +125,221 @@ export function SanctuaryHero({
                 borderRadius: "50%",
                 background: "#fff",
                 opacity: s.o,
-                boxShadow: `0 0 ${s.r * 2}px rgba(255,255,255,${s.o * 0.6})`,
+                boxShadow: `0 0 ${s.r * 3}px rgba(200,220,255,${s.o * 0.55})`,
               }}
             />
           ))}
 
-          {/* Moon glow */}
+          {/* ── LAYER 2: Moon glow (upper right) ── */}
           <div
             style={{
               position: "absolute",
-              top: -20,
-              right: "22%",
-              width: 90,
-              height: 90,
+              top: -8,
+              right: "18%",
+              width: 68,
+              height: 68,
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(232,213,163,0.14) 0%, transparent 70%)",
-              filter: "blur(14px)",
+              background: "radial-gradient(circle, rgba(225,210,165,0.22) 0%, rgba(200,190,150,0.08) 45%, transparent 70%)",
+              filter: "blur(10px)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 6,
+              right: "21%",
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(235,220,180,0.85) 30%, rgba(220,205,165,0.4) 65%, transparent 100%)",
+              boxShadow: "0 0 12px rgba(235,220,180,0.4)",
             }}
           />
 
-          {/* Far mountain ridge */}
+          {/* ── LAYER 3: Distant mountain ridge (very faint, deep blue) ── */}
           <svg
-            viewBox="0 0 400 100"
+            viewBox="0 0 400 60"
             preserveAspectRatio="none"
-            style={{ position: "absolute", bottom: 52, left: 0, width: "100%", height: 80 }}
+            style={{ position: "absolute", bottom: 122, left: 0, width: "100%", height: 58 }}
           >
             <polygon
-              points="0,100 50,38 100,62 160,20 220,50 280,26 340,46 400,32 400,100"
-              fill="#0b1f12"
-              opacity="0.9"
+              points="0,60 40,24 80,38 130,12 180,32 230,10 285,26 330,14 370,22 400,16 400,60"
+              fill="#071320"
+              opacity="0.85"
             />
           </svg>
 
-          {/* Near mountain ridge */}
+          {/* ── LAYER 4: Closer hill ridge (darker green-black) ── */}
           <svg
-            viewBox="0 0 400 100"
+            viewBox="0 0 400 70"
             preserveAspectRatio="none"
-            style={{ position: "absolute", bottom: 28, left: 0, width: "100%", height: 65 }}
+            style={{ position: "absolute", bottom: 100, left: 0, width: "100%", height: 68 }}
           >
             <polygon
-              points="0,100 35,55 80,70 140,42 200,64 255,38 310,58 370,44 400,52 400,100"
-              fill="#071409"
+              points="0,70 25,42 65,52 110,28 155,46 200,22 248,38 295,18 340,34 380,24 400,30 400,70"
+              fill="#061109"
+              opacity="0.92"
             />
           </svg>
 
-          {/* Ground */}
+          {/* ── LAYER 5: Cypress tree silhouettes — left cluster ── */}
+          <svg
+            viewBox="0 0 120 200"
+            preserveAspectRatio="none"
+            style={{ position: "absolute", bottom: 90, left: -4, width: 120, height: 190, opacity: 0.95 }}
+          >
+            {/* Far left tree (shorter) */}
+            <polygon points="18,200 6,90 30,90" fill="#040e06" />
+            <polygon points="18,130 8,105 28,105" fill="#050f07" />
+            {/* Mid-left tree (tallest) */}
+            <polygon points="52,200 36,40 68,40" fill="#030c05" />
+            <polygon points="52,120 38,80 66,80" fill="#040e06" />
+            <polygon points="52,80 40,60 64,60" fill="#040e06" />
+            {/* Near-left tree */}
+            <polygon points="90,200 76,75 104,75" fill="#040e06" />
+            <polygon points="90,140 78,100 102,100" fill="#050f07" />
+          </svg>
+
+          {/* ── LAYER 5: Cypress tree silhouettes — right cluster ── */}
+          <svg
+            viewBox="0 0 120 200"
+            preserveAspectRatio="none"
+            style={{ position: "absolute", bottom: 90, right: -4, width: 120, height: 190, opacity: 0.95 }}
+          >
+            {/* Far right tree */}
+            <polygon points="102,200 90,85 114,85" fill="#040e06" />
+            <polygon points="102,130 92,108 112,108" fill="#050f07" />
+            {/* Mid-right tree (tallest) */}
+            <polygon points="68,200 52,38 84,38" fill="#030c05" />
+            <polygon points="68,115 54,75 82,75" fill="#040e06" />
+            <polygon points="68,78 56,55 80,55" fill="#040e06" />
+            {/* Near-right tree */}
+            <polygon points="30,200 16,72 44,72" fill="#040e06" />
+            <polygon points="30,136 18,96 42,96" fill="#050f07" />
+          </svg>
+
+          {/* ── LAYER 6: Mid-ground candle row ── */}
+          {/* Wide amber glow behind candle row */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 112,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 220,
+              height: 40,
+              background: "radial-gradient(ellipse 60% 100% at 50% 100%, rgba(212,160,50,0.30) 0%, transparent 100%)",
+              filter: "blur(6px)",
+            }}
+          />
+          {/* Individual candle flame glows */}
+          {[-58, -34, -12, 12, 34, 58].map((xOff, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                bottom: 112 + (i % 2) * 2,
+                left: `calc(50% + ${xOff}px)`,
+                width: 10,
+                height: 16,
+                background: "radial-gradient(ellipse at 50% 80%, rgba(255,200,80,0.95) 0%, rgba(255,140,30,0.6) 40%, transparent 80%)",
+                filter: "blur(2px)",
+                transform: "translateX(-50%)",
+                animation: `candleFlicker ${1.4 + i * 0.18}s ease-in-out infinite alternate`,
+              }}
+            />
+          ))}
+
+          {/* ── LAYER 7: Ground mist band ── */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 88,
+              left: 0,
+              right: 0,
+              height: 40,
+              background: "linear-gradient(180deg, transparent 0%, rgba(140,165,185,0.10) 40%, rgba(155,175,195,0.14) 65%, transparent 100%)",
+              filter: "blur(4px)",
+            }}
+          />
+
+          {/* ── LAYER 8: Stone path (perspective trapezoid) ── */}
+          <svg
+            viewBox="0 0 400 100"
+            preserveAspectRatio="none"
+            style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: 100 }}
+          >
+            {/* Dark earth ground */}
+            <rect x="0" y="30" width="400" height="70" fill="#050d07" />
+            {/* Stone path — narrower at top (distance), wider at bottom (foreground) */}
+            <polygon points="170,30 230,30 320,100 80,100" fill="#0e1a10" />
+            {/* Path centre seam highlight */}
+            <line x1="200" y1="30" x2="200" y2="100" stroke="rgba(180,160,100,0.06)" strokeWidth="1" />
+            {/* Stone crack lines */}
+            <line x1="140" y1="65" x2="175" y2="62" stroke="rgba(100,80,40,0.08)" strokeWidth="0.8" />
+            <line x1="225" y1="72" x2="265" y2="70" stroke="rgba(100,80,40,0.08)" strokeWidth="0.8" />
+            <line x1="160" y1="82" x2="200" y2="80" stroke="rgba(100,80,40,0.06)" strokeWidth="0.7" />
+            <line x1="200" y1="88" x2="240" y2="85" stroke="rgba(100,80,40,0.06)" strokeWidth="0.7" />
+          </svg>
+
+          {/* ── LAYER 9: Foreground dark ground overlay ── */}
           <div
             style={{
               position: "absolute",
               bottom: 0,
               left: 0,
               right: 0,
-              height: 32,
-              background: "#060f08",
+              height: 28,
+              background: "#040b06",
             }}
           />
 
-          {/* Candle glow bloom */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: 20,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: 160,
-              height: 60,
-              background: "radial-gradient(ellipse at 50% 100%, rgba(212,168,67,0.28) 0%, transparent 70%)",
-              filter: "blur(8px)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: 22,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: 80,
-              height: 40,
-              background: "radial-gradient(ellipse at 50% 100%, rgba(245,200,100,0.32) 0%, transparent 65%)",
-              filter: "blur(5px)",
-            }}
-          />
-
-          {/* Bottom gradient fade */}
+          {/* ── LAYER 10: Vignette — heavy sides + top for PUBG cinematic look ── */}
           <div
             style={{
               position: "absolute",
               inset: 0,
-              background: "linear-gradient(to top, rgba(8,14,26,0.82) 0%, transparent 55%)",
+              background: "linear-gradient(90deg, rgba(0,0,0,0.70) 0%, transparent 24%, transparent 76%, rgba(0,0,0,0.70) 100%)",
+              pointerEvents: "none",
             }}
           />
-
-          {/* Title overlay */}
           <div
             style={{
               position: "absolute",
-              bottom: 18,
-              left: 18,
-              right: 60,
+              inset: 0,
+              background: "linear-gradient(to bottom, rgba(0,0,0,0.40) 0%, transparent 35%, transparent 55%, rgba(4,10,8,0.88) 100%)",
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* ── Title overlay ── */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 22,
+              left: 20,
+              right: 56,
             }}
           >
             <div
               style={{
-                fontSize: 20,
+                fontSize: 21,
                 fontWeight: 900,
-                color: "#e8d5a3",
+                color: "#edd9a3",
                 letterSpacing: "0.04em",
                 lineHeight: 1.2,
-                textShadow: "0 2px 16px rgba(0,0,0,0.9), 0 1px 4px rgba(0,0,0,0.8)",
-                marginBottom: 4,
+                textShadow: "0 2px 18px rgba(0,0,0,0.95), 0 1px 4px rgba(0,0,0,0.9)",
+                marginBottom: 5,
               }}
             >
               {title}
             </div>
             <div
               style={{
-                fontSize: 12,
-                color: "rgba(212,168,67,0.6)",
-                letterSpacing: "0.06em",
+                fontSize: 11.5,
+                color: "rgba(212,168,67,0.58)",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
                 textShadow: "0 1px 8px rgba(0,0,0,0.9)",
               }}
             >
@@ -257,9 +359,9 @@ export function SanctuaryHero({
               width: 30,
               height: 30,
               borderRadius: 8,
-              background: "rgba(0,0,0,0.42)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              color: "rgba(255,255,255,0.65)",
+              background: "rgba(0,0,0,0.48)",
+              border: "1px solid rgba(255,255,255,0.11)",
+              color: "rgba(255,255,255,0.60)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -274,6 +376,16 @@ export function SanctuaryHero({
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </button>
+
+          {/* ── Candle flicker keyframe (injected once) ── */}
+          <style>{`
+            @keyframes candleFlicker {
+              0%   { opacity: 0.75; transform: translateX(-50%) scaleY(1.0);   }
+              33%  { opacity: 0.95; transform: translateX(-52%) scaleY(1.08);  }
+              66%  { opacity: 0.80; transform: translateX(-48%) scaleY(0.94);  }
+              100% { opacity: 0.90; transform: translateX(-50%) scaleY(1.04);  }
+            }
+          `}</style>
         </div>
       )}
 
@@ -311,7 +423,7 @@ export function SanctuaryHero({
             overflow: "hidden",
             boxShadow: minimised
               ? "none"
-              : "0 4px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,168,67,0.14)",
+              : "0 4px 24px rgba(0,0,0,0.60), 0 0 0 1px rgba(212,168,67,0.14)",
           }}
         >
           <div

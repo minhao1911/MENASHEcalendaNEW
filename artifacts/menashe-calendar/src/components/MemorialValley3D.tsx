@@ -201,6 +201,49 @@ const SKY_FRAG = /* glsl */`
   }
 `;
 
+/* ── Ground mist shaders (PUBG-style volumetric low-altitude fog) ─────────── */
+const MIST_VERT = /* glsl */`
+  uniform float uTime;
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    vec3 pos = position;
+    pos.y += sin(pos.x * 0.09 + uTime * 0.11) * 0.28
+           + sin(pos.z * 0.12 + uTime * 0.08) * 0.20
+           + sin((pos.x + pos.z) * 0.07 + uTime * 0.06) * 0.14;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  }
+`;
+const MIST_FRAG = /* glsl */`
+  uniform float uTime;
+  uniform float uOpacity;
+  varying vec2 vUv;
+  float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+  float noise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash(i), b = hash(i+vec2(1.0,0.0)),
+          c = hash(i+vec2(0.0,1.0)), d = hash(i+vec2(1.0,1.0));
+    return mix(mix(a,b,f.x), mix(c,d,f.x), f.y);
+  }
+  float fbm(vec2 p) {
+    float v = 0.0, a = 0.5;
+    for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.08; a *= 0.50; }
+    return v;
+  }
+  void main() {
+    vec2 d1 = vUv + vec2(uTime * 0.014, uTime * 0.009);
+    vec2 d2 = vUv - vec2(uTime * 0.009, uTime * 0.013);
+    float mist = fbm(d1 * 2.6) * fbm(d2 * 1.4 + 0.8);
+    mist = smoothstep(0.08, 0.58, mist);
+    float edge = min(min(vUv.x, 1.0-vUv.x), min(vUv.y, 1.0-vUv.y));
+    mist *= smoothstep(0.0, 0.18, edge);
+    /* Slight cool-blue tint for mist, warmer near center (candles) */
+    vec3 col = mix(vec3(0.76, 0.82, 0.92), vec3(0.94, 0.90, 0.82), smoothstep(0.3, 0.7, vUv.x));
+    gl_FragColor = vec4(col, mist * uOpacity);
+  }
+`;
+
 /* ── Day/night cycle constants ────────────────────────────────────────────── */
 const CYCLE_DURATION = 120; // seconds per full day/night loop
 
@@ -250,11 +293,11 @@ function interpCycleColor(t: number, kfs: ColorKF[]) {
 export type SceneViewType = "valley" | "garden" | "waterfall" | "sanctuary" | "sunset";
 
 const SCENE_VIEWS: Record<SceneViewType, { cam: [number, number, number]; target: [number, number, number] }> = {
-  valley:    { cam: [22,  28,  22],  target: [0,  0,  4]   },
-  garden:    { cam: [-14, 18,  14],  target: [-9, 0,  -8]  },
-  waterfall: { cam: [-22, 12,  -2],  target: [-18, 1, -8]  },
-  sanctuary: { cam: [0,   22,  -8],  target: [0,  6,  -25] },
-  sunset:    { cam: [38,  14,   0],  target: [0,  3,   4]  },
+  valley:    { cam: [0,    4.2,  18],  target: [0,    2.0,   0]   },
+  garden:    { cam: [-8,   3.5,  12],  target: [-9,   1.5,  -4]   },
+  waterfall: { cam: [-14,  3.2,   4],  target: [-18,  2.5,  -8]   },
+  sanctuary: { cam: [0,    3.5,   8],  target: [0,    4.5, -25]   },
+  sunset:    { cam: [24,   3.8,  10],  target: [0,    2.0,   4]   },
 };
 
 /* ── Phase 3 seeded data ──────────────────────────────────────────────────── */
@@ -1653,7 +1696,7 @@ function AAAStoneBenches() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAACamera() {
   const { camera } = useThree();
-  useEffect(() => { camera.position.set(22, 28, 22); camera.lookAt(0, 0, 4); }, [camera]);
+  useEffect(() => { camera.position.set(0, 4.2, 18); camera.lookAt(0, 2.0, 0); }, [camera]);
   return null;
 }
 
@@ -2011,7 +2054,7 @@ function AAASkyDome() {
     if (scene.fog instanceof THREE.FogExp2) {
       scene.fog.color.setRGB(fog.r, fog.g, fog.b);
       const isDeepNight = t > 0.42 && t < 0.70;
-      scene.fog.density = isDeepNight ? 0.009 : 0.007;
+      scene.fog.density = isDeepNight ? 0.016 : 0.011;
     }
   });
 
@@ -2222,6 +2265,63 @@ function DayNightLighting() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   GROUND MIST — PUBG-style volumetric low-altitude fog, thickens at night
+══════════════════════════════════════════════════════════════════════════ */
+function AAAGroundMist() {
+  const uRef = useRef({
+    uTime:    { value: 0 },
+    uOpacity: { value: 0.10 },
+  });
+  useFrame(({ clock }) => {
+    const elapsed = clock.getElapsedTime();
+    const t = (elapsed % CYCLE_DURATION) / CYCLE_DURATION;
+    uRef.current.uTime.value = elapsed;
+    /* Denser at dusk/night, lighter at noon */
+    const nightBlend = (t > 0.32 && t < 0.80)
+      ? Math.min(1, Math.min((t - 0.32) / 0.10, (0.80 - t) / 0.09))
+      : 0;
+    uRef.current.uOpacity.value = 0.07 + nightBlend * 0.16;
+  });
+  return (
+    <group>
+      {/* Layer 1 — hugging the ground, densest */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.24, 4]}>
+        <planeGeometry args={[100, 100, 1, 1]} />
+        <shaderMaterial
+          uniforms={uRef.current}
+          vertexShader={MIST_VERT}
+          fragmentShader={MIST_FRAG}
+          transparent depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Layer 2 — slightly higher, offset rotation for non-repeating pattern */}
+      <mesh rotation={[-Math.PI / 2, 0.55, 0]} position={[0, 0.62, 4]}>
+        <planeGeometry args={[75, 75, 1, 1]} />
+        <shaderMaterial
+          uniforms={uRef.current}
+          vertexShader={MIST_VERT}
+          fragmentShader={MIST_FRAG}
+          transparent depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Layer 3 — wispy tendrils near candle clusters */}
+      <mesh rotation={[-Math.PI / 2, 1.1, 0]} position={[0, 1.05, 4]}>
+        <planeGeometry args={[45, 45, 1, 1]} />
+        <shaderMaterial
+          uniforms={uRef.current}
+          vertexShader={MIST_VERT}
+          fragmentShader={MIST_FRAG}
+          transparent depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    GROUND CLICK PLANE
 ══════════════════════════════════════════════════════════════════════════ */
 function GroundClickPlane({ onGroundClick }: { onGroundClick: (pos: [number, number, number]) => void }) {
@@ -2242,10 +2342,10 @@ function AAASceneCameraDriver({ sceneView, ctrlRef }: {
   ctrlRef:   React.MutableRefObject<any>;
 }) {
   const { camera } = useThree();
-  const fromCam    = useRef(new THREE.Vector3(22, 28, 22));
-  const toCam      = useRef(new THREE.Vector3(22, 28, 22));
-  const fromTarget = useRef(new THREE.Vector3(0, 0, 4));
-  const toTarget   = useRef(new THREE.Vector3(0, 0, 4));
+  const fromCam    = useRef(new THREE.Vector3(0, 4.2, 18));
+  const toCam      = useRef(new THREE.Vector3(0, 4.2, 18));
+  const fromTarget = useRef(new THREE.Vector3(0, 2.0, 0));
+  const toTarget   = useRef(new THREE.Vector3(0, 2.0, 0));
   const progress   = useRef(1);
   const animating  = useRef(false);
   const prevView   = useRef<SceneViewType>(sceneView);
@@ -2392,20 +2492,23 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       <AAAWaterfallMist position={[16, 3.2, 14]} />
       <AAAWaterfallMist position={[-4, 2.8, -20]} />
 
+      {/* Ground-level mist — volumetric fog layers */}
+      <AAAGroundMist />
+
       {/* Ground click */}
       <GroundClickPlane onGroundClick={onGroundClick} />
 
       {/* Camera controls — cinematic damping for premium feel */}
       <OrbitControls
         ref={ctrlsRef}
-        enableRotate={false} enablePan={true} enableZoom={true}
-        enableDamping dampingFactor={0.06}
-        panSpeed={1.2} zoomSpeed={0.85}
-        minDistance={8} maxDistance={65}
-        mouseButtons={{ LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
-        touches={{ ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN }}
-        maxPolarAngle={Math.PI / 2.5} minPolarAngle={Math.PI / 5.8}
-        target={[0, 0, 4]}
+        enableRotate={true} enablePan={true} enableZoom={true}
+        enableDamping dampingFactor={0.055}
+        rotateSpeed={0.42} panSpeed={0.9} zoomSpeed={0.72}
+        minDistance={3} maxDistance={48}
+        mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
+        touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
+        maxPolarAngle={Math.PI / 2.06} minPolarAngle={Math.PI / 12}
+        target={[0, 2.0, 0]}
       />
 
       {/* ── Phase 1 Foundation: post-processing pipeline ── */}
@@ -2488,7 +2591,7 @@ export interface MemorialValley3DProps {
 export default function MemorialValley3D(props: MemorialValley3DProps) {
   return (
     <QualityProvider>
-      <SceneFoundation fov={44}>
+      <SceneFoundation fov={65}>
         <AAAValleyScene {...props} />
       </SceneFoundation>
     </QualityProvider>

@@ -48,8 +48,8 @@ export function PostProcessingPipeline({
       />
 
       <Vignette
-        offset={0.28}
-        darkness={0.65}
+        offset={0.20}
+        darkness={0.82}
         blendFunction={BlendFunction.NORMAL}
       />
     </EffectComposer>

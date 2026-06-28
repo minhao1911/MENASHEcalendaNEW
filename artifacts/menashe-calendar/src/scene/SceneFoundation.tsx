@@ -29,7 +29,7 @@ function RendererConfig() {
     gl.shadowMap.type    = q.shadowsEnabled ? THREE.PCFSoftShadowMap : THREE.BasicShadowMap;
 
     gl.toneMapping         = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.28;
+    gl.toneMappingExposure = 1.46;
     gl.outputColorSpace    = THREE.SRGBColorSpace;
 
     scene.backgroundBlurriness = 0;
@@ -60,7 +60,7 @@ export function SceneFoundation({ children, fov = 44, className, style }: SceneF
   return (
     <Canvas
       shadows={q.shadowsEnabled}
-      camera={{ fov, near: 0.25, far: 260, position: [22, 28, 22] }}
+      camera={{ fov, near: 0.15, far: 320, position: [0, 4.2, 18] }}
       gl={GL_PROPS}
       dpr={[1, q.dprMax]}
       frameloop="always"
