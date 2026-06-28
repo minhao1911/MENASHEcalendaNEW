@@ -293,7 +293,7 @@ function interpCycleColor(t: number, kfs: ColorKF[]) {
 export type SceneViewType = "valley" | "garden" | "waterfall" | "sanctuary" | "sunset";
 
 const SCENE_VIEWS: Record<SceneViewType, { cam: [number, number, number]; target: [number, number, number] }> = {
-  valley:    { cam: [0,    4.2,  18],  target: [0,    2.0,   0]   },
+  valley:    { cam: [0,    4.2,  22],  target: [0,    2.0,   0]   },
   garden:    { cam: [-8,   3.5,  12],  target: [-9,   1.5,  -4]   },
   waterfall: { cam: [-14,  3.2,   4],  target: [-18,  2.5,  -8]   },
   sanctuary: { cam: [0,    3.5,   8],  target: [0,    4.5, -25]   },
@@ -1836,7 +1836,7 @@ function AAAStoneBenches() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAACamera() {
   const { camera } = useThree();
-  useEffect(() => { camera.position.set(0, 1.7, 18); camera.lookAt(0, 1.7, 0); }, [camera]);
+  useEffect(() => { camera.position.set(0, 1.7, 22); camera.lookAt(0, 1.7, 0); }, [camera]);
   return null;
 }
 
@@ -3659,7 +3659,7 @@ function AAASceneCameraDriver({ sceneView, ctrlRef }: {
   ctrlRef:   React.MutableRefObject<any>;
 }) {
   const { camera } = useThree();
-  const fromCam    = useRef(new THREE.Vector3(0, 4.2, 18));
+  const fromCam    = useRef(new THREE.Vector3(0, 4.2, 22));
   const toCam      = useRef(new THREE.Vector3(0, 4.2, 18));
   const fromTarget = useRef(new THREE.Vector3(0, 2.0, 0));
   const toTarget   = useRef(new THREE.Vector3(0, 2.0, 0));
@@ -3994,7 +3994,7 @@ export interface MemorialValley3DProps {
 export default function MemorialValley3D({ eventSource, ...props }: MemorialValley3DProps) {
   return (
     <QualityProvider>
-      <SceneFoundation fov={75} eventSource={eventSource}>
+      <SceneFoundation fov={90} eventSource={eventSource}>
         <AAAValleyScene {...props} />
       </SceneFoundation>
     </QualityProvider>
