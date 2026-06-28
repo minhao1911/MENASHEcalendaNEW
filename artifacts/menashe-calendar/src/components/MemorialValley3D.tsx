@@ -1907,14 +1907,80 @@ function FootstepParticles({ particlesRef }: { particlesRef: React.MutableRefObj
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   VIRTUAL JOYSTICK — left-side movement stick rendered in the touch overlay
+══════════════════════════════════════════════════════════════════════════ */
+function VirtualJoystick({ onChange }: { onChange: (x: number, y: number) => void }) {
+  const OUTER_R = 52;
+  const NUB_R   = 22;
+  const originRef  = useRef<{ x: number; y: number } | null>(null);
+  const activePtrR = useRef<number | null>(null);
+  const [nub, setNub] = useState({ dx: 0, dy: 0 });
+  const active = activePtrR.current !== null;
+
+  const onDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    activePtrR.current = e.pointerId;
+    const r = e.currentTarget.getBoundingClientRect();
+    originRef.current = { x: r.left + OUTER_R, y: r.top + OUTER_R };
+    setNub({ dx: 0, dy: 0 });
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (e.pointerId !== activePtrR.current || !originRef.current) return;
+    const rawDx = e.clientX - originRef.current.x;
+    const rawDy = e.clientY - originRef.current.y;
+    const dist  = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+    const clamped = Math.min(dist, OUTER_R);
+    const cdx = dist > 0 ? (rawDx / dist) * clamped : 0;
+    const cdy = dist > 0 ? (rawDy / dist) * clamped : 0;
+    setNub({ dx: cdx, dy: cdy });
+    onChange(cdx / OUTER_R, cdy / OUTER_R);
+  };
+  const onUp = (e: React.PointerEvent) => {
+    if (e.pointerId !== activePtrR.current) return;
+    activePtrR.current = null;
+    originRef.current  = null;
+    setNub({ dx: 0, dy: 0 });
+    onChange(0, 0);
+  };
+
+  return (
+    <div
+      onPointerDown={onDown} onPointerMove={onMove}
+      onPointerUp={onUp}    onPointerCancel={onUp}
+      style={{
+        position: "absolute", bottom: 112, left: 28,
+        width: OUTER_R * 2, height: OUTER_R * 2,
+        touchAction: "none", userSelect: "none",
+        pointerEvents: "all",
+      }}
+    >
+      <div style={{
+        width: OUTER_R * 2, height: OUTER_R * 2, borderRadius: "50%",
+        border: "2px solid rgba(212,175,55,0.55)",
+        background: "rgba(0,0,0,0.38)",
+        backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+        position: "relative",
+      }}>
+        <div style={{
+          position: "absolute",
+          width: NUB_R * 2, height: NUB_R * 2, borderRadius: "50%",
+          background: "rgba(212,175,55,0.82)",
+          boxShadow: "0 0 14px rgba(212,175,55,0.55)",
+          left: OUTER_R - NUB_R + nub.dx,
+          top:  OUTER_R - NUB_R + nub.dy,
+          transition: active ? "none" : "left 0.13s, top 0.13s",
+          pointerEvents: "none",
+        }} />
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    FIRST-PERSON CONTROLLER
-   • PointerLockControls for mouse look
-   • WASD with smooth acceleration / deceleration
-   • Eye-height = terrain_y + 1.7 via analytical terrainHeightAt()
-   • Head bob (sin wave ±0.044 units) when moving
-   • Footstep dust particles every ~0.28s while walking
-   • Soft boundary clamp at world radius 44
-   • Click-to-walk overlay when pointer is not locked
+   Desktop  : PointerLockControls + WASD keyboard
+   Mobile   : Virtual joystick (left) + swipe-to-look (right)
+   Both     : smooth accel/decel · eye height 1.7 m · head bob · footstep dust
 ══════════════════════════════════════════════════════════════════════════ */
 function FirstPersonController({
   ctrlRef,
@@ -1926,34 +1992,78 @@ function FirstPersonController({
   const { camera } = useThree();
   const plcRef = useRef<any>(null);
 
-  const [locked, setLocked] = useState(false);
-  const isLocked   = useRef(false);
-  const keys       = useRef({ w: false, a: false, s: false, d: false });
-  const vel        = useRef(new THREE.Vector3());
-  const bobT       = useRef(0);
-  const stepTimer  = useRef(0);
-  const fwdVec     = useRef(new THREE.Vector3());
-  const rightVec   = useRef(new THREE.Vector3());
-  const UP         = new THREE.Vector3(0, 1, 0);
+  /* ── Device detection (stable after mount) ── */
+  const isTouch = useRef(
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window || navigator.maxTouchPoints > 0)
+  );
 
-  /* Stable callbacks — prevent PointerLockControls from remounting */
+  /* ── Desktop state ── */
+  const [locked, setLocked] = useState(false);
+  const isLocked = useRef(false);
+  const keys     = useRef({ w: false, a: false, s: false, d: false });
+
+  /* ── Shared motion state ── */
+  const vel       = useRef(new THREE.Vector3());
+  const bobT      = useRef(0);
+  const stepTimer = useRef(0);
+  const fwdVec    = useRef(new THREE.Vector3());
+  const rightVec  = useRef(new THREE.Vector3());
+  const UP        = new THREE.Vector3(0, 1, 0);
+
+  /* ── Touch input refs ── */
+  const joystick   = useRef({ x: 0, y: 0 });
+  const touchLook  = useRef({ yaw: Math.PI, pitch: -0.08 });
+  const lookPtrId  = useRef<number | null>(null);
+  const lookLast   = useRef<{ x: number; y: number } | null>(null);
+  const LOOK_SENS  = 0.0035;
+
+  /* ── Stable desktop callbacks ── */
   const handleLock = useCallback(() => {
-    isLocked.current = true;
-    setLocked(true);
+    isLocked.current = true; setLocked(true);
   }, []);
   const handleUnlock = useCallback(() => {
-    isLocked.current = false;
-    setLocked(false);
+    isLocked.current = false; setLocked(false);
     keys.current = { w: false, a: false, s: false, d: false };
     vel.current.set(0, 0, 0);
   }, []);
 
-  /* Initialise the ctrl so CameraStateTracker + AAASceneCameraDriver work */
+  /* ── Touch look callbacks ── */
+  const onLookDown = useCallback((e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    lookPtrId.current = e.pointerId;
+    lookLast.current  = { x: e.clientX, y: e.clientY };
+  }, []);
+  const onLookMove = useCallback((e: React.PointerEvent) => {
+    if (e.pointerId !== lookPtrId.current || !lookLast.current) return;
+    const dx = e.clientX - lookLast.current.x;
+    const dy = e.clientY - lookLast.current.y;
+    lookLast.current = { x: e.clientX, y: e.clientY };
+    touchLook.current.yaw  -= dx * LOOK_SENS;
+    touchLook.current.pitch = Math.max(-1.1, Math.min(0.5,
+      touchLook.current.pitch - dy * LOOK_SENS
+    ));
+  }, []);
+  const onLookUp = useCallback((e: React.PointerEvent) => {
+    if (e.pointerId === lookPtrId.current) {
+      lookPtrId.current = null; lookLast.current = null;
+    }
+  }, []);
+
+  /* ── Init ctrlRef; on touch always "active" ── */
   useEffect(() => {
     ctrlRef.current = { target: new THREE.Vector3(0, 1.7, 0), update: () => {} };
-  }, [ctrlRef]);
+    if (isTouch.current) {
+      isLocked.current = true;
+      camera.rotation.order = "YXZ";
+      camera.rotation.y = touchLook.current.yaw;
+      camera.rotation.x = touchLook.current.pitch;
+    }
+  }, [ctrlRef, camera]);
 
+  /* ── Desktop keyboard ── */
   useEffect(() => {
+    if (isTouch.current) return;
     const down = (e: KeyboardEvent) => {
       if (!isLocked.current) return;
       if (e.code === "KeyW") keys.current.w = true;
@@ -1977,38 +2087,46 @@ function FirstPersonController({
     const cx      = camera.position.x;
     const cz      = camera.position.z;
     const groundY = terrainHeightAt(cx, cz);
-    const EYE_H   = 1.7;
-    const wantY   = groundY + EYE_H;
+    const wantY   = groundY + 1.7;
 
-    /* Keep fake target updated so minimap / CameraStateTracker see a valid target */
+    /* Apply touch look angles directly to camera */
+    if (isTouch.current) {
+      camera.rotation.order = "YXZ";
+      camera.rotation.y = touchLook.current.yaw;
+      camera.rotation.x = touchLook.current.pitch;
+    }
+
+    /* Forward direction (works for both desktop + touch) */
     camera.getWorldDirection(fwdVec.current);
     fwdVec.current.y = 0;
     if (fwdVec.current.lengthSq() < 0.001) fwdVec.current.set(0, 0, -1);
     fwdVec.current.normalize();
+
     if (ctrlRef.current) {
       ctrlRef.current.target.set(cx + fwdVec.current.x * 8, wantY, cz + fwdVec.current.z * 8);
     }
 
-    if (!isLocked.current) {
-      /* Gentle ground-snap even when not locked so scene feels grounded */
+    const active = isTouch.current ? true : isLocked.current;
+    if (!active) {
       camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY, 0.06);
       return;
     }
 
-    /* ── WASD Movement ─────────────────────────────────────────────────── */
+    /* ── Movement direction from keyboard (desktop) or joystick (touch) ── */
     rightVec.current.crossVectors(fwdVec.current, UP).normalize();
     const moveDir = new THREE.Vector3();
-    if (keys.current.w) moveDir.addScaledVector(fwdVec.current,  1);
-    if (keys.current.s) moveDir.addScaledVector(fwdVec.current, -1);
-    if (keys.current.a) moveDir.addScaledVector(rightVec.current, -1);
-    if (keys.current.d) moveDir.addScaledVector(rightVec.current,  1);
+    if (isTouch.current) {
+      moveDir.addScaledVector(fwdVec.current,  -joystick.current.y);
+      moveDir.addScaledVector(rightVec.current,  joystick.current.x);
+    } else {
+      if (keys.current.w) moveDir.addScaledVector(fwdVec.current,  1);
+      if (keys.current.s) moveDir.addScaledVector(fwdVec.current, -1);
+      if (keys.current.a) moveDir.addScaledVector(rightVec.current, -1);
+      if (keys.current.d) moveDir.addScaledVector(rightVec.current,  1);
+    }
     const isMoving = moveDir.lengthSq() > 0.01;
-
-    const SPEED = 5.5;
-    const ACCEL = 14;
-    const DECEL = 11;
+    const SPEED = 5.5, ACCEL = 14, DECEL = 11;
     const ZERO  = new THREE.Vector3();
-
     if (isMoving) {
       moveDir.normalize();
       vel.current.lerp(moveDir.clone().multiplyScalar(SPEED), ACCEL * dt);
@@ -2016,17 +2134,15 @@ function FirstPersonController({
       vel.current.lerp(ZERO, DECEL * dt);
     }
 
-    /* Apply horizontal movement */
+    /* Apply movement + world boundary */
     const nx = cx + vel.current.x * dt;
     const nz = cz + vel.current.z * dt;
-
-    /* World-boundary soft clamp */
     const WORLD_R = 43;
     const nd = Math.sqrt(nx * nx + nz * nz);
     camera.position.x = nd > WORLD_R ? nx * WORLD_R / nd : nx;
     camera.position.z = nd > WORLD_R ? nz * WORLD_R / nd : nz;
 
-    /* ── Ground following + head bob ───────────────────────────────────── */
+    /* Ground follow + head bob */
     const speed = vel.current.length();
     let bobOffset = 0;
     if (isMoving && speed > 0.5) {
@@ -2037,7 +2153,7 @@ function FirstPersonController({
     }
     camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.20);
 
-    /* ── Footstep dust particles ────────────────────────────────────────── */
+    /* Footstep dust particles */
     if (isMoving && speed > 0.4) {
       stepTimer.current += dt;
       if (stepTimer.current > 0.28) {
@@ -2057,19 +2173,58 @@ function FirstPersonController({
     }
   });
 
+  /* ── TOUCH OVERLAY ── */
+  if (isTouch.current) {
+    return (
+      <Html fullscreen zIndexRange={[8, 0]}>
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+
+          {/* Right 58% — swipe-to-look zone */}
+          <div
+            onPointerDown={onLookDown}
+            onPointerMove={onLookMove}
+            onPointerUp={onLookUp}
+            onPointerCancel={onLookUp}
+            style={{
+              position: "absolute", top: 0, right: 0,
+              width: "58%", height: "100%",
+              pointerEvents: "all", touchAction: "none",
+            }}
+          />
+
+          {/* Left joystick */}
+          <VirtualJoystick onChange={(x, y) => { joystick.current = { x, y }; }} />
+
+          {/* Top HUD hint */}
+          <div style={{
+            position: "absolute", top: 14, left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(0,0,0,0.58)",
+            border: "1px solid rgba(212,175,55,0.35)",
+            borderRadius: 20, padding: "5px 16px",
+            color: "rgba(212,175,55,0.88)", fontSize: 11,
+            fontWeight: 600, letterSpacing: "0.04em",
+            pointerEvents: "none", whiteSpace: "nowrap",
+            backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+          }}>
+            🕹 Move · 👆 Swipe right to look
+          </div>
+
+        </div>
+      </Html>
+    );
+  }
+
+  /* ── DESKTOP OVERLAY — click-to-lock prompt ── */
   return (
     <>
       <PointerLockControls ref={plcRef} onLock={handleLock} onUnlock={handleUnlock} />
-
-      {/* Click-to-walk prompt — shown only when pointer is not locked */}
       <Html fullscreen zIndexRange={[8, 0]}>
         <div style={{
           position: "absolute", inset: 0,
           display: locked ? "none" : "flex",
-          alignItems: "flex-end",
-          justifyContent: "center",
-          paddingBottom: 88,
-          pointerEvents: "none",
+          alignItems: "flex-end", justifyContent: "center",
+          paddingBottom: 88, pointerEvents: "none",
         }}>
           <button
             onClick={() => plcRef.current?.lock()}
@@ -2077,19 +2232,12 @@ function FirstPersonController({
               pointerEvents: "all",
               background: "rgba(0,0,0,0.72)",
               border: "1.5px solid rgba(212,175,55,0.60)",
-              borderRadius: 14,
-              padding: "11px 26px",
-              color: "#D4AF37",
-              fontSize: 13,
-              fontWeight: 700,
+              borderRadius: 14, padding: "11px 26px",
+              color: "#D4AF37", fontSize: 13, fontWeight: 700,
               cursor: "pointer",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              userSelect: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              letterSpacing: "0.01em",
+              backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+              userSelect: "none", display: "flex", alignItems: "center",
+              gap: 10, letterSpacing: "0.01em",
               boxShadow: "0 4px 24px rgba(0,0,0,0.45)",
             }}
           >
