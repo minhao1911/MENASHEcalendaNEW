@@ -7,7 +7,7 @@
  * - Resets on any successful call
  */
 
-export type ProviderName = "gemini" | "grok";
+export type ProviderName = "openai" | "gemini" | "grok";
 
 const FAILURE_THRESHOLD = 3;
 const RECOVERY_MS = 5 * 60 * 1000; // 5 minutes
@@ -21,6 +21,7 @@ interface ProviderState {
 }
 
 const state = new Map<ProviderName, ProviderState>([
+  ["openai", { consecutiveFailures: 0, lastFailureAt: null, totalFailures: 0, totalSuccesses: 0, lastErrorType: null }],
   ["gemini", { consecutiveFailures: 0, lastFailureAt: null, totalFailures: 0, totalSuccesses: 0, lastErrorType: null }],
   ["grok",   { consecutiveFailures: 0, lastFailureAt: null, totalFailures: 0, totalSuccesses: 0, lastErrorType: null }],
 ]);

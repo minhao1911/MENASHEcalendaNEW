@@ -1,9 +1,9 @@
 /**
- * ai/providers/grok.ts
+ * ai/providers/openai.ts
  *
- * Grok streaming adapter via xAI's OpenAI-compatible API.
- * Uses the `openai` npm package pointed at https://api.x.ai/v1.
- * Model: grok-3-mini (fast, efficient fallback)
+ * OpenAI streaming adapter.
+ * Model: gpt-4o-mini (fast, cost-efficient primary)
+ * Falls back gracefully — gateway skips if OPENAI_API_KEY is absent.
  */
 import OpenAI from "openai";
 import { buildSystemPrompt } from "../systemPrompt";
@@ -12,23 +12,20 @@ import type { ChatMessage } from "./gemini";
 
 export { type ChatMessage };
 
-/** Returns false when GROK_API_KEY is absent — gateway will skip this provider. */
-export function isGrokConfigured(): boolean {
-  return !!process.env.GROK_API_KEY;
+/** Returns false when OPENAI_API_KEY is absent — gateway will skip this provider. */
+export function isOpenAIConfigured(): boolean {
+  return !!process.env.OPENAI_API_KEY;
 }
 
-export async function* streamGrok(
+export async function* streamOpenAI(
   messages: ChatMessage[],
   signal: AbortSignal,
   ctx?: CalendarCtx,
 ): AsyncIterable<string> {
-  const apiKey = process.env.GROK_API_KEY;
-  if (!apiKey) throw new Error("GROK_API_KEY is not configured");
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
 
-  const client = new OpenAI({
-    apiKey,
-    baseURL: "https://api.x.ai/v1",
-  });
+  const client = new OpenAI({ apiKey });
 
   const systemPrompt = buildSystemPrompt(ctx);
   const history = messages.slice(-10);
@@ -40,13 +37,16 @@ export async function* streamGrok(
     })),
   ];
 
-  const stream = await client.chat.completions.create({
-    model: "grok-3-mini",
-    messages: openAiMessages,
-    stream: true,
-    max_tokens: 1024,
-    temperature: 0.7,
-  }, { signal });
+  const stream = await client.chat.completions.create(
+    {
+      model: "gpt-4o-mini",
+      messages: openAiMessages,
+      stream: true,
+      max_tokens: 1024,
+      temperature: 0.7,
+    },
+    { signal },
+  );
 
   for await (const chunk of stream) {
     if (signal.aborted) return;

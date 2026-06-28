@@ -4,11 +4,12 @@
  * POST /chat  — Rav Menashe AI, streaming SSE
  *
  * Uses the AI Gateway for automatic provider fallback:
- *   Primary:   Gemini 2.5-flash  (GOOGLE_API_KEY)
- *   Fallback:  Grok 3-mini       (GROK_API_KEY)
+ *   Primary:   OpenAI gpt-4o-mini     (OPENAI_API_KEY)
+ *   Secondary: Gemini 2.5-flash       (GOOGLE_API_KEY)
+ *   Fallback:  Grok 3-mini            (GROK_API_KEY)
  *
  * SSE protocol:
- *   data: {"provider":"gemini"}   ← first event, identifies active provider
+ *   data: {"provider":"openai"}   ← first event, identifies active provider
  *   data: {"text":"..."}          ← one per streamed token chunk
  *   data: [DONE]                  ← end of stream
  *   data: {"error":"..."}         ← on failure (user-safe message only)
@@ -30,8 +31,15 @@ const messageSchema = z.object({
   content: z.string().min(1).max(2000),
 });
 
+const calendarCtxSchema = z.object({
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  tzid: z.string().optional(),
+}).optional();
+
 const chatBodySchema = z.object({
   messages: z.array(messageSchema).min(1).max(20),
+  ctx: calendarCtxSchema,
 });
 
 /* ── POST /chat ─────────────────────────────────────────────────────────── */
@@ -53,6 +61,7 @@ router.post("/chat", requireAuth, aiRateLimiter, async (req, res) => {
     const { provider, stream } = await gatewayStream(
       parsed.data.messages,
       controller.signal,
+      parsed.data.ctx,
     );
 
     /* First event — tell the client which provider answered */

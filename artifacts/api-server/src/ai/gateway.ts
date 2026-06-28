@@ -3,7 +3,7 @@
  *
  * AI Gateway — ordered provider fallback with health circuit breakers.
  *
- * Priority order: Gemini → Grok
+ * Priority order: OpenAI → Gemini → Grok
  * - Skips providers that are unhealthy (circuit open)
  * - Skips providers that are not configured (missing API key)
  * - Falls back to next provider on stream error
@@ -18,11 +18,14 @@ import {
   classifyError,
   type ProviderName,
 } from "./health";
+import { isOpenAIConfigured, streamOpenAI } from "./providers/openai";
 import { isGeminiConfigured, streamGemini } from "./providers/gemini";
 import { isGrokConfigured, streamGrok } from "./providers/grok";
 import type { ChatMessage } from "./providers/gemini";
+import type { CalendarCtx } from "./types";
 
 export type { ChatMessage };
+export type { CalendarCtx };
 
 export interface GatewayStreamResult {
   provider: ProviderName;
@@ -32,10 +35,11 @@ export interface GatewayStreamResult {
 interface Provider {
   name: ProviderName;
   configured: () => boolean;
-  stream: (messages: ChatMessage[], signal: AbortSignal) => AsyncIterable<string>;
+  stream: (messages: ChatMessage[], signal: AbortSignal, ctx?: CalendarCtx) => AsyncIterable<string>;
 }
 
 const PROVIDERS: Provider[] = [
+  { name: "openai", configured: isOpenAIConfigured, stream: streamOpenAI },
   { name: "gemini", configured: isGeminiConfigured, stream: streamGemini },
   { name: "grok",   configured: isGrokConfigured,   stream: streamGrok   },
 ];
@@ -50,6 +54,7 @@ const PROVIDERS: Provider[] = [
 export async function gatewayStream(
   messages: ChatMessage[],
   signal: AbortSignal,
+  ctx?: CalendarCtx,
 ): Promise<GatewayStreamResult> {
   const tried: { name: ProviderName; reason: string }[] = [];
 
@@ -65,7 +70,7 @@ export async function gatewayStream(
     }
 
     try {
-      const iter = p.stream(messages, signal);
+      const iter = p.stream(messages, signal, ctx);
       const it   = iter[Symbol.asyncIterator]();
 
       // Probe: try to get the first token to verify the provider is alive

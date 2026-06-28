@@ -8,7 +8,7 @@ export interface AiMessage {
   streaming?: boolean;
 }
 
-export type AiProvider = "gemini" | "grok" | null;
+export type AiProvider = "openai" | "gemini" | "grok" | null;
 
 async function getAiToken(): Promise<string | null> {
   return (await (window as any).Clerk?.session?.getToken()) ?? null;

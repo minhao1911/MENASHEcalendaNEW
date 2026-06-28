@@ -17,9 +17,10 @@ async function getAuthToken(): Promise<string | null> {
   return (await (window as any).Clerk?.session?.getToken()) ?? null;
 }
 
-type AiProvider = "gemini" | "grok" | null;
+type AiProvider = "openai" | "gemini" | "grok" | null;
 
 const PROVIDER_LABEL: Record<NonNullable<AiProvider>, string> = {
+  openai: "OpenAI",
   gemini: "Gemini",
   grok:   "Grok",
 };
