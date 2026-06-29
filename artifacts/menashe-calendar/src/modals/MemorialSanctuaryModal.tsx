@@ -477,16 +477,18 @@ function EntranceCard({ entries, candleCount, onLightCandle, onSelectEntry, soun
             </div>
             <div style={{ display: "flex", gap: 5, flexShrink: 0, marginLeft: 8 }}>
               <button
+                type="button"
                 onClick={toggle}
                 aria-label="Collapse panel"
-                style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>
               </button>
               <button
+                type="button"
                 onClick={() => setDismissed(true)}
                 aria-label="Dismiss panel"
-                style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.28)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}
+                style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.28)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}
               >✕</button>
             </div>
           </div>
@@ -1229,11 +1231,12 @@ function MicroCandleCard({ onOpen, onDismiss }: { onOpen: () => void; onDismiss:
 
         {/* ── Dismiss ×  ── */}
         <button
+          type="button"
           onClick={e => { e.stopPropagation(); onDismiss(); }}
           aria-label="Dismiss"
           style={{
-            position: "absolute", top: 7, right: 8,
-            width: 22, height: 22, borderRadius: 7,
+            position: "absolute", top: 4, right: 4,
+            width: 36, height: 36, borderRadius: 9,
             background: "rgba(255,255,255,0.07)",
             border: "1px solid rgba(255,255,255,0.09)",
             color: "rgba(255,255,255,0.38)",
@@ -1372,6 +1375,10 @@ function LightCandleForm({
                   {DONATION_TIERS.map(tier => (
                     <button
                       key={tier.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={donationTier === tier.id}
+                      aria-label={tier.label}
                       onClick={() => setDonationTier(tier.id)}
                       style={{
                         display: "flex", alignItems: "center", gap: 12,
@@ -1528,20 +1535,25 @@ function MemorialProfileSheet({
           {/* Action buttons */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
             <button
+              type="button"
               onClick={onClose}
-              style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}
+              aria-label="Close"
+              style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}
             >✕</button>
             <motion.button
+              type="button"
               onClick={() => setFavorited(f => !f)}
               whileHover={{ scale: 1.12 }} whileTap={{ scale: 0.9 }}
-              style={{ width: 34, height: 34, borderRadius: "50%", background: favorited ? "rgba(248,113,113,0.18)" : "rgba(255,255,255,0.06)", border: `1px solid rgba(248,113,113,${favorited ? "0.4" : "0.15"})`, color: favorited ? "#f87171" : "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
-              title="Favorite"
+              aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
+              aria-pressed={favorited}
+              style={{ width: 44, height: 44, borderRadius: "50%", background: favorited ? "rgba(248,113,113,0.18)" : "rgba(255,255,255,0.06)", border: `1px solid rgba(248,113,113,${favorited ? "0.4" : "0.15"})`, color: favorited ? "#f87171" : "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
             >{favorited ? "❤️" : "🤍"}</motion.button>
             <motion.button
+              type="button"
               onClick={handleShare}
               whileHover={{ scale: 1.12 }} whileTap={{ scale: 0.9 }}
-              style={{ width: 34, height: 34, borderRadius: "50%", background: shareState === "copied" ? "rgba(100,200,120,0.15)" : "rgba(255,255,255,0.06)", border: `1px solid rgba(255,255,255,${shareState === "copied" ? "0.2" : "0.1"})`, color: shareState === "copied" ? "#6ee7b7" : "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
-              title="Share memorial"
+              aria-label={shareState === "copied" ? "Link copied to clipboard" : "Share memorial"}
+              style={{ width: 44, height: 44, borderRadius: "50%", background: shareState === "copied" ? "rgba(100,200,120,0.15)" : "rgba(255,255,255,0.06)", border: `1px solid rgba(255,255,255,${shareState === "copied" ? "0.2" : "0.1"})`, color: shareState === "copied" ? "#6ee7b7" : "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
             >{shareState === "copied" ? "✓" : "↗"}</motion.button>
           </div>
         </div>
@@ -1712,10 +1724,14 @@ function MemorialScrollStrip({
         const name = entry.deceasedName.split("·")[0].trim();
         return (
           <motion.div key={entry.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`View memorial for ${name}`}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
             onClick={() => onSelect(entry)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(entry); } }}
             whileHover={{ scale: 1.03, borderColor: "rgba(212,175,55,0.5)" }}
             whileTap={{ scale: 0.97 }}
             style={{

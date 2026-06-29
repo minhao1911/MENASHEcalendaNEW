@@ -247,9 +247,13 @@ function PortraitMiniCard({
   const name = item.person.fullName;
   return (
     <motion.div
+      role="button"
+      tabIndex={0}
+      aria-label={`View memorial for ${name}`}
       whileHover={{ scale: 1.03, borderColor: "rgba(212,175,55,0.5)" }}
       whileTap={{ scale: 0.97 }}
       onClick={() => onSelect(item.slug)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(item.slug); } }}
       style={{
         flexShrink: 0,
         width: 126,
@@ -404,9 +408,13 @@ function SearchResultRow({
   const name = item.person.fullName;
   return (
     <motion.div
+      role="button"
+      tabIndex={0}
+      aria-label={`View memorial for ${name}`}
       whileHover={{ background: "rgba(212,175,55,0.07)" }}
       whileTap={{ scale: 0.98 }}
       onClick={() => onSelect(item.slug)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(item.slug); } }}
       style={{
         display: "flex",
         alignItems: "center",
@@ -743,19 +751,22 @@ function FullMemorialProfile({
       }}
     >
       <button
+        type="button"
         onClick={onClose}
+        aria-label="Go back"
         style={{
           background: "rgba(255,255,255,0.07)",
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 10,
-          width: 34,
-          height: 34,
+          width: 44,
+          height: 44,
           cursor: "pointer",
           color: "rgba(255,255,255,0.6)",
           fontSize: 16,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          flexShrink: 0,
         }}
       >
         ←
@@ -774,19 +785,22 @@ function FullMemorialProfile({
         {title}
       </div>
       <button
+        type="button"
         onClick={onClose}
+        aria-label="Close"
         style={{
           background: "rgba(255,255,255,0.06)",
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 10,
-          width: 34,
-          height: 34,
+          width: 44,
+          height: 44,
           cursor: "pointer",
           color: "rgba(255,255,255,0.5)",
           fontSize: 14,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          flexShrink: 0,
         }}
       >
         ✕
@@ -931,19 +945,22 @@ function FullMemorialProfile({
         }}
       >
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Go back"
           style={{
             background: "rgba(255,255,255,0.07)",
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: 10,
-            width: 34,
-            height: 34,
+            width: 44,
+            height: 44,
             cursor: "pointer",
             color: "rgba(255,255,255,0.6)",
             fontSize: 16,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            flexShrink: 0,
           }}
         >
           ←
@@ -975,16 +992,17 @@ function FullMemorialProfile({
           )}
         </div>
         <button
+          type="button"
           onClick={handleShare}
-          title="Share memorial"
+          aria-label={copied ? "Link copied" : "Share memorial"}
           style={{
             background: copied
               ? "rgba(100,200,120,0.15)"
               : "rgba(255,255,255,0.06)",
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: 10,
-            width: 34,
-            height: 34,
+            width: 44,
+            height: 44,
             cursor: "pointer",
             color: copied ? "#6ee7b7" : "rgba(255,255,255,0.5)",
             fontSize: 14,
@@ -992,24 +1010,28 @@ function FullMemorialProfile({
             alignItems: "center",
             justifyContent: "center",
             transition: "all 0.2s",
+            flexShrink: 0,
           }}
         >
           {copied ? "✓" : "↗"}
         </button>
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close"
           style={{
             background: "rgba(255,255,255,0.06)",
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: 10,
-            width: 34,
-            height: 34,
+            width: 44,
+            height: 44,
             cursor: "pointer",
             color: "rgba(255,255,255,0.5)",
             fontSize: 14,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            flexShrink: 0,
           }}
         >
           ✕
@@ -1204,6 +1226,7 @@ function FullMemorialProfile({
               active: showCandleForm,
               color: "#D4AF37",
               bg: "rgba(212,175,55,",
+              ariaLabel: showCandleForm ? "Close candle form" : "Light a candle",
               onClick: () => {
                 setShowCandleForm((f) => !f);
                 setShowTributeForm(false);
@@ -1215,6 +1238,7 @@ function FullMemorialProfile({
               active: showTributeForm,
               color: "rgba(167,139,250,0.95)",
               bg: "rgba(167,139,250,",
+              ariaLabel: showTributeForm ? "Close tribute form" : "Leave a tribute",
               onClick: () => {
                 setShowTributeForm((f) => !f);
                 setShowCandleForm(false);
@@ -1226,13 +1250,17 @@ function FullMemorialProfile({
               active: copied,
               color: "rgba(255,255,255,0.55)",
               bg: "rgba(255,255,255,",
+              ariaLabel: copied ? "Link copied to clipboard" : "Share this memorial",
               onClick: handleShare,
             },
           ].map((btn) => (
             <motion.button
               key={btn.label}
+              type="button"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
+              aria-label={btn.ariaLabel}
+              aria-pressed={btn.active}
               onClick={btn.onClick}
               style={{
                 flex: 1,
@@ -1326,7 +1354,10 @@ function FullMemorialProfile({
                         {CANDLE_TYPES.map((ct) => (
                           <button
                             key={ct.value}
+                            type="button"
                             onClick={() => setCandleType(ct.value)}
+                            aria-pressed={candleType === ct.value}
+                            aria-label={`Candle type: ${ct.label}`}
                             style={{
                               padding: "5px 10px",
                               borderRadius: 20,
@@ -1355,6 +1386,7 @@ function FullMemorialProfile({
                         value={candleMsg}
                         onChange={(e) => setCandleMsg(e.target.value)}
                         placeholder="A few words in their memory…"
+                        aria-label="Memorial message"
                         rows={2}
                         style={{
                           ...inputSt,
@@ -1370,6 +1402,7 @@ function FullMemorialProfile({
                             setCandleGuestName(e.target.value)
                           }
                           placeholder="Your name (optional)"
+                          aria-label="Your name (optional)"
                           style={{ ...inputSt, marginBottom: 8 }}
                         />
                       )}
@@ -1495,7 +1528,10 @@ function FullMemorialProfile({
                         {TRIBUTE_TYPES.map((tt) => (
                           <button
                             key={tt.value}
+                            type="button"
                             onClick={() => setTributeType(tt.value)}
+                            aria-pressed={tributeType === tt.value}
+                            aria-label={`Tribute type: ${tt.label}`}
                             style={{
                               padding: "5px 10px",
                               borderRadius: 20,
@@ -1524,6 +1560,7 @@ function FullMemorialProfile({
                         value={tributeBody}
                         onChange={(e) => setTributeBody(e.target.value)}
                         placeholder="Share a memory, prayer, or blessing…"
+                        aria-label="Tribute message"
                         rows={3}
                         style={{
                           ...inputSt,
@@ -1539,6 +1576,7 @@ function FullMemorialProfile({
                             setTributeGuestName(e.target.value)
                           }
                           placeholder="Your name (optional)"
+                          aria-label="Your name (optional)"
                           style={{ ...inputSt, marginBottom: 8 }}
                         />
                       )}
