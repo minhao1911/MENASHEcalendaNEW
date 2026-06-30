@@ -76,7 +76,67 @@ export default function TaharaModal({ onClose }: Props) {
           </div>
         )}
 
-        <button onClick={onClose} className="btn-close-full" style={{ marginTop: 14 }}>{t.taharaClose}</button>
+        {/* My Mikveh Calendar button */}
+        <button
+          style={{
+            width: "100%",
+            marginTop: 16,
+            padding: "15px 20px",
+            borderRadius: 16,
+            border: "none",
+            cursor: "pointer",
+            background: "linear-gradient(135deg, #1a1040 0%, #2d1b69 40%, #1e3a5f 100%)",
+            boxShadow: "0 4px 20px rgba(100,60,200,0.35), inset 0 1px 0 rgba(255,255,255,0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            position: "relative",
+            overflow: "hidden",
+          }}
+          onClick={() => {}}
+        >
+          {/* Shimmer overlay */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%)",
+            pointerEvents: "none",
+          }} />
+
+          {/* Left: icon + labels */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{
+              width: 42, height: 42, borderRadius: 12,
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 22, flexShrink: 0,
+            }}>
+              🌙
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: "0.01em" }}>
+                {t.taharaMikvehCalendar}
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(180,160,255,0.8)", marginTop: 2 }}>
+                {t.taharaMikvehCalendarSub}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: arrow badge */}
+          <div style={{
+            width: 30, height: 30, borderRadius: 8,
+            background: "rgba(255,255,255,0.1)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#c4b5fd", fontSize: 14, fontWeight: 700, flexShrink: 0,
+          }}>
+            →
+          </div>
+        </button>
+
+        <button onClick={onClose} className="btn-close-full" style={{ marginTop: 12 }}>{t.taharaClose}</button>
       </div>
     </div>
   );

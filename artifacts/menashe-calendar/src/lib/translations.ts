@@ -270,6 +270,8 @@ export interface Translations {
   taharaMikveh: string;
   taharaPosekNote: string;
   taharaClose: string;
+  taharaMikvehCalendar: string;
+  taharaMikvehCalendarSub: string;
 
   /* ── Yahrzeit Modal ── */
   yartzeitTitle: string;
@@ -852,6 +854,8 @@ export const en: Translations = {
   taharaMikveh: "MIKVEH NIGHT (EARLIEST)",
   taharaPosekNote: "⚠️ Always consult a qualified posek (halachic authority) for personal guidance.",
   taharaClose: "Close",
+  taharaMikvehCalendar: "🌙 My Mikveh Calendar",
+  taharaMikvehCalendarSub: "Track & schedule your dates",
 
   yartzeitTitle: "Yahrzeit Calculator",
   yartzeitSub: "Anniversary of passing",
@@ -1437,6 +1441,8 @@ export const tk: Translations = {
   taharaMikveh: "MIKVEH ZAN (HMASAWN BER)",
   taharaPosekNote: "⚠️ Posek (dinna thu neih) nen inpawl rawh.",
   taharaClose: "Tawp Ta",
+  taharaMikvehCalendar: "🌙 Ka Mikveh Calendar",
+  taharaMikvehCalendarSub: "I ni leh hun zirchian ta",
 
   yartzeitTitle: "Yahrzeit Chhiar",
   yartzeitSub: "Thi ni chhiar",
