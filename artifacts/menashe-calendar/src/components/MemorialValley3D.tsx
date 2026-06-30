@@ -2033,12 +2033,12 @@ function FirstPersonController({
   const touchLook  = useRef({ yaw: Math.PI, pitch: -0.08 });
   const lookPtrId  = useRef<number | null>(null);
   const lookLast   = useRef<{ x: number; y: number } | null>(null);
-  const LOOK_SENS  = 0.0035;
+  const LOOK_SENS  = 0.0025; /* SPR-034D: calmer touch-look */
 
   /* ── Desktop passive look (no pointer-lock required) ── */
   const passiveLook = useRef({ yaw: Math.PI, pitch: -0.08 });
   const lastMouseXY = useRef<{ x: number; y: number } | null>(null);
-  const PASSIVE_SENS = 0.0022;
+  const PASSIVE_SENS = 0.0015; /* SPR-034D: calmer desktop passive look */
 
   /* ── Stable desktop callbacks ── */
   const handleLock = useCallback(() => {
@@ -2199,7 +2199,8 @@ function FirstPersonController({
       if (keys.current.d) moveDir.addScaledVector(rightVec.current,  1);
     }
     const isMoving = moveDir.lengthSq() > 0.01;
-    const SPEED = 4.0, ACCEL = 10, DECEL = 8;
+    /* SPR-034D: calmer walking — reduced speed, softer accel/decel */
+    const SPEED = 3.0, ACCEL = 5.5, DECEL = 4.0;
     const ZERO  = new THREE.Vector3();
     if (isMoving) {
       moveDir.normalize();
@@ -2216,18 +2217,18 @@ function FirstPersonController({
     camera.position.x = nd > WORLD_R ? nx * WORLD_R / nd : nx;
     camera.position.z = nd > WORLD_R ? nz * WORLD_R / nd : nz;
 
-    /* Ground follow + head bob */
+    /* Ground follow + head bob — SPR-034D: gentler frequency + amplitude */
     const speed = vel.current.length();
     let bobOffset = 0;
     if (isMoving && speed > 0.5) {
-      bobT.current += dt * 7.0;
-      bobOffset = Math.sin(bobT.current) * 0.028;
+      bobT.current += dt * 5.5;
+      bobOffset = Math.sin(bobT.current) * 0.016;
     } else {
       /* Decay angular accumulator so bob settles smoothly back to 0 */
-      bobT.current *= 0.85;
+      bobT.current *= 0.88;
     }
-    /* Smooth ground follow — 0.10 for gentle terrain hugging */
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.10);
+    /* Smooth ground follow — 0.08 for calm terrain hugging */
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.08);
 
     /* Footstep dust particles */
     if (isMoving && speed > 0.4) {
@@ -3318,109 +3319,207 @@ function AAAMemorialGate() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   SPR-034C: ENTRANCE BOARDS — Welcome, Community Candle, Visitor Guidance
+   SPR-034C/D: ENTRANCE BOARDS
    Three carved-limestone boards flank the Sacred Avenue inside the gate.
-   All boards face slightly inward toward the path for natural readability.
+   SPR-034D additions:
+     • Proximity glow — lights & face emissive brighten as player approaches
+     • Living Community Board — cycles 4 live views every 5 s
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAEntranceBoards({ entries }: { entries: CommunityYahrzeitEntry[] }) {
-  const recent    = entries.slice(0, 4);
-  const boardGeo  = useMemo(() => new THREE.BoxGeometry(3.6, 2.4, 0.18), []);
-  const frameGeo  = useMemo(() => new THREE.BoxGeometry(4.0, 2.8, 0.14), []);
-  const postGeo   = useMemo(() => new THREE.CylinderGeometry(0.12, 0.17, 3.8, 8), []);
+  /* ── Shared geometry (one GPU buffer reused across all 3 boards) ── */
+  const boardGeo   = useMemo(() => new THREE.BoxGeometry(3.6, 2.4, 0.18), []);
+  const frameGeo   = useMemo(() => new THREE.BoxGeometry(4.0, 2.8, 0.14), []);
+  const postGeo    = useMemo(() => new THREE.CylinderGeometry(0.12, 0.17, 3.8, 8), []);
   const dividerGeo = useMemo(() => new THREE.BoxGeometry(2.4, 0.028, 0.012), []);
 
-  const stoneMat  = <meshStandardMaterial color="#c8bca0" roughness={0.87} metalness={0.04} />;
-  const faceMat   = <meshStandardMaterial color="#d8cfb4" roughness={0.76} metalness={0.03}
-                       emissive={new THREE.Color("#6a5a30")} emissiveIntensity={0.08} />;
-  const postMat   = <meshStandardMaterial color="#b0a48c" roughness={0.91} metalness={0.04} />;
-  const goldDivMat = <meshStandardMaterial color="#D4AF37"
-                        emissive={new THREE.Color("#D4AF37")} emissiveIntensity={1.4} />;
+  /* ── Per-board refs for proximity-driven glow ── */
+  const light0 = useRef<THREE.PointLight>(null!);
+  const light1 = useRef<THREE.PointLight>(null!);
+  const light2 = useRef<THREE.PointLight>(null!);
+  const face0  = useRef<THREE.MeshStandardMaterial>(null!);
+  const face1  = useRef<THREE.MeshStandardMaterial>(null!);
+  const face2  = useRef<THREE.MeshStandardMaterial>(null!);
 
-  function BoardShell({ rotY }: { rotY: number }) {
+  /* Board world positions — matched to group position props below */
+  const BOARD_POS: [number, number, number][] = [
+    [ 5.8, 0, 18.5],
+    [-5.8, 0, 14.0],
+    [ 5.8, 0,  9.5],
+  ];
+  const LIGHTS = [light0, light1, light2];
+  const FACES  = [face0,  face1,  face2];
+
+  /* ── Living Community Board — cycles 0–3 every 5 s ── */
+  const [cycleIdx, setCycleIdx] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setCycleIdx(i => (i + 1) % 4), 5000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const SLIDE_TITLES = ["Recently Lit", "Upcoming Yahrzeit", "Tributes", "A Blessing"];
+
+  const litCandles = useMemo(() =>
+    [...entries].filter(e => e.candleLit)
+      .sort((a, b) => (b.candleLitAt ?? "").localeCompare(a.candleLitAt ?? ""))
+      .slice(0, 3), [entries]);
+
+  const upcoming = useMemo(() =>
+    [...entries]
+      .sort((a, b) => a.hebrewMonth !== b.hebrewMonth
+        ? a.hebrewMonth - b.hebrewMonth : a.hebrewDay - b.hebrewDay)
+      .slice(0, 3), [entries]);
+
+  const tributes = useMemo(() =>
+    entries.filter(e => e.learners.length > 0).slice(0, 3), [entries]);
+
+  const communityRows = useMemo<{ key: string; main: string; sub: string }[] | null>(() => {
+    if (cycleIdx === 0) {
+      if (litCandles.length === 0) return null;
+      return litCandles.map(e => ({
+        key:  e.id,
+        main: `• ${e.deceasedName.split("·")[0].trim().slice(0, 18)}`,
+        sub:  `lit by ${(e.donorDisplayName ?? "Community").slice(0, 16)}`,
+      }));
+    } else if (cycleIdx === 1) {
+      if (upcoming.length === 0) return null;
+      return upcoming.map(e => ({
+        key:  e.id + "-u",
+        main: `• ${e.deceasedName.split("·")[0].trim().slice(0, 18)}`,
+        sub:  e.displayDate,
+      }));
+    } else if (cycleIdx === 2) {
+      const rows: { key: string; main: string; sub: string }[] = [];
+      for (const e of tributes) {
+        const l = e.learners[0];
+        if (l) rows.push({
+          key:  l.id,
+          main: `• ${e.deceasedName.split("·")[0].trim().slice(0, 16)}`,
+          sub:  `${l.learnerName} — ${l.studySubject}`.slice(0, 26),
+        });
+      }
+      return rows.length === 0 ? null : rows;
+    }
+    return null; // slide 3 = static blessing, rendered separately
+  }, [cycleIdx, litCandles, upcoming, tributes]);
+
+  const BLESSING = "May their souls be bound\nin the bond of eternal life.\n\nMemory is an eternal blessing.";
+
+  /* ── Proximity glow — cheap per-frame distance check, no allocation ── */
+  const { camera } = useThree();
+  useFrame(() => {
+    for (let i = 0; i < 3; i++) {
+      const [bx, , bz] = BOARD_POS[i];
+      const dx   = camera.position.x - bx;
+      const dz   = camera.position.z - bz;
+      const prox = Math.max(0, 1 - Math.sqrt(dx * dx + dz * dz) / 7.5);
+      const l = LIGHTS[i].current; if (l) l.intensity = 0.9 + prox * 2.4;
+      const m = FACES[i].current;  if (m) m.emissiveIntensity = 0.08 + prox * 0.32;
+    }
+  });
+
+  /* ── Shared board structure — called as a function (not a component) ── */
+  function BoardBase(faceRef: typeof face0, lightRef: typeof light0) {
     return (
       <>
-        <mesh position={[-1.7, 1.9, 0]} geometry={postGeo} castShadow>{postMat}</mesh>
-        <mesh position={[ 1.7, 1.9, 0]} geometry={postGeo} castShadow>{postMat}</mesh>
-        <mesh position={[0, 2.4, 0]}    geometry={frameGeo} castShadow receiveShadow>{stoneMat}</mesh>
-        <mesh position={[0, 2.4, 0.07]} geometry={boardGeo}>{faceMat}</mesh>
-        <mesh position={[0, 3.01, 0.19]} geometry={dividerGeo}>{goldDivMat}</mesh>
-        {/* Soft warm spot — low intensity, short range */}
-        <pointLight position={[0, 3.8, 1.1]} color="#ffe8a0" intensity={0.9} distance={5} decay={2.2} />
+        <mesh position={[-1.7, 1.9, 0]} geometry={postGeo} castShadow>
+          <meshStandardMaterial color="#b0a48c" roughness={0.91} metalness={0.04} />
+        </mesh>
+        <mesh position={[1.7, 1.9, 0]} geometry={postGeo} castShadow>
+          <meshStandardMaterial color="#b0a48c" roughness={0.91} metalness={0.04} />
+        </mesh>
+        <mesh position={[0, 2.4, 0]} geometry={frameGeo} castShadow receiveShadow>
+          <meshStandardMaterial color="#c8bca0" roughness={0.87} metalness={0.04} />
+        </mesh>
+        <mesh position={[0, 2.4, 0.07]} geometry={boardGeo}>
+          <meshStandardMaterial ref={faceRef} color="#d8cfb4" roughness={0.76} metalness={0.03}
+            emissive="#7a6a38" emissiveIntensity={0.08} />
+        </mesh>
+        <mesh position={[0, 3.01, 0.19]} geometry={dividerGeo}>
+          <meshStandardMaterial color="#D4AF37" emissive="#D4AF37" emissiveIntensity={1.4} />
+        </mesh>
+        <pointLight ref={lightRef} position={[0, 3.8, 1.1]}
+          color="#ffe8a0" intensity={0.9} distance={6.5} decay={2.2} />
       </>
     );
   }
 
   return (
     <>
-      {/* ── Welcome Board — right side of path at z=18.5 ── */}
+      {/* ── Board 0: Welcome Board — right side at z=18.5 ── */}
       <group position={[5.8, 0, 18.5]} rotation={[0, -Math.PI / 7, 0]}>
-        <BoardShell rotY={-Math.PI / 7} />
+        {BoardBase(face0, light0)}
         <Text position={[0, 3.24, 0.20]} fontSize={0.20} color="#D4AF37"
           anchorX="center" anchorY="middle" maxWidth={3.2} fontWeight={700}
           letterSpacing={0.06}>
           MEMORIAL SANCTUARY
         </Text>
-        <Text position={[0, 2.56, 0.20]} fontSize={0.128} color="#f0e8d0"
+        <Text position={[0, 2.56, 0.20]} fontSize={0.126} color="#f0e8d0"
           anchorX="center" anchorY="middle" maxWidth={3.0} lineHeight={1.60}
           textAlign="center">
           {"A Valley of Remembrance & Love\n\nMay every candle honour a life."}
         </Text>
-        <Text position={[0, 1.76, 0.20]} fontSize={0.112} color="#c8a84a"
+        <Text position={[0, 1.76, 0.20]} fontSize={0.110} color="#c8a84a"
           anchorX="center" anchorY="middle" maxWidth={2.8} textAlign="center">
           Walk forward to enter.
         </Text>
       </group>
 
-      {/* ── Community Candle Board — left side of path at z=14 ── */}
+      {/* ── Board 1: Living Community Board — left side at z=14 ── */}
       <group position={[-5.8, 0, 14.0]} rotation={[0, Math.PI / 7, 0]}>
-        <BoardShell rotY={Math.PI / 7} />
-        <Text position={[0, 3.24, 0.20]} fontSize={0.195} color="#D4AF37"
+        {BoardBase(face1, light1)}
+        {/* Cycle indicator dots */}
+        {[0, 1, 2, 3].map(i => (
+          <mesh key={i} position={[-0.45 + i * 0.30, 1.70, 0.19]}>
+            <sphereGeometry args={[0.034, 6, 4]} />
+            <meshStandardMaterial
+              color={i === cycleIdx ? "#D4AF37" : "#6a5540"}
+              emissive={i === cycleIdx ? "#D4AF37" : "#000000"}
+              emissiveIntensity={i === cycleIdx ? 1.6 : 0}
+            />
+          </mesh>
+        ))}
+        <Text position={[0, 3.24, 0.20]} fontSize={0.183} color="#D4AF37"
           anchorX="center" anchorY="middle" maxWidth={3.2} fontWeight={700}>
-          Recently Lit Candles
+          {SLIDE_TITLES[cycleIdx]}
         </Text>
-        {recent.length > 0 ? (
-          recent.map((e, i) => {
-            const name  = e.deceasedName.split("·")[0].trim();
-            const donor = e.donorDisplayName ?? "Community";
-            const label = `• ${name.length > 18 ? name.slice(0, 17) + "…" : name}`;
-            return (
-              <group key={e.id}>
-                <Text
-                  position={[0, 2.76 - i * 0.31, 0.20]}
-                  fontSize={0.118}
-                  color="#f0e8d0"
-                  anchorX="center" anchorY="middle"
-                  maxWidth={3.2} textAlign="center">
-                  {label}
+        {communityRows ? (
+          communityRows.map((row, i) => (
+            <group key={row.key}>
+              <Text position={[0, 2.74 - i * 0.33, 0.20]} fontSize={0.116} color="#f0e8d0"
+                anchorX="center" anchorY="middle" maxWidth={3.2} textAlign="center">
+                {row.main}
+              </Text>
+              {row.sub ? (
+                <Text position={[0, 2.58 - i * 0.33, 0.20]} fontSize={0.090} color="#9a8050"
+                  anchorX="center" anchorY="middle" maxWidth={3.0} textAlign="center">
+                  {row.sub}
                 </Text>
-                <Text
-                  position={[0, 2.60 - i * 0.31, 0.20]}
-                  fontSize={0.092}
-                  color="#9a8050"
-                  anchorX="center" anchorY="middle"
-                  maxWidth={3.0} textAlign="center">
-                  {`lit by ${donor.length > 16 ? donor.slice(0, 15) + "…" : donor}`}
-                </Text>
-              </group>
-            );
-          })
+              ) : null}
+            </group>
+          ))
+        ) : cycleIdx === 3 ? (
+          <Text position={[0, 2.36, 0.20]} fontSize={0.113} color="#f0e8d0"
+            anchorX="center" anchorY="middle" maxWidth={3.0} lineHeight={1.62}
+            textAlign="center">
+            {BLESSING}
+          </Text>
         ) : (
-          <Text position={[0, 2.30, 0.20]} fontSize={0.114} color="#8a7048"
+          <Text position={[0, 2.30, 0.20]} fontSize={0.112} color="#8a7048"
             anchorX="center" anchorY="middle" maxWidth={2.9} textAlign="center"
             lineHeight={1.55}>
-            {"No community candles\nhave been lit today."}
+            {"No entries yet.\nBe the first to light a candle."}
           </Text>
         )}
       </group>
 
-      {/* ── Visitor Guidance Board — right side of path at z=9.5 ── */}
+      {/* ── Board 2: Visitor Guidance Board — right side at z=9.5 ── */}
       <group position={[5.8, 0, 9.5]} rotation={[0, -Math.PI / 7, 0]}>
-        <BoardShell rotY={-Math.PI / 7} />
+        {BoardBase(face2, light2)}
         <Text position={[0, 3.24, 0.20]} fontSize={0.21} color="#D4AF37"
           anchorX="center" anchorY="middle" maxWidth={3.2} fontWeight={700}>
           Welcome
         </Text>
-        <Text position={[0, 2.38, 0.20]} fontSize={0.114} color="#f0e8d0"
+        <Text position={[0, 2.38, 0.20]} fontSize={0.113} color="#f0e8d0"
           anchorX="center" anchorY="middle" maxWidth={3.0} lineHeight={1.68}
           textAlign="center">
           {"Walk to explore.\n\nTap memorials to learn more.\n\nLight a candle. Leave a tribute.\n\nStillness begins Reflection Mode."}

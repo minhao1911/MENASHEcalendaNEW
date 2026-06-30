@@ -50,8 +50,8 @@ const PRESETS: Record<QualityTier, QualitySettings> = {
     shadowMapSize:    1024,
     postProcessing:   true,
     bloomEnabled:     true,
-    bloomIntensity:   1.4,
-    bloomThreshold:   0.28,
+    bloomIntensity:   0.92, /* SPR-034D: reduced from 1.4 — avoids overexposed bloom */
+    bloomThreshold:   0.34, /* SPR-034D: raised from 0.28 — fewer surfaces bloom */
     particleScale:    1.0,
     lightPoolSize:    8,
   },
