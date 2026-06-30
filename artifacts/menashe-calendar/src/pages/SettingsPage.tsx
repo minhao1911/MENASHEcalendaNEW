@@ -1329,8 +1329,6 @@ export default function SettingsPage({
         <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
           {[
             { label: t.settingsTahara, sub: t.settingsTaharaSub, action: onTahara },
-            { label: t.settingsYartzeitCalc, sub: t.settingsYartzeitSub, action: onYartzeit },
-            { label: t.settingsBirthday, sub: t.settingsBirthdaySub, action: onBirthday },
           ].map((item, i, arr) => (
             <div key={i}>
               <Row label={item.label} sub={item.sub} right={<span style={{ color: "var(--text-muted)" }}>›</span>} onClick={item.action} />
