@@ -1843,7 +1843,15 @@ function AAAStoneBenches() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAACamera() {
   const { camera } = useThree();
-  useEffect(() => { camera.position.set(0, 1.7, 22); camera.lookAt(0, 1.7, 0); }, [camera]);
+  useEffect(() => {
+    /* Spawn at the valley entrance (Z=22), correctly above the terrain.
+       terrainHeightAt(0,22)≈3.0 so wantY≈4.7 — set it directly so the
+       player never rises from underground on first entry.               */
+    const spawnX = 0, spawnZ = 22;
+    const spawnY = terrainHeightAt(spawnX, spawnZ) + 1.7;
+    camera.position.set(spawnX, spawnY, spawnZ);
+    camera.lookAt(spawnX, spawnY, 0); // face the memorial valley (-Z)
+  }, [camera]);
   return null;
 }
 
@@ -3890,7 +3898,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
         </div>
       </Html>
 
-      <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlRef} sceneView={sceneView} />
+      <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlRef} sceneView={sceneView} walkMode={walkMode} />
       <AAASceneCameraDriver sceneView={sceneView} ctrlRef={ctrlRef} walkMode={walkMode} />
       {cameraStateRef && <CameraStateTracker stateRef={cameraStateRef} ctrlRef={ctrlRef} />}
 
@@ -4031,11 +4039,12 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 ══════════════════════════════════════════════════════════════════════════ */
 const HOME_TARGET = new THREE.Vector3(0, 0, 4);
 
-function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView }: {
+function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView, walkMode }: {
   selectedId: string | null;
   entries:    CommunityYahrzeitEntry[];
   ctrlRef:    React.MutableRefObject<any>;
   sceneView:  SceneViewType;
+  walkMode:   boolean;
 }) {
   const { camera } = useThree();
   const animating  = useRef(false);
@@ -4044,16 +4053,36 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView }: {
   const toTarget   = useRef(new THREE.Vector3(0, 0, 4));
   const fromCam    = useRef(new THREE.Vector3());
   const toCam      = useRef(new THREE.Vector3());
+  /* 'candle' = flying to a selected memorial; 'overview' = returning to scene view.
+     Only 'candle' animations run while walkMode is true. */
+  const animType = useRef<'candle' | 'overview'>('overview');
+
+  /* Keep entries in a ref so we can read the latest list without adding it to
+     the effect dependency array.  Adding entries to deps was the root cause of
+     the camera teleport bug: every API poll created a new array reference →
+     the effect re-fired with selectedId=null → camera flew back to spawn.    */
+  const entriesRef = useRef(entries);
+  useEffect(() => { entriesRef.current = entries; }, [entries]);
 
   useEffect(() => {
     const ctrl = ctrlRef.current;
     if (!ctrl) return;
 
+    if (walkMode && !selectedId) {
+      /* In walk mode with no candle selected: do NOT fly back to the overview
+         position — the player is actively walking and owns the camera.
+         Cancel any in-progress overview animation immediately.              */
+      animating.current = false;
+      return;
+    }
+
     fromTarget.current.copy(ctrl.target);
     fromCam.current.copy(camera.position);
 
     if (selectedId) {
-      const idx = entries.findIndex(e => e.id === selectedId);
+      animType.current = 'candle';
+      const currentEntries = entriesRef.current;
+      const idx = currentEntries.findIndex(e => e.id === selectedId);
       if (idx >= 0 && idx < ENTRY_POSITIONS.length) {
         const [cx, cy, cz] = ENTRY_POSITIONS[idx];
         toTarget.current.set(cx, cy + 0.5, cz);
@@ -4068,6 +4097,8 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView }: {
         );
       }
     } else {
+      /* No candle selected, not in walk mode: fly back to the scene overview */
+      animType.current = 'overview';
       const sceneTarget = SCENE_VIEWS[sceneView]?.target ?? [0, 0, 4];
       toTarget.current.set(...sceneTarget);
       const sv = SCENE_VIEWS[sceneView];
@@ -4076,10 +4107,18 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView }: {
     }
     progress.current = 0;
     animating.current = true;
-  }, [selectedId, entries, ctrlRef, sceneView, camera]);
+  /* entries intentionally omitted — read via entriesRef to prevent
+     API-poll re-renders from triggering a camera reset. */
+  }, [selectedId, ctrlRef, sceneView, camera, walkMode]);
 
   useFrame((_, delta) => {
     if (!animating.current || !ctrlRef.current) return;
+    /* Overview animations must not run while the player is walking —
+       FirstPersonController owns position.x/z in walk mode.          */
+    if (animType.current === 'overview' && walkMode) {
+      animating.current = false;
+      return;
+    }
     progress.current = Math.min(1, progress.current + delta * 1.2);
     const t = progress.current * progress.current * (3 - 2 * progress.current);
     ctrlRef.current.target.lerpVectors(fromTarget.current, toTarget.current, t);

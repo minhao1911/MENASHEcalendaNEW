@@ -18,5 +18,6 @@
 - [Memorial batch hydration + SQL sort](memorial-batch-hydration.md) — _hydrateMany() uses IN queries (2 queries/page vs 2N); search() uses SQL ORDER BY for 4/5 sorts; upcoming_yahrzeit still JS-sorts after batch load.
 - [Memorial browser panel (SPR-025)](memorial-browser-spr025.md) — MemorialBrowserPanel.tsx is a self-contained file; BrowsePanel + FullMemorialProfile both live there; modal uses showBrowse (replaces showStrip) to render it; two memorial systems: System A = CommunityYahrzeit (in modal), System B = full /api/memorials (in browser panel).
 - [AI Gateway architecture (SPR-033)](ai-gateway.md) — OpenAI primary → Gemini → Grok fallback; circuit breaker in health.ts; buildSystemPrompt() injects live Hebrew date+zmanim; CalendarCtx threaded through gateway; all 3 keys (OPENAI_API_KEY, GOOGLE_API_KEY, GROK_API_KEY) must be in Replit secrets.
+- [Memorial Sanctuary — camera reset bug](memorial-camera-reset-bug.md) — entries in AAAFocusCamera deps caused camera teleport on every API poll; fix = entriesRef pattern + walkMode guard + animType ref.
 - [Gold token split](gold-token-split.md) — GOLD=#d4a843 (all UI) vs GOLD_SANCTUARY=#D4AF37 (Memorial 3D only); intentional distinction, not a bug.
 - [Memorial Sanctuary — no fabricated data](memorial-no-fake-data.md) — all fake counts/names/activity removed in SPR-035; real data or honest empty state only.
