@@ -334,18 +334,24 @@ export default function ChatModal({ onClose }: Props) {
                   wordBreak: "break-word",
                 }}
               >
-                {msg.content}
-                {msg.streaming && (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      width: 8, height: 14,
-                      background: "#D4AF37",
-                      marginLeft: 3,
-                      borderRadius: 2,
-                      animation: "blink 1s step-start infinite",
-                    }}
-                  />
+                {msg.streaming && msg.content === "" ? (
+                  <TypingDots />
+                ) : (
+                  <>
+                    {msg.content}
+                    {msg.streaming && (
+                      <span
+                        style={{
+                          display: "inline-block",
+                          width: 8, height: 14,
+                          background: "#D4AF37",
+                          marginLeft: 3,
+                          borderRadius: 2,
+                          animation: "blink 1s step-start infinite",
+                        }}
+                      />
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -471,6 +477,10 @@ export default function ChatModal({ onClose }: Props) {
           @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
+          }
+          @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+            30% { transform: translateY(-4px); opacity: 1; }
           }
         `}</style>
       </div>
