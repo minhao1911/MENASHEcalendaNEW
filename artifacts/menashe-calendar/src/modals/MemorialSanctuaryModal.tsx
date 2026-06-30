@@ -2588,13 +2588,20 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
    * guarantee the Canvas is never mounted during the discarded pass. The
    * Replit runtime-error overlay therefore never fires.
    */
-  const [canRender3D, setCanRender3D] = useState(false);
+  const [canRender3D,   setCanRender3D]   = useState(false);
+  /* SPR-034C: Entry fade — black overlay that disappears on first open */
+  const [showEntryFade, setShowEntryFade] = useState(true);
 
   const searchRef      = useRef<HTMLInputElement>(null!);
   const cameraStateRef = useRef<CameraState | null>(null);
 
   // Mount guard — runs after the real (non-discarded) first commit
   useEffect(() => { setCanRender3D(true); }, []);
+  // Entry fade: start removing after 600 ms, unmount after 1800 ms
+  useEffect(() => {
+    const t = setTimeout(() => setShowEntryFade(false), 1800);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => { const t = setTimeout(() => setShowHints(false), 7000); return () => clearTimeout(t); }, []);
 
@@ -2867,6 +2874,24 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         )}
       </div>
       {/* ── END UI OVERLAY LAYER ── */}
+
+      {/* ── SPR-034C: ENTRY FADE — black screen fades to transparent on open ── */}
+      <AnimatePresence>
+        {showEntryFade && (
+          <motion.div
+            key="sanctuary-entry-fade"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.4, delay: 0.35, ease: "easeOut" }}
+            style={{
+              position: "absolute", inset: 0, zIndex: 9997,
+              background: "#000",
+              pointerEvents: "none",
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── REFLECTION MODE HINT — shown only when UI is hidden ── */}
       <AnimatePresence>

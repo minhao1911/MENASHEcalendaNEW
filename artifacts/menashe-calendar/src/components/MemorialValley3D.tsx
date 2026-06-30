@@ -2148,7 +2148,7 @@ function FirstPersonController({
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
   }, []);
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     const dt      = Math.min(delta, 0.05);
     const cx      = camera.position.x;
     const cz      = camera.position.z;
@@ -2179,7 +2179,10 @@ function FirstPersonController({
     const anyKeyDown = keys.current.w || keys.current.a || keys.current.s || keys.current.d;
     const active = isTouch.current ? true : (isLocked.current || anyKeyDown);
     if (!active) {
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY, 0.06);
+      /* Gentle breathing idle — subtle sine oscillation when standing still */
+      const breathY = Math.sin(clock.getElapsedTime() * 0.55) * 0.024
+                    + Math.sin(clock.getElapsedTime() * 1.30) * 0.008;
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + breathY, 0.05);
       return;
     }
 
@@ -3315,6 +3318,119 @@ function AAAMemorialGate() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SPR-034C: ENTRANCE BOARDS — Welcome, Community Candle, Visitor Guidance
+   Three carved-limestone boards flank the Sacred Avenue inside the gate.
+   All boards face slightly inward toward the path for natural readability.
+══════════════════════════════════════════════════════════════════════════ */
+function AAAEntranceBoards({ entries }: { entries: CommunityYahrzeitEntry[] }) {
+  const recent    = entries.slice(0, 4);
+  const boardGeo  = useMemo(() => new THREE.BoxGeometry(3.6, 2.4, 0.18), []);
+  const frameGeo  = useMemo(() => new THREE.BoxGeometry(4.0, 2.8, 0.14), []);
+  const postGeo   = useMemo(() => new THREE.CylinderGeometry(0.12, 0.17, 3.8, 8), []);
+  const dividerGeo = useMemo(() => new THREE.BoxGeometry(2.4, 0.028, 0.012), []);
+
+  const stoneMat  = <meshStandardMaterial color="#c8bca0" roughness={0.87} metalness={0.04} />;
+  const faceMat   = <meshStandardMaterial color="#d8cfb4" roughness={0.76} metalness={0.03}
+                       emissive={new THREE.Color("#6a5a30")} emissiveIntensity={0.08} />;
+  const postMat   = <meshStandardMaterial color="#b0a48c" roughness={0.91} metalness={0.04} />;
+  const goldDivMat = <meshStandardMaterial color="#D4AF37"
+                        emissive={new THREE.Color("#D4AF37")} emissiveIntensity={1.4} />;
+
+  function BoardShell({ rotY }: { rotY: number }) {
+    return (
+      <>
+        <mesh position={[-1.7, 1.9, 0]} geometry={postGeo} castShadow>{postMat}</mesh>
+        <mesh position={[ 1.7, 1.9, 0]} geometry={postGeo} castShadow>{postMat}</mesh>
+        <mesh position={[0, 2.4, 0]}    geometry={frameGeo} castShadow receiveShadow>{stoneMat}</mesh>
+        <mesh position={[0, 2.4, 0.07]} geometry={boardGeo}>{faceMat}</mesh>
+        <mesh position={[0, 3.01, 0.19]} geometry={dividerGeo}>{goldDivMat}</mesh>
+        {/* Soft warm spot — low intensity, short range */}
+        <pointLight position={[0, 3.8, 1.1]} color="#ffe8a0" intensity={0.9} distance={5} decay={2.2} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      {/* ── Welcome Board — right side of path at z=18.5 ── */}
+      <group position={[5.8, 0, 18.5]} rotation={[0, -Math.PI / 7, 0]}>
+        <BoardShell rotY={-Math.PI / 7} />
+        <Text position={[0, 3.24, 0.20]} fontSize={0.20} color="#D4AF37"
+          anchorX="center" anchorY="middle" maxWidth={3.2} fontWeight={700}
+          letterSpacing={0.06}>
+          MEMORIAL SANCTUARY
+        </Text>
+        <Text position={[0, 2.56, 0.20]} fontSize={0.128} color="#f0e8d0"
+          anchorX="center" anchorY="middle" maxWidth={3.0} lineHeight={1.60}
+          textAlign="center">
+          {"A Valley of Remembrance & Love\n\nMay every candle honour a life."}
+        </Text>
+        <Text position={[0, 1.76, 0.20]} fontSize={0.112} color="#c8a84a"
+          anchorX="center" anchorY="middle" maxWidth={2.8} textAlign="center">
+          Walk forward to enter.
+        </Text>
+      </group>
+
+      {/* ── Community Candle Board — left side of path at z=14 ── */}
+      <group position={[-5.8, 0, 14.0]} rotation={[0, Math.PI / 7, 0]}>
+        <BoardShell rotY={Math.PI / 7} />
+        <Text position={[0, 3.24, 0.20]} fontSize={0.195} color="#D4AF37"
+          anchorX="center" anchorY="middle" maxWidth={3.2} fontWeight={700}>
+          Recently Lit Candles
+        </Text>
+        {recent.length > 0 ? (
+          recent.map((e, i) => {
+            const name  = e.deceasedName.split("·")[0].trim();
+            const donor = e.donorDisplayName ?? "Community";
+            const label = `• ${name.length > 18 ? name.slice(0, 17) + "…" : name}`;
+            return (
+              <group key={e.id}>
+                <Text
+                  position={[0, 2.76 - i * 0.31, 0.20]}
+                  fontSize={0.118}
+                  color="#f0e8d0"
+                  anchorX="center" anchorY="middle"
+                  maxWidth={3.2} textAlign="center">
+                  {label}
+                </Text>
+                <Text
+                  position={[0, 2.60 - i * 0.31, 0.20]}
+                  fontSize={0.092}
+                  color="#9a8050"
+                  anchorX="center" anchorY="middle"
+                  maxWidth={3.0} textAlign="center">
+                  {`lit by ${donor.length > 16 ? donor.slice(0, 15) + "…" : donor}`}
+                </Text>
+              </group>
+            );
+          })
+        ) : (
+          <Text position={[0, 2.30, 0.20]} fontSize={0.114} color="#8a7048"
+            anchorX="center" anchorY="middle" maxWidth={2.9} textAlign="center"
+            lineHeight={1.55}>
+            {"No community candles\nhave been lit today."}
+          </Text>
+        )}
+      </group>
+
+      {/* ── Visitor Guidance Board — right side of path at z=9.5 ── */}
+      <group position={[5.8, 0, 9.5]} rotation={[0, -Math.PI / 7, 0]}>
+        <BoardShell rotY={-Math.PI / 7} />
+        <Text position={[0, 3.24, 0.20]} fontSize={0.21} color="#D4AF37"
+          anchorX="center" anchorY="middle" maxWidth={3.2} fontWeight={700}>
+          Welcome
+        </Text>
+        <Text position={[0, 2.38, 0.20]} fontSize={0.114} color="#f0e8d0"
+          anchorX="center" anchorY="middle" maxWidth={3.0} lineHeight={1.68}
+          textAlign="center">
+          {"Walk to explore.\n\nTap memorials to learn more.\n\nLight a candle. Leave a tribute.\n\nStillness begins Reflection Mode."}
+        </Text>
+      </group>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    SPR-031: WATER LILIES — floating pads and blossoms on the reflection pool
 ══════════════════════════════════════════════════════════════════════════ */
 const R_LILY = makeLCG(113);
@@ -3994,6 +4110,9 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 
       {/* SPR-031: Landmark — memorial gate at valley entrance */}
       <AAAMemorialGate />
+
+      {/* SPR-034C: Entrance boards — Welcome, Community Candle, Visitor Guidance */}
+      <AAAEntranceBoards entries={entries} />
 
       {/* SPR-031: Landmark — Tree of Remembrance */}
       <AAATreeOfRemembrance />
