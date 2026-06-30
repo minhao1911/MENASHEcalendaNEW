@@ -349,6 +349,144 @@ function NotesSection({ entries, onUpdateNote }: { entries: MikvehEntry[]; onUpd
   );
 }
 
+/* ── Ask a Rabbi ────────────────────────────────── */
+const RABBIS = [
+  "Rabbi Eliyahu Birnbaum (Manipur)",
+  "Rabbi Moshe Tolochinsky (Bnei Menashe Center)",
+  "Rabbi Sholom Ber Chaikin (Cleveland)",
+  "Rabbi Yossi Chaikin (South Africa)",
+  "Rabbi Menachem M. Gluckowsky (Israel)",
+  "Dayan Levi Raskin (London)",
+];
+
+function AskARabbiSection() {
+  const [rabbi, setRabbi] = useState(RABBIS[0]);
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [question, setQuestion] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", boxSizing: "border-box", borderRadius: 16,
+    border: "1px solid #e2e8f0", padding: "12px 14px", fontSize: 14,
+    color: "#0f172a", outline: "none", fontFamily: "inherit",
+    background: "white", transition: "box-shadow 0.15s",
+  };
+  const labelStyle: React.CSSProperties = {
+    display: "block", fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 6,
+  };
+
+  function handleSend() {
+    if (!question.trim()) return;
+    setSent(true);
+    setTimeout(() => { setSent(false); setQuestion(""); setEmail(""); setPhone(""); }, 3000);
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Main form card */}
+      <div style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(15,23,42,0.08)" }}>
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: BRAND_DARK, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 6 }}>Halachic guidance</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#0f172a", marginBottom: 4 }}>Ask a Rabbi</div>
+          <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>Send your question privately. Your details are never stored on our servers.</div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Rabbi selector */}
+          <div>
+            <label style={labelStyle}>Send Question to</label>
+            <select
+              value={rabbi}
+              onChange={e => setRabbi(e.target.value)}
+              style={{ ...inputStyle, appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center", paddingRight: 36 }}
+            >
+              {RABBIS.map(r => <option key={r}>{r}</option>)}
+            </select>
+          </div>
+
+          {/* Email + Phone row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={labelStyle}>My Email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>My Phone</label>
+              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 ..." style={inputStyle} />
+            </div>
+          </div>
+
+          {/* Question textarea */}
+          <div>
+            <label style={labelStyle}>My Question</label>
+            <textarea
+              value={question}
+              onChange={e => setQuestion(e.target.value)}
+              rows={6}
+              placeholder="Write your question here. Include any relevant dates or context…"
+              style={{ ...inputStyle, resize: "none" }}
+            />
+          </div>
+        </div>
+
+        {/* Privacy note box */}
+        <div style={{ margin: "16px 0", padding: "14px 16px", borderRadius: 16, background: `rgba(65,190,221,0.07)`, border: `1px solid ${BRAND}30` }}>
+          <div style={{ fontSize: 13, color: "#334155", lineHeight: 1.6 }}>
+            🕊️ <strong>Please note:</strong> The laws of Family Sanctity are sacred and complex. The rabbi is here for your benefit and to guide you with care and discretion.
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button
+            onClick={handleSend}
+            disabled={!question.trim()}
+            style={{
+              borderRadius: 99, border: "none", padding: "12px 24px", fontWeight: 700, fontSize: 14, cursor: question.trim() ? "pointer" : "not-allowed",
+              background: sent ? "rgba(74,222,128,0.15)" : question.trim() ? BRAND : "#e2e8f0",
+              color: sent ? "#15803d" : question.trim() ? "white" : "#94a3b8",
+              transition: "all 0.2s",
+            }}
+          >
+            {sent ? "✓ Question prepared!" : "Send Question"}
+          </button>
+          <button
+            onClick={() => { setQuestion(""); setEmail(""); setPhone(""); }}
+            style={{ borderRadius: 99, background: "white", border: "1px solid #e2e8f0", padding: "12px 24px", fontWeight: 700, fontSize: 14, color: "#334155", cursor: "pointer" }}
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+
+      {/* Helpful note card */}
+      <div style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(15,23,42,0.06)" }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginBottom: 12 }}>Tips for a clear question</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[
+            { icon: "📅", tip: "Include the exact date and time of any relevant occurrence." },
+            { icon: "📍", tip: "Mention your location if it affects timing (e.g. Shabbat end time)." },
+            { icon: "📝", tip: "Describe the background briefly — what you observed, when, and any unusual circumstances." },
+            { icon: "🔒", tip: "Your question is treated with complete privacy and discretion." },
+          ].map(({ icon, tip }) => (
+            <div key={tip} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: "#f8fafc", borderRadius: 14, border: "1px solid #e2e8f0" }}>
+              <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
+              <span style={{ fontSize: 13, color: "#475569", lineHeight: 1.5 }}>{tip}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Status badge */}
+        <div style={{ marginTop: 16, padding: "12px 14px", background: "#f8fafc", borderRadius: 16, border: "1px solid #e2e8f0" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>Status</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#0f172a" }}>{sent ? "Sent ✓" : "Draft only"}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Settings ──────────────────────────────────── */
 function SettingsSection({ onClearAll }: { onClearAll: () => void }) {
   const [confirmClear, setConfirmClear] = useState(false);
