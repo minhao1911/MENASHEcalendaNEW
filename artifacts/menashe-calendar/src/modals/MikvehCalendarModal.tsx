@@ -1,371 +1,560 @@
 import { useState, useEffect } from "react";
 import { HDate } from "@hebcal/core";
-import { useLanguage } from "../context/LanguageContext";
+import { loadMikvehEntries, type MikvehEntry } from "../lib/mikvehStorage";
+
+const STORAGE_KEY = "mikveh_calendar_entries";
+const BRAND = "#41bedd";
+const BRAND_DARK = "#1f86a2";
 
 interface Props { onClose: () => void; }
 
-export interface MikvehEntry {
-  id: string;
-  lastPeriodDate: string;
-  hefsekDate: string;
-  mikvehDate: string;
-  hebrewMikvehDate: string;
-  hebrewHefsekDate: string;
-  note: string;
-  completed: boolean;
-  createdAt: string;
-}
-
-const STORAGE_KEY = "mikveh_calendar_entries";
-
-export function loadMikvehEntries(): MikvehEntry[] {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-  } catch { return []; }
-}
-
-export function saveMikvehEntry(entry: MikvehEntry) {
-  const entries = loadMikvehEntries();
-  const idx = entries.findIndex(e => e.id === entry.id);
-  if (idx >= 0) entries[idx] = entry; else entries.push(entry);
-  entries.sort((a, b) => a.mikvehDate.localeCompare(b.mikvehDate));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-}
-
-function daysUntil(dateStr: string): number {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+function daysUntil(dateStr: string) {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
   const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
-  return Math.round((d.getTime() - today.getTime()) / 86400000);
+  return Math.round((d.getTime() - t.getTime()) / 86400000);
 }
 
-function formatGreg(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+function getHebrewMonthYear() {
+  try { const h = new HDate(new Date()); return `${h.getMonthName()} ${h.getFullYear()}`; }
+  catch { return ""; }
 }
 
-/* ── Mini calendar ──────────────────────────────────────────────── */
-function MiniCalendar({ entries }: { entries: MikvehEntry[] }) {
-  const [viewDate, setViewDate] = useState(() => {
-    const now = new Date();
-    return { month: now.getMonth(), year: now.getFullYear() };
-  });
+/* ── Checklist data ─────────────────────────────── */
+const CHECKLIST = [
+  { group: "Basic Prep", items: [
+    "Hefsek Taharah made at least one week ago",
+    "Bedikah made on day 1 and day 7",
+    "Remove all jewelry, elastics, clips and pins",
+    "Remove false teeth and removable dental apparatus",
+    "Remove false eyelashes and false nails",
+    "Remove band-aids and skin lotions",
+    "Remove all make-up",
+  ]},
+  { group: "Detailed Attention", items: [
+    "Brush teeth – no particles of food remaining",
+    "Wash the entire body thoroughly",
+    "Ears, nose, navel, underarms, back",
+    "Genital area – within all folds",
+    "Between fingers and toes, soles of feet",
+    "Wash hair with shampoo (no conditioner)",
+    "Comb all hair while still wet",
+  ]},
+];
 
+/* ── Full month calendar ───────────────────────── */
+function MonthCalendar({ entries, viewDate, onPrev, onNext }: {
+  entries: MikvehEntry[];
+  viewDate: { month: number; year: number };
+  onPrev: () => void; onNext: () => void;
+}) {
   const { month, year } = viewDate;
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const today = new Date();
 
-  const mikvehDays = new Set(
-    entries.map(e => {
-      const d = new Date(e.mikvehDate);
-      if (d.getMonth() === month && d.getFullYear() === year) return d.getDate();
-      return null;
-    }).filter(Boolean)
-  );
-  const hefsekDays = new Set(
-    entries.map(e => {
-      const d = new Date(e.hefsekDate);
-      if (d.getMonth() === month && d.getFullYear() === year) return d.getDate();
-      return null;
-    }).filter(Boolean)
-  );
+  const mikvehSet = new Set<number>();
+  const hefsekSet = new Set<number>();
+  const completedSet = new Set<number>();
+
+  entries.forEach(e => {
+    const m = new Date(e.mikvehDate);
+    if (m.getMonth() === month && m.getFullYear() === year) {
+      if (e.completed) completedSet.add(m.getDate()); else mikvehSet.add(m.getDate());
+    }
+    const h = new Date(e.hefsekDate);
+    if (h.getMonth() === month && h.getFullYear() === year) hefsekSet.add(h.getDate());
+  });
 
   const monthLabel = new Date(year, month).toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const dow = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const weeks: (number | null)[][] = [];
+  let week: (number | null)[] = Array(firstDay).fill(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    week.push(d);
+    if (week.length === 7) { weeks.push(week); week = []; }
+  }
+  if (week.length > 0) { while (week.length < 7) week.push(null); weeks.push(week); }
 
   return (
-    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "14px 12px", marginBottom: 16 }}>
-      {/* Month nav */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <button onClick={() => setViewDate(v => {
-          const d = new Date(v.year, v.month - 1); return { month: d.getMonth(), year: d.getFullYear() };
-        })} style={{ background: "none", border: "none", color: "rgba(196,181,253,0.8)", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>‹</button>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#e2d9ff" }}>{monthLabel}</div>
-        <button onClick={() => setViewDate(v => {
-          const d = new Date(v.year, v.month + 1); return { month: d.getMonth(), year: d.getFullYear() };
-        })} style={{ background: "none", border: "none", color: "rgba(196,181,253,0.8)", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>›</button>
-      </div>
-
-      {/* Day-of-week headers */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
-        {dow.map(d => (
-          <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: "rgba(196,181,253,0.5)", padding: "2px 0" }}>{d}</div>
-        ))}
-      </div>
-
-      {/* Days grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-        {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
-          const isMikveh = mikvehDays.has(day);
-          const isHefsek = hefsekDays.has(day);
-          return (
-            <div key={day} style={{
-              position: "relative", textAlign: "center", padding: "5px 2px", borderRadius: 8,
-              background: isMikveh ? "rgba(212,168,67,0.2)" : isHefsek ? "rgba(96,165,250,0.15)" : isToday ? "rgba(255,255,255,0.06)" : "transparent",
-              border: isToday ? "1px solid rgba(255,255,255,0.15)" : "1px solid transparent",
-            }}>
-              <span style={{ fontSize: 12, fontWeight: isMikveh || isHefsek ? 800 : 400, color: isMikveh ? "#d4a843" : isHefsek ? "#60a5fa" : "rgba(255,255,255,0.7)" }}>{day}</span>
-              {isMikveh && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#d4a843", margin: "1px auto 0" }} />}
-              {isHefsek && !isMikveh && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#60a5fa", margin: "1px auto 0" }} />}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div style={{ display: "flex", gap: 14, marginTop: 10, justifyContent: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#60a5fa" }} />
-          <span style={{ fontSize: 10, color: "rgba(196,181,253,0.7)" }}>Hefsek Tahara</span>
+    <div style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, padding: "20px", boxShadow: "0 20px 60px rgba(15,23,42,0.1)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "1px solid rgba(148,163,184,0.18)", paddingBottom: 14 }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: "#0f172a" }}>{monthLabel}</div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Interactive monthly calendar</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#d4a843" }} />
-          <span style={{ fontSize: 10, color: "rgba(196,181,253,0.7)" }}>Mikveh Night</span>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={onPrev} style={{ borderRadius: 99, background: "#f1f5f9", border: "none", padding: "8px 16px", fontWeight: 700, fontSize: 14, color: "#334155", cursor: "pointer" }}>←</button>
+          <button onClick={onNext} style={{ borderRadius: 99, background: "#f1f5f9", border: "none", padding: "8px 16px", fontWeight: 700, fontSize: 14, color: "#334155", cursor: "pointer" }}>→</button>
         </div>
+      </div>
+
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 4, minWidth: 320 }}>
+          <thead>
+            <tr>
+              {dow.map(d => (
+                <th key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "#94a3b8", padding: "4px 2px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{d}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {weeks.map((w, wi) => (
+              <tr key={wi}>
+                {w.map((day, di) => {
+                  const isMikveh = day !== null && mikvehSet.has(day);
+                  const isHefsek = day !== null && hefsekSet.has(day);
+                  const isDone = day !== null && completedSet.has(day);
+                  const isToday = day !== null && today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+                  let bg = "transparent";
+                  let color = "#334155";
+                  let fontWeight = 400;
+                  if (isMikveh) { bg = "linear-gradient(180deg,rgba(65,190,221,.22),rgba(65,190,221,.08))"; color = BRAND_DARK; fontWeight = 800; }
+                  else if (isDone) { bg = "linear-gradient(180deg,rgba(74,222,128,.18),rgba(74,222,128,.06))"; color = "#15803d"; fontWeight = 800; }
+                  else if (isHefsek) { bg = "linear-gradient(180deg,rgba(251,191,36,.22),rgba(251,191,36,.08))"; color = "#92400e"; fontWeight = 700; }
+                  else if (isToday) { bg = "rgba(65,190,221,0.08)"; color = BRAND; fontWeight = 700; }
+                  return (
+                    <td key={di} style={{ padding: 2 }}>
+                      {day !== null ? (
+                        <div style={{
+                          borderRadius: 10, padding: "8px 4px", textAlign: "center",
+                          background: bg, border: isToday && !isMikveh && !isDone ? `1px solid ${BRAND}40` : "1px solid transparent",
+                          position: "relative",
+                        }}>
+                          <span style={{ fontSize: 13, fontWeight, color, display: "block" }}>{day}</span>
+                          {isMikveh && <span style={{ display: "block", fontSize: 9, color: BRAND, fontWeight: 800, marginTop: 1 }}>🌙</span>}
+                          {isDone && <span style={{ display: "block", fontSize: 9, color: "#16a34a", fontWeight: 800, marginTop: 1 }}>✓</span>}
+                          {isHefsek && !isMikveh && !isDone && <span style={{ display: "block", fontSize: 9, color: "#d97706", fontWeight: 800, marginTop: 1 }}>◆</span>}
+                        </div>
+                      ) : <div />}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
-/* ── Entry card ─────────────────────────────────────────────────── */
-function EntryCard({ entry, onToggle, onDelete }: {
-  entry: MikvehEntry;
+/* ── Entry list ────────────────────────────────── */
+function EntryList({ entries, onToggle, onDelete }: {
+  entries: MikvehEntry[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const { t } = useLanguage();
-  const days = daysUntil(entry.mikvehDate);
-  const isPast = days < 0;
+  if (entries.length === 0) return (
+    <div style={{ textAlign: "center", padding: "40px 20px", background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, boxShadow: "0 20px 60px rgba(15,23,42,0.08)" }}>
+      <div style={{ fontSize: 40, marginBottom: 12 }}>🌙</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 6 }}>No dates saved yet</div>
+      <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>Use the Tahara Calculator to calculate and save your Mikveh dates. They'll appear here as a timeline.</div>
+    </div>
+  );
+
+  const sorted = [...entries].sort((a, b) => a.mikvehDate.localeCompare(b.mikvehDate));
 
   return (
-    <div style={{
-      borderRadius: 16,
-      background: entry.completed
-        ? "rgba(74,222,128,0.05)"
-        : isPast ? "rgba(255,255,255,0.03)" : "rgba(212,168,67,0.06)",
-      border: `1px solid ${entry.completed ? "rgba(74,222,128,0.2)" : isPast ? "rgba(255,255,255,0.06)" : "rgba(212,168,67,0.2)"}`,
-      padding: "14px 16px",
-      opacity: entry.completed ? 0.7 : 1,
-    }}>
-      {/* Header row */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: entry.completed ? "rgba(74,222,128,0.15)" : isPast ? "rgba(255,255,255,0.06)" : "rgba(212,168,67,0.15)",
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0,
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {sorted.map(entry => {
+        const days = daysUntil(entry.mikvehDate);
+        const isPast = days < 0;
+        const mikvehGreg = new Date(entry.mikvehDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+        const hefsekGreg = new Date(entry.hefsekDate).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+        return (
+          <div key={entry.id} style={{
+            background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)",
+            border: `1px solid ${entry.completed ? "rgba(74,222,128,0.3)" : isPast ? "rgba(148,163,184,0.18)" : "rgba(65,190,221,0.25)"}`,
+            borderRadius: 20, padding: "16px 18px",
+            boxShadow: "0 4px 20px rgba(15,23,42,0.06)",
+            opacity: entry.completed ? 0.75 : 1,
           }}>
-            {entry.completed ? "✅" : isPast ? "🕯️" : "🌙"}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 12,
+                  background: entry.completed ? "rgba(74,222,128,0.15)" : isPast ? "#f8fafc" : `rgba(65,190,221,0.12)`,
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+                }}>
+                  {entry.completed ? "✅" : isPast ? "🕯️" : "🌙"}
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>Mikveh Night</div>
+                  <div style={{ fontSize: 12, color: "#64748b" }}>{mikvehGreg}</div>
+                </div>
+              </div>
+              <div style={{
+                padding: "5px 12px", borderRadius: 99, fontSize: 12, fontWeight: 700,
+                background: entry.completed ? "rgba(74,222,128,0.12)" : isPast ? "#f1f5f9" : days === 0 ? `${BRAND}20` : `${BRAND}12`,
+                color: entry.completed ? "#15803d" : isPast ? "#94a3b8" : days === 0 ? BRAND_DARK : BRAND_DARK,
+                border: `1px solid ${entry.completed ? "rgba(74,222,128,0.25)" : isPast ? "rgba(148,163,184,0.18)" : `${BRAND}40`}`,
+              }}>
+                {entry.completed ? "✓ Done" : days === 0 ? "Tonight!" : isPast ? `${Math.abs(days)}d ago` : `in ${days}d`}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+              <div style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 12, padding: "8px 12px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#d97706", letterSpacing: "0.06em", marginBottom: 2 }}>HEFSEK TAHARA</div>
+                <div style={{ fontSize: 12, color: "#0f172a", fontWeight: 600 }}>{hefsekGreg}</div>
+              </div>
+              <div style={{ background: `rgba(65,190,221,0.08)`, border: `1px solid ${BRAND}30`, borderRadius: 12, padding: "8px 12px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: BRAND_DARK, letterSpacing: "0.06em", marginBottom: 2 }}>MIKVEH</div>
+                <div style={{ fontSize: 12, color: "#0f172a", fontWeight: 600 }}>{mikvehGreg}</div>
+                {entry.hebrewMikvehDate && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{entry.hebrewMikvehDate}</div>}
+              </div>
+            </div>
+
+            {entry.note && (
+              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 10, fontStyle: "italic", padding: "6px 10px", background: "#f8fafc", borderRadius: 8 }}>"{entry.note}"</div>
+            )}
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => onToggle(entry.id)} style={{
+                flex: 1, padding: "9px", borderRadius: 12, border: "none", cursor: "pointer",
+                fontSize: 12, fontWeight: 700,
+                background: entry.completed ? "#f1f5f9" : "rgba(65,190,221,0.1)",
+                color: entry.completed ? "#64748b" : BRAND_DARK,
+              }}>
+                {entry.completed ? "↩ Mark Pending" : "✓ Mark Done"}
+              </button>
+              <button onClick={() => onDelete(entry.id)} style={{
+                padding: "9px 14px", borderRadius: 12, border: "1px solid rgba(239,68,68,0.2)",
+                cursor: "pointer", fontSize: 12, fontWeight: 700,
+                background: "rgba(239,68,68,0.05)", color: "#ef4444",
+              }}>Delete</button>
+            </div>
           </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Checklist ─────────────────────────────────── */
+function ChecklistSection() {
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+
+  const total = CHECKLIST.reduce((a, g) => a + g.items.length, 0);
+  const done = checked.size;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  function toggle(key: string) {
+    setChecked(s => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Header card */}
+      <div style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(15,23,42,0.08)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#e2d9ff" }}>{t.mikvehCalMikvehNight}</div>
-            <div style={{ fontSize: 11, color: "rgba(196,181,253,0.6)", fontFamily: "'Noto Serif Hebrew', serif" }}>{entry.hebrewMikvehDate}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: BRAND_DARK, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>Prep checklist</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: "#0f172a" }}>Mikveh Prep Checklist</div>
+            <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Track completion across the full preparation process.</div>
+          </div>
+          <button onClick={() => setChecked(new Set())} style={{ borderRadius: 99, background: "#0f172a", border: "none", padding: "10px 18px", fontWeight: 700, fontSize: 13, color: "#fff", cursor: "pointer" }}>
+            Reset
+          </button>
+        </div>
+
+        {/* Progress bar */}
+        <div style={{ background: "#f1f5f9", borderRadius: 99, height: 8, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${BRAND}, ${BRAND_DARK})`, borderRadius: 99, transition: "width 0.4s ease" }} />
+        </div>
+        <div style={{ fontSize: 12, color: "#64748b", marginTop: 6, textAlign: "right" }}>{done} / {total} complete — {pct}%</div>
+      </div>
+
+      {/* Groups */}
+      {CHECKLIST.map(group => (
+        <div key={group.group} style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(15,23,42,0.06)" }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginBottom: 14 }}>{group.group}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {group.items.map(item => {
+              const key = `${group.group}:${item}`;
+              const isChecked = checked.has(key);
+              return (
+                <label key={key} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 14, background: isChecked ? `rgba(65,190,221,0.06)` : "#f8fafc", cursor: "pointer", border: `1px solid ${isChecked ? `${BRAND}30` : "rgba(148,163,184,0.15)"}`, transition: "all 0.15s" }}>
+                  <div style={{
+                    width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                    background: isChecked ? BRAND : "white",
+                    border: `2px solid ${isChecked ? BRAND : "#cbd5e1"}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "all 0.15s",
+                  }}>
+                    {isChecked && <span style={{ color: "white", fontSize: 11, fontWeight: 900 }}>✓</span>}
+                  </div>
+                  <input type="checkbox" checked={isChecked} onChange={() => toggle(key)} style={{ display: "none" }} />
+                  <span style={{ fontSize: 13, color: isChecked ? "#64748b" : "#334155", textDecoration: isChecked ? "line-through" : "none", lineHeight: 1.4 }}>{item}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
-        {/* Countdown badge */}
-        <div style={{
-          padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-          background: entry.completed ? "rgba(74,222,128,0.15)" : isPast ? "rgba(255,255,255,0.07)" : days === 0 ? "rgba(212,168,67,0.3)" : "rgba(212,168,67,0.12)",
-          color: entry.completed ? "#4ade80" : isPast ? "rgba(255,255,255,0.4)" : days === 0 ? "#d4a843" : "#d4a843",
-          border: `1px solid ${entry.completed ? "rgba(74,222,128,0.3)" : "rgba(212,168,67,0.2)"}`,
-        }}>
-          {entry.completed ? t.mikvehCalDone : days === 0 ? t.mikvehCalTonight : isPast ? `${Math.abs(days)}d ago` : `${t.mikvehCalIn} ${days}d`}
+      ))}
+    </div>
+  );
+}
+
+/* ── Notes ─────────────────────────────────────── */
+function NotesSection({ entries, onUpdateNote }: { entries: MikvehEntry[]; onUpdateNote: (id: string, note: string) => void }) {
+  const [text, setText] = useState("");
+  const [saved, setSaved] = useState(false);
+  const entriesWithNotes = entries.filter(e => e.note);
+
+  function saveGenericNote() {
+    if (!text.trim()) return;
+    setSaved(true);
+    setTimeout(() => { setSaved(false); setText(""); }, 2000);
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(15,23,42,0.08)" }}>
+        <div style={{ fontSize: 24, fontWeight: 900, color: "#0f172a", marginBottom: 4 }}>Add a Memo</div>
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>Notes are stored privately on this device.</div>
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          rows={5}
+          placeholder="Write your memo here…"
+          style={{ width: "100%", boxSizing: "border-box", borderRadius: 16, border: "1px solid #e2e8f0", padding: "12px 14px", fontSize: 14, color: "#0f172a", outline: "none", resize: "none", fontFamily: "inherit", background: "white" }}
+        />
+        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+          <button onClick={saveGenericNote} style={{ borderRadius: 99, background: saved ? "rgba(74,222,128,0.15)" : BRAND, border: "none", padding: "11px 22px", fontWeight: 700, fontSize: 14, color: saved ? "#15803d" : "white", cursor: "pointer" }}>
+            {saved ? "✓ Saved!" : "Save Memo"}
+          </button>
+          <button onClick={() => setText("")} style={{ borderRadius: 99, background: "white", border: "1px solid #e2e8f0", padding: "11px 22px", fontWeight: 700, fontSize: 14, color: "#334155", cursor: "pointer" }}>Cancel</button>
         </div>
       </div>
 
-      {/* Date rows */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 10px", borderRadius: 8, background: "rgba(96,165,250,0.08)", border: "1px solid rgba(96,165,250,0.12)" }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#60a5fa", letterSpacing: "0.06em" }}>{t.mikvehCalHefsek}</span>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.75)" }}>{formatGreg(entry.hefsekDate)}</span>
+      {entriesWithNotes.length > 0 && (
+        <div style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(15,23,42,0.06)" }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginBottom: 12 }}>Entry Notes</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {entriesWithNotes.map(e => (
+              <div key={e.id} style={{ background: "#f8fafc", borderRadius: 14, padding: "12px 14px", border: "1px solid #e2e8f0" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: BRAND_DARK, marginBottom: 4 }}>
+                  {new Date(e.mikvehDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </div>
+                <div style={{ fontSize: 13, color: "#334155", fontStyle: "italic" }}>"{e.note}"</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 10px", borderRadius: 8, background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.12)" }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#d4a843", letterSpacing: "0.06em" }}>{t.mikvehCalMikveh}</span>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.75)" }}>{formatGreg(entry.mikvehDate)}</span>
-        </div>
-      </div>
-
-      {/* Note */}
-      {entry.note && (
-        <div style={{ fontSize: 12, color: "rgba(196,181,253,0.6)", marginBottom: 10, fontStyle: "italic" }}>"{entry.note}"</div>
       )}
+    </div>
+  );
+}
 
-      {/* Actions */}
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          onClick={() => onToggle(entry.id)}
-          style={{
-            flex: 1, padding: "8px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
-            background: entry.completed ? "rgba(255,255,255,0.06)" : "rgba(74,222,128,0.12)",
-            color: entry.completed ? "rgba(255,255,255,0.4)" : "#4ade80",
-          }}
-        >
-          {entry.completed ? t.mikvehCalMarkPending : t.mikvehCalMarkDone}
-        </button>
-        <button
-          onClick={() => onDelete(entry.id)}
-          style={{
-            padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.2)",
-            cursor: "pointer", fontSize: 12, fontWeight: 700,
-            background: "rgba(239,68,68,0.07)", color: "#f87171",
-          }}
-        >
-          {t.mikvehCalDelete}
-        </button>
+/* ── Settings ──────────────────────────────────── */
+function SettingsSection({ onClearAll }: { onClearAll: () => void }) {
+  const [confirmClear, setConfirmClear] = useState(false);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(15,23,42,0.08)" }}>
+        <div style={{ fontSize: 24, fontWeight: 900, color: "#0f172a", marginBottom: 4 }}>Settings</div>
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>General preferences and data management.</div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ borderRadius: 20, border: "1px solid #e2e8f0", background: "white", padding: 18 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginBottom: 12 }}>Privacy</div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", borderRadius: 14, background: `rgba(65,190,221,0.06)`, border: `1px solid ${BRAND}25` }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>🔒</span>
+              <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>Your Mikveh Calendar is stored privately on this device only. It is never uploaded, shared, or synced to any server.</div>
+            </div>
+          </div>
+
+          <div style={{ borderRadius: 20, border: "1px solid #e2e8f0", background: "white", padding: 18 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginBottom: 12 }}>Reminders</div>
+            {["Preparatory days", "Mikveh nights", "Hefsek Tahara day"].map(r => (
+              <label key={r} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: "#f8fafc", marginBottom: 8, cursor: "pointer" }}>
+                <input type="checkbox" defaultChecked={r !== "Preparatory days"} style={{ accentColor: BRAND, width: 16, height: 16 }} />
+                <span style={{ fontSize: 13, color: "#334155" }}>{r}</span>
+              </label>
+            ))}
+          </div>
+
+          <div style={{ borderRadius: 20, border: "1px solid #fee2e2", background: "rgba(254,242,242,0.5)", padding: 18 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#991b1b", marginBottom: 8 }}>Data Management</div>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>Permanently delete all saved Mikveh calendar entries from this device.</div>
+            {confirmClear ? (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => { onClearAll(); setConfirmClear(false); }} style={{ borderRadius: 99, background: "#ef4444", border: "none", padding: "10px 18px", fontWeight: 700, fontSize: 13, color: "white", cursor: "pointer" }}>Confirm Delete All</button>
+                <button onClick={() => setConfirmClear(false)} style={{ borderRadius: 99, background: "white", border: "1px solid #e2e8f0", padding: "10px 18px", fontWeight: 700, fontSize: 13, color: "#334155", cursor: "pointer" }}>Cancel</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmClear(true)} style={{ borderRadius: 99, background: "white", border: "1px solid #fca5a5", padding: "10px 18px", fontWeight: 700, fontSize: 13, color: "#ef4444", cursor: "pointer" }}>
+                Clear All Data
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ── Main modal ─────────────────────────────────────────────────── */
+/* ── MAIN MODAL ────────────────────────────────── */
+type Tab = "calendar" | "checklist" | "notes" | "settings";
+
 export default function MikvehCalendarModal({ onClose }: Props) {
-  const { t } = useLanguage();
   const [entries, setEntries] = useState<MikvehEntry[]>([]);
-  const [filter, setFilter] = useState<"all" | "upcoming" | "past">("upcoming");
-  const [noteModal, setNoteModal] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState("");
+  const [tab, setTab] = useState<Tab>("calendar");
+  const [viewDate, setViewDate] = useState(() => {
+    const n = new Date(); return { month: n.getMonth(), year: n.getFullYear() };
+  });
 
   useEffect(() => { setEntries(loadMikvehEntries()); }, []);
 
   function toggleDone(id: string) {
-    const updated = entries.map(e => e.id === id ? { ...e, completed: !e.completed } : e);
-    setEntries(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    const u = entries.map(e => e.id === id ? { ...e, completed: !e.completed } : e);
+    setEntries(u); localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
   }
-
   function deleteEntry(id: string) {
-    const updated = entries.filter(e => e.id !== id);
-    setEntries(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    const u = entries.filter(e => e.id !== id);
+    setEntries(u); localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+  }
+  function updateNote(id: string, note: string) {
+    const u = entries.map(e => e.id === id ? { ...e, note } : e);
+    setEntries(u); localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+  }
+  function clearAll() {
+    setEntries([]); localStorage.removeItem(STORAGE_KEY);
   }
 
-  function saveNote(id: string) {
-    const updated = entries.map(e => e.id === id ? { ...e, note: noteText } : e);
-    setEntries(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setNoteModal(null);
-    setNoteText("");
-  }
+  const nextMikveh = entries.filter(e => !e.completed && daysUntil(e.mikvehDate) >= 0)
+    .sort((a, b) => a.mikvehDate.localeCompare(b.mikvehDate))[0];
 
-  const filtered = entries.filter(e => {
-    const days = daysUntil(e.mikvehDate);
-    if (filter === "upcoming") return days >= 0 && !e.completed;
-    if (filter === "past") return days < 0 || e.completed;
-    return true;
-  });
+  const upcomingCount = entries.filter(e => !e.completed && daysUntil(e.mikvehDate) >= 0).length;
+  const hebrewDate = getHebrewMonthYear();
 
-  const upcomingCount = entries.filter(e => daysUntil(e.mikvehDate) >= 0 && !e.completed).length;
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "calendar", label: "Calendar" },
+    { id: "checklist", label: "Checklist" },
+    { id: "notes", label: "Notes" },
+    { id: "settings", label: "Settings" },
+  ];
 
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 300,
-      background: "linear-gradient(160deg, #0d0820 0%, #12102a 50%, #0a1628 100%)",
-      display: "flex", flexDirection: "column",
+      background: "radial-gradient(circle at top left, rgba(65,190,221,.18), transparent 35%), radial-gradient(circle at top right, rgba(31,134,162,.12), transparent 30%), linear-gradient(180deg,#f7fdff 0%,#eefbfe 45%,#ffffff 100%)",
+      display: "flex", flexDirection: "column", overflowY: "auto",
     }}>
-      {/* Header */}
+      {/* Sticky header */}
       <div style={{
-        padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)",
-        display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
-        background: "rgba(255,255,255,0.02)",
+        position: "sticky", top: 0, zIndex: 10,
+        background: "rgba(255,255,255,0.7)", backdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.6)",
       }}>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(196,181,253,0.8)", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontWeight: 600 }}>
-          ← {t.back ?? "Back"}
-        </button>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#e2d9ff" }}>{t.mikvehCalTitle}</div>
-          {upcomingCount > 0 && (
-            <div style={{ fontSize: 11, color: "#d4a843", fontWeight: 600 }}>
-              {upcomingCount} {t.mikvehCalUpcomingLabel}
+        <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: BRAND, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(65,190,221,0.35)" }}>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M12 2c3.3 3.5 5 6.7 5 9.5A5 5 0 1 1 7 11.5C7 8.7 8.7 5.5 12 2Zm0 20c5 0 9-3.9 9-8.8 0-2.4-1-4.8-2.8-6.8-.5 3.7-2.7 6.7-6.2 8.8-3.5-2.1-5.7-5.1-6.2-8.8C4 8.4 3 10.8 3 13.2 3 18.1 7 22 12 22Z"/></svg>
             </div>
-          )}
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.01em" }}>My Mikveh Calendar</div>
+              <div style={{ fontSize: 11, color: "#64748b" }}>Private · On-device only</div>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: "#f1f5f9", border: "none", fontSize: 16, color: "#64748b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>✕</button>
         </div>
-        <div style={{ width: 56 }} />
-      </div>
 
-      {/* Scrollable body */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
-
-        {/* Mini calendar */}
-        {entries.length > 0 && <MiniCalendar entries={entries} />}
-
-        {/* Filter tabs */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-          {(["upcoming", "past", "all"] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{
-              flex: 1, padding: "8px 0", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
-              background: filter === f ? "rgba(212,168,67,0.15)" : "rgba(255,255,255,0.04)",
-              color: filter === f ? "#d4a843" : "rgba(196,181,253,0.6)",
-              borderBottom: filter === f ? "2px solid #d4a843" : "2px solid transparent",
+        {/* Tab nav */}
+        <div style={{ display: "flex", gap: 6, padding: "0 16px 12px", overflowX: "auto" }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              borderRadius: 99, padding: "8px 18px", border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", transition: "all 0.15s",
+              background: tab === t.id ? "#0f172a" : "#f1f5f9",
+              color: tab === t.id ? "white" : "#475569",
             }}>
-              {f === "upcoming" ? t.mikvehCalUpcoming : f === "past" ? t.mikvehCalPast : t.mikvehCalAll}
+              {t.label}
             </button>
           ))}
         </div>
-
-        {/* Entry list */}
-        {filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "48px 20px" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🌙</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#e2d9ff", marginBottom: 6 }}>{t.mikvehCalEmptyTitle}</div>
-            <div style={{ fontSize: 13, color: "rgba(196,181,253,0.5)", lineHeight: 1.6 }}>
-              {entries.length === 0 ? t.mikvehCalEmptySub : t.mikvehCalEmptyFilter}
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {filtered.map(entry => (
-              <div key={entry.id}>
-                <EntryCard
-                  entry={entry}
-                  onToggle={toggleDone}
-                  onDelete={deleteEntry}
-                />
-                <button
-                  onClick={() => { setNoteModal(entry.id); setNoteText(entry.note ?? ""); }}
-                  style={{ marginTop: 6, marginLeft: 4, background: "none", border: "none", fontSize: 11, color: "rgba(196,181,253,0.45)", cursor: "pointer", padding: "0 4px" }}
-                >
-                  {entry.note ? "✏️ Edit note" : "＋ Add note"}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Privacy notice */}
-        <div style={{ marginTop: 24, padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
-          <div style={{ fontSize: 11, color: "rgba(196,181,253,0.5)", lineHeight: 1.6 }}>
-            {t.mikvehCalPrivacy}
-          </div>
-        </div>
       </div>
 
-      {/* Note editor overlay */}
-      {noteModal && (
-        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 10, display: "flex", alignItems: "flex-end" }}>
-          <div style={{ width: "100%", background: "#1a1040", borderRadius: "20px 20px 0 0", padding: 20 }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#e2d9ff", marginBottom: 12 }}>Add Note</div>
-            <textarea
-              autoFocus
-              value={noteText}
-              onChange={e => setNoteText(e.target.value)}
-              placeholder="e.g. appointment at 9pm, need to book in advance…"
-              rows={3}
-              style={{
-                width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 10,
-                background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
-                color: "#e2d9ff", fontSize: 14, outline: "none", resize: "none", fontFamily: "inherit",
-              }}
-            />
-            <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-              <button onClick={() => setNoteModal(null)} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "none", color: "rgba(196,181,253,0.7)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
-              <button onClick={() => saveNote(noteModal!)} style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: "rgba(212,168,67,0.2)", color: "#d4a843", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Save Note</button>
+      {/* Body */}
+      <div style={{ flex: 1, padding: "16px" }}>
+
+        {tab === "calendar" && (
+          <>
+            {/* Hero stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 14, marginBottom: 16 }}>
+              <div style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(15,23,42,0.1)" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: BRAND_DARK, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 6 }}>Today's overview</div>
+                    <div style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", lineHeight: 1.1 }}>{hebrewDate || new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+                    <div style={{ fontSize: 13, color: "#64748b", marginTop: 6, maxWidth: 280 }}>Track Mikveh dates, prep checklist, and notes in one private space.</div>
+                  </div>
+                  {nextMikveh && (
+                    <div style={{ background: `rgba(65,190,221,0.1)`, border: `1px solid ${BRAND}30`, borderRadius: 20, padding: "14px 18px", textAlign: "center", minWidth: 130 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: BRAND_DARK, marginBottom: 4 }}>Next Mikveh Night</div>
+                      <div style={{ fontSize: 26, fontWeight: 900, color: "#0f172a" }}>
+                        {new Date(nextMikveh.mikvehDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                        {daysUntil(nextMikveh.mikvehDate) === 0 ? "Tonight!" : `in ${daysUntil(nextMikveh.mikvehDate)} days`}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                  {[
+                    { label: "Saved flows", value: entries.length },
+                    { label: "Upcoming", value: upcomingCount },
+                    { label: "Completed", value: entries.filter(e => e.completed).length },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: "#f8fafc", borderRadius: 16, padding: "12px 10px", textAlign: "center" }}>
+                      <div style={{ fontSize: 22, fontWeight: 900, color: "#0f172a" }}>{s.value}</div>
+                      <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+
+            {/* Calendar grid */}
+            <div style={{ marginBottom: 16 }}>
+              <MonthCalendar
+                entries={entries}
+                viewDate={viewDate}
+                onPrev={() => setViewDate(v => { const d = new Date(v.year, v.month - 1); return { month: d.getMonth(), year: d.getFullYear() }; })}
+                onNext={() => setViewDate(v => { const d = new Date(v.year, v.month + 1); return { month: d.getMonth(), year: d.getFullYear() }; })}
+              />
+            </div>
+
+            {/* Legend */}
+            <div style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 20, padding: "14px 18px", marginBottom: 16, boxShadow: "0 4px 20px rgba(15,23,42,0.06)", display: "flex", flexWrap: "wrap", gap: 12 }}>
+              {[
+                { color: "linear-gradient(90deg,rgba(251,191,36,.4),rgba(251,191,36,.15))", label: "Hefsek Tahara" },
+                { color: `linear-gradient(90deg,${BRAND}50,${BRAND}20)`, label: "Mikveh Night" },
+                { color: "linear-gradient(90deg,rgba(74,222,128,.4),rgba(74,222,128,.15))", label: "Completed" },
+              ].map(l => (
+                <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 28, height: 14, borderRadius: 4, background: l.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: "#475569", fontWeight: 500 }}>{l.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Entry timeline */}
+            <EntryList entries={entries} onToggle={toggleDone} onDelete={deleteEntry} />
+          </>
+        )}
+
+        {tab === "checklist" && <ChecklistSection />}
+        {tab === "notes" && <NotesSection entries={entries} onUpdateNote={updateNote} />}
+        {tab === "settings" && <SettingsSection onClearAll={clearAll} />}
+
+        <div style={{ height: 32 }} />
+      </div>
     </div>
   );
 }

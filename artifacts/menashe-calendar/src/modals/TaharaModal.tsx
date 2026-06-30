@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { HDate } from "@hebcal/core";
 import { useLanguage } from "../context/LanguageContext";
-import { saveMikvehEntry, loadMikvehEntries, type MikvehEntry } from "./MikvehCalendarModal";
+import { saveMikvehEntry, loadMikvehEntries, type MikvehEntry } from "../lib/mikvehStorage";
 
 interface Props {
   onClose: () => void;
