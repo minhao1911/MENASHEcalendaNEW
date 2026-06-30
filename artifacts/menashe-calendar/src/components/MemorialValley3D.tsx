@@ -3958,6 +3958,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       <AAAFocusCamera selectedId={selectedId} entries={litEntries} ctrlRef={ctrlRef} sceneView={sceneView} walkMode={walkMode} />
       <AAASceneCameraDriver sceneView={sceneView} ctrlRef={ctrlRef} walkMode={walkMode} />
       {cameraStateRef && <CameraStateTracker stateRef={cameraStateRef} ctrlRef={ctrlRef} />}
+      {walkMode && <AAAMiniMap litCount={litEntries.length} />}
 
       {/* ── Phase 3: Day/night sky dome (renders behind everything) ── */}
       <AAASkyDome />
@@ -4088,6 +4089,125 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
         enableSSAO={false}
       />
     </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   WALK-MODE MINI-MAP — top-down valley compass (canvas 2D, drawn per-frame)
+   Scene range ±27 units maps to 120 px; scene +Z = canvas +Y (south=bottom)
+══════════════════════════════════════════════════════════════════════════ */
+const MM_SIZE  = 120;
+const MM_HALF  = MM_SIZE / 2;
+const MM_SCALE = MM_SIZE / 54;        // ±27 scene units → 120 px
+const _mmFwd   = new THREE.Vector3(); // reused across frames (no alloc per frame)
+const mm_x  = (sx: number) => MM_HALF + sx * MM_SCALE;
+const mm_z  = (sz: number) => MM_HALF + sz * MM_SCALE;
+
+function AAAMiniMap({ litCount }: { litCount: number }) {
+  const { camera } = useThree();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useFrame(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, MM_SIZE, MM_SIZE);
+
+    /* ── Circular clip ── */
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(MM_HALF, MM_HALF, MM_HALF - 1, 0, Math.PI * 2);
+    ctx.clip();
+
+    /* ── Background ── */
+    ctx.fillStyle = 'rgba(6,12,22,0.86)';
+    ctx.fillRect(0, 0, MM_SIZE, MM_SIZE);
+
+    /* ── Valley floor disc (radius 20 scene units) ── */
+    ctx.fillStyle = 'rgba(35,55,25,0.32)';
+    ctx.beginPath();
+    ctx.arc(MM_HALF, MM_HALF, 20 * MM_SCALE, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* ── River — runs N/S at x ≈ -4 (from terrainHeightAt riverDist) ── */
+    const rX   = mm_x(-4);
+    const rGrd = ctx.createLinearGradient(rX - 5, 0, rX + 5, 0);
+    rGrd.addColorStop(0,   'rgba(55,130,195,0)');
+    rGrd.addColorStop(0.5, 'rgba(55,130,195,0.38)');
+    rGrd.addColorStop(1,   'rgba(55,130,195,0)');
+    ctx.fillStyle = rGrd;
+    ctx.fillRect(rX - 5, 0, 10, MM_SIZE);
+
+    /* ── Candle positions — gold bright=lit, dim=unlit ── */
+    for (let i = 0; i < ENTRY_POSITIONS.length; i++) {
+      const [cx, , cz] = ENTRY_POSITIONS[i];
+      const lit = i < litCount;
+      ctx.fillStyle = lit ? 'rgba(255,195,50,0.90)' : 'rgba(255,195,50,0.18)';
+      ctx.beginPath();
+      ctx.arc(mm_x(cx), mm_z(cz), lit ? 2.1 : 1.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    /* ── Tree of Remembrance — emerald at origin ── */
+    ctx.shadowColor = 'rgba(80,200,80,0.65)';
+    ctx.shadowBlur  = 5;
+    ctx.fillStyle   = 'rgba(100,215,105,0.90)';
+    ctx.beginPath();
+    ctx.arc(MM_HALF, MM_HALF, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    /* ── Player arrow (world-direction vector → canvas) ── */
+    const px = mm_x(camera.position.x);
+    const pz = mm_z(camera.position.z);
+    camera.getWorldDirection(_mmFwd);
+    const fdx = _mmFwd.x;
+    const fdz = _mmFwd.z;   // scene +Z = canvas down (south=bottom) ✓
+    const AL = 8, AB = 4, ABK = 3;
+    ctx.fillStyle   = 'rgba(255,255,255,0.95)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.42)';
+    ctx.lineWidth   = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(px + fdx * AL, pz + fdz * AL);
+    ctx.lineTo(px - fdx * ABK - fdz * AB,  pz - fdz * ABK + fdx * AB);
+    ctx.lineTo(px - fdx * ABK + fdz * AB,  pz - fdz * ABK - fdx * AB);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+
+    /* ── Gold border ring (over the clip boundary) ── */
+    ctx.strokeStyle = 'rgba(212,175,55,0.48)';
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.arc(MM_HALF, MM_HALF, MM_HALF - 1, 0, Math.PI * 2);
+    ctx.stroke();
+
+    /* ── Compass N — north label ── */
+    ctx.fillStyle  = 'rgba(212,175,55,0.80)';
+    ctx.font       = 'bold 9px system-ui,sans-serif';
+    ctx.textAlign  = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('N', MM_HALF, 3);
+  });
+
+  return (
+    <Html fullscreen zIndexRange={[8, 0]}>
+      <div style={{
+        position: 'absolute', bottom: 96, left: 12,
+        pointerEvents: 'none', userSelect: 'none',
+      }}>
+        <canvas
+          ref={canvasRef}
+          width={MM_SIZE}
+          height={MM_SIZE}
+          style={{ borderRadius: '50%', display: 'block', boxShadow: '0 2px 16px rgba(0,0,0,0.55)' }}
+        />
+      </div>
+    </Html>
   );
 }
 
