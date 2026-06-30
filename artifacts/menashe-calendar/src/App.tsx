@@ -56,7 +56,6 @@ import AdminModal from "./modals/AdminModal";
 import OmerModal from "./modals/OmerModal";
 import PrayerTimesModal from "./modals/PrayerTimesModal";
 import CommunityYahrzeitModal from "./modals/CommunityYahrzeitModal";
-import MemorialSanctuaryModal from "./modals/MemorialSanctuaryModal";
 import MoreToolsModal from "./pages/MoreToolsModal";
 import ChatModal from "./modals/ChatModal";
 import NotificationDrawer from "./components/NotificationDrawer";
@@ -208,7 +207,7 @@ type Modal =
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
   | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar"
   | "announcements" | "events" | "members" | "prayers-board" | "torah-tracker" | "profile"
-  | "community-yahrzeit" | "memorial-sanctuary" | "notifications" | "whats-new" | "mikveh-calendar" | null;
+  | "community-yahrzeit" | "notifications" | "whats-new" | "mikveh-calendar" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -538,7 +537,6 @@ function AppShell() {
             onShowAnnouncements={() => setModal("announcements")}
             onShowEvents={() => setModal("events")}
             onShowCommunityYahrzeit={() => setModal("community-yahrzeit")}
-            onShowMemorialSanctuary={() => setModal("memorial-sanctuary")}
             onShowYartzeit={() => setModal("yartzeit")}
             onShowMussar={() => setModal("mussar")}
             onShowPrayerBoard={() => setModal("prayers-board")}
@@ -749,10 +747,7 @@ function AppShell() {
               {modal === "community-yahrzeit" && (
                 <CommunityYahrzeitModal onClose={closeModal} userName={publicProfile?.displayName} />
               )}
-              {modal === "memorial-sanctuary" && (
-                <MemorialSanctuaryModal onClose={closeModal} userName={publicProfile?.displayName} />
-              )}
-              {modal === "community" && <CommunityModal onClose={closeModal} onYahrzeitBoard={() => setModal("community-yahrzeit")} isAdmin={isAdmin} />}
+              {modal === "community" && <CommunityModal onClose={closeModal} isAdmin={isAdmin} />}
               {modal === "census" && <CensusModal onClose={closeModal} isAdmin={isAdmin} />}
               {modal === "omer" && <OmerModal onClose={closeModal} />}
               {modal === "events" && <EventsModal onClose={closeModal} isAdmin={isAdmin} />}
@@ -824,7 +819,6 @@ function AppShell() {
                   onMembers={() => setModal("members")}
                   onPrayerBoard={() => setModal("prayers-board")}
                   onTorahTracker={() => setModal("torah-tracker")}
-                  onMemorial={() => setModal("community-yahrzeit")}
                   isPremium={isPremium}
                   candleEnabled={candleEnabled}
                   onToggleCandle={onToggleCandle}

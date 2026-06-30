@@ -1233,7 +1233,6 @@ interface HomeProps {
   onShowAnnouncements: () => void;
   onShowEvents: () => void;
   onShowCommunityYahrzeit: () => void;
-  onShowMemorialSanctuary?: () => void;
   onShowYartzeit: () => void;
   onShowMussar: () => void;
   onShowPrayerBoard: () => void;
@@ -2744,7 +2743,7 @@ export default function Home({
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
   onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus, onShowMembers,
   onNotifBell, notifActive, announcementCount,
-  onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowMemorialSanctuary, onShowYartzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
+  onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowYartzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
   unreadAnnouncements = [],
   profileName,
   profilePhotoUrl,
@@ -3043,8 +3042,8 @@ export default function Home({
           onShowCensus={onShowCensus}
         />
 
-        {/* ── Memorial Sanctuary entry ── */}
-        <MemorialSanctuaryEntry onEnter={onShowMemorialSanctuary ?? onShowCommunityYahrzeit} />
+        {/* ── Memorial Sanctuary entry — routes through the Memorial Hub, never directly into the 3D world ── */}
+        <MemorialSanctuaryEntry onEnter={onShowCommunityYahrzeit} />
 
         {/* ── Prayer Section: siddur ── */}
         <PrayerSection onOpenSiddur={onOpenSiddur} />
@@ -3854,7 +3853,6 @@ function CommunityFAB({
   const items = [
     { label: t.fabAnnouncements, icon: "📢", action: onShowAnnouncements, count: announcementCount },
     { label: t.fabCommunityEvents, icon: "📅", action: onShowEvents, count: upcomingEventCount },
-    { label: t.fabCommunityMemorial, icon: "🕯", action: onShowCommunityYahrzeit, count: upcomingYahrzeitCount },
     { label: t.fabTorahWisdom, icon: "📖", action: onShowMussar },
     { label: t.fabPrayerBoard, icon: "🙏", action: onShowPrayerBoard },
     { label: t.fabTorahTracker, icon: "✡", action: onShowTorahTracker },

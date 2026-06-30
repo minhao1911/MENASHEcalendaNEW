@@ -1023,3 +1023,104 @@ Family → Memorial → Person
 - Bulk import for community historical records
 - AI Eulogy Assist via Gemini integration
 - Memorial QR codes for physical grave markers
+
+---
+
+## Memorial Sanctuary Navigation (SPR-035 Final — Navigation Simplification)
+
+> Scope: navigation architecture only. No backend, database, business-logic,
+> or SanctuaryWorld redesign changes were made in this sprint.
+
+The Memorial Sanctuary feature has exactly **two** production entry points.
+Both paths converge on the same Memorial Hub and the same SanctuaryWorld —
+there is no duplicate implementation and no way to reach the 3D world without
+passing through the Hub first.
+
+### Primary entry — Home
+
+```
+HOME
+  │
+  ▼
+Memorial Sanctuary Card
+  │
+  ▼
+Memorial Hub                 (CommunityYahrzeitModal)
+  │
+  ▼
+Enter Memorial Sanctuary      ("Enter Memorial Sanctuary" CTA)
+  │
+  ▼
+SanctuaryWorld                (MemorialSanctuaryModal — 3D experience)
+```
+
+### Secondary entry — Settings
+
+```
+SETTINGS
+  │
+  ▼
+Yahrzeit Calculator           (YartzeitModal)
+  │
+  ▼
+Memorial Hub                  (CommunityYahrzeitModal)
+  │
+  ▼
+Enter Memorial Sanctuary
+  │
+  ▼
+SanctuaryWorld
+```
+
+### Components
+
+- **Memorial Hub** — implemented by `CommunityYahrzeitModal.tsx`. Provides
+  search, "Light a Candle", community statistics, flowers, Hebrew blessing,
+  and memorial content. Owns the local `showSanctuary` state that is the
+  *only* gate into SanctuaryWorld.
+- **SanctuaryWorld** — implemented by `MemorialSanctuaryModal.tsx`. Rendered
+  exclusively from inside the Hub (`showSanctuary === true`). Internally
+  hosts the Memorial Browser (`MemorialBrowserPanel.tsx`, reached via the
+  Sanctuary's own internal nav, not a separate outside entry point), the
+  candle system, tribute system, and Reflection Mode.
+- **Memorial Sanctuary Card** — `MemorialSanctuaryEntry` in `Home.tsx`. Its
+  `onEnter` calls `onShowCommunityYahrzeit`, opening the Hub (never the World
+  directly).
+- **Yahrzeit Calculator path** — `YartzeitModal.tsx`'s "Community Memorial
+  Board" button calls `onCommunityBoard`, which opens the Hub.
+
+### Removed duplicate entrances (this sprint)
+
+All of the following used to open the Hub (or, in one case, the World)
+directly from secondary surfaces. They have been removed so the Hub has
+exactly two callers:
+
+| Removed from | What it was |
+| --- | --- |
+| `App.tsx` | Global `modal === "memorial-sanctuary"` route — let the Home card skip the Hub and open SanctuaryWorld directly. |
+| `Home.tsx` (`CommunityFAB`) | "Community Memorial" floating-action-button shortcut straight into the Hub. |
+| `MoreToolsModal.tsx` | "Memorial Sanctuary" grid item / `onMemorial` shortcut straight into the Hub. |
+| `CommunityModal.tsx` | "Yahrzeit Board" section / `onYahrzeitBoard` shortcut straight into the Hub. |
+
+Nothing about the candle system, tribute system, Memorial Browser, Memorial
+Profile, community statistics, search, or Reflection Mode was touched — this
+was a navigation-only simplification.
+
+### Verification report
+
+- ✅ Exactly two Sanctuary entry points remain (Home card, Settings →
+  Yahrzeit Calculator).
+- ✅ Home path works: Home → Card → Hub → "Enter Memorial Sanctuary" → World.
+- ✅ Settings path works: Settings → Yahrzeit Calculator → "Community
+  Memorial Board" → Hub → "Enter Memorial Sanctuary" → World.
+- ✅ Both paths open the identical `CommunityYahrzeitModal` (Hub) and
+  identical `MemorialSanctuaryModal` (World) — no duplicate components.
+- ✅ No dead `setModal` routes — `"memorial-sanctuary"` removed from the
+  `Modal` union in `App.tsx` since nothing sets it anymore.
+- ✅ No remaining references to `onYahrzeitBoard`, `onMemorial`, or
+  `onShowMemorialSanctuary` anywhere in the codebase.
+- ✅ No broken buttons, no unreachable navigation, no dead routes.
+- ✅ `tsc --noEmit` introduces no new errors in any file touched by this
+  change (pre-existing unrelated errors elsewhere are unaffected).
+- ✅ App boots and renders correctly after the change (verified live via the
+  running dev workflow).

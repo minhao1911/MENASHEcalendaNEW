@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-interface Props { onClose: () => void; onYahrzeitBoard?: () => void; }
+interface Props { onClose: () => void; }
 
 interface CommunityLink {
   id: string;
@@ -61,7 +61,7 @@ function groupByCategory(links: CommunityLink[]): Record<string, CommunityLink[]
   }, {});
 }
 
-export default function CommunityModal({ onClose, onYahrzeitBoard, isAdmin = false }: Props & { isAdmin?: boolean }) {
+export default function CommunityModal({ onClose, isAdmin = false }: Props & { isAdmin?: boolean }) {
   const [links, setLinks] = useState<CommunityLink[]>(loadLinks);
   const [view, setView] = useState<"main" | "admin" | "form">("main");
   const [form, setForm] = useState(emptyForm());
@@ -426,61 +426,6 @@ export default function CommunityModal({ onClose, onYahrzeitBoard, isAdmin = fal
 
         {/* ── Body content ── */}
         <div style={{ padding: "20px 16px 8px" }}>
-
-          {/* Yahrzeit Board entry */}
-          {onYahrzeitBoard && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".1em", marginBottom: 8, paddingLeft: 2 }}>
-                MEMORIAL
-              </div>
-              <div
-                onClick={onYahrzeitBoard}
-                style={{
-                  borderRadius: 16, border: "1px solid rgba(212,168,67,0.3)",
-                  background: "linear-gradient(135deg, rgba(212,168,67,0.09), rgba(212,168,67,0.03))",
-                  overflow: "hidden", cursor: "pointer",
-                  transition: "border-color 0.2s, box-shadow 0.2s",
-                  boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
-                }}
-                onMouseEnter={e => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.borderColor = "rgba(212,168,67,0.6)";
-                  el.style.boxShadow = "0 4px 20px rgba(212,168,67,0.12)";
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.borderColor = "rgba(212,168,67,0.3)";
-                  el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.2)";
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
-                  <div style={{
-                    width: 50, height: 50, borderRadius: 14, flexShrink: 0,
-                    background: "linear-gradient(135deg, rgba(212,168,67,0.18), rgba(212,168,67,0.06))",
-                    border: "1px solid rgba(212,168,67,0.3)",
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
-                  }}>
-                    🕯
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>Community Yahrzeit Board</div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.5 }}>
-                      Light memorial candles — the community prays &amp; learns together
-                    </div>
-                  </div>
-                  <div style={{
-                    width: 30, height: 30, borderRadius: 9, flexShrink: 0,
-                    background: "rgba(212,168,67,0.14)", border: "1px solid rgba(212,168,67,0.25)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M4 2 L9 6 L4 10" stroke="#d4a843" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Links grouped by category */}
           {Object.keys(grouped).length === 0 ? (
