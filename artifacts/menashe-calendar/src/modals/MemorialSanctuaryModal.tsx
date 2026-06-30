@@ -950,12 +950,13 @@ function StatsChipRow({ candleCount }: { candleCount: number }) {
 
 /* ═══════════════════ TOP HEADER ═════════════════════════════════════════════ */
 function TopHeader({
-  searchQuery, setSearchQuery, searchRef, onClose,
+  searchQuery, setSearchQuery, searchRef, onClose, onLightCandle,
 }: {
   searchQuery: string;
   setSearchQuery: (v: string) => void;
   searchRef: React.RefObject<HTMLInputElement>;
   onClose: () => void;
+  onLightCandle: () => void;
 }) {
   const [time, setTime] = useState(formatTime());
   useEffect(() => {
@@ -1017,8 +1018,27 @@ function TopHeader({
         )}
       </div>
 
-      {/* Right: Time + Close */}
+      {/* Right: Light Candle + Time + Close */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        {/* Persistent Light Candle button */}
+        <button
+          onClick={onLightCandle}
+          style={{
+            display: "flex", alignItems: "center", gap: 7,
+            padding: "8px 13px", borderRadius: 13,
+            background: "rgba(212,175,55,0.18)",
+            border: "1px solid rgba(212,175,55,0.55)",
+            color: "#f5dc78", fontSize: 12, fontWeight: 800,
+            cursor: "pointer", flexShrink: 0,
+            backdropFilter: "blur(16px)",
+            boxShadow: "0 0 16px rgba(212,175,55,0.22)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          <span style={{ fontSize: 16, animation: "ms-flicker 1.8s infinite" }}>🕯</span>
+          Light Candle
+        </button>
+
         <div style={{
           background: "rgba(6,3,18,0.82)",
           backdropFilter: "blur(16px)",
@@ -2785,6 +2805,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
           setSearchQuery={setSearchQuery}
           searchRef={searchRef}
           onClose={onClose}
+          onLightCandle={handleHomePanelLightCandle}
         />
 
         {/* ── SEARCH RESULTS ── */}

@@ -4153,7 +4153,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
   const ctrlRef      = useRef<any>(null);
   const particlesRef = useRef<FootstepPt[]>([]);
   const fpResetRef   = useRef<{ reset: () => void } | null>(null);
-  const [walkMode, setWalkMode] = useState(true);
+  const [walkMode, setWalkMode] = useState(false);
 
   return (
     <>
