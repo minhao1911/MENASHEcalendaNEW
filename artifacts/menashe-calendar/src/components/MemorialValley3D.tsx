@@ -2000,9 +2000,11 @@ function VirtualJoystick({ onChange }: { onChange: (x: number, y: number) => voi
 function FirstPersonController({
   ctrlRef,
   particlesRef,
+  resetRef,
 }: {
   ctrlRef:      React.MutableRefObject<any>;
   particlesRef: React.MutableRefObject<FootstepPt[]>;
+  resetRef?:    React.MutableRefObject<{ reset: () => void } | null>;
 }) {
   const { camera } = useThree();
   const plcRef = useRef<any>(null);
@@ -2079,14 +2081,34 @@ function FirstPersonController({
 
   /* ── Init ctrlRef; on touch always "active" ── */
   useEffect(() => {
-    ctrlRef.current = { target: new THREE.Vector3(0, 1.7, 0), update: () => {} };
+    const spawnX = 0, spawnZ = 22;
+    const spawnY = terrainHeightAt(spawnX, spawnZ) + 1.7;
+    ctrlRef.current = { target: new THREE.Vector3(spawnX, spawnY, 0), update: () => {} };
     if (isTouch.current) {
       isLocked.current = true;
       camera.rotation.order = "YXZ";
       camera.rotation.y = touchLook.current.yaw;
       camera.rotation.x = touchLook.current.pitch;
     }
-  }, [ctrlRef, camera]);
+    /* Expose a reset() so the "Return to entrance" button can teleport the
+       player back to spawn — resetting position, orientation, and velocity. */
+    if (resetRef) {
+      resetRef.current = {
+        reset: () => {
+          const sy = terrainHeightAt(spawnX, spawnZ) + 1.7;
+          camera.position.set(spawnX, sy, spawnZ);
+          camera.rotation.order = "YXZ";
+          camera.rotation.y = Math.PI;   // face -Z (into the memorial valley)
+          camera.rotation.x = -0.08;
+          passiveLook.current = { yaw: Math.PI, pitch: -0.08 };
+          touchLook.current   = { yaw: Math.PI, pitch: -0.08 };
+          vel.current.set(0, 0, 0);
+          keys.current = { w: false, a: false, s: false, d: false };
+          if (ctrlRef.current) ctrlRef.current.target.set(spawnX, sy, 0);
+        },
+      };
+    }
+  }, [ctrlRef, camera, resetRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Desktop passive mouse-look — works before pointer-lock is acquired ── */
   useEffect(() => {
@@ -3841,6 +3863,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
   const litEntries   = useMemo(() => entries.slice(0, ENTRY_POSITIONS.length), [entries]);
   const ctrlRef      = useRef<any>(null);
   const particlesRef = useRef<FootstepPt[]>([]);
+  const fpResetRef   = useRef<{ reset: () => void } | null>(null);
   const [walkMode, setWalkMode] = useState(true);
 
   return (
@@ -3850,7 +3873,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       {/* ── Camera controls: orbit (default) or first-person walk ── */}
       {walkMode ? (
         <>
-          <FirstPersonController ctrlRef={ctrlRef} particlesRef={particlesRef} />
+          <FirstPersonController ctrlRef={ctrlRef} particlesRef={particlesRef} resetRef={fpResetRef} />
           <FootstepParticles particlesRef={particlesRef} />
         </>
       ) : (
@@ -3867,9 +3890,43 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
         />
       )}
 
-      {/* ── Mode-toggle overlay button ── */}
+      {/* ── Mode-toggle + entrance-reset overlay ── */}
       <Html fullscreen zIndexRange={[9, 0]}>
-        <div style={{ position: "absolute", bottom: 96, right: 16, pointerEvents: "none" }}>
+        <div style={{
+          position: "absolute", bottom: 96, right: 16,
+          display: "flex", flexDirection: "column", alignItems: "flex-end",
+          gap: 10, pointerEvents: "none",
+        }}>
+          {/* Return to entrance — only in walk mode */}
+          {walkMode && (
+            <button
+              onClick={() => fpResetRef.current?.reset()}
+              style={{
+                pointerEvents: "all",
+                background: "rgba(0,0,0,0.70)",
+                border: "1.5px solid rgba(180,140,255,0.60)",
+                borderRadius: 12,
+                padding: "9px 18px",
+                color: "#c8a8ff",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+                userSelect: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                boxShadow: "0 4px 18px rgba(0,0,0,0.40)",
+                transition: "all 0.2s",
+              }}
+            >
+              <span style={{ fontSize: 17 }}>🚪</span>
+              <span>Entrance</span>
+            </button>
+          )}
+
+          {/* Walk ↔ Overview toggle */}
           <button
             onClick={() => setWalkMode(m => !m)}
             style={{
