@@ -90,7 +90,7 @@ export default function TranslationEditorModal({ onClose }: Props) {
       keys: g.keys.filter(k => {
         if (activeGroup && g.label !== activeGroup) return false;
         if (!q) return true;
-        const enVal = enBase[k]?.toLowerCase() ?? "";
+        const enVal = (enBase[k] as string)?.toLowerCase() ?? "";
         const tkVal = (edits[k] as string | undefined)?.toLowerCase() ?? "";
         return enVal.includes(q) || tkVal.includes(q) || k.toLowerCase().includes(q);
       }),

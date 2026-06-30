@@ -1,6 +1,6 @@
 import { memorialRepository } from "../repositories/MemorialRepository";
 import { familyRepository } from "../repositories/FamilyRepository";
-import type { InsertMemorialPerson } from "@workspace/db";
+import type { InsertMemorialPerson, InsertMemorial } from "@workspace/db";
 import type { CollectionSort } from "../repositories/MemorialRepository";
 
 function slugify(name: string): string {
@@ -58,7 +58,7 @@ export class MemorialService {
 
     const memorial = await memorialRepository.create(
       input.person,
-      {},
+      {} as InsertMemorial,
       slug,
       createdBy,
       familyId,

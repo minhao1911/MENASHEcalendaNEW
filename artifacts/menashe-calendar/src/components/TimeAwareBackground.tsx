@@ -97,8 +97,8 @@ export default function TimeAwareBackground({ sunrise, sunset, theme = "auto" }:
   const [aOpacity, setAOpacity] = useState(1);
   const [bOpacity, setBOpacity] = useState(0);
 
-  const intervalRef    = useRef<ReturnType<typeof setInterval>>();
-  const timeoutRef     = useRef<ReturnType<typeof setTimeout>>();
+  const intervalRef    = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const timeoutRef     = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Preload an image without blocking render
   const preload = useCallback((src: string) => {

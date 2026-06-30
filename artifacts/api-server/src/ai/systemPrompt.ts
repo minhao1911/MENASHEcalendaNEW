@@ -74,7 +74,6 @@ export function buildSystemPrompt(ctx?: CalendarContext): string {
         il: false,
         sedrot: false,
         omer: false,
-        shabbat: false,
         noMinorFast: false,
         noSpecialShabbat: true,
       });

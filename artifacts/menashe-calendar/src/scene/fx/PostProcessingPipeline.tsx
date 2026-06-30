@@ -36,7 +36,7 @@ export function PostProcessingPipeline({
 
   return (
     <EffectComposer multisampling={0}>
-      {enableSMAA ? <SMAA /> : null}
+      {enableSMAA ? <SMAA /> : <></>}
 
       <Bloom
         intensity={enableBloom && q.bloomEnabled ? intensity : 0}

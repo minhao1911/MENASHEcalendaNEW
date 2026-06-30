@@ -225,7 +225,7 @@ export default function HolidaysModal({ onClose }: Props) {
               <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>No observances found</div>
             )}
             {events.map((ev, i) => {
-              const cat = CATEGORY_LABEL[ev.category] ?? CATEGORY_LABEL["minor"];
+              const cat = CATEGORY_LABEL[ev.category as keyof typeof CATEGORY_LABEL] ?? CATEGORY_LABEL["minor"];
               const isOpen = expanded === i;
               return (
                 <div key={i}>

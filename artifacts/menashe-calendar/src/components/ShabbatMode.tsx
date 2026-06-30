@@ -113,6 +113,7 @@ export default function ShabbatMode({ isFriday, isShabbat, candleLighting, havda
       const id = setTimeout(dismiss, 9000);
       return () => clearTimeout(id);
     }
+    return undefined;
   }, [mode, dismiss]);
 
   if (!mode || dismissed) return null;
