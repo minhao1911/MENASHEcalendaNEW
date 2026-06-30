@@ -40,6 +40,7 @@ import ZmanimInfoModal from "./modals/ZmanimInfoModal";
 import TorahNoteModal from "./modals/TorahNoteModal";
 import BirthdayModal from "./modals/BirthdayModal";
 import TaharaModal from "./modals/TaharaModal";
+import MikvehCalendarModal from "./modals/MikvehCalendarModal";
 import YartzeitModal from "./modals/YartzeitModal";
 import CommunityModal from "./modals/CommunityModal";
 import CensusModal from "./modals/CensusModal";
@@ -207,7 +208,7 @@ type Modal =
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
   | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar"
   | "announcements" | "events" | "members" | "prayers-board" | "torah-tracker" | "profile"
-  | "community-yahrzeit" | "memorial-sanctuary" | "notifications" | "whats-new" | null;
+  | "community-yahrzeit" | "memorial-sanctuary" | "notifications" | "whats-new" | "mikveh-calendar" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -742,7 +743,8 @@ function AppShell() {
               {modal === "zmaniminfo" && <ZmanimInfoModal onClose={closeModal} />}
               {modal === "torahnote" && <TorahNoteModal onClose={closeModal} />}
               {modal === "birthday" && <BirthdayModal onClose={closeModal} />}
-              {modal === "tahara" && <TaharaModal onClose={closeModal} />}
+              {modal === "tahara" && <TaharaModal onClose={closeModal} onMikvehCalendar={() => setModal("mikveh-calendar")} />}
+              {modal === "mikveh-calendar" && <MikvehCalendarModal onClose={closeModal} />}
               {modal === "yartzeit" && <YartzeitModal onClose={closeModal} location={location} onCommunityBoard={() => setModal("community-yahrzeit")} />}
               {modal === "community-yahrzeit" && (
                 <CommunityYahrzeitModal onClose={closeModal} userName={publicProfile?.displayName} />

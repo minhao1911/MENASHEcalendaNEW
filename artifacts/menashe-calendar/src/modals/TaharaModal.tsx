@@ -1,16 +1,22 @@
 import { useState } from "react";
 import { HDate } from "@hebcal/core";
 import { useLanguage } from "../context/LanguageContext";
+import { saveMikvehEntry, loadMikvehEntries, type MikvehEntry } from "./MikvehCalendarModal";
 
-interface Props { onClose: () => void; }
+interface Props {
+  onClose: () => void;
+  onMikvehCalendar: () => void;
+}
 
-export default function TaharaModal({ onClose }: Props) {
+export default function TaharaModal({ onClose, onMikvehCalendar }: Props) {
   const { t } = useLanguage();
   const [lastDate, setLastDate] = useState("");
-  const [result, setResult] = useState<{ mikveh: string; hefsek: string; count: number } | null>(null);
+  const [result, setResult] = useState<{ mikveh: string; hefsek: string; mikvehDate: string; hefsekDate: string; hebrewMikveh: string; hebrewHefsek: string } | null>(null);
+  const [saved, setSaved] = useState(false);
 
   function calculate() {
     if (!lastDate) return;
+    setSaved(false);
     const d = new Date(lastDate);
     const hefsekDate = new Date(d.getTime() + 5 * 86400000);
     const mikvehDate = new Date(hefsekDate.getTime() + 7 * 86400000);
@@ -20,8 +26,32 @@ export default function TaharaModal({ onClose }: Props) {
     setResult({
       hefsek: `${hefsekDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} (${hefsekHDate.render("en")})`,
       mikveh: `${mikvehDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} (${mikvehHDate.render("en")})`,
-      count: 12,
+      mikvehDate: mikvehDate.toISOString().split("T")[0],
+      hefsekDate: hefsekDate.toISOString().split("T")[0],
+      hebrewMikveh: mikvehHDate.render("en"),
+      hebrewHefsek: hefsekHDate.render("en"),
     });
+  }
+
+  function saveToCalendar() {
+    if (!result) return;
+    const existing = loadMikvehEntries();
+    const alreadySaved = existing.some(e => e.mikvehDate === result.mikvehDate);
+    if (!alreadySaved) {
+      const entry: MikvehEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        lastPeriodDate: lastDate,
+        hefsekDate: result.hefsekDate,
+        mikvehDate: result.mikvehDate,
+        hebrewMikvehDate: result.hebrewMikveh,
+        hebrewHefsekDate: result.hebrewHefsek,
+        note: "",
+        completed: false,
+        createdAt: new Date().toISOString(),
+      };
+      saveMikvehEntry(entry);
+    }
+    setSaved(true);
   }
 
   return (
@@ -41,7 +71,7 @@ export default function TaharaModal({ onClose }: Props) {
           <input
             type="date"
             value={lastDate}
-            onChange={e => setLastDate(e.target.value)}
+            onChange={e => { setLastDate(e.target.value); setSaved(false); setResult(null); }}
             style={{
               width: "100%", padding: "12px 14px", borderRadius: 10,
               background: "var(--elevated)", border: "1px solid var(--border)",
@@ -61,7 +91,7 @@ export default function TaharaModal({ onClose }: Props) {
         </button>
 
         {result && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 4 }}>
             <div className="card" style={{ padding: 14, border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.05)" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#60a5fa", letterSpacing: "0.08em", marginBottom: 4 }}>{t.taharaHefsek}</div>
               <div style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 600 }}>{result.hefsek}</div>
@@ -73,6 +103,20 @@ export default function TaharaModal({ onClose }: Props) {
             <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", lineHeight: 1.5 }}>
               {t.taharaPosekNote}
             </div>
+
+            {/* Save to calendar button */}
+            <button
+              onClick={saved ? undefined : saveToCalendar}
+              style={{
+                width: "100%", padding: "12px", borderRadius: 12, cursor: saved ? "default" : "pointer",
+                fontSize: 14, fontWeight: 700, transition: "all 0.2s",
+                background: saved ? "rgba(74,222,128,0.12)" : "rgba(212,168,67,0.13)",
+                color: saved ? "#4ade80" : "#d4a843",
+                border: `1px solid ${saved ? "rgba(74,222,128,0.3)" : "rgba(212,168,67,0.25)"}`,
+              }}
+            >
+              {saved ? t.mikvehCalSaved : t.mikvehCalSaveBtn}
+            </button>
           </div>
         )}
 
@@ -94,7 +138,7 @@ export default function TaharaModal({ onClose }: Props) {
             position: "relative",
             overflow: "hidden",
           }}
-          onClick={() => {}}
+          onClick={onMikvehCalendar}
         >
           {/* Shimmer overlay */}
           <div style={{
@@ -103,7 +147,6 @@ export default function TaharaModal({ onClose }: Props) {
             pointerEvents: "none",
           }} />
 
-          {/* Left: icon + labels */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{
               width: 42, height: 42, borderRadius: 12,
@@ -124,7 +167,6 @@ export default function TaharaModal({ onClose }: Props) {
             </div>
           </div>
 
-          {/* Right: arrow badge */}
           <div style={{
             width: 30, height: 30, borderRadius: 8,
             background: "rgba(255,255,255,0.1)",

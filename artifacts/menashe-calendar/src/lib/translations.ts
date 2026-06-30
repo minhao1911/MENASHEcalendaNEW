@@ -272,6 +272,28 @@ export interface Translations {
   taharaClose: string;
   taharaMikvehCalendar: string;
   taharaMikvehCalendarSub: string;
+  /* ── Mikveh Calendar Modal ── */
+  mikvehCalTitle: string;
+  mikvehCalUpcomingLabel: string;
+  mikvehCalUpcoming: string;
+  mikvehCalPast: string;
+  mikvehCalAll: string;
+  mikvehCalEmptyTitle: string;
+  mikvehCalEmptySub: string;
+  mikvehCalEmptyFilter: string;
+  mikvehCalMikvehNight: string;
+  mikvehCalHefsek: string;
+  mikvehCalMikveh: string;
+  mikvehCalDone: string;
+  mikvehCalTonight: string;
+  mikvehCalIn: string;
+  mikvehCalMarkDone: string;
+  mikvehCalMarkPending: string;
+  mikvehCalDelete: string;
+  mikvehCalPrivacy: string;
+  mikvehCalSaveBtn: string;
+  mikvehCalSaved: string;
+  back: string;
 
   /* ── Yahrzeit Modal ── */
   yartzeitTitle: string;
@@ -856,6 +878,27 @@ export const en: Translations = {
   taharaClose: "Close",
   taharaMikvehCalendar: "🌙 My Mikveh Calendar",
   taharaMikvehCalendarSub: "Track & schedule your dates",
+  mikvehCalTitle: "🌙 My Mikveh Calendar",
+  mikvehCalUpcomingLabel: "upcoming",
+  mikvehCalUpcoming: "Upcoming",
+  mikvehCalPast: "Past",
+  mikvehCalAll: "All",
+  mikvehCalEmptyTitle: "No dates yet",
+  mikvehCalEmptySub: "Calculate dates in the Tahara Calculator and save them here to track upcoming Mikveh nights.",
+  mikvehCalEmptyFilter: "No entries in this category.",
+  mikvehCalMikvehNight: "MIKVEH NIGHT",
+  mikvehCalHefsek: "HEFSEK TAHARA",
+  mikvehCalMikveh: "MIKVEH",
+  mikvehCalDone: "✓ Done",
+  mikvehCalTonight: "Tonight!",
+  mikvehCalIn: "in",
+  mikvehCalMarkDone: "✓ Mark Done",
+  mikvehCalMarkPending: "↩ Mark Pending",
+  mikvehCalDelete: "Delete",
+  mikvehCalPrivacy: "Your Mikveh calendar is stored privately on this device only and is never shared or uploaded.",
+  mikvehCalSaveBtn: "💾 Save to My Calendar",
+  mikvehCalSaved: "✓ Saved to Calendar",
+  back: "Back",
 
   yartzeitTitle: "Yahrzeit Calculator",
   yartzeitSub: "Anniversary of passing",
@@ -1443,6 +1486,27 @@ export const tk: Translations = {
   taharaClose: "Tawp Ta",
   taharaMikvehCalendar: "🌙 Ka Mikveh Calendar",
   taharaMikvehCalendarSub: "I ni leh hun zirchian ta",
+  mikvehCalTitle: "🌙 Ka Mikveh Calendar",
+  mikvehCalUpcomingLabel: "la inpek",
+  mikvehCalUpcoming: "La Inpek",
+  mikvehCalPast: "Thleng Zo",
+  mikvehCalAll: "Tất cả",
+  mikvehCalEmptyTitle: "Ni pawimawh neilo",
+  mikvehCalEmptySub: "Tahara Calculator-ah ni chhiar la, Mikveh ni zirchian nan khi chhuah rawh.",
+  mikvehCalEmptyFilter: "Hi phum-ah entry awm lo.",
+  mikvehCalMikvehNight: "MIKVEH ZAN",
+  mikvehCalHefsek: "HEFSEK TAHARA",
+  mikvehCalMikveh: "MIKVEH",
+  mikvehCalDone: "✓ Thleng Zo",
+  mikvehCalTonight: "Zan dang hi!",
+  mikvehCalIn: "in",
+  mikvehCalMarkDone: "✓ Thleng Zo Tih",
+  mikvehCalMarkPending: "↩ La Inpek Tih",
+  mikvehCalDelete: "Hawn",
+  mikvehCalPrivacy: "I Mikveh calendar hi i device-ah chauh chhuang a ni a, share leh upload a ni lo.",
+  mikvehCalSaveBtn: "💾 Calendar-ah Chhuang",
+  mikvehCalSaved: "✓ Calendar-ah Chhuang Zo",
+  back: "Chho",
 
   yartzeitTitle: "Yahrzeit Chhiar",
   yartzeitSub: "Thi ni chhiar",
