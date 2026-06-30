@@ -3530,6 +3530,80 @@ function AAAEntranceBoards({ entries }: { entries: CommunityYahrzeitEntry[] }) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SPR-034D: FIRST VISIT BOARD BEACONS
+   Ethereal gold light columns above each entrance board, shown once ever.
+   Auto-dismiss after 8 s and set localStorage "sanctuary-boards-seen" flag.
+   On re-visit the flag is present → component renders nothing immediately.
+══════════════════════════════════════════════════════════════════════════ */
+function FirstVisitBoardBeacons() {
+  const [active, setActive] = useState<boolean>(() => {
+    try { return !localStorage.getItem("sanctuary-boards-seen"); } catch { return false; }
+  });
+  const elapsed = useRef(0);
+
+  /* Explicit refs per beam to avoid null-flash from inline callbacks */
+  const mesh0 = useRef<THREE.Mesh>(null!);
+  const mesh1 = useRef<THREE.Mesh>(null!);
+  const mesh2 = useRef<THREE.Mesh>(null!);
+  const mat0  = useRef<THREE.MeshStandardMaterial>(null!);
+  const mat1  = useRef<THREE.MeshStandardMaterial>(null!);
+  const mat2  = useRef<THREE.MeshStandardMaterial>(null!);
+
+  /* Open-top cone beam — widens at the bottom, vanishes toward sky */
+  const beamGeo = useMemo(() => new THREE.CylinderGeometry(0.025, 0.30, 6.0, 8, 1, true), []);
+
+  useFrame((_, dt) => {
+    if (!active) return;
+    elapsed.current += dt;
+    const t = elapsed.current;
+
+    /* Breathing brightness — ~0.7 ± 0.35, period ≈ 2.3 s */
+    const pulse = 0.7 + Math.sin(t * 2.73) * 0.35;
+    /* Fade out: full until 5.5 s, transparent by 8 s */
+    const fade  = t < 5.5 ? 1.0 : Math.max(0, 1 - (t - 5.5) / 2.5);
+
+    if (t >= 8) {
+      setActive(false);
+      try { localStorage.setItem("sanctuary-boards-seen", "1"); } catch {}
+      return;
+    }
+
+    const opacity = fade * 0.62;
+    const emv     = pulse * 2.6 * fade;
+
+    const M = [mat0.current, mat1.current, mat2.current];
+    const R = [mesh0.current, mesh1.current, mesh2.current];
+    for (let i = 0; i < 3; i++) {
+      const m = M[i]; if (m) { m.opacity = opacity; m.emissiveIntensity = emv; }
+      /* Subtle height breathing — each column out of phase */
+      const r = R[i]; if (r) r.scale.y = 1 + Math.sin(t * 1.4 + i * 2.1) * 0.06;
+    }
+  });
+
+  if (!active) return null;
+
+  return (
+    <>
+      <mesh ref={mesh0} geometry={beamGeo} position={[5.8, 5.0, 18.5]}>
+        <meshStandardMaterial ref={mat0} color="#D4AF37" emissive="#D4AF37"
+          emissiveIntensity={1.8} transparent opacity={0.62}
+          depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh ref={mesh1} geometry={beamGeo} position={[-5.8, 5.0, 14.0]}>
+        <meshStandardMaterial ref={mat1} color="#D4AF37" emissive="#D4AF37"
+          emissiveIntensity={1.8} transparent opacity={0.62}
+          depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh ref={mesh2} geometry={beamGeo} position={[5.8, 5.0, 9.5]}>
+        <meshStandardMaterial ref={mat2} color="#D4AF37" emissive="#D4AF37"
+          emissiveIntensity={1.8} transparent opacity={0.62}
+          depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    SPR-031: WATER LILIES — floating pads and blossoms on the reflection pool
 ══════════════════════════════════════════════════════════════════════════ */
 const R_LILY = makeLCG(113);
@@ -4210,8 +4284,9 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       {/* SPR-031: Landmark — memorial gate at valley entrance */}
       <AAAMemorialGate />
 
-      {/* SPR-034C: Entrance boards — Welcome, Community Candle, Visitor Guidance */}
+      {/* SPR-034C/D: Entrance boards + first-visit beacons */}
       <AAAEntranceBoards entries={entries} />
+      <FirstVisitBoardBeacons />
 
       {/* SPR-031: Landmark — Tree of Remembrance */}
       <AAATreeOfRemembrance />

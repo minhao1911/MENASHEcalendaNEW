@@ -2591,6 +2591,10 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const [canRender3D,   setCanRender3D]   = useState(false);
   /* SPR-034C: Entry fade — black overlay that disappears on first open */
   const [showEntryFade, setShowEntryFade] = useState(true);
+  /* SPR-034D: First-visit board hint — gated by localStorage flag */
+  const [showBoardHint, setShowBoardHint] = useState<boolean>(() => {
+    try { return !localStorage.getItem("sanctuary-boards-seen"); } catch { return false; }
+  });
 
   const searchRef      = useRef<HTMLInputElement>(null!);
   const cameraStateRef = useRef<CameraState | null>(null);
@@ -2602,6 +2606,15 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
     const t = setTimeout(() => setShowEntryFade(false), 1800);
     return () => clearTimeout(t);
   }, []);
+  // Board hint: dismiss after 8 s and persist flag so it never shows again
+  useEffect(() => {
+    if (!showBoardHint) return;
+    const t = setTimeout(() => {
+      setShowBoardHint(false);
+      try { localStorage.setItem("sanctuary-boards-seen", "1"); } catch {}
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [showBoardHint]);
 
   useEffect(() => { const t = setTimeout(() => setShowHints(false), 7000); return () => clearTimeout(t); }, []);
 
@@ -2890,6 +2903,50 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
               pointerEvents: "none",
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* ── SPR-034D: FIRST VISIT BOARD HINT ── */}
+      <AnimatePresence>
+        {showBoardHint && !reflectionMode && (
+          <motion.div
+            key="board-hint"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ delay: 2.4, duration: 0.8, ease: "easeOut" }}
+            style={{
+              position: "absolute",
+              bottom: 80,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 9996,
+              pointerEvents: "none",
+            }}
+          >
+            <div style={{
+              background: "rgba(4,2,12,0.72)",
+              backdropFilter: "blur(20px) saturate(1.4)",
+              border: "1px solid rgba(212,175,55,0.30)",
+              borderRadius: 50,
+              padding: "10px 24px",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              whiteSpace: "nowrap",
+            }}>
+              <span style={{ fontSize: 14, filter: "drop-shadow(0 0 6px rgba(212,175,55,0.65))" }}>✨</span>
+              <span style={{
+                fontSize: 12,
+                color: "rgba(212,175,55,0.90)",
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+              }}>
+                Walk toward the glowing boards — they hold community notices
+              </span>
+              <span style={{ fontSize: 14, filter: "drop-shadow(0 0 6px rgba(212,175,55,0.65))" }}>✨</span>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
