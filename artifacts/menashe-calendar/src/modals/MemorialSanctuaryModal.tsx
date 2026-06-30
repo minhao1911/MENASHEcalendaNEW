@@ -1263,12 +1263,13 @@ const DONATION_TIERS = [
 ] as const;
 
 function LightCandleForm({
-  form, setForm, saving, success, onSubmit, onClose,
+  form, setForm, saving, success, onSubmit, onClose, apiError,
 }: {
   form: { name: string; hebrewName: string; message: string; date: string };
   setForm: (f: any) => void;
   saving: boolean; success: boolean;
   onSubmit: () => void; onClose: () => void;
+  apiError?: string | null;
 }) {
   const [donationTier, setDonationTier] = useState<typeof DONATION_TIERS[number]["id"]>("free");
   const [anonymous, setAnonymous] = useState(false);
@@ -1408,6 +1409,19 @@ function LightCandleForm({
                 </div>
               </div>
 
+              {/* Validation + API error */}
+              {apiError && (
+                <div style={{
+                  marginBottom: 12, padding: "10px 14px", borderRadius: 12,
+                  background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.28)",
+                  fontSize: 12, color: "rgba(248,113,113,0.90)", lineHeight: 1.5,
+                  display: "flex", alignItems: "center", gap: 8,
+                }}>
+                  <span style={{ fontSize: 15, flexShrink: 0 }}>⚠️</span>
+                  {apiError}
+                </div>
+              )}
+
               {/* Submit */}
               <motion.button
                 onClick={onSubmit}
@@ -1428,6 +1442,13 @@ function LightCandleForm({
                 <span>🕯</span>
                 {saving ? "Lighting candle…" : donationTier === "free" ? "Light the Candle" : `Light the Candle · ₹${DONATION_TIERS.find(t => t.id === donationTier)?.amount}`}
               </motion.button>
+
+              {/* Required fields hint — only shown when both are empty */}
+              {(!form.name.trim() || !form.date) && !saving && (
+                <div style={{ marginTop: 8, fontSize: 10, color: "rgba(255,255,255,0.28)", textAlign: "center" }}>
+                  Full name and date of passing are required (*)
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -1781,7 +1802,7 @@ const MOBILE_STARS = Array.from({ length: 28 }, (_, i) => ({
   size:    1 + (i % 2),
 }));
 
-function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) {
+function MobileSanctuaryView({ onClose, userName, initialEntries = [], onEnter3D }: Props & { onEnter3D?: () => void }) {
   const { t } = useLanguage();
   const [entries, setEntries]             = useState<CommunityYahrzeitEntry[]>(initialEntries);
   const [searchQuery, setSearchQuery]     = useState("");
@@ -1790,6 +1811,7 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
   const [form, setForm]                   = useState({ name: "", hebrewName: "", message: "", date: "" });
   const [saving, setSaving]               = useState(false);
   const [success, setSuccess]             = useState(false);
+  const [submitError, setSubmitError]     = useState<string | null>(null);
   const [showDedicate, setShowDedicate]   = useState(false);
   const [dedicateForm, setDedicateForm]   = useState({ learnerName: "", studySubject: "" });
   const [dedicateSaving, setDedicateSaving]   = useState(false);
@@ -1815,6 +1837,7 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
 
   async function handleSubmit() {
     if (!form.name.trim() || !form.date) return;
+    setSubmitError(null);
     setSaving(true);
     try {
       const d  = new Date(form.date + "T12:00:00");
@@ -1837,6 +1860,8 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
         setSuccess(false); setShowForm(false);
         setForm({ name: "", hebrewName: "", message: "", date: "" });
       }, 3200);
+    } catch {
+      setSubmitError("Could not save. Please check your connection and try again.");
     } finally { setSaving(false); }
   }
 
@@ -1898,17 +1923,37 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
             {t.memShellWelcome}
           </div>
         </div>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          style={{
-            width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-            border: "1px solid rgba(255,255,255,0.14)",
-            background: "rgba(255,255,255,0.06)",
-            color: "rgba(255,255,255,0.65)", fontSize: 18,
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >×</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {/* Enter 3D World — opt-in for mobile users */}
+          {onEnter3D && (
+            <button
+              onClick={onEnter3D}
+              aria-label="Enter 3D Sanctuary"
+              title="Enter the immersive 3D world"
+              style={{
+                height: 36, borderRadius: 18, flexShrink: 0,
+                border: "1px solid rgba(212,175,55,0.45)",
+                background: "linear-gradient(135deg,rgba(212,175,55,0.18) 0%,rgba(212,175,55,0.06) 100%)",
+                color: "#D4AF37", fontSize: 11, fontWeight: 800, letterSpacing: "0.04em",
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 5, padding: "0 12px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              🌐 3D World
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.65)", fontSize: 18,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >×</button>
+        </div>
       </div>
 
       {/* ════════════════════════════════════════════════════════
@@ -2427,7 +2472,8 @@ function MobileSanctuaryView({ onClose, userName, initialEntries = [] }: Props) 
             form={form} setForm={setForm}
             saving={saving} success={success}
             onSubmit={handleSubmit}
-            onClose={() => setShowForm(false)}
+            onClose={() => { setShowForm(false); setSubmitError(null); }}
+            apiError={submitError}
           />
         )}
       </AnimatePresence>
@@ -2461,6 +2507,8 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const [showForm, setShowForm]             = useState(false);
   const [pendingPos, setPendingPos]         = useState<[number, number, number] | null>(null);
   const [success, setSuccess]               = useState(false);
+  const [submitError, setSubmitError]       = useState<string | null>(null);
+  const [forceDesktop, setForceDesktop]     = useState(false);
   const [searchQuery, setSearchQuery]       = useState("");
   const [filterYear]                        = useState("all");
   const [showDedicate, setShowDedicate]     = useState(false);
@@ -2582,6 +2630,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
 
   async function handleSubmit() {
     if (!form.name.trim() || !form.date) return;
+    setSubmitError(null);
     setSaving(true);
     try {
       const d  = new Date(form.date + "T12:00:00");
@@ -2600,7 +2649,6 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
       });
       if (pendingPos) {
         setPlacedCandles(prev => [...prev, { pos: pendingPos, name: form.name.trim() }]);
-        /* Trigger placement animation */
         setNewCandlePos(pendingPos);
         setTimeout(() => setNewCandlePos(null), 3500);
       }
@@ -2610,6 +2658,8 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
         setSuccess(false); setShowForm(false); setPendingPos(null);
         setForm({ name: "", hebrewName: "", message: "", date: "" });
       }, 3200);
+    } catch {
+      setSubmitError("Could not save. Please check your connection and try again.");
     } finally { setSaving(false); }
   }
 
@@ -2646,13 +2696,14 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
     setShowHints(false);
   }, []);
 
-  /* ── Mobile branch: skip the 3D scene entirely on small screens ── */
-  if (isMobile) {
+  /* ── Mobile branch: show the 2D list view by default, 3D opt-in via button ── */
+  if (isMobile && !forceDesktop) {
     return (
       <MobileSanctuaryView
         onClose={onClose}
         userName={userName}
         initialEntries={initialEntries}
+        onEnter3D={() => setForceDesktop(true)}
       />
     );
   }
@@ -2868,7 +2919,8 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
             form={form} setForm={setForm}
             saving={saving} success={success}
             onSubmit={handleSubmit}
-            onClose={() => { setShowForm(false); setPendingPos(null); }}
+            onClose={() => { setShowForm(false); setPendingPos(null); setSubmitError(null); }}
+            apiError={submitError}
           />
         )}
       </AnimatePresence>

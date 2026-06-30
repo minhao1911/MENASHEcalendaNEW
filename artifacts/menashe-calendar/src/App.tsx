@@ -55,6 +55,7 @@ import AdminModal from "./modals/AdminModal";
 import OmerModal from "./modals/OmerModal";
 import PrayerTimesModal from "./modals/PrayerTimesModal";
 import CommunityYahrzeitModal from "./modals/CommunityYahrzeitModal";
+import MemorialSanctuaryModal from "./modals/MemorialSanctuaryModal";
 import MoreToolsModal from "./pages/MoreToolsModal";
 import ChatModal from "./modals/ChatModal";
 import NotificationDrawer from "./components/NotificationDrawer";
@@ -206,7 +207,7 @@ type Modal =
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
   | "more" | "admin" | "omer" | "prayers" | "sefaria" | "hebrewdate" | "luach" | "mussar"
   | "announcements" | "events" | "members" | "prayers-board" | "torah-tracker" | "profile"
-  | "community-yahrzeit" | "notifications" | "whats-new" | null;
+  | "community-yahrzeit" | "memorial-sanctuary" | "notifications" | "whats-new" | null;
 
 type DayInfo = { day: number; month: number; year: number } | null;
 
@@ -536,6 +537,7 @@ function AppShell() {
             onShowAnnouncements={() => setModal("announcements")}
             onShowEvents={() => setModal("events")}
             onShowCommunityYahrzeit={() => setModal("community-yahrzeit")}
+            onShowMemorialSanctuary={() => setModal("memorial-sanctuary")}
             onShowYartzeit={() => setModal("yartzeit")}
             onShowMussar={() => setModal("mussar")}
             onShowPrayerBoard={() => setModal("prayers-board")}
@@ -744,6 +746,9 @@ function AppShell() {
               {modal === "yartzeit" && <YartzeitModal onClose={closeModal} location={location} onCommunityBoard={() => setModal("community-yahrzeit")} />}
               {modal === "community-yahrzeit" && (
                 <CommunityYahrzeitModal onClose={closeModal} userName={publicProfile?.displayName} />
+              )}
+              {modal === "memorial-sanctuary" && (
+                <MemorialSanctuaryModal onClose={closeModal} userName={publicProfile?.displayName} />
               )}
               {modal === "community" && <CommunityModal onClose={closeModal} onYahrzeitBoard={() => setModal("community-yahrzeit")} isAdmin={isAdmin} />}
               {modal === "census" && <CensusModal onClose={closeModal} isAdmin={isAdmin} />}

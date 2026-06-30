@@ -1233,6 +1233,7 @@ interface HomeProps {
   onShowAnnouncements: () => void;
   onShowEvents: () => void;
   onShowCommunityYahrzeit: () => void;
+  onShowMemorialSanctuary?: () => void;
   onShowYartzeit: () => void;
   onShowMussar: () => void;
   onShowPrayerBoard: () => void;
@@ -2743,7 +2744,7 @@ export default function Home({
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
   onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus, onShowMembers,
   onNotifBell, notifActive, announcementCount,
-  onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowYartzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
+  onShowAnnouncements, onShowEvents, onShowCommunityYahrzeit, onShowMemorialSanctuary, onShowYartzeit, onShowMussar, onShowPrayerBoard, onShowTorahTracker,
   unreadAnnouncements = [],
   profileName,
   profilePhotoUrl,
@@ -3043,7 +3044,7 @@ export default function Home({
         />
 
         {/* ── Memorial Sanctuary entry ── */}
-        <MemorialSanctuaryEntry onEnter={onShowCommunityYahrzeit} />
+        <MemorialSanctuaryEntry onEnter={onShowMemorialSanctuary ?? onShowCommunityYahrzeit} />
 
         {/* ── Prayer Section: siddur ── */}
         <PrayerSection onOpenSiddur={onOpenSiddur} />
