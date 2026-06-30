@@ -838,7 +838,11 @@ function AppShell() {
   );
 }
 
+const DEV_PREVIEW = import.meta.env.DEV &&
+  new URLSearchParams(window.location.search).get("preview") === "1";
+
 function HomeRoute() {
+  if (DEV_PREVIEW) return <Redirect to="/app" />;
   return (
     <>
       <Show when="signed-in">
@@ -858,6 +862,7 @@ function HomeRoute() {
 }
 
 function AppRoute() {
+  if (DEV_PREVIEW) return <AppShell />;
   return (
     <>
       <Show when="signed-in">

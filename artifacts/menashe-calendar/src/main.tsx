@@ -57,6 +57,9 @@ if (import.meta.env.DEV) {
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+const DEV_PREVIEW = import.meta.env.DEV &&
+  new URLSearchParams(window.location.search).get("preview") === "1";
+
 /* Register service worker on startup so offline caching is active
    immediately — independent of whether push notifications are enabled. */
 if ("serviceWorker" in navigator) {
@@ -68,8 +71,8 @@ if ("serviceWorker" in navigator) {
 }
 
 function Root() {
-  const [splashDone, setSplashDone] = useState(false);
-  const [onboardingDone, setOnboardingDone] = useState(() => hasSeenOnboarding());
+  const [splashDone, setSplashDone] = useState(() => DEV_PREVIEW);
+  const [onboardingDone, setOnboardingDone] = useState(() => DEV_PREVIEW || hasSeenOnboarding());
 
   const onSplashFinished = useCallback(() => setSplashDone(true), []);
   const onOnboardingFinished = useCallback(() => setOnboardingDone(true), []);
