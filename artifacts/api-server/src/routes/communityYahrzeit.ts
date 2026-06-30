@@ -6,6 +6,7 @@ import { requireAuth } from "../lib/requireAuth";
 import { requireAdmin } from "../lib/requireAdmin";
 import { safeGetAuth } from "../lib/authorization";
 import { apiError } from "../lib/apiError";
+import { broadcastDedicationPush } from "./push";
 
 /**
  * resolveUserId — returns the authenticated Clerk userId when available,
@@ -178,6 +179,13 @@ router.post("/yahrzeit/:id/dedicate", async (req, res) => {
 
   const client = await pool.connect();
   try {
+    /* Fetch the deceased name so we can include it in the push notification. */
+    const nameRow = await client.query<{ deceased_name: string }>(
+      "SELECT deceased_name FROM community_yahrzeit WHERE id = $1",
+      [id]
+    );
+    const deceasedName = nameRow.rows[0]?.deceased_name ?? "a loved one";
+
     await client.query(
       "DELETE FROM community_yahrzeit_learners WHERE entry_id = $1 AND user_id = $2",
       [id, userId]
@@ -187,6 +195,14 @@ router.post("/yahrzeit/:id/dedicate", async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [dedicationId, id, userId, learnerName, studySubject ?? "Torah", activeUntil]
     );
+
+    /* Fire the community push notification in the background — never block the response. */
+    broadcastDedicationPush({
+      learnerName,
+      studySubject: studySubject ?? "Torah",
+      deceasedName,
+    }).catch(() => { /* broadcast failure must not surface to caller */ });
+
     return res.json({ ok: true });
   } finally {
     client.release();

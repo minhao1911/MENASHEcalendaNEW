@@ -142,6 +142,68 @@ async function fireBroadcastNow(bc: { id: number; emoji: string; title: string; 
   logger.info({ id: bc.id, title: bc.title }, "scheduled-broadcast: fired");
 }
 
+/**
+ * broadcastDedicationPush — fire a real-time community notification when
+ * someone dedicates Torah study to a memorial candle.
+ * Fire-and-forget: callers should not await; failures are logged, never thrown.
+ */
+export async function broadcastDedicationPush(opts: {
+  learnerName: string;
+  studySubject: string;
+  deceasedName: string;
+}): Promise<void> {
+  const title = "🕯 Torah Dedication";
+  const body  = `${opts.learnerName} is studying ${opts.studySubject} in memory of ${opts.deceasedName}`;
+  const tag   = `dedication-${Date.now()}`;
+  const icon  = "/favicon.svg";
+
+  // ── Web push ──────────────────────────────────────────────────────────────
+  if (VAPID_PUBLIC && VAPID_PRIVATE) {
+    let webRows: Array<{ id: string; endpoint: string; p256dh: string; auth: string }> = [];
+    try {
+      const r = await pool.query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
+        "SELECT id, endpoint, p256dh, auth FROM push_subscriptions"
+      );
+      webRows = r.rows;
+    } catch { /* no subscribers — skip */ }
+    for (const row of webRows) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+          JSON.stringify({ title, body, tag, icon })
+        );
+      } catch (err: any) {
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
+          await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [row.id]).catch(() => {});
+        }
+      }
+    }
+  }
+
+  // ── Expo push ─────────────────────────────────────────────────────────────
+  let expoRows: Array<{ token: string }> = [];
+  try {
+    const r = await pool.query<{ token: string }>("SELECT token FROM expo_push_tokens");
+    expoRows = r.rows;
+  } catch { /* no tokens — skip */ }
+  const msgs: ExpoPushMessage[] = expoRows
+    .filter(r => Expo.isExpoPushToken(r.token))
+    .map(r => ({ to: r.token, title, body, sound: "default" as const, data: { tag } }));
+  if (msgs.length > 0) {
+    try {
+      const chunks = expo.chunkPushNotifications(msgs);
+      for (const chunk of chunks) await expo.sendPushNotificationsAsync(chunk);
+    } catch (err) {
+      logger.error({ err }, "dedication-push: expo send failed");
+    }
+  }
+
+  logger.info(
+    { learnerName: opts.learnerName, deceasedName: opts.deceasedName },
+    "dedication-push: broadcast fired"
+  );
+}
+
 export function startPushScheduler() {
   setInterval(async () => {
     if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
