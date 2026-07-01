@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo } from "react";
+import PageSkeleton from "./components/PageSkeleton";
 import {
   ClerkProvider,
   SignIn,
@@ -689,9 +690,11 @@ function AppShell() {
 
           {!readingBook && modal !== "admin" && (
             <>
-              <div className="screen fade-in">
-                {renderPage()}
-              </div>
+              <Suspense fallback={<PageSkeleton />}>
+                <div className="screen fade-in">
+                  {renderPage()}
+                </div>
+              </Suspense>
 
               <BottomNav active={activePage} onNavigate={(p) => setActivePage(p as Page)} onChat={() => setChatOpen(true)} />
 

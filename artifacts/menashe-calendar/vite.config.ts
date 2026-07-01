@@ -79,6 +79,42 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Three.js ecosystem — only loaded when Memorial Sanctuary opens
+          if (
+            id.includes("/three/") ||
+            id.includes("/@react-three/") ||
+            id.includes("/postprocessing/") ||
+            id.includes("/@react-spring/three")
+          ) return "vendor-three";
+
+          // Clerk auth — large but needed before first paint on auth routes
+          if (id.includes("/@clerk/")) return "vendor-clerk";
+
+          // Framer Motion — animation library
+          if (id.includes("/framer-motion/")) return "vendor-motion";
+
+          // React core + DOM — kept together so they share a single scope
+          if (
+            id.includes("/react-dom/") ||
+            id.includes("/react/") ||
+            id.includes("/scheduler/")
+          ) return "vendor-react";
+
+          // Hebrew calendar
+          if (id.includes("/@hebcal/")) return "vendor-hebcal";
+
+          // Lucide icons — large icon set
+          if (id.includes("/lucide-react/")) return "vendor-lucide";
+
+          // Radix UI primitives
+          if (id.includes("/@radix-ui/")) return "vendor-radix";
+        },
+      },
+    },
   },
   server: {
     port,
