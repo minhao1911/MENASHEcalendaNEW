@@ -4537,9 +4537,12 @@ function AAAArchVines() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAVineFireflies() {
   const { particleScale } = useQuality();
+  const { camera } = useThree();
   const SPAN     = 2.26;
   const PILLAR_H = 4.20;
+  const ARCH_Z   = 11;
   const baseY    = useMemo(() => terrainHeightAt(0, 11), []);
+  const proximity = useRef(0); // 0 = far, 1 = right at the arch
 
   const N_TOTAL = Math.max(6, Math.ceil(18 * particleScale));
   const ref     = useRef<THREE.InstancedMesh>(null!);
@@ -4568,20 +4571,36 @@ function AAAVineFireflies() {
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+
+    /* Proximity: 0 far away → 1 standing right at the arch. Smoothed so it
+       doesn't snap as the visitor walks through. */
+    const dx = camera.position.x;
+    const dz = camera.position.z - ARCH_Z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    const targetProximity = THREE.MathUtils.clamp(1 - dist / 6, 0, 1);
+    proximity.current = THREE.MathUtils.lerp(proximity.current, targetProximity, 0.06);
+    const prox = proximity.current;
+
+    /* As the visitor nears, the swarm draws in slightly tighter around the
+       pillars and glows brighter — like the fireflies noticing a guest. */
+    const pullIn = 1 - prox * 0.35;
+
     flies.forEach((f, i) => {
       dum.position.set(
-        f.cx + Math.sin(t * f.speed + f.phase) * f.radiusX,
+        f.cx + Math.sin(t * f.speed + f.phase) * f.radiusX * pullIn,
         f.cy + Math.sin(t * f.speed * 1.7 + f.phase * 1.3) * f.bob,
-        f.cz + Math.cos(t * f.speed * 0.8 + f.phase) * f.radiusZ,
+        f.cz + Math.cos(t * f.speed * 0.8 + f.phase) * f.radiusZ * pullIn,
       );
       const pulse = 0.55 + Math.sin(t * 3.2 + f.flicker) * 0.35 + Math.sin(t * 7.1 + f.flicker) * 0.10;
-      dum.scale.setScalar(Math.max(0.3, pulse));
+      const proxScale = 1 + prox * 0.45;
+      dum.scale.setScalar(Math.max(0.3, pulse) * proxScale);
       dum.updateMatrix();
       ref.current?.setMatrixAt(i, dum.matrix);
     });
     if (ref.current) ref.current.instanceMatrix.needsUpdate = true;
     if (matRef.current) {
-      matRef.current.emissiveIntensity = 1.1 + Math.sin(t * 2.4) * 0.25;
+      matRef.current.emissiveIntensity = 1.1 + Math.sin(t * 2.4) * 0.25 + prox * 1.3;
+      matRef.current.opacity = 0.9 + prox * 0.1;
     }
   });
 
