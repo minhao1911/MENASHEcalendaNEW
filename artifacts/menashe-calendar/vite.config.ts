@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { VitePWA } from "vite-plugin-pwa";
 
 const rawPort = process.env.PORT ?? "5000";
 
@@ -106,6 +107,48 @@ export default defineConfig({
     tailwindcss({ optimize: false }),
     runtimeErrorOverlay(),
     prefetchLazyChunksPlugin(),
+    // Workbox PWA — injectManifest mode:
+    // • Compiles src/sw.ts into dist/public/sw.js via a separate Vite sub-build
+    // • Injects a content-hash precache manifest for all hashed JS/CSS/PNG chunks
+    //   (vendor-three excluded — too large to pre-warm at install time)
+    // • manifest:false because we have our own public/manifest.json
+    // • devOptions.enabled:false — dev uses public/sw.js (manual SW v4)
+    VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      registerType: "autoUpdate",
+      injectManifest: {
+        // Precache only the code bundles needed for the app shell:
+        //   JS  — all hashed chunk files (vendor-*, page chunks, modals)
+        //   CSS — compiled stylesheet(s)
+        //   HTML — the SPA entry (index.html)
+        //
+        // We deliberately exclude images (PNG/SVG/WebP/JPEG) — they range
+        // from a few kB up to 3 MB (memorial user photos) and are never needed
+        // for the app to be functional offline.  The NavigationRoute in sw.ts
+        // covers offline HTML fallback; image assets are runtime-cached on
+        // first request by the StaleWhileRevalidate handler.
+        globPatterns: ["**/*.{js,css,html}"],
+        // Exclude Three.js — 1.5 MB is too heavy to pre-warm at SW install.
+        // vendor-three gets StaleWhileRevalidate runtime caching instead.
+        // Also exclude the SW file itself and any Workbox internal chunks.
+        globIgnores: [
+          "**/vendor-three-*.js",
+          "**/sw.js",
+          "**/sw.mjs",
+          "**/workbox-*.js",
+          "**/registerSW.js",
+        ],
+      },
+      // We manage our own manifest.json in public/ — don't let the plugin touch it.
+      manifest: false,
+      devOptions: {
+        // In dev, Vite serves public/sw.js directly (the hand-written v4 SW).
+        // The Workbox build only runs during production builds.
+        enabled: false,
+      },
+    }),
     // Force full-page reload for large files where HMR corrupts React state.
     {
       name: "full-reload-large-modules",
