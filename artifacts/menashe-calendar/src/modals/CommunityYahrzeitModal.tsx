@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { HDate } from "@hebcal/core";
 import BurningCandle from "../components/BurningCandle";
-import yishaiMemorialBg from "@assets/YISHAI_1782279066718.png";
+import yishaiMemorialBg from "@assets/YISHAI_1782279066718.webp";
 import MemorialSanctuaryModal from "./MemorialSanctuaryModal";
 import {
   fetchCommunityYahrzeit,
@@ -13,7 +13,7 @@ import {
   type YartzeitEntryApi,
 } from "../lib/userApi";
 
-import sanctuaryHeroBg from "@assets/image_1782640129704.png";
+import sanctuaryHeroBg from "@assets/image_1782640129704.webp";
 
 /* ── Hero images — sanctuary image is featured first ──────────────────────── */
 const HERO_IMAGES = [

@@ -3008,6 +3008,7 @@ function DayNightLighting() {
   const sunRef  = useRef<DirectionalLight>(null!);
   const fillRef = useRef<DirectionalLight>(null!);
   const ambRef  = useRef<AmbientLight>(null!);
+  const { shadowMapSize, shadowsEnabled } = useQuality();
 
   useFrame(({ clock }) => {
     const raw = clock.getElapsedTime();
@@ -3062,9 +3063,9 @@ function DayNightLighting() {
         color="#ffbb66"
         intensity={2.2}
         position={[38, 22, 28]}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        castShadow={shadowsEnabled}
+        shadow-mapSize-width={shadowMapSize}
+        shadow-mapSize-height={shadowMapSize}
         shadow-camera-near={1}
         shadow-camera-far={140}
         shadow-camera-left={-60}

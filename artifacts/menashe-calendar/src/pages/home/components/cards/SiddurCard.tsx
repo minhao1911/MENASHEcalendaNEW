@@ -1,6 +1,6 @@
 import React from "react";
 import CompassCard from "../../../../components/CompassCard";
-import torahScrollWatermark from "@assets/afc3e4a8-094b-4933-9d08-f8fb899140c9_1782276994801.png";
+import torahScrollWatermark from "@assets/afc3e4a8-094b-4933-9d08-f8fb899140c9_1782276994801.webp";
 
 const SIDDUR_CATEGORIES = ["Siddur", "Tehillim", "Torah", "Kuki Books"] as const;
 

@@ -35,6 +35,7 @@ const apiTarget = process.env.API_URL ?? "http://localhost:8080";
  *       in-app navigation instant without downloading anything on first paint.
  */
 function prefetchLazyChunksPlugin(): Plugin {
+  // Page chunks — prefetched eagerly (user navigates between these often)
   const PAGE_PATTERNS = [
     /^Home-/,
     /^CalendarPage-/,
@@ -43,6 +44,20 @@ function prefetchLazyChunksPlugin(): Plugin {
     /^SettingsPage-/,
     /^Landing-/,
     /^PremiumPage-/,
+  ];
+
+  // High-frequency modal chunks — prefetched alongside pages so they open instantly
+  const MODAL_PATTERNS = [
+    /^DayModal-/,
+    /^HolidaysModal-/,
+    /^ParashahModal-/,
+    /^DafYomiModal-/,
+    /^ZmanimInfoModal-/,
+    /^PrayerTimesModal-/,
+    /^AnnouncementsModal-/,
+    /^NotificationDrawer-/,
+    /^ChatModal-/,
+    /^ShabbatBanner-/,
   ];
 
   const lazyChunkNames: string[] = [];
@@ -58,7 +73,10 @@ function prefetchLazyChunksPlugin(): Plugin {
         // Bundle keys are relative output paths like "assets/Home-abc123.js"
         // Match only against the basename portion
         const base = fileName.split("/").pop() ?? fileName;
-        if (PAGE_PATTERNS.some((pat) => pat.test(base))) {
+        if (
+          PAGE_PATTERNS.some((pat) => pat.test(base)) ||
+          MODAL_PATTERNS.some((pat) => pat.test(base))
+        ) {
           lazyChunkNames.push(fileName);
         }
       }

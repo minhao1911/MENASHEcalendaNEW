@@ -1,6 +1,6 @@
 import React from "react";
 import CompassCard from "../../../../components/CompassCard";
-import dailyWisdomBg from "@assets/ChatGPT_Image_Jun_24,_2026,_12_01_34_PM_1782300946792.png";
+import dailyWisdomBg from "@assets/ChatGPT_Image_Jun_24,_2026,_12_01_34_PM_1782300946792.webp";
 import { TORAH_THOUGHTS } from "../../data";
 
 interface DailyWisdomCardProps {

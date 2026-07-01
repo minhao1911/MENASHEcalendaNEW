@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import {
   fetchCensusBranch, saveCensusBranch,
   fetchCensusSubmissions, submitCensusBranchForReview, reviewCensusSubmission,
@@ -327,7 +325,12 @@ function exportCSV(branch: Branch) {
    EXPORT — PDF DOWNLOAD (direct save, no print dialog)
 ══════════════════════════════════════════════════════════════ */
 
-function downloadPDF(branch: Branch) {
+async function downloadPDF(branch: Branch) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+
   const fmt = (s?: string) => s || "";
   const fmtDate = (s?: string) => {
     if (!s) return "";
