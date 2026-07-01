@@ -68,6 +68,17 @@ self.addEventListener("activate", () => {
   self.clients.claim();
 });
 
+/* ── Message: respond to SKIP_WAITING from the update toast ──
+   When the user taps "Update", the React app posts this message to
+   the waiting SW.  skipWaiting() causes this SW to activate immediately
+   instead of waiting for all old clients to close, which triggers a
+   `controllerchange` event in the browser — usePWAUpdate then reloads. */
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 /* ── Push notifications ── */
 self.addEventListener("push", (event) => {
   let data: {

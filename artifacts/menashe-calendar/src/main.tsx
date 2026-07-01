@@ -7,6 +7,7 @@ import SplashScreen from "./components/SplashScreen";
 import OnboardingFlow, { hasSeenOnboarding } from "./components/OnboardingFlow";
 import OfflineBanner from "./components/OfflineBanner";
 import PWAInstallBanner from "./components/PWAInstallBanner";
+import UpdateToast from "./components/UpdateToast";
 import "./index.css";
 
 /* ─── Suppress R3F v9 + React 19 Strict Mode transient error ────────────────
@@ -81,6 +82,7 @@ function Root() {
     <>
       <OfflineBanner />
       <PWAInstallBanner />
+      <UpdateToast />
       {!splashDone && <SplashScreen onFinished={onSplashFinished} />}
       {splashDone && !onboardingDone && (
         <OnboardingFlow onFinished={onOnboardingFinished} />

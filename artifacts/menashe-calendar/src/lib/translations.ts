@@ -254,6 +254,11 @@ export interface Translations {
   installBtn: string;
   installDismiss: string;
 
+  /* ── SW update toast ── */
+  updateAvailable: string;
+  updateRefresh: string;
+  updateDismiss: string;
+
   /* ── Profile photo upload ── */
   profileUploadPhoto: string;
   profileChangePhoto: string;
@@ -865,6 +870,10 @@ export const en: Translations = {
   installBtn: "Install",
   installDismiss: "Not now",
 
+  updateAvailable: "New version available",
+  updateRefresh: "Update",
+  updateDismiss: "Later",
+
   profileUploadPhoto: "Upload Photo",
   profileChangePhoto: "Change Photo",
   profileRemovePhoto: "Remove Photo",
@@ -1475,6 +1484,10 @@ export const tk: Translations = {
   installBody: "Menashe Calendar install siam la a hun zel.",
   installBtn: "Install",
   installDismiss: "Hun dang ah",
+
+  updateAvailable: "Version thar a awm",
+  updateRefresh: "Update siam",
+  updateDismiss: "Hun dang ah",
 
   profileUploadPhoto: "Photo Upload Siam",
   profileChangePhoto: "Photo Hlovar",
