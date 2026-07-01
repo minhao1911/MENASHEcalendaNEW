@@ -4182,17 +4182,36 @@ const SHRINE_Z_POSITIONS: [number, number][] = [
 
 function AAAPathwayShrines() {
   const { lightPoolSize } = useQuality();
+  const { camera } = useThree();
   const baseGeo   = useMemo(() => new THREE.BoxGeometry(1.02, 0.26, 0.72), []);
   const pillarGeo = useMemo(() => new THREE.BoxGeometry(0.18, 0.44, 0.18), []);
   const waxGeo    = useMemo(() => new THREE.CylinderGeometry(0.065, 0.082, 0.32, 8), []);
   const flameGeo  = useMemo(() => new THREE.ConeGeometry(0.058, 0.20, 6, 1, true), []);
   const flameRefs = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
+  const lightRefs = useRef<(THREE.PointLight | null)[]>([]);
+
+  /* Shrine plinth centres — used to gauge visitor proximity per shrine */
+  const shrineCentres = useMemo(
+    () => SHRINE_Z_POSITIONS.flatMap(([z]) => ([-5.8, 5.8] as number[]).map(x => ({ x, z }))),
+    []
+  );
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    flameRefs.current.forEach((m, i) => {
-      if (!m) return;
-      m.emissiveIntensity = 1.1 + Math.sin(t * 4.8 + i * 0.62) * 0.55;
+    let fi = 0;
+    shrineCentres.forEach((c, si) => {
+      const dx = camera.position.x - c.x;
+      const dz = camera.position.z - c.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const prox = THREE.MathUtils.clamp(1 - dist / 4.5, 0, 1);
+
+      const f1 = flameRefs.current[fi++];
+      const f2 = flameRefs.current[fi++];
+      if (f1) f1.emissiveIntensity = 1.1 + Math.sin(t * 4.8 + (si * 2) * 0.62) * 0.55 + prox * 0.9;
+      if (f2) f2.emissiveIntensity = 1.1 + Math.sin(t * 4.8 + (si * 2 + 1) * 0.62) * 0.55 + prox * 0.9;
+
+      const l = lightRefs.current[si];
+      if (l) l.intensity = 1.5 + prox * 1.6;
     });
   });
 
@@ -4204,6 +4223,7 @@ function AAAPathwayShrines() {
           const gy = terrainHeightAt(x, z);
           const showLight = (si * 2 + xi) < lightPoolSize;
           const fi1 = flameIdx++, fi2 = flameIdx++;
+          const lightIdx = si * 2 + xi;
           return (
             <group key={`shrine-${si}-${xi}`} position={[x, gy, z]}>
               {/* Stone plinth */}
@@ -4239,7 +4259,10 @@ function AAAPathwayShrines() {
                 );
               })}
               {showLight && (
-                <pointLight position={[0, 1.5, 0]} color="#ff9933" intensity={1.5} distance={5.5} decay={2} />
+                <pointLight
+                  ref={el => { lightRefs.current[lightIdx] = el; }}
+                  position={[0, 1.5, 0]} color="#ff9933" intensity={1.5} distance={5.5} decay={2}
+                />
               )}
             </group>
           );
@@ -4632,6 +4655,7 @@ const AVENUE_TORCH_PAIRS: [number, number][] = [
 ];
 
 function AAAAvenueTorches() {
+  const { camera } = useThree();
   const postGeo  = useMemo(() => new THREE.CylinderGeometry(0.085, 0.125, 2.1, 8, 2), []);
   const baseGeo  = useMemo(() => new THREE.CylinderGeometry(0.22, 0.30, 0.30, 8, 1), []);
   const flameGeo = useMemo(() => new THREE.SphereGeometry(0.20, 7, 5), []);
@@ -4639,12 +4663,28 @@ function AAAAvenueTorches() {
 
   const flameRefs = useRef<(THREE.Mesh | null)[]>([]);
 
+  /* Torch positions — used to gauge visitor proximity per torch */
+  const torchPositions = useMemo(
+    () => AVENUE_TORCH_PAIRS.flatMap(([z]) => ([-3.6, 3.6] as number[]).map(x => ({ x, z }))),
+    []
+  );
+
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     flameRefs.current.forEach((m, i) => {
       if (!m) return;
       const s = 0.86 + Math.sin(t * 4.2 + i * 0.73) * 0.11 + Math.sin(t * 7.8 + i * 1.31) * 0.05;
       m.scale.setScalar(s);
+
+      const p = torchPositions[i];
+      if (p) {
+        const dx = camera.position.x - p.x;
+        const dz = camera.position.z - p.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const prox = THREE.MathUtils.clamp(1 - dist / 5, 0, 1);
+        const mat = m.material as THREE.MeshStandardMaterial;
+        if (mat) mat.emissiveIntensity = 3.2 + prox * 2.2;
+      }
     });
   });
 
