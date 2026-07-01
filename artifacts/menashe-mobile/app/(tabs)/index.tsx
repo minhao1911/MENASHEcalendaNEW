@@ -47,6 +47,7 @@ import { calculateZmanim, formatTime } from "@/lib/zmanim";
 import {
   getHebrewDate,
   formatHebrewDate,
+  formatHebrewDateHebrew,
   getCurrentParasha,
   getUpcomingHolidays,
 } from "@/lib/hebrewCalendar";
@@ -231,6 +232,9 @@ export default function HomeScreen() {
 
   const hdate = useMemo(() => getHebrewDate(today), [today]);
   const hebrewDateStr = useMemo(() => formatHebrewDate(hdate), [hdate]);
+  const hebrewNumeralStr = useMemo(() => {
+    try { return formatHebrewDateHebrew(hdate); } catch { return ""; }
+  }, [hdate]);
   const parasha = useMemo(() => getCurrentParasha(), []);
   const holidays = useMemo(() => getUpcomingHolidays(30), []);
   const nextHoliday = holidays[0] ?? null;
@@ -333,7 +337,6 @@ export default function HomeScreen() {
   const a5 = useEntrance(240);
   const a6 = useEntrance(280);
   const a7 = useEntrance(320);
-  const a8 = useEntrance(360);
   const a9 = useEntrance(400);
   const a10 = useEntrance(430);
 
@@ -457,38 +460,61 @@ export default function HomeScreen() {
           colors={heroGradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ minHeight: 220 }}
+          style={{ minHeight: 260 }}
         >
-          {/* Decorative top-right */}
-          <View style={{ position: "absolute", top: 0, right: 0, width: 160, height: 160, opacity: isLight ? 0.15 : 0.08 }} pointerEvents="none">
-            <LinearGradient
-              colors={["transparent", gold + "80", gold + "30"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ flex: 1, borderBottomLeftRadius: 80 }}
-            />
-          </View>
-          <View style={{ position: "absolute", top: -20, right: -20, opacity: 0.10 }} pointerEvents="none">
-            <Text style={{ fontSize: 140, color: gold }}>⛩</Text>
-          </View>
-
-          {/* Content */}
-          <View style={{ padding: 20, paddingBottom: 14 }}>
-            {/* Greeting */}
-            <Text style={{ fontSize: 12, color: isLight ? "#6b4c1e" : textMuted, fontWeight: "500", marginBottom: 2 }}>
-              {gregDate}
-            </Text>
-            <Text style={{ fontSize: 17, fontWeight: "700", marginBottom: 8 }}>
-              <Text style={{ color: heroAccent }}>{greeting}</Text>
-              {firstName ? (
-                <Text style={{ color: isLight ? "#3d2c0e" : textPrimary }}>{", " + firstName}</Text>
+          {/* Split layout: left text / right artwork */}
+          <View style={{ flexDirection: "row", flex: 1 }}>
+            {/* Left: dates + greeting */}
+            <View style={{ flex: 1, paddingTop: 20, paddingLeft: 20, paddingRight: 10, paddingBottom: 14, justifyContent: "center" }}>
+              <Text style={{ fontSize: 12, color: isLight ? "#6b4c1e" : textMuted, fontWeight: "500", marginBottom: 4 }}>
+                {gregDate}
+              </Text>
+              <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 10 }}>
+                <Text style={{ color: heroAccent }}>{greeting}</Text>
+                {firstName ? (
+                  <Text style={{ color: isLight ? "#3d2c0e" : textPrimary }}>{", " + firstName}</Text>
+                ) : null}
+              </Text>
+              <Text style={{ fontSize: 27, fontWeight: "800", color: isLight ? "#1a0f00" : textPrimary, letterSpacing: -0.5, lineHeight: 33 }}>
+                {hebrewDateStr}
+              </Text>
+              {hebrewNumeralStr ? (
+                <Text style={{ fontSize: 15, color: isLight ? "#8b6914" : gold, marginTop: 5, fontWeight: "600", letterSpacing: 0.3 }}>
+                  {hebrewNumeralStr}
+                </Text>
               ) : null}
-            </Text>
+            </View>
 
-            {/* Hebrew date */}
-            <Text style={{ fontSize: 30, fontWeight: "800", color: isLight ? "#1a0f00" : textPrimary, letterSpacing: -0.5, lineHeight: 36 }}>
-              {hebrewDateStr}
-            </Text>
+            {/* Right: warm sanctuary artwork */}
+            <View style={{ width: 148, overflow: "hidden" }}>
+              <LinearGradient
+                colors={isLight
+                  ? (["#fde9b4", "#f5c36a", "#d4780a", "#7a3200"] as const)
+                  : (["#2a1500", "#7a3d08", "#d4840a", "#f5c36a"] as const)}
+                start={{ x: 0.4, y: 0 }}
+                end={{ x: 0.6, y: 1 }}
+                style={{ flex: 1, minHeight: 210, alignItems: "center", justifyContent: "flex-end", paddingBottom: 6 }}
+              >
+                {/* Birds */}
+                <Text style={{ position: "absolute", top: 10, left: 14, fontSize: 9, opacity: 0.75 }}>🐦</Text>
+                <Text style={{ position: "absolute", top: 16, left: 30, fontSize: 7, opacity: 0.6 }}>🐦</Text>
+                <Text style={{ position: "absolute", top: 8, right: 20, fontSize: 8, opacity: 0.65 }}>🐦</Text>
+                {/* Temple */}
+                <Text style={{ fontSize: 80, lineHeight: 90, marginBottom: -6, textShadowColor: "rgba(0,0,0,0.4)", textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 8 }}>
+                  ⛩
+                </Text>
+                {/* Ground glow */}
+                <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, backgroundColor: "rgba(212,120,10,0.30)" }} />
+                {/* Subtle left fade for blend */}
+                <LinearGradient
+                  colors={isLight ? (["#F0E6CE", "transparent"] as const) : (["#0a1020", "transparent"] as const)}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 36 }}
+                  pointerEvents="none"
+                />
+              </LinearGradient>
+            </View>
           </View>
 
           {/* Glass zmanim bar */}
@@ -780,19 +806,29 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      {/* ─── 10. MEMORIAL SANCTUARY (full-width hero) ─────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 14, borderRadius: rd.xl, overflow: "hidden", ...shadow.level3 }, a7]}>
-        <LinearGradient
-          colors={["#2d1a0e", "#1a0f00", "#3d2410"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ flexDirection: "row", minHeight: 110 }}
+      {/* ─── 10+11. MEMORIAL SANCTUARY + RAV MENASHE AI (2-col hero row) ────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 14, flexDirection: "row", gap: 10 }, a7]}>
+
+        {/* Memorial Sanctuary */}
+        <TouchableOpacity
+          style={{ flex: 1, borderRadius: rd.xl, overflow: "hidden", ...shadow.level3 }}
+          onPress={() => router.push("/(tabs)/community")}
+          activeOpacity={0.88}
+          accessibilityLabel="Open Memorial Sanctuary"
         >
-          <View style={{ flex: 1, padding: 20, justifyContent: "space-between" }}>
+          <LinearGradient
+            colors={["#2d1a0e", "#1a0f00", "#3d2410"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ flex: 1, minHeight: 150, padding: 14 }}
+          >
             <Overline text={t.homeMemorialTitle} color={gold} />
-            <Text style={{ fontSize: 13, color: "#d4c8b0", marginTop: 8, marginBottom: 16, lineHeight: 20 }}>
+            <Text style={{ fontSize: 12, color: "#d4c8b0", marginTop: 6, marginBottom: 8, lineHeight: 18 }}>
               {t.homeMemorialTagline}
             </Text>
+            <View style={{ alignItems: "center", marginBottom: 10 }}>
+              <Text style={{ fontSize: 38 }}>🕯</Text>
+            </View>
             <PillButton
               label={t.homeOpenSanctuary}
               onPress={() => router.push("/(tabs)/community")}
@@ -800,31 +836,29 @@ export default function HomeScreen() {
               fg="#1a0f00"
               small
             />
-          </View>
-          {/* Candle artwork */}
-          <View style={{ width: 110, alignItems: "center", justifyContent: "center", paddingRight: 12 }}>
-            <Text style={{ fontSize: 52 }}>🕯</Text>
-            <View style={{
-              position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: gold + "08",
-            }} />
-          </View>
-        </LinearGradient>
-      </Animated.View>
+          </LinearGradient>
+        </TouchableOpacity>
 
-      {/* ─── 11. RAV MENASHE AI (full-width hero) ─────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 14, borderRadius: rd.xl, overflow: "hidden", ...shadow.level3 }, a8]}>
-        <LinearGradient
-          colors={["#060e1e", "#0c1830", "#0a1428"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ flexDirection: "row", minHeight: 110 }}
+        {/* Rav Menashe AI */}
+        <TouchableOpacity
+          style={{ flex: 1, borderRadius: rd.xl, overflow: "hidden", ...shadow.level3 }}
+          onPress={() => router.push("/(tabs)/torah")}
+          activeOpacity={0.88}
+          accessibilityLabel="Ask Rav Menashe AI"
         >
-          <View style={{ flex: 1, padding: 20, justifyContent: "space-between" }}>
+          <LinearGradient
+            colors={["#060e1e", "#0c1830", "#0a1428"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ flex: 1, minHeight: 150, padding: 14 }}
+          >
             <Overline text={t.homeAITitle} color="#6382FF" />
-            <Text style={{ fontSize: 13, color: "#a0b4d8", marginTop: 8, marginBottom: 16, lineHeight: 20 }}>
+            <Text style={{ fontSize: 12, color: "#a0b4d8", marginTop: 6, marginBottom: 8, lineHeight: 18 }}>
               {t.homeAITagline}
             </Text>
+            <View style={{ alignItems: "center", marginBottom: 10 }}>
+              <Text style={{ fontSize: 38 }}>🔮</Text>
+            </View>
             <PillButton
               label={t.homeAskRavMenashe}
               onPress={() => router.push("/(tabs)/torah")}
@@ -832,16 +866,9 @@ export default function HomeScreen() {
               fg="#fff"
               small
             />
-          </View>
-          {/* Crystal ball artwork */}
-          <View style={{ width: 110, alignItems: "center", justifyContent: "center", paddingRight: 12 }}>
-            <Text style={{ fontSize: 52 }}>🔮</Text>
-            <View style={{
-              position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: "#6382FF08",
-            }} />
-          </View>
-        </LinearGradient>
+          </LinearGradient>
+        </TouchableOpacity>
+
       </Animated.View>
 
       {/* ─── 12. GO PREMIUM ───────────────────────────────────────────────────── */}
