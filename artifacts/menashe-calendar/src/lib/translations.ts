@@ -616,6 +616,9 @@ export interface Translations {
   memTimelineTitle: string;
   memTimelineJourney: string;
   memTimelineRemembered: string;
+  memWalkEntrance: string;
+  memWalkOverview: string;
+  memWalkMode: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -1218,6 +1221,9 @@ export const en: Translations = {
   memTimelineTitle: "LIFE TIMELINE",
   memTimelineJourney: "Life's Journey",
   memTimelineRemembered: "Remembered",
+  memWalkEntrance: "Entrance",
+  memWalkOverview: "Overview",
+  memWalkMode: "Walk",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1819,6 +1825,9 @@ export const tk: Translations = {
   memTimelineTitle: "NUNPUI THILOM",
   memTimelineJourney: "Nunpui Lamka",
   memTimelineRemembered: "Nunnem",
+  memWalkEntrance: "Lut Hmun",
+  memWalkOverview: "Hmai Thlir",
+  memWalkMode: "Kal",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

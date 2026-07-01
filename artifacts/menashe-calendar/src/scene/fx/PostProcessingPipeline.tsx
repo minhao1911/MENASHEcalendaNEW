@@ -41,7 +41,7 @@ export function PostProcessingPipeline({
       <Bloom
         intensity={enableBloom && q.bloomEnabled ? intensity : 0}
         luminanceThreshold={threshold}
-        luminanceSmoothing={0.92}
+        luminanceSmoothing={0.85}
         mipmapBlur
         blendFunction={BlendFunction.ADD}
         levels={q.tier === "high" ? 8 : 5}
@@ -49,7 +49,7 @@ export function PostProcessingPipeline({
 
       <Vignette
         offset={0.32}
-        darkness={0.44}
+        darkness={0.52}
         blendFunction={BlendFunction.NORMAL}
       />
     </EffectComposer>

@@ -29,7 +29,7 @@ function RendererConfig() {
     gl.shadowMap.type    = q.shadowsEnabled ? THREE.PCFSoftShadowMap : THREE.BasicShadowMap;
 
     gl.toneMapping         = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.62;
+    gl.toneMappingExposure = 1.48;
     gl.outputColorSpace    = THREE.SRGBColorSpace;
 
     scene.backgroundBlurriness = 0;

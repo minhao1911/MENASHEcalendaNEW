@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, PointerLockControls, Instances, Instance, Text, Html } from "@react-three/drei";
 import * as THREE from "three";
 import type { CommunityYahrzeitEntry } from "../lib/userApi";
+import { useLanguage } from "../context/LanguageContext";
 import {
   SceneFoundation,
   GoldenHourLighting,
@@ -4123,7 +4124,7 @@ function AAASceneCameraDriver({ sceneView, ctrlRef, walkMode }: {
 
   useFrame((_, delta) => {
     if (!animating.current || !ctrlRef.current || walkMode) return;
-    progress.current = Math.min(1, progress.current + delta * 0.75);
+    progress.current = Math.min(1, progress.current + delta * 0.55);
     /* Smooth cubic ease in-out */
     const t = progress.current * progress.current * (3 - 2 * progress.current);
     camera.position.lerpVectors(fromCam.current, toCam.current, t);
@@ -4151,6 +4152,7 @@ interface SceneProps {
 }
 
 function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, onGroundClick, onCandleClick, selectedId, sceneView, cameraStateRef }: SceneProps) {
+  const { t }        = useLanguage();
   const litEntries   = useMemo(() => entries.slice(0, ENTRY_POSITIONS.length), [entries]);
   const ctrlRef      = useRef<any>(null);
   const particlesRef = useRef<FootstepPt[]>([]);
@@ -4192,6 +4194,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
           {walkMode && (
             <button
               onClick={() => fpResetRef.current?.reset()}
+              aria-label={t.memWalkEntrance}
               style={{
                 pointerEvents: "all",
                 background: "rgba(0,0,0,0.70)",
@@ -4213,13 +4216,14 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
               }}
             >
               <span style={{ fontSize: 17 }}>🚪</span>
-              <span>Entrance</span>
+              <span>{t.memWalkEntrance}</span>
             </button>
           )}
 
           {/* Walk ↔ Overview toggle */}
           <button
             onClick={() => setWalkMode(m => !m)}
+            aria-label={walkMode ? t.memWalkOverview : t.memWalkMode}
             style={{
               pointerEvents: "all",
               background: "rgba(0,0,0,0.70)",
@@ -4241,7 +4245,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
             }}
           >
             <span style={{ fontSize: 17 }}>{walkMode ? "🔭" : "🚶"}</span>
-            <span>{walkMode ? "Overview" : "Walk"}</span>
+            <span>{walkMode ? t.memWalkOverview : t.memWalkMode}</span>
           </button>
         </div>
       </Html>
@@ -4591,7 +4595,7 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView, walkMode }: {
       animating.current = false;
       return;
     }
-    progress.current = Math.min(1, progress.current + delta * 1.2);
+    progress.current = Math.min(1, progress.current + delta * 0.85);
     const t = progress.current * progress.current * (3 - 2 * progress.current);
     ctrlRef.current.target.lerpVectors(fromTarget.current, toTarget.current, t);
     /* Also walk the camera position toward the candle (FPS-friendly) */
@@ -4626,7 +4630,7 @@ export interface MemorialValley3DProps {
 export default function MemorialValley3D({ eventSource, ...props }: MemorialValley3DProps) {
   return (
     <QualityProvider>
-      <SceneFoundation fov={90} eventSource={eventSource}>
+      <SceneFoundation fov={72} eventSource={eventSource}>
         <AAAValleyScene {...props} />
       </SceneFoundation>
     </QualityProvider>

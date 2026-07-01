@@ -958,6 +958,7 @@ function TopHeader({
   onClose: () => void;
   onLightCandle: () => void;
 }) {
+  const { t }           = useLanguage();
   const [time, setTime] = useState(formatTime());
   useEffect(() => {
     const iv = setInterval(() => setTime(formatTime()), 30000);
@@ -1006,7 +1007,7 @@ function TopHeader({
         <input
           ref={searchRef}
           className="ms-search-input"
-          placeholder="Search for a loved one..."
+          placeholder={t.memSearchPlaceholder}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
         />
@@ -1036,7 +1037,7 @@ function TopHeader({
           }}
         >
           <span style={{ fontSize: 16, animation: "ms-flicker 1.8s infinite" }}>🕯</span>
-          Light Candle
+          {t.memLightCandle}
         </button>
 
         <div style={{
@@ -1055,6 +1056,7 @@ function TopHeader({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close Memorial Sanctuary"
             style={{
               marginLeft: 6, width: 28, height: 28, borderRadius: "50%",
               background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
@@ -2530,7 +2532,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
   const [submitError, setSubmitError]       = useState<string | null>(null);
   const [forceDesktop, setForceDesktop]     = useState(false);
   const [searchQuery, setSearchQuery]       = useState("");
-  const [filterYear]                        = useState("all");
+  const filterYear                          = "all";
   const [showDedicate, setShowDedicate]     = useState(false);
   const [dedicateSuccess, setDedicateSuccess] = useState(false);
   const [activeScene, setActiveScene]       = useState<SceneTab>("valley");
