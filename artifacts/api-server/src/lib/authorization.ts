@@ -26,6 +26,23 @@ export function isAdminUser(userId: string | null | undefined, orgRole?: string 
 }
 
 /**
+ * safeIsAdmin — convenience helper for read routes that need to branch on
+ * admin status without blocking non-admin users.  Extracts both userId and
+ * orgRole from the Clerk session in a single call, returns true only when
+ * both are present and orgRole === "org:admin".
+ */
+export function safeIsAdmin(req: Request): boolean {
+  try {
+    const auth = getAuth(req);
+    const userId = auth?.userId ?? null;
+    const orgRole = (auth as any)?.orgRole as string | null | undefined;
+    return !!userId && orgRole === "org:admin";
+  } catch {
+    return false;
+  }
+}
+
+/**
  * requireAuth — Express middleware.
  * Requires a valid Clerk session. Sets req.userId.
  */

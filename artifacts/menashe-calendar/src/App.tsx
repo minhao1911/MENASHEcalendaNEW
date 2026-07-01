@@ -631,7 +631,6 @@ function AppShell() {
           <SiddurPage
             onReadBook={onReadBook}
             onAdmin={onAdmin}
-            adminPin="1948"
             refreshKey={siddurRefreshKey}
             isPremium={isPremium}
             onShowPremium={showPremiumPage}

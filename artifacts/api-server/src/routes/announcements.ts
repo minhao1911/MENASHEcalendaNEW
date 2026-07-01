@@ -5,8 +5,7 @@ import webpush from "web-push";
 import { pool } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { requireAdmin } from "../lib/requireAdmin";
-import { safeGetAuth } from "../lib/authorization";
-import { isAdminUser } from "../lib/authorization";
+import { safeIsAdmin } from "../lib/authorization";
 import { apiError } from "../lib/apiError";
 
 const router = Router();
@@ -130,8 +129,7 @@ async function broadcastToAll(ann: CommunityAnnouncement) {
 
 // GET /announcements — public feed (sent); admin sees all
 router.get("/announcements", async (req, res) => {
-  const auth = safeGetAuth(req);
-  const isAdmin = isAdminUser(auth.userId);
+  const isAdmin = safeIsAdmin(req);
   try {
     const r = await pool.query(
       isAdmin

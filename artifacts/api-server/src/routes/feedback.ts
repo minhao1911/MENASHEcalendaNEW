@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { feedbackTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { safeGetAuth, isAdminUser } from "../lib/authorization";
+import { safeGetAuth } from "../lib/authorization";
 import { apiError } from "../lib/apiError";
 import { z } from "zod/v4";
 import { requireAdmin } from "../lib/requireAdmin";

@@ -35,14 +35,13 @@ const API_BASE = "/api";
 interface SiddurPageProps {
   onReadBook: (book: Book) => void;
   onAdmin: () => void;
-  adminPin: string;
   refreshKey: number;
   isPremium: boolean;
   onShowPremium: () => void;
   isAdmin?: boolean;
 }
 
-const SiddurPage = memo(function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey, isPremium, onShowPremium, isAdmin = false }: SiddurPageProps) {
+const SiddurPage = memo(function SiddurPage({ onReadBook, onAdmin, refreshKey, isPremium, onShowPremium, isAdmin = false }: SiddurPageProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
