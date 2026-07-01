@@ -57,6 +57,28 @@ export interface SharedTranslations {
   homeCensusDesc: string;
   homeMoreTools: string;
 
+  /* ── Home Premium (SPR-M005) ── */
+  homeGoodMorning: string;
+  homeGoodAfternoon: string;
+  homeGoodEvening: string;
+  homePrayerTimesTitle: string;
+  homeDawn: string;
+  homeLatestShema: string;
+  homeNoon: string;
+  homeMincha: string;
+  homePlag: string;
+  homeTzais: string;
+  homeViewZmanim: string;
+  homeShabbatTitle: string;
+  homeMemorialTitle: string;
+  homeMemorialDesc: string;
+  homeOpenSanctuary: string;
+  homeAITitle: string;
+  homeAIDesc: string;
+  homeAskRavMenashe: string;
+  homeInsightTitle: string;
+  homeQuickActionsTitle: string;
+
   /* ── Settings ── */
   settingsTitle: string;
   settingsAppearance: string;
@@ -197,6 +219,27 @@ export const sharedEn: SharedTranslations = {
   homeCensusDesc: "Fill out the community census form and view statistics",
   homeMoreTools: "More Tools",
 
+  homeGoodMorning: "Good Morning",
+  homeGoodAfternoon: "Good Afternoon",
+  homeGoodEvening: "Good Evening",
+  homePrayerTimesTitle: "Prayer Times",
+  homeDawn: "Dawn",
+  homeLatestShema: "Latest Shema",
+  homeNoon: "Halachic Noon",
+  homeMincha: "Mincha Ketana",
+  homePlag: "Plag HaMincha",
+  homeTzais: "Tzais HaKochavim",
+  homeViewZmanim: "View All Zmanim",
+  homeShabbatTitle: "Shabbat",
+  homeMemorialTitle: "Memorial Sanctuary",
+  homeMemorialDesc: "Honor and remember our ancestors in a sacred space",
+  homeOpenSanctuary: "Open Sanctuary",
+  homeAITitle: "Rav Menashe AI",
+  homeAIDesc: "Ask any question about halacha, tradition, or the calendar",
+  homeAskRavMenashe: "Ask Rav Menashe…",
+  homeInsightTitle: "Daily Torah Insight",
+  homeQuickActionsTitle: "Quick Actions",
+
   settingsTitle: "Settings",
   settingsAppearance: "APPEARANCE",
   settingsTheme: "Theme",
@@ -333,6 +376,27 @@ export const sharedTk: SharedTranslations = {
   homeCensusTitle: "Mipil Chhiar",
   homeCensusDesc: "Mipil census form thlak la statistics en",
   homeMoreTools: "Thil Pawimawh Zawk",
+
+  homeGoodMorning: "Zingkhuaah Lawmthu",
+  homeGoodAfternoon: "Chhandamah Lawmthu",
+  homeGoodEvening: "Zanah Lawmthu",
+  homePrayerTimesTitle: "Thu Dawt Hunpui",
+  homeDawn: "Nitak Thleng",
+  homeLatestShema: "Shema Hnung Ber",
+  homeNoon: "Chhandam Halachic",
+  homeMincha: "Mincha Ketana",
+  homePlag: "Plag HaMincha",
+  homeTzais: "Tzais HaKochavim",
+  homeViewZmanim: "Zmanim Zawng En",
+  homeShabbatTitle: "Shabbat",
+  homeMemorialTitle: "Memorial Inn Thianghlim",
+  homeMemorialDesc: "Ni hmasa te chu hmangaih leh an hriat tur inn thianghlim ah",
+  homeOpenSanctuary: "Inn Thianghlim Zuk",
+  homeAITitle: "Rav Menashe AI",
+  homeAIDesc: "Halacha, tradition, ni thu zawh theih",
+  homeAskRavMenashe: "Rav Menashe zawh…",
+  homeInsightTitle: "Nizan Torah Thu",
+  homeQuickActionsTitle: "Thil Tihpui Dan",
 
   settingsTitle: "Siam Dan",
   settingsAppearance: "SIM BUATSAIH",

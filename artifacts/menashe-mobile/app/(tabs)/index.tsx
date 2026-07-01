@@ -1,16 +1,44 @@
-import React, { useMemo, useState, useEffect } from "react";
+/**
+ * SPR-M005 — Premium Mobile Home Screen
+ * "What does the user need today?" — warm, peaceful, sacred.
+ *
+ * Sections (top → bottom):
+ *   1. Greeting + Date Hero
+ *   2. Prayer Times (Zmanim)
+ *   3. Shabbat Countdown
+ *   4. Omer (conditional)
+ *   5. Weekly Parashah
+ *   6. Daily Torah Insight
+ *   7. Daf Yomi
+ *   8. Quick Actions
+ *   9. Upcoming Holiday
+ *  10. Community
+ *  11. Memorial Sanctuary
+ *  12. Rav Menashe AI
+ */
+
+import React, {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
+  Animated,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  View,
-  Platform,
   TouchableOpacity,
+  View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { HDate } from "@hebcal/core";
+
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
 import {
   getHebrewDate,
@@ -18,9 +46,11 @@ import {
   getCurrentParasha,
   getUpcomingHolidays,
 } from "@/lib/hebrewCalendar";
-import { useColors } from "@/hooks/useColors";
+import { useThemeTokens } from "@/src/mobile/design-system";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
+
+// ─── Daf Yomi helpers ─────────────────────────────────────────────────────────
 
 const TRACTATES = [
   { name: "Berakhot", pages: 64 }, { name: "Shabbat", pages: 157 },
@@ -60,7 +90,7 @@ function getTodayDaf(): { tractate: string; daf: number } {
 
 function getOmerDay(): number | null {
   const hd = new HDate(new Date());
-  const m = hd.getMonth(); // Nisan=1, Iyar=2, Sivan=3
+  const m = hd.getMonth();
   const d = hd.getDate();
   if (m === 1 && d >= 16) return d - 15;
   if (m === 2) return 15 + d;
@@ -68,22 +98,8 @@ function getOmerDay(): number | null {
   return null;
 }
 
-const QUICK_TOOLS = [
-  { id: "torah-tracker", label: "Torah Tracker", emoji: "📖", color: "#d4a843", route: "/torah-tracker" },
-  { id: "daf-yomi",     label: "Daf Yomi",       emoji: "🎓", color: "#a78bfa", route: "/daf-yomi" },
-  { id: "mussar",       label: "48 Ways",         emoji: "🌱", color: "#4ade80", route: "/mussar" },
-  { id: "siddur",       label: "Library",         emoji: "📚", color: "#6382FF", route: "/siddur" },
-  { id: "yahrzeit",     label: "Yahrzeit Calc",   emoji: "🕯", color: "#f472b6", route: "/yahrzeit-calc" },
-  { id: "prayer-board", label: "Prayer Board",    emoji: "🙏", color: "#34d399", route: "/prayer-board" },
-];
-
-function getNextWeekday(targetDay: number): Date {
-  const d = new Date();
-  let diff = (targetDay - d.getDay() + 7) % 7;
-  if (diff === 0) diff = 7;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
+function omerWeeksAndDays(day: number): { weeks: number; days: number } {
+  return { weeks: Math.floor((day - 1) / 7), days: ((day - 1) % 7) + 1 };
 }
 
 function formatCountdown(ms: number): string {
@@ -97,19 +113,98 @@ function formatCountdown(ms: number): string {
   return `${s}s`;
 }
 
-function omerWeeksAndDays(day: number): { weeks: number; days: number } {
-  return { weeks: Math.floor((day - 1) / 7), days: ((day - 1) % 7) + 1 };
+function getNextWeekday(targetDay: number): Date {
+  const d = new Date();
+  let diff = (targetDay - d.getDay() + 7) % 7;
+  if (diff === 0) diff = 7;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
+const TORAH_INSIGHTS = [
+  "\"The beginning of wisdom is the fear of G-d.\" — Study each day as if it were your first encounter with Torah.",
+  "\"Love your neighbor as yourself.\" — The entire Torah stands on this single principle.",
+  "\"Words of Torah are like fire; just as fire does not ignite by itself, Torah does not endure in one who studies alone.\" — Talmud Bavli, Ta'anit 7a",
+  "Every day one must say: the world was created for my sake — meaning, I have a unique purpose no one else can fulfill.",
+  "\"Who is wise? One who learns from every person.\" — Pirkei Avot 4:1",
+  "The Baal Shem Tov taught: G-d is present in every place, in every moment, in every thought. Holiness is not reserved for the synagogue alone.",
+  "\"Turn it over and turn it over again, for everything is contained within it.\" — The Torah contains all wisdom if we look deeply enough.",
+];
+
+const QUICK_ACTIONS = [
+  { id: "calendar",     label: "Calendar",      icon: "calendar" as const,   color: "#6382FF", route: "/(tabs)/calendar" },
+  { id: "zmanim",       label: "Zmanim",         icon: "clock" as const,      color: "#d4a843", route: "/(tabs)/zmanim" },
+  { id: "daf-yomi",     label: "Daf Yomi",       icon: "book-open" as const,  color: "#a78bfa", route: "/daf-yomi" },
+  { id: "siddur",       label: "Library",        icon: "book" as const,       color: "#34d399", route: "/siddur" },
+  { id: "prayer-board", label: "Prayer Board",   icon: "heart" as const,      color: "#f472b6", route: "/prayer-board" },
+  { id: "community",   label: "Community",       icon: "users" as const,      color: "#fb923c", route: "/(tabs)/community" },
+  { id: "yahrzeit",    label: "Yahrzeit",        icon: "sun" as const,        color: "#e879f9", route: "/yahrzeit-calc" },
+  { id: "mussar",      label: "48 Ways",         icon: "star" as const,       color: "#4ade80", route: "/mussar" },
+];
+
+// ─── Entrance animation hook ───────────────────────────────────────────────────
+
+function useEntrance(delay = 0) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(18)).current;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [delay, opacity, translateY]);
+  return { opacity, transform: [{ translateY }] };
+}
+
+// ─── Section label component ───────────────────────────────────────────────────
+
+function SectionLabel({ label, accent }: { label: string; accent: string }) {
+  return (
+    <Text
+      style={{
+        fontSize: 10,
+        fontWeight: "700",
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: accent,
+        marginBottom: 10,
+      }}
+    >
+      {label}
+    </Text>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
 export default function HomeScreen() {
-  const colors = useColors();
+  const { colors, type, sp, rd, shadow } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const { location } = useApp();
   const { lang, setLang, t } = useLanguage();
 
-  const today = new Date();
-  const hdate = getHebrewDate(today);
-  const hebrewDateStr = formatHebrewDate(hdate);
+  const today = useMemo(() => new Date(), []);
+  const hour = today.getHours();
+
+  const greeting =
+    hour < 12 ? t.homeGoodMorning
+    : hour < 17 ? t.homeGoodAfternoon
+    : t.homeGoodEvening;
+
+  const hdate = useMemo(() => getHebrewDate(today), [today]);
+  const hebrewDateStr = useMemo(() => formatHebrewDate(hdate), [hdate]);
   const parasha = useMemo(() => getCurrentParasha(), []);
   const holidays = useMemo(() => getUpcomingHolidays(30), []);
   const nextHoliday = holidays[0] ?? null;
@@ -118,30 +213,34 @@ export default function HomeScreen() {
 
   const todayZm = useMemo(
     () => calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes),
-    [location],
+    [location, today],
   );
 
   const isShabbat = today.getDay() === 6;
   const isFriday = today.getDay() === 5;
 
-  const friday = isFriday ? today : getNextWeekday(5);
-  const saturday = new Date(friday.getTime() + 86400000);
-  saturday.setHours(0, 0, 0, 0);
+  const friday = useMemo(
+    () => (isFriday ? today : getNextWeekday(5)),
+    [isFriday, today],
+  );
+  const saturday = useMemo(() => {
+    const d = new Date(friday.getTime() + 86400000);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [friday]);
 
   const fridayZm = useMemo(
     () => calculateZmanim(friday, location.lat, location.lng, location.candleLightingMinutes),
-    [location, friday.toDateString()],
+    [location, friday],
   );
   const satZm = useMemo(
     () => calculateZmanim(saturday, location.lat, location.lng),
-    [location, saturday.toDateString()],
+    [location, saturday],
   );
 
   const gregDate = today.toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric",
+    weekday: "long", month: "long", day: "numeric",
   });
-
-  const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -170,343 +269,647 @@ export default function HomeScreen() {
     countdownLabel = t.homeUntilNextShabbat;
   }
 
-  const styles = makeStyles(colors, topPad, insets.bottom);
+  const [insightExpanded, setInsightExpanded] = useState(false);
+  const insight = useMemo(() => {
+    const idx = Math.floor(
+      (today.getTime() / 86400000) % TORAH_INSIGHTS.length,
+    );
+    return TORAH_INSIGHTS[Math.abs(idx)];
+  }, [today]);
+
+  const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 56 : 20);
+  const bottomPad = insets.bottom > 0 ? insets.bottom : 0;
+
+  const anim0 = useEntrance(0);
+  const anim1 = useEntrance(60);
+  const anim2 = useEntrance(120);
+  const anim3 = useEntrance(180);
+  const anim4 = useEntrance(220);
+  const anim5 = useEntrance(260);
+  const anim6 = useEntrance(300);
+  const anim7 = useEntrance(340);
+  const anim8 = useEntrance(380);
+  const anim9 = useEntrance(420);
+
+  const isHavdalah = countdownMode === "havdalah";
+  const countdownAccent = isHavdalah ? "#a78bfa" : colors.primary;
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{
+        paddingTop: topPad + 8,
+        paddingBottom: bottomPad + 110,
+        paddingHorizontal: sp[4],
+        gap: sp[3],
+      }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerBrand}>
-          <View style={styles.headerStar}>
-            <Text style={styles.headerStarText}>✡</Text>
+
+      {/* ── 1. Top bar: Brand + Lang toggle ── */}
+      <Animated.View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }, anim0]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: sp[2] }}>
+          <View style={{
+            width: 32, height: 32, borderRadius: 16,
+            backgroundColor: colors.accentGoldMuted,
+            borderWidth: 1, borderColor: colors.primary + "44",
+            alignItems: "center", justifyContent: "center",
+          }}>
+            <Text style={{ fontSize: 15, color: colors.primary }}>✡</Text>
           </View>
           <View>
-            <Text style={styles.headerTitle}>BNEI MENASHE</Text>
-            <Text style={styles.headerSub}>{t.homeSacredCalendar}</Text>
-          </View>
-        </View>
-        <View style={styles.headerRight}>
-          {/* EN / TK toggle */}
-          <View style={styles.langToggle}>
-            <TouchableOpacity
-              style={[styles.langBtn, lang === "en" && { backgroundColor: colors.primary }]}
-              onPress={() => setLang("en")}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.langBtnText, { color: lang === "en" ? colors.primaryForeground : colors.mutedForeground }]}>EN</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.langBtn, lang === "tk" && { backgroundColor: colors.primary }]}
-              onPress={() => setLang("tk")}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.langBtnText, { color: lang === "tk" ? colors.primaryForeground : colors.mutedForeground }]}>TK</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.locationBadge}>
-            <Feather name="map-pin" size={11} color={colors.mutedForeground} />
-            <Text style={styles.locationText}>{location.name}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Hebrew Date Card */}
-      <View style={styles.dateCard}>
-        <Text style={styles.gregorianDate}>{gregDate}</Text>
-        <Text style={styles.hebrewDate}>{hebrewDateStr}</Text>
-        <View style={styles.divider} />
-        <View style={styles.dateRow}>
-          {todayZm.sunrise && (
-            <View style={styles.miniStat}>
-              <View style={styles.miniIcon}>
-                <Feather name="sunrise" size={15} color={colors.primary} />
-              </View>
-              <Text style={styles.miniLabel}>{t.homeSunrise}</Text>
-              <Text style={styles.miniValue}>{formatTime(todayZm.sunrise, location.tz)}</Text>
-            </View>
-          )}
-          {todayZm.sunset && (
-            <View style={styles.miniStat}>
-              <View style={styles.miniIcon}>
-                <Feather name="sunset" size={15} color={colors.primary} />
-              </View>
-              <Text style={styles.miniLabel}>{t.homeSunset}</Text>
-              <Text style={styles.miniValue}>{formatTime(todayZm.sunset, location.tz)}</Text>
-            </View>
-          )}
-          {todayZm.tzais && (
-            <View style={styles.miniStat}>
-              <View style={styles.miniIcon}>
-                <Feather name="moon" size={15} color={colors.primary} />
-              </View>
-              <Text style={styles.miniLabel}>{t.homeNightfall}</Text>
-              <Text style={styles.miniValue}>{formatTime(todayZm.tzais, location.tz)}</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Countdown Card */}
-      {countdownMs > 0 && (
-        <View style={[
-          styles.countdownCard,
-          {
-            borderColor: countdownMode === "havdalah" ? "#a78bfa44" : countdownMode === "candle" ? colors.primary + "55" : colors.border,
-            backgroundColor: countdownMode === "havdalah" ? "#a78bfa10" : countdownMode === "candle" ? colors.primary + "08" : colors.card,
-          },
-        ]}>
-          <View style={styles.countdownHeader}>
-            <Text style={styles.countdownEmoji}>{countdownMode === "havdalah" ? "✨" : "🕯"}</Text>
-            <Text style={[styles.countdownLabel, { color: countdownMode === "havdalah" ? "#a78bfa" : colors.primary }]}>
-              {countdownLabel}
+            <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary, letterSpacing: 1.8 }}>
+              BNEI MENASHE
+            </Text>
+            <Text style={{ fontSize: 9, color: colors.textMuted, letterSpacing: 0.8, marginTop: 1 }}>
+              {t.homeSacredCalendar.toUpperCase()}
             </Text>
           </View>
-          <Text style={[styles.countdownValue, { color: countdownMode === "havdalah" ? "#a78bfa" : colors.foreground }]}>
-            {formatCountdown(countdownMs)}
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: sp[2] }}>
+          <View style={{
+            flexDirection: "row", borderRadius: rd.pill,
+            borderWidth: 1, borderColor: colors.border,
+            overflow: "hidden",
+          }}>
+            {(["en", "tk"] as const).map((l) => (
+              <TouchableOpacity
+                key={l}
+                style={{
+                  paddingHorizontal: sp[3], paddingVertical: 5,
+                  backgroundColor: lang === l ? colors.primary : "transparent",
+                }}
+                onPress={() => setLang(l)}
+                activeOpacity={0.8}
+              >
+                <Text style={{
+                  fontSize: 11, fontWeight: "700", letterSpacing: 0.5,
+                  color: lang === l ? colors.primaryForeground : colors.textMuted,
+                }}>
+                  {l.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={{
+            flexDirection: "row", alignItems: "center", gap: 4,
+            backgroundColor: colors.card, borderRadius: rd.pill,
+            paddingHorizontal: sp[2.5], paddingVertical: 5,
+            borderWidth: 1, borderColor: colors.border,
+          }}>
+            <Feather name="map-pin" size={10} color={colors.textMuted} />
+            <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: "500" }}>
+              {location.name}
+            </Text>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* ── 2. Greeting + Hero Date Card ── */}
+      <Animated.View style={anim0}>
+        <View style={[styles.heroCard, {
+          backgroundColor: colors.card,
+          borderColor: colors.primary + "30",
+          borderWidth: 1,
+          borderRadius: rd.xl,
+          ...shadow.level2,
+        }]}>
+          {/* Decorative star */}
+          <View style={{
+            position: "absolute", top: -10, right: -10,
+            width: 120, height: 120, opacity: 0.04,
+          }} pointerEvents="none">
+            <Text style={{ fontSize: 100, color: colors.primary }}>✡</Text>
+          </View>
+
+          {/* Greeting row */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: sp[4] }}>
+            <View>
+              <Text style={{ fontSize: 11, color: colors.textMuted, letterSpacing: 1, textTransform: "uppercase", fontWeight: "600" }}>
+                {gregDate}
+              </Text>
+              <Text style={{ fontSize: 22, fontWeight: "700", color: colors.textPrimary, marginTop: 2 }}>
+                {greeting}
+              </Text>
+            </View>
+            <View style={{
+              backgroundColor: colors.accentGoldMuted,
+              borderRadius: rd.md,
+              paddingHorizontal: sp[3],
+              paddingVertical: sp[1.5],
+              borderWidth: 1, borderColor: colors.primary + "30",
+            }}>
+              <Text style={{ fontSize: 10, color: colors.primary, fontWeight: "700", letterSpacing: 1 }}>
+                {t.homeToday}
+              </Text>
+            </View>
+          </View>
+
+          {/* Hebrew Date */}
+          <Text style={{
+            fontSize: 32, fontWeight: "700", color: colors.textPrimary,
+            letterSpacing: -0.5, marginBottom: sp[4],
+            lineHeight: 38,
+          }}>
+            {hebrewDateStr}
           </Text>
-          {countdownMode === "candle" && fridayZm.candleLighting && (
-            <Text style={[styles.countdownSub, { color: colors.mutedForeground }]}>
-              {t.homeCandleLighting} at {formatTime(fridayZm.candleLighting, location.tz)}
-            </Text>
-          )}
-          {countdownMode === "havdalah" && satZm.havdalah && (
-            <Text style={[styles.countdownSub, { color: colors.mutedForeground }]}>
-              {t.homeHavdalah} at {formatTime(satZm.havdalah, location.tz)}
-            </Text>
-          )}
-        </View>
-      )}
 
-      {/* Omer Card */}
-      {omerDay !== null && (
-        <View style={[styles.card, { borderColor: "#4ade8033", backgroundColor: "#4ade8008" }]}>
-          <View style={styles.cardHeader}>
-            <Text style={{ fontSize: 15 }}>🌾</Text>
-            <Text style={[styles.cardLabel, { color: "#4ade80" }]}>{t.homeOmer}</Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-            <Text style={[styles.cardValue, { color: colors.foreground, fontSize: 36 }]}>{omerDay}</Text>
-            <Text style={[styles.cardSub, { color: colors.mutedForeground, fontSize: 14 }]}>
-              {(() => {
-                const { weeks, days } = omerWeeksAndDays(omerDay);
-                if (weeks === 0) return `${days} ${t.homeOmerDays}`;
-                return `${weeks} ${t.homeOmerWeeks} ${days} ${t.homeOmerDays}`;
-              })()}
-            </Text>
-          </View>
-        </View>
-      )}
+          {/* Divider */}
+          <View style={{ height: 1, backgroundColor: colors.divider, marginBottom: sp[4] }} />
 
-      {/* Shabbat Card */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Feather name="star" size={15} color={colors.primary} />
-          <Text style={styles.cardLabel}>
-            {isFriday || isShabbat ? t.homeTodayShabbat : t.homeUpcomingShabbat}
-          </Text>
-        </View>
-        <View style={styles.shabbatRow}>
-          <View style={styles.shabbatItem}>
-            <Text style={styles.shabbatLabel}>🕯 {t.homeCandleLighting}</Text>
-            <Text style={styles.shabbatTime}>{formatTime(fridayZm.candleLighting, location.tz)}</Text>
-          </View>
-          <View style={styles.shabbatDivider} />
-          <View style={styles.shabbatItem}>
-            <Text style={styles.shabbatLabel}>✨ {t.homeHavdalah}</Text>
-            <Text style={styles.shabbatTime}>{formatTime(satZm.havdalah, location.tz)}</Text>
+          {/* Sun times row */}
+          <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
+            {[
+              { icon: "sunrise" as const, label: t.homeSunrise, time: todayZm.sunrise },
+              { icon: "sunset" as const, label: t.homeSunset, time: todayZm.sunset },
+              { icon: "moon" as const, label: t.homeNightfall, time: todayZm.tzais },
+            ].map((item) => item.time ? (
+              <View key={item.label} style={{ alignItems: "center", gap: 6 }}>
+                <View style={{
+                  width: 34, height: 34, borderRadius: 17,
+                  backgroundColor: colors.accentGoldMuted,
+                  alignItems: "center", justifyContent: "center",
+                  borderWidth: 1, borderColor: colors.primary + "25",
+                }}>
+                  <Feather name={item.icon} size={14} color={colors.primary} />
+                </View>
+                <Text style={{ fontSize: 9, color: colors.textMuted, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                  {item.label}
+                </Text>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
+                  {formatTime(item.time, location.tz)}
+                </Text>
+              </View>
+            ) : null)}
           </View>
         </View>
-      </View>
+      </Animated.View>
 
-      {/* Quick Tools */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Feather name="grid" size={15} color={colors.primary} />
-          <Text style={styles.cardLabel}>{t.homeQuickTools}</Text>
-        </View>
-        <View style={styles.toolsGrid}>
-          {QUICK_TOOLS.map(tool => (
-            <TouchableOpacity
-              key={tool.id}
-              style={[styles.toolTile, { backgroundColor: tool.color + "12", borderColor: tool.color + "30" }]}
-              onPress={() => router.push(tool.route as any)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.toolEmoji}>{tool.emoji}</Text>
-              <Text style={[styles.toolLabel, { color: colors.foreground }]}>{tool.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* Parasha Card */}
-      {parasha !== "" && (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Feather name="book-open" size={15} color={colors.primary} />
-            <Text style={styles.cardLabel}>{t.homeWeeklyParasha}</Text>
+      {/* ── 3. Prayer Times (Zmanim) ── */}
+      <Animated.View style={anim1}>
+        <SectionLabel label={t.homePrayerTimesTitle.toUpperCase()} accent={colors.primary} />
+        <View style={[styles.card, {
+          backgroundColor: colors.card,
+          borderColor: colors.cardBorder,
+          borderRadius: rd.lg,
+        }]}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+            {[
+              { label: t.homeDawn,         time: todayZm.alotHaShachar },
+              { label: t.homeLatestShema,  time: todayZm.latestShema },
+              { label: t.homeNoon,         time: todayZm.chatzot },
+              { label: t.homeMincha,       time: todayZm.minchaKetana },
+              { label: t.homePlag,         time: todayZm.plagHamincha },
+              { label: t.homeTzais,        time: todayZm.tzais },
+            ].map((z, i) => (
+              <View
+                key={z.label}
+                style={{
+                  width: "50%",
+                  paddingVertical: sp[2.5],
+                  paddingHorizontal: sp[2],
+                  borderBottomWidth: i < 4 ? 1 : 0,
+                  borderRightWidth: i % 2 === 0 ? 1 : 0,
+                  borderColor: colors.divider,
+                }}
+              >
+                <Text style={{ fontSize: 9, color: colors.textMuted, fontWeight: "600", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 4 }}>
+                  {z.label}
+                </Text>
+                <Text style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary }}>
+                  {z.time ? formatTime(z.time, location.tz) : "—"}
+                </Text>
+              </View>
+            ))}
           </View>
-          <Text style={styles.cardValue}>Parashat {parasha}</Text>
-        </View>
-      )}
-
-      {/* Daf Yomi Card */}
-      <TouchableOpacity style={styles.card} onPress={() => router.push("/daf-yomi")} activeOpacity={0.8}>
-        <View style={styles.cardHeader}>
-          <Text style={{ fontSize: 15 }}>🎓</Text>
-          <Text style={styles.cardLabel}>{t.homeDafYomi}</Text>
-          <View style={{ flex: 1 }} />
-          <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
-        </View>
-        <Text style={styles.cardValue}>{daf.tractate}</Text>
-        <Text style={styles.cardSub}>{t.homeDafYomiToday} · Daf {daf.daf}</Text>
-      </TouchableOpacity>
-
-      {/* Upcoming Holiday */}
-      {nextHoliday && (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Feather name="calendar" size={15} color={colors.primary} />
-            <Text style={styles.cardLabel}>{t.homeUpcomingHoliday}</Text>
-          </View>
-          <Text style={styles.cardValue}>{nextHoliday.name}</Text>
-          <Text style={styles.cardSub}>
-            {nextHoliday.date.toLocaleDateString("en-US", {
-              weekday: "long", month: "long", day: "numeric",
+          <Pressable
+            onPress={() => router.push("/(tabs)/zmanim")}
+            style={({ pressed }) => ({
+              marginTop: sp[3],
+              flexDirection: "row", alignItems: "center", justifyContent: "center",
+              gap: sp[1.5], opacity: pressed ? 0.7 : 1,
             })}
-          </Text>
+          >
+            <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "600" }}>
+              {t.homeViewZmanim}
+            </Text>
+            <Feather name="arrow-right" size={12} color={colors.primary} />
+          </Pressable>
         </View>
+      </Animated.View>
+
+      {/* ── 4. Shabbat / Countdown ── */}
+      <Animated.View style={anim2}>
+        <SectionLabel label={t.homeShabbatTitle.toUpperCase()} accent={colors.primary} />
+        <View style={[styles.card, {
+          backgroundColor: isHavdalah ? "#a78bfa10" : colors.accentGoldMuted,
+          borderColor: isHavdalah ? "#a78bfa44" : colors.primary + "44",
+          borderRadius: rd.lg, alignItems: "center",
+        }]}>
+          {/* Countdown (if active) */}
+          {countdownMs > 0 && (
+            <>
+              <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.5, textTransform: "uppercase", color: countdownAccent, marginBottom: sp[1] }}>
+                {countdownLabel}
+              </Text>
+              <Text style={{ fontSize: 48, fontWeight: "700", color: countdownAccent, letterSpacing: -2, marginBottom: sp[1] }}>
+                {formatCountdown(countdownMs)}
+              </Text>
+            </>
+          )}
+
+          {/* Candle lighting & Havdalah times */}
+          <View style={{ flexDirection: "row", width: "100%", marginTop: countdownMs > 0 ? sp[3] : 0 }}>
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>
+                🕯 {t.homeCandleLighting}
+              </Text>
+              <Text style={{ fontSize: 20, fontWeight: "700", color: colors.primary }}>
+                {formatTime(fridayZm.candleLighting, location.tz)}
+              </Text>
+            </View>
+            <View style={{ width: 1, backgroundColor: colors.divider, marginHorizontal: sp[3] }} />
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>
+                ✨ {t.homeHavdalah}
+              </Text>
+              <Text style={{ fontSize: 20, fontWeight: "700", color: isHavdalah ? "#a78bfa" : colors.primary }}>
+                {formatTime(satZm.havdalah, location.tz)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* ── 5. Omer (conditional) ── */}
+      {omerDay !== null && (
+        <Animated.View style={anim2}>
+          <View style={[styles.card, {
+            backgroundColor: "#4ade8008",
+            borderColor: "#4ade8033",
+            borderRadius: rd.lg,
+          }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: sp[2], marginBottom: sp[2] }}>
+              <Text style={{ fontSize: 16 }}>🌾</Text>
+              <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase", color: "#4ade80" }}>
+                {t.homeOmer}
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "baseline", gap: sp[1.5] }}>
+              <Text style={{ fontSize: 40, fontWeight: "700", color: colors.textPrimary }}>
+                {omerDay}
+              </Text>
+              <Text style={{ fontSize: 14, color: colors.textMuted }}>
+                {(() => {
+                  const { weeks, days } = omerWeeksAndDays(omerDay);
+                  if (weeks === 0) return `${days} ${t.homeOmerDays}`;
+                  return `${weeks} ${t.homeOmerWeeks} · ${days} ${t.homeOmerDays}`;
+                })()}
+              </Text>
+            </View>
+          </View>
+        </Animated.View>
       )}
 
-      {/* Today's Zmanim Summary */}
-      <View style={[styles.card, { marginBottom: 8 }]}>
-        <View style={styles.cardHeader}>
-          <Feather name="clock" size={15} color={colors.primary} />
-          <Text style={styles.cardLabel}>{t.homeKeyZmanim}</Text>
-        </View>
-        <View style={styles.zmanimGrid}>
-          {[
-            { label: "Dawn",         time: todayZm.alotHaShachar },
-            { label: "Latest Shema", time: todayZm.latestShema },
-            { label: "Noon",         time: todayZm.chatzot },
-            { label: "Mincha",       time: todayZm.minchaKetana },
-            { label: "Plag",         time: todayZm.plagHamincha },
-            { label: "Tzais",        time: todayZm.tzais },
-          ].map((z) => (
-            <View key={z.label} style={styles.zmanimItem}>
-              <Text style={styles.zmanimLabel}>{z.label}</Text>
-              <Text style={styles.zmanimTime}>{formatTime(z.time, location.tz)}</Text>
+      {/* ── 6. Weekly Parashah ── */}
+      {parasha !== "" && (
+        <Animated.View style={anim3}>
+          <SectionLabel label={t.homeWeeklyParasha.toUpperCase()} accent={colors.primary} />
+          <Pressable
+            onPress={() => router.push("/(tabs)/torah")}
+            style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
+          >
+            <View style={[styles.card, {
+              backgroundColor: colors.card,
+              borderColor: colors.primary + "30",
+              borderRadius: rd.lg,
+              flexDirection: "row",
+              gap: sp[3],
+              ...shadow.level1,
+            }]}>
+              {/* Gold accent bar */}
+              <View style={{
+                width: 3, borderRadius: 2,
+                backgroundColor: colors.primary,
+                alignSelf: "stretch",
+              }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 10, color: colors.primary, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase", marginBottom: sp[1] }}>
+                  {t.homeParashah}
+                </Text>
+                <Text style={{ fontSize: 22, fontWeight: "700", color: colors.textPrimary }}>
+                  Parashat {parasha}
+                </Text>
+                <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>
+                  {t.homeReadMore}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={colors.textMuted} style={{ alignSelf: "center" }} />
             </View>
+          </Pressable>
+        </Animated.View>
+      )}
+
+      {/* ── 7. Daily Torah Insight ── */}
+      <Animated.View style={anim4}>
+        <SectionLabel label={t.homeInsightTitle.toUpperCase()} accent={colors.primary} />
+        <View style={[styles.card, {
+          backgroundColor: colors.card,
+          borderColor: colors.accentGoldMuted,
+          borderRadius: rd.lg,
+          borderWidth: 1,
+        }]}>
+          <Text style={{
+            fontSize: 22, color: colors.primary, marginBottom: sp[2], fontWeight: "300",
+          }}>❝</Text>
+          <Text style={{
+            fontSize: 15, color: colors.textSecondary, lineHeight: 23,
+            fontStyle: "italic",
+          }}
+            numberOfLines={insightExpanded ? undefined : 3}
+          >
+            {insight}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setInsightExpanded((e) => !e)}
+            style={{ marginTop: sp[2] }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "600" }}>
+              {insightExpanded ? t.homeShowLess : t.homeReadMore}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+
+      {/* ── 8. Daf Yomi ── */}
+      <Animated.View style={anim4}>
+        <Pressable
+          onPress={() => router.push("/daf-yomi")}
+          style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
+        >
+          <View style={[styles.card, {
+            backgroundColor: colors.card,
+            borderColor: "#a78bfa33",
+            borderRadius: rd.lg,
+            flexDirection: "row", alignItems: "center", gap: sp[3],
+            ...shadow.level1,
+          }]}>
+            <View style={{
+              width: 44, height: 44, borderRadius: rd.md,
+              backgroundColor: "#a78bfa15",
+              alignItems: "center", justifyContent: "center",
+              borderWidth: 1, borderColor: "#a78bfa33",
+            }}>
+              <Text style={{ fontSize: 20 }}>🎓</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 10, color: "#a78bfa", fontWeight: "700", letterSpacing: 2, textTransform: "uppercase", marginBottom: 3 }}>
+                {t.homeDafYomi}
+              </Text>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>
+                {daf.tractate}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                {t.homeDafYomiToday} · Daf {daf.daf}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={16} color={colors.textMuted} />
+          </View>
+        </Pressable>
+      </Animated.View>
+
+      {/* ── 9. Quick Actions ── */}
+      <Animated.View style={anim5}>
+        <SectionLabel label={t.homeQuickActionsTitle.toUpperCase()} accent={colors.primary} />
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: sp[2] }}>
+          {QUICK_ACTIONS.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={{
+                width: "22%",
+                alignItems: "center",
+                gap: sp[1.5],
+                paddingVertical: sp[2.5],
+                paddingHorizontal: sp[1],
+                backgroundColor: action.color + "14",
+                borderRadius: rd.md,
+                borderWidth: 1,
+                borderColor: action.color + "30",
+              }}
+              onPress={() => router.push(action.route as any)}
+              activeOpacity={0.75}
+            >
+              <View style={{
+                width: 36, height: 36, borderRadius: rd.sm,
+                backgroundColor: action.color + "20",
+                alignItems: "center", justifyContent: "center",
+              }}>
+                <Feather name={action.icon} size={16} color={action.color} />
+              </View>
+              <Text style={{
+                fontSize: 9, fontWeight: "700", textAlign: "center",
+                color: colors.textSecondary, letterSpacing: 0.3,
+              }}>
+                {action.label}
+              </Text>
+            </TouchableOpacity>
           ))}
         </View>
-      </View>
+      </Animated.View>
+
+      {/* ── 10. Upcoming Holiday ── */}
+      {nextHoliday && (
+        <Animated.View style={anim6}>
+          <View style={[styles.card, {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderRadius: rd.lg,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: sp[3],
+          }]}>
+            <View style={{
+              width: 44, height: 44, borderRadius: rd.md,
+              backgroundColor: colors.accentGoldMuted,
+              alignItems: "center", justifyContent: "center",
+              borderWidth: 1, borderColor: colors.primary + "25",
+            }}>
+              <Feather name="calendar" size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 10, color: colors.primary, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase", marginBottom: 3 }}>
+                {t.homeUpcomingHoliday}
+              </Text>
+              <Text style={{ fontSize: 17, fontWeight: "700", color: colors.textPrimary }}>
+                {nextHoliday.name}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                {nextHoliday.date.toLocaleDateString("en-US", {
+                  weekday: "short", month: "long", day: "numeric",
+                })}
+              </Text>
+            </View>
+          </View>
+        </Animated.View>
+      )}
+
+      {/* ── 11. Community ── */}
+      <Animated.View style={anim7}>
+        <Pressable
+          onPress={() => router.push("/(tabs)/community")}
+          style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
+        >
+          <View style={[styles.card, {
+            backgroundColor: "#fb923c0e",
+            borderColor: "#fb923c30",
+            borderRadius: rd.lg,
+            flexDirection: "row", alignItems: "center", gap: sp[3],
+          }]}>
+            <View style={{
+              width: 44, height: 44, borderRadius: rd.md,
+              backgroundColor: "#fb923c1a",
+              alignItems: "center", justifyContent: "center",
+              borderWidth: 1, borderColor: "#fb923c30",
+            }}>
+              <Feather name="users" size={18} color="#fb923c" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 10, color: "#fb923c", fontWeight: "700", letterSpacing: 2, textTransform: "uppercase", marginBottom: 3 }}>
+                {t.homeCommunityTitle}
+              </Text>
+              <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>
+                {t.homeCommunityDesc}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={16} color={colors.textMuted} />
+          </View>
+        </Pressable>
+      </Animated.View>
+
+      {/* ── 12. Memorial Sanctuary ── */}
+      <Animated.View style={anim8}>
+        <SectionLabel label={t.homeMemorialTitle.toUpperCase()} accent={colors.primary} />
+        <View style={[styles.card, {
+          backgroundColor: colors.card,
+          borderColor: colors.primary + "25",
+          borderRadius: rd.xl,
+          overflow: "hidden",
+          ...shadow.level2,
+        }]}>
+          {/* Decorative background */}
+          <View style={{
+            position: "absolute", bottom: -20, right: -20, opacity: 0.06,
+          }} pointerEvents="none">
+            <Text style={{ fontSize: 120, color: colors.primary }}>✡</Text>
+          </View>
+
+          <View style={{ flexDirection: "row", alignItems: "center", gap: sp[3], marginBottom: sp[3] }}>
+            <View style={{
+              width: 48, height: 48, borderRadius: rd.md,
+              backgroundColor: colors.accentGoldMuted,
+              alignItems: "center", justifyContent: "center",
+              borderWidth: 1, borderColor: colors.primary + "30",
+            }}>
+              <Text style={{ fontSize: 22 }}>🕯</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>
+                {t.homeMemorialTitle}
+              </Text>
+              <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 3, lineHeight: 18 }}>
+                {t.homeMemorialDesc}
+              </Text>
+            </View>
+          </View>
+
+          <Pressable
+            onPress={() => router.push("/(tabs)/community")}
+            style={({ pressed }) => ({
+              backgroundColor: pressed ? colors.primary + "dd" : colors.primary,
+              borderRadius: rd.md,
+              paddingVertical: sp[3],
+              alignItems: "center",
+            })}
+          >
+            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primaryForeground, letterSpacing: 0.5 }}>
+              {t.homeOpenSanctuary}
+            </Text>
+          </Pressable>
+        </View>
+      </Animated.View>
+
+      {/* ── 13. Rav Menashe AI ── */}
+      <Animated.View style={anim9}>
+        <SectionLabel label={t.homeAITitle.toUpperCase()} accent="#6382FF" />
+        <Pressable
+          onPress={() => router.push("/(tabs)/torah")}
+          style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
+        >
+          <View style={[styles.card, {
+            backgroundColor: "#6382FF0e",
+            borderColor: "#6382FF30",
+            borderRadius: rd.xl,
+            overflow: "hidden",
+          }]}>
+            {/* Decorative */}
+            <View style={{
+              position: "absolute", top: -10, right: -10, opacity: 0.08,
+            }} pointerEvents="none">
+              <Text style={{ fontSize: 90 }}>✨</Text>
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: sp[3], marginBottom: sp[3] }}>
+              <View style={{
+                width: 48, height: 48, borderRadius: rd.md,
+                backgroundColor: "#6382FF20",
+                alignItems: "center", justifyContent: "center",
+                borderWidth: 1, borderColor: "#6382FF35",
+              }}>
+                <Feather name="cpu" size={22} color="#6382FF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 17, fontWeight: "700", color: colors.textPrimary }}>
+                  {t.homeAITitle}
+                </Text>
+                <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 3, lineHeight: 18 }}>
+                  {t.homeAIDesc}
+                </Text>
+              </View>
+            </View>
+
+            {/* Prompt pill */}
+            <View style={{
+              flexDirection: "row", alignItems: "center",
+              backgroundColor: colors.background,
+              borderRadius: rd.pill,
+              paddingHorizontal: sp[4], paddingVertical: sp[3],
+              borderWidth: 1, borderColor: "#6382FF30",
+              gap: sp[2],
+            }}>
+              <Feather name="search" size={14} color={colors.textMuted} />
+              <Text style={{ fontSize: 14, color: colors.textMuted, flex: 1 }}>
+                {t.homeAskRavMenashe}
+              </Text>
+              <Feather name="send" size={14} color="#6382FF" />
+            </View>
+          </View>
+        </Pressable>
+      </Animated.View>
+
     </ScrollView>
   );
 }
 
-function makeStyles(colors: Record<string, any>, topPad: number, bottomPad: number) {
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    content: { paddingTop: topPad + 12, paddingBottom: bottomPad + 100, paddingHorizontal: 16 },
+// ─── Minimal shared card style (raw values — not using makeStyles to keep readable) ──
 
-    header: {
-      flexDirection: "row", alignItems: "center",
-      justifyContent: "space-between", marginBottom: 20,
-    },
-    headerBrand: { flexDirection: "row", alignItems: "center", gap: 10 },
-    headerStar: {
-      width: 34, height: 34, borderRadius: 17,
-      backgroundColor: colors.primary + "22",
-      alignItems: "center", justifyContent: "center",
-      borderWidth: 1, borderColor: colors.primary + "44",
-    },
-    headerStarText: { fontSize: 16, color: colors.primary },
-    headerTitle: { fontSize: 14, fontWeight: "700" as const, color: colors.primary, letterSpacing: 1.5 },
-    headerSub: { fontSize: 10, color: colors.mutedForeground, letterSpacing: 0.5, marginTop: 1 },
-
-    headerRight: { alignItems: "flex-end", gap: 6 },
-    langToggle: {
-      flexDirection: "row", borderRadius: 10,
-      borderWidth: 1, borderColor: colors.border,
-      overflow: "hidden",
-    },
-    langBtn: {
-      paddingHorizontal: 10, paddingVertical: 5,
-    },
-    langBtnText: { fontSize: 11, fontWeight: "700" as const, letterSpacing: 0.5 },
-
-    locationBadge: {
-      flexDirection: "row", alignItems: "center", gap: 4,
-      backgroundColor: colors.card, borderRadius: 20,
-      paddingHorizontal: 10, paddingVertical: 5,
-      borderWidth: 1, borderColor: colors.border,
-    },
-    locationText: { fontSize: 11, color: colors.mutedForeground, fontWeight: "500" as const },
-
-    dateCard: {
-      backgroundColor: colors.card, borderRadius: 16,
-      padding: 20, marginBottom: 12,
-      borderWidth: 1, borderColor: colors.border,
-    },
-    gregorianDate: { fontSize: 12, color: colors.mutedForeground, marginBottom: 4, fontWeight: "500" as const },
-    hebrewDate: { fontSize: 28, fontWeight: "700" as const, color: colors.foreground, marginBottom: 18, letterSpacing: 0.5 },
-    divider: { height: 1, backgroundColor: colors.border, marginBottom: 18 },
-    dateRow: { flexDirection: "row", justifyContent: "space-around" },
-    miniStat: { alignItems: "center", gap: 6 },
-    miniIcon: {
-      width: 32, height: 32, borderRadius: 16,
-      backgroundColor: colors.primary + "15",
-      alignItems: "center", justifyContent: "center",
-    },
-    miniLabel: { fontSize: 10, color: colors.mutedForeground, fontWeight: "500" as const },
-    miniValue: { fontSize: 13, fontWeight: "700" as const, color: colors.foreground },
-
-    countdownCard: {
-      borderRadius: 16, borderWidth: 1, padding: 20, marginBottom: 12, alignItems: "center",
-    },
-    countdownHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
-    countdownEmoji: { fontSize: 20 },
-    countdownLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" as const },
-    countdownValue: { fontSize: 44, fontWeight: "700" as const, letterSpacing: -1.5, marginBottom: 4 },
-    countdownSub: { fontSize: 12, fontWeight: "500" as const },
-
-    card: {
-      backgroundColor: colors.card, borderRadius: 16,
-      padding: 16, marginBottom: 12,
-      borderWidth: 1, borderColor: colors.border,
-    },
-    cardHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
-    cardLabel: {
-      fontSize: 11, color: colors.mutedForeground,
-      textTransform: "uppercase" as const, letterSpacing: 1.2, fontWeight: "600" as const,
-    },
-    cardValue: { fontSize: 18, fontWeight: "700" as const, color: colors.foreground },
-    cardSub: { fontSize: 13, color: colors.mutedForeground, marginTop: 4 },
-
-    shabbatRow: { flexDirection: "row", alignItems: "center" },
-    shabbatItem: { flex: 1, alignItems: "center" },
-    shabbatLabel: { fontSize: 12, color: colors.mutedForeground, marginBottom: 6, fontWeight: "500" as const },
-    shabbatTime: { fontSize: 22, fontWeight: "700" as const, color: colors.primary },
-    shabbatDivider: { width: 1, height: 44, backgroundColor: colors.border, marginHorizontal: 16 },
-
-    toolsGrid: { flexDirection: "row", flexWrap: "wrap" as const, gap: 8 },
-    toolTile: {
-      width: "30.5%", borderRadius: 12, borderWidth: 1,
-      padding: 12, alignItems: "center", gap: 6,
-    },
-    toolEmoji: { fontSize: 22 },
-    toolLabel: { fontSize: 10, fontWeight: "700" as const, textAlign: "center" as const },
-
-    zmanimGrid: { flexDirection: "row", flexWrap: "wrap" as const },
-    zmanimItem: {
-      width: "33.33%", paddingVertical: 10, paddingHorizontal: 4,
-      borderBottomWidth: 1, borderBottomColor: colors.border + "66",
-    },
-    zmanimLabel: { fontSize: 10, color: colors.mutedForeground, marginBottom: 3, fontWeight: "500" as const },
-    zmanimTime: { fontSize: 13, fontWeight: "700" as const, color: colors.foreground },
-  });
-}
+const styles = StyleSheet.create({
+  heroCard: {
+    padding: 20,
+    overflow: "hidden",
+  },
+  card: {
+    padding: 16,
+    borderWidth: 1,
+  },
+});
