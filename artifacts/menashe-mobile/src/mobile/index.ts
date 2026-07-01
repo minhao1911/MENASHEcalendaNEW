@@ -47,8 +47,15 @@
  *  ├── features/
  *  │   └── index.ts          ← Feature module map
  *  │
- *  └── assets/
- *      └── index.ts          ← ASSETS registry
+ *  ├── assets/
+ *  │   └── index.ts          ← ASSETS registry
+ *  │
+ *  └── design-system/        ← SPR-M002: MMDL full design system
+ *      ├── tokens/           ← colors, typography, spacing, radius, elevation,
+ *      │                        glass, motion, iconography, layout
+ *      ├── specs/            ← 21 component specifications (types only)
+ *      ├── accessibility/    ← A11Y standards + useReducedMotion + useScreenReader
+ *      └── hooks/            ← useThemeTokens() — primary consumer hook
  *
  * ─── Shared layer (lib/shared-core) ──────────────────────────────────────────
  *
@@ -66,3 +73,4 @@ export * from "./types";
 export * from "./theme";
 export * from "./navigation";
 export * from "./utils";
+export * from "./design-system";
