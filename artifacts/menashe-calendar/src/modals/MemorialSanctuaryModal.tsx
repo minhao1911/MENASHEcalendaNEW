@@ -2621,9 +2621,10 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
 
   // Mount guard — runs after the real (non-discarded) first commit
   useEffect(() => { setCanRender3D(true); }, []);
-  // Entry fade: start removing after 600 ms, unmount after 1800 ms
+  // Entry fade: hold black until scene has had time to load, then fade.
+  // delay 0.6 s + duration 1.5 s = 2.1 s to fully transparent; unmount at 2600 ms.
   useEffect(() => {
-    const t = setTimeout(() => setShowEntryFade(false), 1800);
+    const t = setTimeout(() => setShowEntryFade(false), 2600);
     return () => clearTimeout(t);
   }, []);
   // Board hint: dismiss after 8 s and persist flag so it never shows again
@@ -2917,7 +2918,7 @@ export default function MemorialSanctuaryModal({ onClose, userName, initialEntri
             initial={{ opacity: 1 }}
             animate={{ opacity: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.4, delay: 0.35, ease: "easeOut" }}
+            transition={{ duration: 1.5, delay: 0.60, ease: "easeOut" }}
             style={{
               position: "absolute", inset: 0, zIndex: 9997,
               background: "#000",

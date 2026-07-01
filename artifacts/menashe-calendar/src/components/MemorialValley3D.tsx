@@ -293,7 +293,7 @@ function interpCycleColor(t: number, kfs: ColorKF[]) {
 export type SceneViewType = "valley" | "garden" | "waterfall" | "sanctuary" | "sunset";
 
 const SCENE_VIEWS: Record<SceneViewType, { cam: [number, number, number]; target: [number, number, number] }> = {
-  valley:    { cam: [0,    4.2,  22],  target: [0,    2.0,   0]   },
+  valley:    { cam: [0,    4.2,  22],  target: [0,    2.0,   8]   },
   garden:    { cam: [-8,   3.5,  12],  target: [-9,   1.5,  -4]   },
   waterfall: { cam: [-14,  3.2,   4],  target: [-18,  2.5,  -8]   },
   sanctuary: { cam: [0,    3.5,   8],  target: [0,    4.5, -25]   },
@@ -1845,12 +1845,14 @@ function AAACamera() {
   const { camera } = useThree();
   useEffect(() => {
     /* Spawn at the valley entrance (Z=22), correctly above the terrain.
-       terrainHeightAt(0,22)≈3.0 so wantY≈4.7 — set it directly so the
-       player never rises from underground on first entry.               */
+       terrainHeightAt(0,22)≈3.4 so spawnY≈5.1.  We look toward z=8
+       (Sacred Avenue midpoint) so the Memorial Gate at z=21 frames the
+       view naturally — the arch fills the centre with the torchlit avenue
+       stretching into the valley behind it.                              */
     const spawnX = 0, spawnZ = 22;
     const spawnY = terrainHeightAt(spawnX, spawnZ) + 1.7;
     camera.position.set(spawnX, spawnY, spawnZ);
-    camera.lookAt(spawnX, spawnY, 0); // face the memorial valley (-Z)
+    camera.lookAt(0, 3.5, 8); // face through the gate toward the Sacred Avenue
   }, [camera]);
   return null;
 }
@@ -4175,7 +4177,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
           mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
           touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
           maxPolarAngle={Math.PI / 2.06} minPolarAngle={Math.PI / 12}
-          target={[0, 2.0, 0]}
+          target={[0, 2.0, 8]}
         />
       )}
 
