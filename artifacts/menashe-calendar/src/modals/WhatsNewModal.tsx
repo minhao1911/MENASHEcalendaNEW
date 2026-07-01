@@ -4,48 +4,85 @@ interface Props { onClose: () => void; }
 
 export { APP_VERSION, VERSION_KEY } from "./whatsNewVersion";
 
-interface Release {
-  version: string;
-  labelEn: string;
-  labelTk: string;
-  items: { icon: string; en: string; tk: string }[];
+interface ReleaseItem {
+  icon: string;
+  en: string;
+  tk: string;
 }
 
-const RELEASES: Release[] = [
+interface ReleaseSection {
+  headingEn: string;
+  headingTk: string;
+  items: ReleaseItem[];
+}
+
+const SECTIONS: ReleaseSection[] = [
   {
-    version: "1.2",
-    labelEn: "Latest update",
-    labelTk: "Thar ber update",
+    headingEn: "Sacred Calendar",
+    headingTk: "Thu Thianghlim Ni Sawi",
     items: [
-      { icon: "📲", en: "Install App banner — add Menashe Calendar to your home screen", tk: "App install — Menashe Calendar home screen-ah chhuang theih ta" },
-      { icon: "📴", en: "Offline mode — core features work without internet", tk: "Internet boh nge'n app hman theih ta" },
-      { icon: "🔔", en: "What's New screen — see highlights every time the app updates", tk: "Thar zawng zawng en — app update zawng zawng ah" },
+      { icon: "📆", en: "Hebrew & Gregorian calendar — full month view with holidays marked", tk: "Hebrew leh Gregorian ni sawi — holiday zawng zawng mark a ni" },
+      { icon: "🕍", en: "Parashah of the week with deep commentary and Bnei Menashe insights", tk: "Khin Parashah — commentary leh Bnei Menashe insights nena" },
+      { icon: "📖", en: "Daf Yomi — today's Talmud page tracked automatically", tk: "Daf Yomi — nitin Talmud page automatic in zirchhuak" },
+      { icon: "🕎", en: "All Jewish holidays with candle lighting & Havdalah times", tk: "Jewish holiday zawng zawng — kerhi khawng leh Havdalah hun nena" },
     ],
   },
   {
-    version: "1.1",
-    labelEn: "Community & Torah tools",
-    labelTk: "Mipil leh Torah thil",
+    headingEn: "Zmanim — Prayer Times",
+    headingTk: "Zmanim — Thupha Hun",
     items: [
-      { icon: "🙏", en: "Prayer Board — share and upvote prayer requests with the community", tk: "Thu Dawt Hmang — mipil thu dawt pe leh en theih" },
-      { icon: "📖", en: "Torah Tracker — log your personal Torah study progress", tk: "Torah Chhiar — na chhiar zawng zawng chhuang rawh" },
-      { icon: "👥", en: "Member Directory — browse community members", tk: "Mipil Lehkhabu — mipil member zawng zawng en theih" },
-      { icon: "🕯️", en: "Community Yahrzeit Board — light a candle together", tk: "Mipil Thi Ni Hmang — mipil nena kerhi khawng rawh" },
-      { icon: "📅", en: "Hebrew Date Converter — find any Hebrew date instantly", tk: "Hebrew Ni Sawi — Hebrew ni dang tak zawng in zawn rawh" },
-      { icon: "🌙", en: "Luach viewer — full year calendar at a glance", tk: "Luach en — kum zawng zawng ni sawi en theih" },
-      { icon: "⚖️", en: "Mussar module — daily character refinement wisdom", tk: "Mussar — nitin character siam tha na dan" },
-      { icon: "⏰", en: "Zmanim info — detailed explanations of every prayer time", tk: "Zmanim sawi — thupha hun sawi zawng zawng explain" },
+      { icon: "🌅", en: "Precise prayer times calculated for your exact location", tk: "Na hmun takah thupha hun man tak tak lo siam" },
+      { icon: "📍", en: "Location picker — choose from 170+ cities worldwide", tk: "Hmun thlang — ram tinah mipil khua 170+ atangin thlang theih" },
+      { icon: "🌙", en: "Shabbat mode — candle lighting and Havdalah countdown", tk: "Shabbat mode — kerhi khawng leh Havdalah hun zawng zawng" },
     ],
   },
   {
-    version: "1.0",
-    labelEn: "First release",
-    labelTk: "Thoklang release",
+    headingEn: "Rav Menashe AI",
+    headingTk: "Rav Menashe AI",
     items: [
-      { icon: "📆", en: "Hebrew calendar with Parasha, Daf Yomi & holidays", tk: "Hebrew calendar — Parasha, Daf Yomi leh holiday" },
-      { icon: "🌅", en: "Zmanim — precise prayer times for your location", tk: "Zmanim — na hmunah thupha hun man tak tak" },
-      { icon: "📚", en: "Siddur library — sacred texts for the Bnei Menashe community", tk: "Siddur lehkhabu — Bnei Menashe mipil thu thianghlim" },
-      { icon: "🌐", en: "Bilingual UI — English and Thadou Kuki throughout", tk: "Bilingual — English leh Thadou Kuki" },
+      { icon: "🤖", en: "AI scholar with deep knowledge of Torah, halacha, and Bnei Menashe history", tk: "AI hrilhriat tur — Torah, halacha leh Bnei Menashe history hriat" },
+      { icon: "⚡", en: "Streaming answers — responses appear word by word in real time", tk: "Streaming — chhanna zawng zawng real time-ah lang" },
+      { icon: "🔄", en: "Triple-provider fallback — always available via OpenAI, Gemini, or Grok", tk: "Provider thumna — OpenAI, Gemini, Grok atangin a awlsam" },
+      { icon: "🌐", en: "Answers in both English and Thadou Kuki", tk: "English leh Thadou Kuki-ah chhanna pek" },
+    ],
+  },
+  {
+    headingEn: "Memorial Sanctuary",
+    headingTk: "Thi Ni Hmang Lam",
+    items: [
+      { icon: "🕯️", en: "3D Memorial Sanctuary — walk through a living world of remembrance", tk: "3D Sanctuary — thi ni hmang lam-ah zawng zawng kal theih" },
+      { icon: "🌸", en: "Light virtual candles and leave tributes for loved ones", tk: "Virtual kerhi kan rawh leh ngaih thlak thu sawi theih" },
+      { icon: "👨‍👩‍👧", en: "Family trees and memorial profiles for every member", tk: "Hnam khaw leh member pakhat pakhat memorial profile" },
+      { icon: "🔍", en: "Memorial browser — search and discover the community's remembrance", tk: "Memorial browser — mipil thi ni hmang zawng zawng en theih" },
+    ],
+  },
+  {
+    headingEn: "Community Tools",
+    headingTk: "Mipil Thil",
+    items: [
+      { icon: "📣", en: "Community announcements — pinned and broadcast messages", tk: "Mipil thupek — pin leh broadcast zawng zawng" },
+      { icon: "🙏", en: "Prayer Board — share and upvote prayer requests", tk: "Thu Dawt Hmang — thu dawt pe leh support pek" },
+      { icon: "👥", en: "Member directory — browse community members", tk: "Member lehkhabu — mipil zawng zawng en theih" },
+      { icon: "📊", en: "Community census for registration and outreach", tk: "Mipil census — registration leh outreach" },
+    ],
+  },
+  {
+    headingEn: "Siddur Library",
+    headingTk: "Siddur Lehkhabu",
+    items: [
+      { icon: "📚", en: "Sacred texts, prayer books, and Bnei Menashe community publications", tk: "Thu thianghlim, thupha lehkhabu leh Bnei Menashe lehkhabu" },
+      { icon: "🔎", en: "Search and filter by category — find any text instantly", tk: "Zawn leh sort — text zawng zawng chiang taka zawn theih" },
+      { icon: "👑", en: "Premium library — unlock exclusive texts with a 7-day free trial", tk: "Premium lehkhabu — 7 ni free trial nena hawng theih" },
+    ],
+  },
+  {
+    headingEn: "App & Platform",
+    headingTk: "App leh Platform",
+    items: [
+      { icon: "📲", en: "Install to home screen — works like a native app on any device", tk: "Home screen-ah chhuang — device dang tinah native app ang in hman theih" },
+      { icon: "📴", en: "Offline mode — calendar, Zmanim, and Siddur work without internet", tk: "Internet boh nge'n — calendar, Zmanim leh Siddur hman theih" },
+      { icon: "🌐", en: "Fully bilingual — English and Thadou Kuki throughout the entire app", tk: "Bilingual chanvo — English leh Thadou Kuki app zawng zawng-ah" },
+      { icon: "🌗", en: "Light and dark themes — comfortable in any light", tk: "Light leh dark theme — hun tinah comfortable" },
     ],
   },
 ];
@@ -57,9 +94,8 @@ export default function WhatsNewModal({ onClose }: Props) {
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 9200,
-        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)",
+        background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)",
         display: "flex", alignItems: "flex-end", justifyContent: "center",
-        padding: "0 0 0 0",
       }}
       onClick={onClose}
     >
@@ -67,7 +103,7 @@ export default function WhatsNewModal({ onClose }: Props) {
         onClick={e => e.stopPropagation()}
         style={{
           width: "100%", maxWidth: 520,
-          maxHeight: "85dvh",
+          maxHeight: "88dvh",
           borderRadius: "24px 24px 0 0",
           background: "linear-gradient(180deg, #111827 0%, #0d1320 100%)",
           border: "1.5px solid rgba(212,175,55,0.35)",
@@ -78,23 +114,35 @@ export default function WhatsNewModal({ onClose }: Props) {
         }}
       >
         {/* Gold accent bar */}
-        <div style={{ height: 3, background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.9) 30%, rgba(255,235,120,1) 50%, rgba(212,175,55,0.9) 70%, transparent)" }} />
+        <div style={{ height: 3, flexShrink: 0, background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.9) 30%, rgba(255,235,120,1) 50%, rgba(212,175,55,0.9) 70%, transparent)" }} />
 
         {/* Header */}
-        <div style={{ padding: "20px 22px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ padding: "20px 22px 14px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
           <div style={{
-            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: "linear-gradient(135deg, #1a2a10, #0f1e12)",
-            border: "1.5px solid rgba(212,175,55,0.4)",
+            width: 46, height: 46, borderRadius: 13, flexShrink: 0,
+            background: "linear-gradient(135deg, #1e2e10, #0f1e12)",
+            border: "1.5px solid rgba(212,175,55,0.45)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 22,
+            fontSize: 23,
           }}>✨</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 19, fontWeight: 800, color: "#F5D982", lineHeight: 1.2 }}>
-              {t.whatsNewTitle}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 19, fontWeight: 800, color: "#F5D982", lineHeight: 1.2 }}>
+                {t.whatsNewTitle}
+              </div>
+              <span style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
+                padding: "2px 8px", borderRadius: 20,
+                background: "linear-gradient(135deg, #b8860b, #d4a843)",
+                color: "#1a0f00",
+              }}>
+                v1.0
+              </span>
             </div>
             <div style={{ fontSize: 12, color: "rgba(245,240,232,0.5)", marginTop: 2 }}>
-              {t.whatsNewSubtitle}
+              {lang === "tk"
+                ? "Thoklang public launch — thar zawng zawng"
+                : "First public launch — everything that's here"}
             </div>
           </div>
           <button
@@ -109,43 +157,37 @@ export default function WhatsNewModal({ onClose }: Props) {
           </button>
         </div>
 
-        {/* Scrollable list of releases */}
-        <div style={{ overflowY: "auto", padding: "0 22px 28px", display: "flex", flexDirection: "column", gap: 22 }}>
-          {RELEASES.map((release, ri) => (
-            <div key={release.version}>
-              {/* Version badge */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        {/* Scrollable sections */}
+        <div style={{ overflowY: "auto", padding: "0 22px 8px", display: "flex", flexDirection: "column", gap: 20 }}>
+          {SECTIONS.map((section, si) => (
+            <div key={si}>
+              {/* Section heading */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10, marginBottom: 10,
+              }}>
                 <span style={{
-                  fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
-                  padding: "3px 9px", borderRadius: 20,
-                  background: ri === 0 ? "linear-gradient(135deg, #b8860b, #d4a843)" : "rgba(255,255,255,0.07)",
-                  color: ri === 0 ? "#1a0f00" : "rgba(245,240,232,0.45)",
+                  fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase",
+                  color: "rgba(212,175,55,0.7)",
                 }}>
-                  v{release.version}
+                  {lang === "tk" ? section.headingTk : section.headingEn}
                 </span>
-                <span style={{ fontSize: 12, color: ri === 0 ? "rgba(212,175,55,0.9)" : "rgba(245,240,232,0.35)", fontWeight: 600 }}>
-                  {lang === "tk" ? release.labelTk : release.labelEn}
-                </span>
-                {ri > 0 && (
-                  <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
-                )}
+                <div style={{ flex: 1, height: 1, background: "rgba(212,175,55,0.12)" }} />
               </div>
 
-              {/* Feature items */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {release.items.map((item, ii) => (
+              {/* Items */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {section.items.map((item, ii) => (
                   <div key={ii} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
                     <span style={{
-                      fontSize: 17, lineHeight: 1,
-                      width: 28, flexShrink: 0, textAlign: "center",
+                      fontSize: 16, lineHeight: 1,
+                      width: 26, flexShrink: 0, textAlign: "center",
                       marginTop: 1,
-                      filter: ri > 0 ? "grayscale(0.4) opacity(0.65)" : "none",
                     }}>
                       {item.icon}
                     </span>
                     <span style={{
                       fontSize: 13, lineHeight: 1.5,
-                      color: ri === 0 ? "rgba(245,240,232,0.88)" : "rgba(245,240,232,0.45)",
+                      color: "rgba(245,240,232,0.85)",
                     }}>
                       {lang === "tk" ? item.tk : item.en}
                     </span>
@@ -154,10 +196,13 @@ export default function WhatsNewModal({ onClose }: Props) {
               </div>
             </div>
           ))}
+
+          {/* Bottom padding so last section isn't flush against CTA */}
+          <div style={{ height: 4 }} />
         </div>
 
         {/* CTA */}
-        <div style={{ padding: "0 22px 28px" }}>
+        <div style={{ padding: "12px 22px 28px", flexShrink: 0 }}>
           <button
             onClick={onClose}
             style={{
