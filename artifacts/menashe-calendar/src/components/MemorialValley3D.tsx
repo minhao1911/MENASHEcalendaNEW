@@ -4389,11 +4389,16 @@ function AAAArchVines() {
   const leafGeo  = useMemo(() => new THREE.PlaneGeometry(0.10, 0.075), []);
   const bloomGeo = useMemo(() => new THREE.PlaneGeometry(0.065, 0.065), []);
 
-  const { leafMatrices, bloomMatrices } = useMemo(() => {
+  type VineInstance = {
+    x: number; y: number; z: number;
+    rx: number; ry: number; rz: number;
+    scale: number; phase: number; swayAmp: number;
+  };
+
+  const { leafData, bloomData } = useMemo(() => {
     const R   = makeLCG(4110);
-    const dum = new THREE.Object3D();
-    const leaves: THREE.Matrix4[] = [];
-    const blooms: THREE.Matrix4[] = [];
+    const leaves: VineInstance[] = [];
+    const blooms: VineInstance[] = [];
 
     const pillars = [
       { cx: -SPAN, innerXOffset: PILLAR_HALF, innerRotY: Math.PI / 2 },
@@ -4411,16 +4416,22 @@ function AAAArchVines() {
         const spread      = (R() - 0.5) * 0.52;  // jitter along the face width
         const poke        = 0.012 + R() * 0.035; // sticks out from the stone
 
+        let x: number, z: number, rx: number, ry: number, rz: number;
         if (onInnerFace) {
-          dum.position.set(p.cx + p.innerXOffset + poke * Math.sign(p.innerXOffset), y, spread);
-          dum.rotation.set((R() - 0.5) * 0.5, p.innerRotY + (R() - 0.5) * 0.6, (R() - 0.5) * 0.9);
+          x = p.cx + p.innerXOffset + poke * Math.sign(p.innerXOffset);
+          z = spread;
+          rx = (R() - 0.5) * 0.5; ry = p.innerRotY + (R() - 0.5) * 0.6; rz = (R() - 0.5) * 0.9;
         } else {
-          dum.position.set(p.cx + spread, y, PILLAR_HALF + poke);
-          dum.rotation.set((R() - 0.5) * 0.5, (R() - 0.5) * 0.6, (R() - 0.5) * 0.9);
+          x = p.cx + spread;
+          z = PILLAR_HALF + poke;
+          rx = (R() - 0.5) * 0.5; ry = (R() - 0.5) * 0.6; rz = (R() - 0.5) * 0.9;
         }
-        dum.scale.setScalar(0.65 + R() * 0.7);
-        dum.updateMatrix();
-        leaves.push(dum.matrix.clone());
+        leaves.push({
+          x, y, z, rx, ry, rz,
+          scale: 0.65 + R() * 0.7,
+          phase: R() * Math.PI * 2,
+          swayAmp: 0.10 + R() * 0.10, // gentle breeze sway, stronger near the tips
+        });
       }
 
       for (let i = 0; i < BLOOMS_PER_PILLAR; i++) {
@@ -4430,39 +4441,68 @@ function AAAArchVines() {
         const spread      = (R() - 0.5) * 0.48;
         const poke        = 0.018 + R() * 0.03;
 
+        let x: number, z: number, rx: number, ry: number, rz: number;
         if (onInnerFace) {
-          dum.position.set(p.cx + p.innerXOffset + poke * Math.sign(p.innerXOffset), y, spread);
-          dum.rotation.set((R() - 0.5) * 0.4, p.innerRotY, (R() - 0.5) * Math.PI * 2);
+          x = p.cx + p.innerXOffset + poke * Math.sign(p.innerXOffset);
+          z = spread;
+          rx = (R() - 0.5) * 0.4; ry = p.innerRotY; rz = (R() - 0.5) * Math.PI * 2;
         } else {
-          dum.position.set(p.cx + spread, y, PILLAR_HALF + poke);
-          dum.rotation.set((R() - 0.5) * 0.4, 0, (R() - 0.5) * Math.PI * 2);
+          x = p.cx + spread;
+          z = PILLAR_HALF + poke;
+          rx = (R() - 0.5) * 0.4; ry = 0; rz = (R() - 0.5) * Math.PI * 2;
         }
-        dum.scale.setScalar(0.55 + R() * 0.5);
-        dum.updateMatrix();
-        blooms.push(dum.matrix.clone());
+        blooms.push({
+          x, y, z, rx, ry, rz,
+          scale: 0.55 + R() * 0.5,
+          phase: R() * Math.PI * 2,
+          swayAmp: 0.06 + R() * 0.06, // blooms nod gently, less than the leaves
+        });
       }
     }
 
-    return { leafMatrices: leaves, bloomMatrices: blooms };
+    return { leafData: leaves, bloomData: blooms };
   }, [baseY]);
 
   const leafRef  = useRef<THREE.InstancedMesh>(null!);
   const bloomRef = useRef<THREE.InstancedMesh>(null!);
+  const dumSway  = useMemo(() => new THREE.Object3D(), []);
 
-  useEffect(() => {
-    leafMatrices.forEach((m, i) => leafRef.current?.setMatrixAt(i, m));
-    if (leafRef.current) leafRef.current.instanceMatrix.needsUpdate = true;
-  }, [leafMatrices]);
-
-  useEffect(() => {
-    bloomMatrices.forEach((m, i) => bloomRef.current?.setMatrixAt(i, m));
-    if (bloomRef.current) bloomRef.current.instanceMatrix.needsUpdate = true;
-  }, [bloomMatrices]);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (leafRef.current) {
+      leafData.forEach((d, i) => {
+        dumSway.position.set(d.x, d.y, d.z);
+        dumSway.rotation.set(
+          d.rx + Math.sin(t * 0.8 + d.phase) * d.swayAmp * 0.4,
+          d.ry,
+          d.rz + Math.sin(t * 1.15 + d.phase) * d.swayAmp
+        );
+        dumSway.scale.setScalar(d.scale);
+        dumSway.updateMatrix();
+        leafRef.current!.setMatrixAt(i, dumSway.matrix);
+      });
+      leafRef.current.instanceMatrix.needsUpdate = true;
+    }
+    if (bloomRef.current) {
+      bloomData.forEach((d, i) => {
+        dumSway.position.set(d.x, d.y, d.z);
+        dumSway.rotation.set(
+          d.rx + Math.sin(t * 0.7 + d.phase) * d.swayAmp * 0.5,
+          d.ry,
+          d.rz + Math.sin(t * 1.0 + d.phase) * d.swayAmp
+        );
+        dumSway.scale.setScalar(d.scale);
+        dumSway.updateMatrix();
+        bloomRef.current!.setMatrixAt(i, dumSway.matrix);
+      });
+      bloomRef.current.instanceMatrix.needsUpdate = true;
+    }
+  });
 
   return (
     <group position={[0, 0, 11]}>
       {/* Climbing leaves */}
-      <instancedMesh ref={leafRef} args={[leafGeo, undefined, leafMatrices.length]}>
+      <instancedMesh ref={leafRef} args={[leafGeo, undefined, leafData.length]}>
         <meshStandardMaterial
           color="#4a7a22"
           roughness={0.68}
@@ -4474,7 +4514,7 @@ function AAAArchVines() {
         />
       </instancedMesh>
       {/* Scattered blooms among the vines */}
-      <instancedMesh ref={bloomRef} args={[bloomGeo, undefined, bloomMatrices.length]}>
+      <instancedMesh ref={bloomRef} args={[bloomGeo, undefined, bloomData.length]}>
         <meshStandardMaterial
           color="#e8b0c8"
           emissive={new THREE.Color("#c86088")}
