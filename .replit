@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "bash", "postgresql-16"]
+modules = ["nodejs-20", "web", "bash"]
 
 [deployment]
 router = "application"
@@ -31,7 +31,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm install --frozen-lockfile && pnpm --filter @workspace/menashe-calendar run dev"
+args = "pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run dev & pnpm --filter @workspace/menashe-calendar run dev"
 waitForPort = 5000
 
 [agent]
@@ -46,10 +46,6 @@ timeoutMs = 20000
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
 
 [[ports]]
 localPort = 21636
