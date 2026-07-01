@@ -2100,13 +2100,13 @@ function FirstPersonController({
 
   /* ── Touch input refs ── */
   const joystick   = useRef({ x: 0, y: 0 });
-  const touchLook  = useRef({ yaw: Math.PI, pitch: -0.08 });
+  const touchLook  = useRef({ yaw: 0, pitch: -0.08 });
   const lookPtrId  = useRef<number | null>(null);
   const lookLast   = useRef<{ x: number; y: number } | null>(null);
   const LOOK_SENS  = 0.0020; /* SPR-037A: calmer touch-look */
 
   /* ── Desktop passive look (no pointer-lock required) ── */
-  const passiveLook = useRef({ yaw: Math.PI, pitch: -0.08 });
+  const passiveLook = useRef({ yaw: 0, pitch: -0.08 });
   const lastMouseXY = useRef<{ x: number; y: number } | null>(null);
   const PASSIVE_SENS = 0.0012; /* SPR-037A: calmer desktop passive look */
 
@@ -2159,6 +2159,13 @@ function FirstPersonController({
   useEffect(() => {
     const spawnX = 0, spawnZ = 22;
     const spawnY = terrainHeightAt(spawnX, spawnZ) + 1.65;
+    /* Teleport to Sacred Avenue entrance every time Walk Mode activates.
+       Without this the camera stays wherever OrbitControls left it.     */
+    camera.position.set(spawnX, spawnY, spawnZ);
+    camera.rotation.order = "YXZ";
+    camera.rotation.y = 0;      // face -Z: from Z=22 through the gate toward the Sacred Avenue
+    camera.rotation.x = -0.08;  // slight downward pitch — player sees the path immediately
+    camera.rotation.z = 0;
     ctrlRef.current = { target: new THREE.Vector3(spawnX, spawnY, 0), update: () => {} };
     if (isTouch.current) {
       isLocked.current = true;
@@ -2174,11 +2181,11 @@ function FirstPersonController({
           const sy = terrainHeightAt(spawnX, spawnZ) + 1.65;
           camera.position.set(spawnX, sy, spawnZ);
           camera.rotation.order = "YXZ";
-          camera.rotation.y = Math.PI;   // face -Z (into the memorial valley)
+          camera.rotation.y = 0;         // face -Z (through gate toward Sacred Avenue)
           camera.rotation.x = -0.08;
           camera.rotation.z = 0;         // clear any residual sway roll
-          passiveLook.current = { yaw: Math.PI, pitch: -0.08 };
-          touchLook.current   = { yaw: Math.PI, pitch: -0.08 };
+          passiveLook.current = { yaw: 0, pitch: -0.08 };
+          touchLook.current   = { yaw: 0, pitch: -0.08 };
           vel.current.set(0, 0, 0);
           keys.current = { w: false, a: false, s: false, d: false };
           if (ctrlRef.current) ctrlRef.current.target.set(spawnX, sy, 0);
