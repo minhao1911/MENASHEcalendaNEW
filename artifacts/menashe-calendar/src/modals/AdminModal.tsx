@@ -219,7 +219,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [annPinning, setAnnPinning] = useState<string | null>(null);
 
   const { uploadFile, isUploading, progress } = useUpload({
-    onSuccess: (response) => {
+    onSuccess: (response: { uploadURL: string; objectPath: string; metadata: { name: string; size: number; contentType: string } }) => {
       const servingUrl = `/api/storage${response.objectPath}`;
       setF({ fileUrl: servingUrl });
       setUploadedFileName(response.metadata.name);
@@ -227,7 +227,7 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   });
 
   const { uploadFile: uploadCoverImage, isUploading: isCoverUploading, progress: coverProgress } = useUpload({
-    onSuccess: (response) => {
+    onSuccess: (response: { uploadURL: string; objectPath: string; metadata: { name: string; size: number; contentType: string } }) => {
       const servingUrl = `/api/storage${response.objectPath}`;
       setF({ coverImageUrl: servingUrl });
       setCoverImageUploaded(response.metadata.name);

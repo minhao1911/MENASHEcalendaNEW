@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
 import translations, { Lang, Translations, tk as builtInTk } from "../lib/translations";
 
 const OVERRIDE_KEY = "menashe-tk-overrides";
@@ -47,13 +47,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const [tkOverrides, setTkOverridesState] = useState<Partial<Translations>>(loadOverrides);
 
-  const activeTk = buildTk(tkOverrides);
+  // Memoize the merged TK translations so buildTk() only reruns when overrides change,
+  // not on every render. buildTk is { ...builtInTk, ...overrides } — cheap but avoids
+  // creating a new object reference that would invalidate the memoized context value.
+  const activeTk = useMemo(() => buildTk(tkOverrides), [tkOverrides]);
   const t = lang === "tk" ? activeTk : translations.en;
 
-  function setLang(l: Lang) {
+  const setLang = useCallback((l: Lang) => {
     setLangState(l);
     try { localStorage.setItem("menashe-language", l); } catch {}
-  }
+  }, []);
 
   const setTkOverride = useCallback((key: keyof Translations, value: string) => {
     setTkOverridesState(prev => {
@@ -73,8 +76,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     try { localStorage.removeItem(OVERRIDE_KEY); } catch {}
   }, []);
 
+  // Memoize the context value object so consumers only re-render when lang, t,
+  // or overrides actually change — not on any unrelated LanguageProvider render.
+  // This matters because useLanguage() is called in 40+ files (80 call sites).
+  const contextValue = useMemo<LanguageContextValue>(
+    () => ({ lang, setLang, t, tkOverrides, setTkOverride, saveTkOverrides, resetTkOverrides }),
+    [lang, setLang, t, tkOverrides, setTkOverride, saveTkOverrides, resetTkOverrides],
+  );
+
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t, tkOverrides, setTkOverride, saveTkOverrides, resetTkOverrides }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );

@@ -19,12 +19,12 @@ export default function UpdateToast() {
 
   // Delay appearance slightly so the splash/onboarding doesn't compete
   useEffect(() => {
-    if (needRefresh) {
-      const id = setTimeout(() => setVisible(true), 800);
-      return () => clearTimeout(id);
-    } else {
+    if (!needRefresh) {
       setVisible(false);
+      return;
     }
+    const id = setTimeout(() => setVisible(true), 800);
+    return () => clearTimeout(id);
   }, [needRefresh]);
 
   if (!needRefresh) return null;

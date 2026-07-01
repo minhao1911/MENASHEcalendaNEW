@@ -1,6 +1,6 @@
 import { useState, useMemo, memo } from "react";
 import { HebrewCalendar, flags } from "@hebcal/core";
-import { getMonthCalendar, hebrewDayNumeral, getHebrewMonthsBetween } from "../lib/hebrewCalendar";
+import { getMonthCalendar, hebrewDayNumeral, getHebrewMonthsBetween, type CalendarDay } from "../lib/hebrewCalendar";
 import { Location } from "../lib/locations";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import { getUpcomingParashiyot } from "../lib/parasha";
@@ -35,7 +35,7 @@ const CalendarPage = memo(function CalendarPage({ location, onNavigate, onDayCli
   const [month, setMonth] = useState(today.getMonth());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
-  const days = getMonthCalendar(year, month);
+  const days: CalendarDay[] = getMonthCalendar(year, month);
   const firstDayOfWeek = new Date(year, month, 1).getDay();
   const hebrewMonths = getHebrewMonthsBetween(new Date(year, month, 1), new Date(year, month + 1, 0));
 
@@ -48,7 +48,7 @@ const CalendarPage = memo(function CalendarPage({ location, onNavigate, onDayCli
     // Parashiyot that fall inside this month
     const firstOfMonth = new Date(year, month, 1);
     const upcoming = getUpcomingParashiyot(firstOfMonth, 6);
-    const monthParashiyot = upcoming.filter(p => {
+    const monthParashiyot = upcoming.filter((p: { name: string; date: Date; hebrewName: string }) => {
       const shabbat = new Date(p.date);
       return shabbat.getFullYear() === year && shabbat.getMonth() === month;
     });

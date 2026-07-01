@@ -104,6 +104,7 @@ self.addEventListener("push", (event) => {
       tag: data.tag,
       icon: data.icon ?? "/icon-192.png",
       badge: "/icon-192.png",
+      // @ts-expect-error vibrate is a valid browser Notification API property not yet in TypeScript's lib definitions
       vibrate: [100, 50, 100],
       data: { url: data.url ?? self.location.origin },
     }),

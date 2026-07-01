@@ -155,7 +155,7 @@ function Section({ icon, title, children, defaultOpen = true, accent, aiEnhanced
 export default function ParashahModal({ onClose }: Props) {
   const today = new Date();
   const parasha = getCurrentParasha(today);
-  const upcoming = getUpcomingParashiyot(today, 10);
+  const upcoming: Array<{ name: string; date: Date; hebrewName: string }> = getUpcomingParashiyot(today, 10);
   const [view, setView] = useState<View>("detail");
   const [studied, setStudied] = useState<Set<string>>(loadProgress);
 
@@ -392,7 +392,7 @@ export default function ParashahModal({ onClose }: Props) {
                       {parasha.book} · {parasha.verses}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)" }}>
-                      {ALIYAH_LABELS.map((label, idx) => {
+                      {ALIYAH_LABELS.map((label: { en: string; he: string; ordinal: string }, idx: number) => {
                         const verses = aliyot[idx];
                         if (!verses) return null;
                         const isMaftir = idx === 7;
