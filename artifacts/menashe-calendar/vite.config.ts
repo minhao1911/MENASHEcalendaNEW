@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -16,6 +16,84 @@ const basePath = process.env.BASE_PATH ?? "";
 
 const apiTarget = process.env.API_URL ?? "http://localhost:8080";
 
+/**
+ * prefetchLazyChunksPlugin
+ *
+ * Runs only in production builds. It:
+ *
+ * 1. Collects lazy page chunk filenames from the Rollup bundle via
+ *    `generateBundle` (the only place real hashed names are known).
+ *
+ * 2. In `transformIndexHtml` (enforce:"post" — runs after Vite has injected
+ *    its own modulepreload tags):
+ *    a. Downgrades `vendor-three` from `<link rel="modulepreload">` to
+ *       `<link rel="prefetch">` — Three.js is only needed when the Memorial
+ *       Sanctuary opens, not on first paint.
+ *    b. Injects `<link rel="prefetch">` for every lazy page chunk so the
+ *       browser fetches them in the background during idle time, making
+ *       in-app navigation instant without downloading anything on first paint.
+ */
+function prefetchLazyChunksPlugin(): Plugin {
+  const PAGE_PATTERNS = [
+    /^Home-/,
+    /^CalendarPage-/,
+    /^ZmanimPage-/,
+    /^SiddurPage-/,
+    /^SettingsPage-/,
+    /^Landing-/,
+    /^PremiumPage-/,
+  ];
+
+  const lazyChunkNames: string[] = [];
+
+  return {
+    name: "prefetch-lazy-chunks",
+    apply: "build",
+
+    generateBundle(_options, bundle) {
+      lazyChunkNames.length = 0;
+      for (const fileName of Object.keys(bundle)) {
+        if (!fileName.endsWith(".js")) continue;
+        // Bundle keys are relative output paths like "assets/Home-abc123.js"
+        // Match only against the basename portion
+        const base = fileName.split("/").pop() ?? fileName;
+        if (PAGE_PATTERNS.some((pat) => pat.test(base))) {
+          lazyChunkNames.push(fileName);
+        }
+      }
+    },
+
+    transformIndexHtml: {
+      order: "post",
+      handler(html) {
+        // 1. Downgrade vendor-three: modulepreload → prefetch
+        //    (Three.js is lazy — it must not block the initial page load)
+        let out = html.replace(
+          /(<link\s+rel=)"modulepreload"(\s+crossorigin\s+href="[^"]*vendor-three[^"]*">)/g,
+          '$1"prefetch"$2',
+        );
+
+        // 2. Build prefetch tags for every lazy page chunk.
+        //    `lazyChunkNames` entries are already relative paths like
+        //    "assets/Home-abc123.js" — just prepend "./" for the HTML href.
+        const base = basePath ? basePath.replace(/\/$/, "") + "/" : "./";
+        const prefetchTags = lazyChunkNames
+          .map(
+            (name) =>
+              `    <link rel="prefetch" crossorigin href="${base}${name}">`,
+          )
+          .join("\n");
+
+        if (prefetchTags) {
+          out = out.replace("</head>", `${prefetchTags}\n  </head>`);
+        }
+
+        return out;
+      },
+    },
+  };
+}
+
 export default defineConfig({
   base: basePath,
   define: {
@@ -27,6 +105,7 @@ export default defineConfig({
     react(),
     tailwindcss({ optimize: false }),
     runtimeErrorOverlay(),
+    prefetchLazyChunksPlugin(),
     // Force full-page reload for large files where HMR corrupts React state.
     {
       name: "full-reload-large-modules",
