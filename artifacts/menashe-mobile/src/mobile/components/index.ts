@@ -1,29 +1,48 @@
 /**
- * SPR-M001 Phase 1 — Mobile Shared Components Index
+ * SPR-M003 — Mobile Component Library
  *
- * Barrel export for all shared mobile UI components.
- * Components here are used across multiple screens/features.
+ * Single import point for all MMDL components.
+ * Every component uses design tokens from @/src/mobile/design-system.
  *
- * Screen-specific components live inside their feature module.
+ * ─── Categories ──────────────────────────────────────────────────────────────
  *
- * ─── Currently available components ──────────────────────────────────────────
+ *  foundation/   MenasheSurface · MenasheCard · MenasheButton · MenasheIconButton
+ *                MenasheDivider · MenasheChip · MenasheBadge · MenasheAvatar
  *
- *  ErrorBoundary         — @/components/ErrorBoundary
- *  ErrorFallback         — @/components/ErrorFallback
- *  BurningCandleRN       — @/components/BurningCandleRN
- *  KeyboardAwareScrollViewCompat — @/components/KeyboardAwareScrollViewCompat
+ *  layout/       ScreenLayout · ScrollLayout · SafeAreaLayout · KeyboardAvoidLayout
+ *                Section · Spacer · Container · ContentWidth
  *
- * ─── Components planned for future SPRs ──────────────────────────────────────
+ *  headers/      MenasheHeader · LargeHeader · HeaderSearch · CollapsibleHeader
  *
- *  MobileCard            — Themed card surface with glass variant
- *  MobileButton          — Primary / secondary / ghost button
- *  MobileHeader          — Screen header with back button
- *  MobileSection         — Section wrapper with title + padding
- *  HebrewDateBadge       — Hebrew date chip with gold styling
- *  GoldDivider           — Thin gold horizontal rule
- *  LoadingSpinner        — Branded loading indicator
- *  EmptyState            — Illustrated empty state with CTA
+ *  cards/        DateCard · PrayerCard · ParashaCard · StatisticCard
+ *                QuickToolCard · HolidayCard · CountdownCard
+ *                InformationCard · HeroCard
+ *
+ *  display/      SectionTitle · LabelValue
+ *
+ *  inputs/       SearchBar · SearchField · TextField · SelectField · InputRow
+ *                SegmentedControl · MenasheSwitch · Checkbox · Radio
+ *                FilterChipGroup
+ *
+ *  navigation/   BottomNavigation · BottomNavigationItem · FloatingActionButton
+ *                TabIndicator · NavigationBadge · NavigationContainer
+ *
+ *  feedback/     LoadingState · SkeletonCard · EmptyState · ErrorState
+ *                Toast · Banner · Snackbar · BottomSheet · Dialog
+ *                ProgressIndicator
+ *
+ * ─── Legacy (SPR-M001) ───────────────────────────────────────────────────────
+ *  ErrorBoundary · ErrorFallback  (from @/components/)
  */
 
 export { ErrorBoundary } from "@/components/ErrorBoundary";
 export { ErrorFallback }  from "@/components/ErrorFallback";
+
+export * from "./foundation";
+export * from "./layout";
+export * from "./headers";
+export * from "./cards";
+export * from "./display";
+export * from "./inputs";
+export * from "./navigation";
+export * from "./feedback";
