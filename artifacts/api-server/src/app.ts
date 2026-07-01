@@ -90,6 +90,9 @@ if (process.env.CLERK_SECRET_KEY) {
   );
 }
 
+// Health check — placed before rate limiter so it is never throttled
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
 app.use(globalRateLimiter);
 
 app.use("/api", router);

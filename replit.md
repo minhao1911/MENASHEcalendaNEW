@@ -4,12 +4,23 @@ A sacred Jewish calendar app for the Bnei Menashe community — featuring Hebrew
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+### Replit workflows (both must be running)
+- **Start application** — `pnpm --filter @workspace/menashe-calendar run dev` (Vite dev server, port 5000, webview)
+- **API Server** — `cd artifacts/api-server && pnpm run dev:rebuild` (always builds then starts; Express, port 8080, console)
+  - `dev:rebuild` runs `pnpm run build && pnpm run start` so it is safe from a clean checkout
+  - The frontend proxies all `/api/*` requests to `http://localhost:8080` (configured in `artifacts/menashe-calendar/vite.config.ts`)
+
+### Other useful commands
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+
+### Environment / secrets (all pre-configured)
+- `DATABASE_URL` — runtime-managed by Replit (PostgreSQL attached)
+- `CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` — Clerk dev instance auth
+- `VAPID_PUBLIC_KEY` / `VAPID_SUBJECT` — web push (VAPID_PRIVATE_KEY not set; push notifications disabled until added)
+- `ADMIN_USER_ID` / `ADMIN_PIN` — admin access
 
 ## Stack
 
