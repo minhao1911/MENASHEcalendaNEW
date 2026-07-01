@@ -4779,6 +4779,406 @@ function AAASceneCameraDriver({ sceneView, ctrlRef, walkMode }: {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SPR-037C: SACRED JOURNEY EXPERIENCE
+   6 named destinations · curved secondary paths · stone candle alcoves ·
+   journey lanterns · Hebrew inscription stones
+══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Destination registry ────────────────────────────────────────────────── */
+const DESTINATIONS = [
+  { id: "candle",    pos: [-6,  0,  1] as [number,number,number], labelEN: "Candle Garden",    labelHE: "גַּן הַנֵּרוֹת"      },
+  { id: "pool",      pos: [ 6,  0,  1] as [number,number,number], labelEN: "Reflection Pool",  labelHE: "בְּרֵכַת הֶחָזוֹן"  },
+  { id: "waterfall", pos: [-15, 0, -5] as [number,number,number], labelEN: "Waterfall Grotto", labelHE: "מְעָרַת הַמַּיִם"   },
+  { id: "grove",     pos: [-11, 0, -7] as [number,number,number], labelEN: "Family Grove",     labelHE: "חֲרַשׁ הַמִּשְׁפָּחָה"},
+  { id: "pavilion",  pos: [ 17, 0,  9] as [number,number,number], labelEN: "Prayer Pavilion",  labelHE: "סֻכַּת הַתְּפִלָּה" },
+  { id: "sunset",    pos: [ 18, 0, -4] as [number,number,number], labelEN: "Sunset Terrace",   labelHE: "מִרְפֶּסֶת הַשֶּׁקִיעָה"},
+] as const;
+
+/* ── Quadratic bezier on the XZ plane ───────────────────────────────────── */
+function bez2xz(
+  t: number,
+  x0: number, z0: number,
+  mx: number, mz: number,
+  x1: number, z1: number,
+): [number, number] {
+  const u = 1 - t;
+  return [u * u * x0 + 2 * u * t * mx + t * t * x1,
+          u * u * z0 + 2 * u * t * mz + t * t * z1];
+}
+
+/* ── Secondary path specs (from, midpoint, to, count) ───────────────────── */
+interface PathSpec { x0:number; z0:number; mx:number; mz:number; x1:number; z1:number; n:number }
+const PATH_SPECS: PathSpec[] = [
+  { x0:-3, z0:8,  mx:-5,  mz: 5,  x1:-6,  z1: 1,  n:8  }, // Candle Garden
+  { x0: 3, z0:8,  mx: 5,  mz: 5,  x1: 6,  z1: 1,  n:8  }, // Reflection Pool
+  { x0:-5, z0:3,  mx:-9,  mz:-1,  x1:-15, z1:-5,  n:10 }, // Waterfall Grotto
+  { x0:-6, z0:1,  mx:-9,  mz:-3,  x1:-11, z1:-7,  n:9  }, // Family Grove
+  { x0: 5, z0:7,  mx:11,  mz: 8,  x1:17,  z1: 9,  n:11 }, // Prayer Pavilion
+  { x0: 7, z0:2,  mx:13,  mz:-1,  x1:18,  z1:-4,  n:11 }, // Sunset Terrace
+];
+
+/* Pre-compute stepping-stone world positions (module level — pure function) */
+const SPATH_STONES: [number, number, number][] = (() => {
+  const out: [number, number, number][] = [];
+  for (const p of PATH_SPECS) {
+    for (let s = 0; s < p.n; s++) {
+      const t = s / (p.n - 1);
+      const [x, z] = bez2xz(t, p.x0, p.z0, p.mx, p.mz, p.x1, p.z1);
+      out.push([x, terrainHeightAt(x, z) + 0.028, z]);
+    }
+  }
+  return out;
+})();
+
+/* ── Candle-cluster zones (match ENTRY_POSITIONS build zones) ───────────── */
+const ALCOVE_ZONES = [
+  { cx:  0,  cz:  5  },
+  { cx: -11, cz:  2  },
+  { cx:  11, cz:  2  },
+  { cx:  0,  cz: -11 },
+  { cx:  0,  cz:  14 },
+  { cx: -11, cz: -10 },
+  { cx:  11, cz: -10 },
+  { cx: -11, cz:  13 },
+  { cx:  11, cz:  13 },
+];
+const ALCOVE_N = ALCOVE_ZONES.length;
+
+/* ── Journey lantern positions ───────────────────────────────────────────── */
+const LANTERN_POSITIONS: [number, number, number][] = (
+  [[-3,0,8],[3,0,8],[-8,0,5],[8,0,5],[-5,0,3],[-10,0,-1],[-13,0,-4],
+   [-9,0,-3],[-11,0,-6],[11,0,8],[15,0,9],[12,0,-2],[16,0,-3],
+   [-6,0,1],[6,0,1],[0,0,-10]] as [number,number,number][]
+).map(([x,,z]) => [x, terrainHeightAt(x, z), z]);
+
+const LANTERN_LIGHTS: [number, number, number][] = (
+  [[-3,0,8],[3,0,8],[-5,0,3],[11,0,8],[12,0,-2],[0,0,-10]] as [number,number,number][]
+).map(([x,,z]) => [x, terrainHeightAt(x, z) + 1.4, z]);
+
+/* ── Hebrew inscription stone data ──────────────────────────────────────── */
+const INSCRIPTION_DATA = [
+  { pos: [-3,  0, -14] as [number,number,number],
+    text: "זֵכֶר צַדִּיק לִבְרָכָה",           sub: "The memory of the righteous is a blessing" },
+  { pos: [ 3,  0, -14] as [number,number,number],
+    text: "אֵין אָדָם שֶׁאֵין לוֹ שָׁעָה",        sub: "Every person has their moment" },
+  { pos: [-20, 0,  4 ] as [number,number,number],
+    text: "לְנֵר מִצְוָה וְתוֹרָה אוֹר",          sub: "A candle of love, a light of Torah" },
+  { pos: [ 20, 0,  4 ] as [number,number,number],
+    text: "כִּי הָאָדָם עֵץ הַשָּׂדֶה",            sub: "For man is as the tree of the field" },
+  { pos: [ 0,  0, -19] as [number,number,number],
+    text: "שְׁמוֹ לֹא יִשָּׁכַח",                 sub: "His name shall not be forgotten" },
+];
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-037C COMPONENT 1: DESTINATION MARKERS
+   Carved limestone pillars with crystal top + Hebrew/English labels.
+   Proximity glow brightens as the player approaches within 10 units.
+══════════════════════════════════════════════════════════════════════════ */
+function AAADestinationMarkers() {
+  const { camera } = useThree();
+  const lightRefs = useRef<(THREE.PointLight | null)[]>([]);
+  const crystRefs = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
+
+  useFrame(() => {
+    for (let i = 0; i < DESTINATIONS.length; i++) {
+      const [dx,, dz] = DESTINATIONS[i].pos;
+      const dist = Math.sqrt(
+        (camera.position.x - dx) ** 2 + (camera.position.z - dz) ** 2,
+      );
+      const prox = Math.max(0, 1 - dist / 10);
+      const lr = lightRefs.current[i];
+      if (lr) lr.intensity = 0.9 + prox * 3.8;
+      const cr = crystRefs.current[i];
+      if (cr) cr.emissiveIntensity = 1.1 + prox * 2.0;
+    }
+  });
+
+  return (
+    <>
+      {DESTINATIONS.map((dest, i) => {
+        const ty = terrainHeightAt(dest.pos[0], dest.pos[2]);
+        return (
+          <group key={dest.id} position={[dest.pos[0], ty, dest.pos[2]]}>
+            {/* Stepped plinth */}
+            <mesh position={[0, 0.12, 0]} castShadow>
+              <boxGeometry args={[0.72, 0.24, 0.72]} />
+              <meshStandardMaterial color="#cdc1a2" roughness={0.86} metalness={0.04} />
+            </mesh>
+            {/* Pillar shaft */}
+            <mesh position={[0, 0.88, 0]} castShadow>
+              <boxGeometry args={[0.40, 1.28, 0.40]} />
+              <meshStandardMaterial color="#d8ceaf" roughness={0.81} metalness={0.05} />
+            </mesh>
+            {/* Capital block */}
+            <mesh position={[0, 1.56, 0]} castShadow>
+              <boxGeometry args={[0.56, 0.20, 0.56]} />
+              <meshStandardMaterial color="#c8bc9a" roughness={0.83} metalness={0.04} />
+            </mesh>
+            {/* Emissive crystal top */}
+            <mesh position={[0, 1.82, 0]}>
+              <octahedronGeometry args={[0.17, 0]} />
+              <meshStandardMaterial
+                ref={el => { crystRefs.current[i] = el as THREE.MeshStandardMaterial | null; }}
+                color="#D4AF37"
+                emissive={new THREE.Color("#D4AF37")}
+                emissiveIntensity={1.1}
+                roughness={0.18} metalness={0.65}
+                transparent opacity={0.90}
+              />
+            </mesh>
+            {/* Proximity point light */}
+            <pointLight
+              ref={el => { lightRefs.current[i] = el as THREE.PointLight | null; }}
+              color="#ffe090" intensity={0.9} distance={12} decay={2}
+              position={[0, 2.1, 0]}
+            />
+            {/* Hebrew destination name */}
+            <Text
+              position={[0, 1.26, 0.22]} fontSize={0.105}
+              color="#D4AF37" anchorX="center" anchorY="middle"
+              maxWidth={1.5} textAlign="center"
+            >
+              {dest.labelHE}
+            </Text>
+            {/* English label */}
+            <Text
+              position={[0, 0.84, 0.22]} fontSize={0.078}
+              color="#e8e0c8" anchorX="center" anchorY="middle"
+              maxWidth={1.4} textAlign="center"
+            >
+              {dest.labelEN}
+            </Text>
+          </group>
+        );
+      })}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-037C COMPONENT 2: SECONDARY PATHS
+   Curved stepping-stone paths branch off the Sacred Avenue toward each
+   of the 6 destinations. InstancedMesh → 1 draw call for all stones.
+══════════════════════════════════════════════════════════════════════════ */
+function AAASecondaryPaths() {
+  const N       = SPATH_STONES.length;
+  const meshRef = useRef<THREE.InstancedMesh>(null!);
+  const stoneGeo = useMemo(() => new THREE.CylinderGeometry(0.29, 0.34, 0.09, 7), []);
+
+  useEffect(() => {
+    const dum = new THREE.Object3D();
+    SPATH_STONES.forEach(([x, y, z], i) => {
+      dum.position.set(x, y, z);
+      dum.rotation.set(0, (i * 0.618) % (Math.PI * 2), 0);
+      dum.scale.set(1 + (i % 3) * 0.07, 1, 1 + (i % 2) * 0.08);
+      dum.updateMatrix();
+      meshRef.current?.setMatrixAt(i, dum.matrix);
+    });
+    if (meshRef.current) meshRef.current.instanceMatrix.needsUpdate = true;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <instancedMesh ref={meshRef} args={[stoneGeo, undefined, N]} receiveShadow castShadow>
+      <meshStandardMaterial color="#c4ba9c" roughness={0.89} metalness={0.04} />
+    </instancedMesh>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-037C COMPONENT 3: STONE CANDLE ALCOVES
+   U-shaped limestone alcoves framing each candle-cluster zone.
+   4 InstancedMesh passes (base / back wall / left side / right side).
+══════════════════════════════════════════════════════════════════════════ */
+function AAAStoneAlcoves() {
+  const wallGeo = useMemo(() => new THREE.BoxGeometry(1.40, 0.65, 0.22), []);
+  const sideGeo = useMemo(() => new THREE.BoxGeometry(0.22, 0.65, 0.75), []);
+  const baseGeo = useMemo(() => new THREE.BoxGeometry(2.00, 0.08, 1.20), []);
+
+  const baseRef = useRef<THREE.InstancedMesh>(null!);
+  const wallRef = useRef<THREE.InstancedMesh>(null!);
+  const lsRef   = useRef<THREE.InstancedMesh>(null!);
+  const rsRef   = useRef<THREE.InstancedMesh>(null!);
+
+  useEffect(() => {
+    const dum = new THREE.Object3D();
+
+    const setMatrix = (
+      ref: React.MutableRefObject<THREE.InstancedMesh>,
+      mats: THREE.Matrix4[],
+    ) => {
+      mats.forEach((m, i) => ref.current?.setMatrixAt(i, m));
+      if (ref.current) ref.current.instanceMatrix.needsUpdate = true;
+    };
+
+    const baseMats: THREE.Matrix4[] = [];
+    const wallMats: THREE.Matrix4[] = [];
+    const lsMats:   THREE.Matrix4[] = [];
+    const rsMats:   THREE.Matrix4[] = [];
+
+    for (const zone of ALCOVE_ZONES) {
+      const ty = terrainHeightAt(zone.cx, zone.cz);
+      /* Alcove faces TOWARD the altar centre (0, 4) — back wall on far side */
+      const angle = Math.atan2(zone.cx - 0, zone.cz - 4);
+      const cosA = Math.cos(angle), sinA = Math.sin(angle);
+
+      /* Apply a local-space offset in the rotated frame */
+      const place = (lx: number, ly: number, lz: number): THREE.Matrix4 => {
+        const wx = zone.cx + lx * cosA + lz * sinA;
+        const wz = zone.cz - lx * sinA + lz * cosA;
+        dum.position.set(wx, ty + ly, wz);
+        dum.rotation.set(0, angle, 0);
+        dum.scale.set(1, 1, 1);
+        dum.updateMatrix();
+        return dum.matrix.clone();
+      };
+
+      baseMats.push(place(0,    0.04, 0.45));
+      wallMats.push(place(0,    0.40, 0.82));
+      lsMats.push(  place(-0.60, 0.40, 0.50));
+      rsMats.push(  place( 0.60, 0.40, 0.50));
+    }
+
+    setMatrix(baseRef, baseMats);
+    setMatrix(wallRef, wallMats);
+    setMatrix(lsRef,   lsMats);
+    setMatrix(rsRef,   rsMats);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <>
+      <instancedMesh ref={baseRef} args={[baseGeo, undefined, ALCOVE_N]} receiveShadow>
+        <meshStandardMaterial color="#bfb89c" roughness={0.90} metalness={0.03} />
+      </instancedMesh>
+      <instancedMesh ref={wallRef} args={[wallGeo, undefined, ALCOVE_N]} castShadow receiveShadow>
+        <meshStandardMaterial color="#cac0a2" roughness={0.87} metalness={0.04} />
+      </instancedMesh>
+      <instancedMesh ref={lsRef} args={[sideGeo, undefined, ALCOVE_N]} castShadow>
+        <meshStandardMaterial color="#bfb898" roughness={0.89} metalness={0.04} />
+      </instancedMesh>
+      <instancedMesh ref={rsRef} args={[sideGeo, undefined, ALCOVE_N]} castShadow>
+        <meshStandardMaterial color="#bfb898" roughness={0.89} metalness={0.04} />
+      </instancedMesh>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-037C COMPONENT 4: JOURNEY LANTERNS
+   Stone lanterns (base post + lantern box) placed at path junctions.
+   InstancedMesh for bodies; 6 strategic point lights at decision points.
+══════════════════════════════════════════════════════════════════════════ */
+function AAAJourneyLanterns() {
+  const N = LANTERN_POSITIONS.length;
+
+  const baseRef    = useRef<THREE.InstancedMesh>(null!);
+  const postRef    = useRef<THREE.InstancedMesh>(null!);
+  const lanternRef = useRef<THREE.InstancedMesh>(null!);
+  const glowMat    = useRef<THREE.MeshStandardMaterial>(null!);
+
+  const baseGeo    = useMemo(() => new THREE.BoxGeometry(0.30, 0.14, 0.30), []);
+  const postGeo    = useMemo(() => new THREE.CylinderGeometry(0.036, 0.044, 1.12, 6), []);
+  const lanternGeo = useMemo(() => new THREE.BoxGeometry(0.23, 0.27, 0.23), []);
+
+  useEffect(() => {
+    const dum = new THREE.Object3D();
+    LANTERN_POSITIONS.forEach(([x, y, z], i) => {
+      dum.position.set(x, y + 0.07, z); dum.rotation.set(0, 0, 0); dum.scale.set(1,1,1);
+      dum.updateMatrix(); baseRef.current?.setMatrixAt(i, dum.matrix);
+
+      dum.position.set(x, y + 0.70, z);
+      dum.updateMatrix(); postRef.current?.setMatrixAt(i, dum.matrix);
+
+      dum.position.set(x, y + 1.26, z);
+      dum.updateMatrix(); lanternRef.current?.setMatrixAt(i, dum.matrix);
+    });
+    if (baseRef.current)    baseRef.current.instanceMatrix.needsUpdate = true;
+    if (postRef.current)    postRef.current.instanceMatrix.needsUpdate = true;
+    if (lanternRef.current) lanternRef.current.instanceMatrix.needsUpdate = true;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useFrame(({ clock }) => {
+    if (glowMat.current) {
+      glowMat.current.emissiveIntensity = 0.9 + Math.sin(clock.getElapsedTime() * 1.7) * 0.28;
+    }
+  });
+
+  return (
+    <>
+      <instancedMesh ref={baseRef} args={[baseGeo, undefined, N]} castShadow>
+        <meshStandardMaterial color="#b6aa96" roughness={0.88} metalness={0.05} />
+      </instancedMesh>
+      <instancedMesh ref={postRef} args={[postGeo, undefined, N]} castShadow>
+        <meshStandardMaterial color="#9a9080" roughness={0.85} metalness={0.06} />
+      </instancedMesh>
+      <instancedMesh ref={lanternRef} args={[lanternGeo, undefined, N]}>
+        <meshStandardMaterial
+          ref={glowMat}
+          color="#ffe8a0"
+          emissive={new THREE.Color("#ffaa30")}
+          emissiveIntensity={0.9}
+          roughness={0.28} metalness={0.0}
+          transparent opacity={0.84}
+        />
+      </instancedMesh>
+      {/* 6 strategic point lights at major path junctions */}
+      {LANTERN_LIGHTS.map(([x, y, z], i) => (
+        <pointLight key={i} position={[x, y, z]}
+          color="#ffcf80" intensity={2.0} distance={7} decay={2} />
+      ))}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-037C COMPONENT 5: INSCRIPTION STONES
+   Flat limestone slabs with carved Hebrew quotes and English subtitles,
+   placed at scenic spots throughout the valley.
+══════════════════════════════════════════════════════════════════════════ */
+function AAAInscriptionStones() {
+  return (
+    <>
+      {INSCRIPTION_DATA.map((ins, i) => {
+        const ty = terrainHeightAt(ins.pos[0], ins.pos[2]);
+        /* Face toward scene centre (0, 4) */
+        const angle = Math.atan2(ins.pos[0] - 0, ins.pos[2] - 4) + Math.PI;
+        return (
+          <group key={i} position={[ins.pos[0], ty, ins.pos[2]]} rotation={[0, angle, 0]}>
+            {/* Flat slab */}
+            <mesh position={[0, 0.09, 0]} castShadow>
+              <boxGeometry args={[1.80, 0.18, 0.90]} />
+              <meshStandardMaterial color="#cec4a4" roughness={0.88} metalness={0.03} />
+            </mesh>
+            {/* Two support legs */}
+            {([-0.60, 0.60] as number[]).map((dx, j) => (
+              <mesh key={j} position={[dx, 0.0, 0]} castShadow>
+                <boxGeometry args={[0.22, 0.18, 0.34]} />
+                <meshStandardMaterial color="#b8ae92" roughness={0.91} metalness={0.03} />
+              </mesh>
+            ))}
+            {/* Hebrew quote */}
+            <Text
+              position={[0, 0.25, 0.47]} fontSize={0.108}
+              color="#8a7040" anchorX="center" anchorY="middle"
+              maxWidth={1.6} textAlign="center"
+            >
+              {ins.text}
+            </Text>
+            {/* English subtitle */}
+            <Text
+              position={[0, 0.12, 0.47]} fontSize={0.065}
+              color="#7a6834" anchorX="center" anchorY="middle"
+              maxWidth={1.8} textAlign="center"
+            >
+              {ins.sub}
+            </Text>
+          </group>
+        );
+      })}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    FULL SCENE
 ══════════════════════════════════════════════════════════════════════════ */
 interface SceneProps {
@@ -4910,6 +5310,13 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       {/* Ground & terrain */}
       <AAATerrain />
       <AAAStonePathways />
+
+      {/* SPR-037C: Sacred Journey — destinations, paths, alcoves, lanterns, inscriptions */}
+      <AAASecondaryPaths />
+      <AAAStoneAlcoves />
+      <AAADestinationMarkers />
+      <AAAJourneyLanterns />
+      <AAAInscriptionStones />
 
       {/* SPR-037B: Rose petals along the Sacred Avenue */}
       <AAAPathwayPetals />
