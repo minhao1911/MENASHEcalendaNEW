@@ -4303,6 +4303,79 @@ function AAAPathwayPetals() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SPR-037B: INNER SANCTUARY ARCH — weathered limestone arch at z=11
+   midway down the Sacred Avenue; frames the altar view as a second
+   threshold, smaller and more worn than the entrance gate at z=21
+══════════════════════════════════════════════════════════════════════════ */
+function AAAAvenueSanctuaryArch() {
+  const SPAN      = 2.26;   // half-width — pillars at x=±2.26 (inside 5.5m avenue)
+  const PILLAR_H  = 4.20;
+  const baseY     = useMemo(() => terrainHeightAt(0, 11), []);
+  const archCtrY  = baseY + PILLAR_H + 0.46; // centre of torus ring
+
+  const pillarGeo = useMemo(() => new THREE.BoxGeometry(0.66, PILLAR_H, 0.66), []);
+  const capGeo    = useMemo(() => new THREE.BoxGeometry(0.90, 0.35, 0.90), []);
+  const lintGeo   = useMemo(() => new THREE.BoxGeometry(SPAN * 2 + 0.66, 0.30, 0.68), []);
+  /* Half-torus arch crown: radius=SPAN so the ring ends land over the pillar centres */
+  const archGeo   = useMemo(
+    () => new THREE.TorusGeometry(SPAN, 0.21, 8, 26, Math.PI),
+    []
+  );
+
+  return (
+    <group position={[0, 0, 11]}>
+      {/* Left pillar */}
+      <mesh position={[-SPAN, baseY + PILLAR_H / 2, 0]} castShadow receiveShadow geometry={pillarGeo}>
+        <meshStandardMaterial color="#c8bc9c" roughness={0.88} metalness={0.04} />
+      </mesh>
+      {/* Right pillar */}
+      <mesh position={[SPAN, baseY + PILLAR_H / 2, 0]} castShadow receiveShadow geometry={pillarGeo}>
+        <meshStandardMaterial color="#c8bc9c" roughness={0.88} metalness={0.04} />
+      </mesh>
+      {/* Pillar caps */}
+      {([-SPAN, SPAN] as number[]).map((x, i) => (
+        <mesh key={i} position={[x, baseY + PILLAR_H + 0.175, 0]} castShadow geometry={capGeo}>
+          <meshStandardMaterial color="#b8ad90" roughness={0.84} metalness={0.06} />
+        </mesh>
+      ))}
+      {/* Connecting lintel — springs the arch */}
+      <mesh position={[0, baseY + PILLAR_H + 0.315, 0]} castShadow geometry={lintGeo}>
+        <meshStandardMaterial color="#c0b498" roughness={0.86} metalness={0.05} />
+      </mesh>
+      {/* Semi-circular arch crown — half torus, open side down */}
+      <mesh position={[0, archCtrY, 0]} geometry={archGeo} castShadow>
+        <meshStandardMaterial color="#b8ad90" roughness={0.86} metalness={0.05} />
+      </mesh>
+      {/* Golden keystone at the crown apex */}
+      <mesh position={[0, archCtrY + SPAN, 0]}>
+        <cylinderGeometry args={[0.13, 0.13, 0.28, 6]} />
+        <meshStandardMaterial
+          color="#D4AF37"
+          roughness={0.28}
+          metalness={0.78}
+          emissive={new THREE.Color("#9a7800")}
+          emissiveIntensity={0.60}
+        />
+      </mesh>
+      {/* Moss weathering streaks on lower pillar faces */}
+      {([-SPAN, SPAN] as number[]).map((x, i) => (
+        <mesh key={i} position={[x + (i === 0 ? 0.34 : -0.34), baseY + 1.3, 0.07]}>
+          <boxGeometry args={[0.02, 1.1, 0.46]} />
+          <meshStandardMaterial color="#2e5a12" roughness={0.95} metalness={0} transparent opacity={0.58} />
+        </mesh>
+      ))}
+      {/* Subtle chip marks on pillar faces — depth cues for weathering */}
+      {([-SPAN, SPAN] as number[]).map((x, i) => (
+        <mesh key={i} position={[x + (i === 0 ? 0.34 : -0.34), baseY + 2.8, 0.07]}>
+          <boxGeometry args={[0.02, 0.6, 0.28]} />
+          <meshStandardMaterial color="#a89c80" roughness={0.96} metalness={0} transparent opacity={0.45} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    SACRED AVENUE TORCHES — paired glowing stone lanterns guiding the path
 ══════════════════════════════════════════════════════════════════════════ */
 const AVENUE_TORCH_PAIRS: [number, number][] = [
@@ -4582,6 +4655,9 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 
       {/* SPR-031: Weathered ruins and prayer pavilion */}
       <AAAMossRuins />
+
+      {/* SPR-037B: Inner sanctuary arch — second threshold midway down the avenue */}
+      <AAAAvenueSanctuaryArch />
 
       {/* Sacred Avenue torch guides — lead user from entry toward altar */}
       <AAAAvenueTorches />
