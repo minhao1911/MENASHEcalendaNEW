@@ -99,6 +99,15 @@ export interface SharedTranslations {
   homeAITagline: string;
   homeUntilNextShabbatLabel: string;
 
+  /* ── Home Vision Sprint (SPR-M007) ── */
+  homeSacredTimeLabel: string;
+  homeNowLabel: string;
+  homeLearningLabel: string;
+  homeCommunityPreviewTitle: string;
+  homeCommunityPreviewDesc: string;
+  homeCommunityPreviewCta: string;
+  homeEnterSanctuary: string;
+
   /* ── Settings ── */
   settingsTitle: string;
   settingsAppearance: string;
@@ -279,6 +288,14 @@ export const sharedEn: SharedTranslations = {
   homeAITagline: "Ask. Learn. Grow. Your AI companion.",
   homeUntilNextShabbatLabel: "UNTIL NEXT SHABBAT",
 
+  homeSacredTimeLabel: "Sacred Time",
+  homeNowLabel: "Now",
+  homeLearningLabel: "Learning",
+  homeCommunityPreviewTitle: "Community",
+  homeCommunityPreviewDesc: "Connect with Bnei Menashe worldwide",
+  homeCommunityPreviewCta: "View Community",
+  homeEnterSanctuary: "Enter Sanctuary",
+
   settingsTitle: "Settings",
   settingsAppearance: "APPEARANCE",
   settingsTheme: "Theme",
@@ -455,6 +472,14 @@ export const sharedTk: SharedTranslations = {
   homeMemorialTagline: "Hriat leh lungngaih hmun thianghlim.",
   homeAITagline: "Zawh. Zir. Hmasawn. Na AI pawl.",
   homeUntilNextShabbatLabel: "SHABBAT THAR HMAA",
+
+  homeSacredTimeLabel: "Hun Thianghlim",
+  homeNowLabel: "Tunah",
+  homeLearningLabel: "Zirlai",
+  homeCommunityPreviewTitle: "Mipil",
+  homeCommunityPreviewDesc: "Bnei Menashe mipil khawvel zawng zawng in intlun rawh",
+  homeCommunityPreviewCta: "Mipil En",
+  homeEnterSanctuary: "Inn Thianghlim Lut",
 
   settingsTitle: "Siam Dan",
   settingsAppearance: "SIM BUATSAIH",
