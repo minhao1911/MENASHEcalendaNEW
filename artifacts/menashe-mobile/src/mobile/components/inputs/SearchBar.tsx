@@ -104,6 +104,3 @@ export const SearchBar = memo<SearchBarProps>(function SearchBar({
     </View>
   );
 });
-
-/** Alias for spec compliance */
-export const SearchField = SearchBar;

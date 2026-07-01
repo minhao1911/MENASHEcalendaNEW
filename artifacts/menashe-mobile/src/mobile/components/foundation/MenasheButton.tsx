@@ -111,5 +111,3 @@ export const MenasheButton = memo<MenasheButtonProps>(function MenasheButton({
   );
 });
 
-// Convenience alias
-export const colors = {};

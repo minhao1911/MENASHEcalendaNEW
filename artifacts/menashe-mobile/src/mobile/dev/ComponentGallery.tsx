@@ -47,11 +47,15 @@ import { LabelValue }       from "../components/display/LabelValue";
 
 // Inputs
 import { SearchBar }        from "../components/inputs/SearchBar";
+import { SearchField }      from "../components/inputs/SearchField";
 import { TextField }        from "../components/inputs/TextField";
 import { SegmentedControl } from "../components/inputs/SegmentedControl";
 import { MenasheSwitch }    from "../components/inputs/MenasheSwitch";
 import { Checkbox, Radio }  from "../components/inputs/Checkbox";
 import { FilterChipGroup }  from "../components/inputs/FilterChip";
+
+// Headers (primitives)
+import { HeaderTitle, HeaderSubtitle, HeaderAction } from "../components/headers/HeaderPrimitives";
 
 // Navigation
 import { FloatingActionButton } from "../components/navigation/FloatingActionButton";
@@ -85,6 +89,7 @@ export function ComponentGallery() {
   const { colors, type, sp } = useThemeTokens();
 
   const [search, setSearch]           = useState("");
+  const [searchField, setSearchField] = useState("");
   const [segment, setSegment]         = useState("A");
   const [toggle, setToggle]           = useState(true);
   const [checked, setChecked]         = useState(false);
@@ -253,6 +258,10 @@ export function ComponentGallery() {
           <SearchBar value={search} onChange={setSearch} placeholder="Search prayers…" />
         </GRow>
 
+        <GRow label="Search Field (inline)">
+          <SearchField value={searchField} onChange={setSearchField} placeholder="Search holidays…" />
+        </GRow>
+
         <GRow label="Text Field">
           <TextField label="Full Name" placeholder="Enter your name" leadingIcon="user" />
         </GRow>
@@ -293,6 +302,24 @@ export function ComponentGallery() {
             }
             scrollable={false}
           />
+        </GRow>
+
+        {/* ── Header Primitives ──────────────────────────────── */}
+        <GRow label="Header Primitives">
+          <View style={{ gap: sp[3] }}>
+            <View style={{ flexDirection: "row", alignItems: "center", height: 48, backgroundColor: colors.surface, borderRadius: 8, paddingHorizontal: sp[3] }}>
+              <HeaderTitle title="Zmanim" />
+              <HeaderAction icon="settings" label="Settings" onPress={() => {}} />
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", height: 48, backgroundColor: colors.surface, borderRadius: 8, paddingHorizontal: sp[3] }}>
+              <View style={{ flex: 1 }}>
+                <HeaderTitle title="Community" />
+                <HeaderSubtitle subtitle="Bnei Menashe · 1,240 members" />
+              </View>
+              <HeaderAction icon="bell" label="Notifications" onPress={() => {}} badge={3} />
+              <HeaderAction icon="more-vertical" label="More" onPress={() => {}} />
+            </View>
+          </View>
         </GRow>
 
         {/* ── Navigation ─────────────────────────────────────── */}
