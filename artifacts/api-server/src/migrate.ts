@@ -522,6 +522,27 @@ export async function runMigrations(): Promise<void> {
       CREATE INDEX IF NOT EXISTS feedback_status_idx ON feedback (status, created_at DESC)
     `);
 
+    // ── Community Prayer Board ────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS prayer_requests (
+        id            TEXT PRIMARY KEY,
+        user_id       TEXT,
+        name          TEXT NOT NULL DEFAULT 'Anonymous',
+        is_anonymous  BOOLEAN NOT NULL DEFAULT FALSE,
+        text          TEXT NOT NULL,
+        category      TEXT NOT NULL DEFAULT 'Blessing',
+        status        TEXT NOT NULL DEFAULT 'pending',
+        pinned        BOOLEAN NOT NULL DEFAULT FALSE,
+        admin_response TEXT NOT NULL DEFAULT '',
+        amens         INTEGER NOT NULL DEFAULT 0,
+        submitted_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_prayer_requests_status ON prayer_requests (status, submitted_at DESC)
+    `);
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");

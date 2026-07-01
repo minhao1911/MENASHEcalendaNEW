@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLanguage } from "../context/LanguageContext";
 
 interface Props { onClose: () => void; userName?: string; isAdmin?: boolean; }
 
 export interface PrayerRequest {
   id: string;
+  userId: string | null;
   name: string;
   isAnonymous: boolean;
   text: string;
@@ -16,21 +17,19 @@ export interface PrayerRequest {
   amens: number;
 }
 
-const STORAGE_KEY = "menashe-prayer-board";
-const AMENS_KEY   = "menashe-prayer-amens-cast";
-
+const AMENS_KEY = "menashe-prayer-amens-cast";
 const CATEGORIES = ["Healing", "Blessing", "Aliyah", "Family", "Livelihood", "Community", "Gratitude", "Protection", "Other"];
 
 const CAT_STYLE: Record<string, { bg: string; color: string; emoji: string }> = {
-  "Healing":      { bg: "rgba(74,222,128,0.12)",  color: "#4ade80",  emoji: "💚" },
-  "Blessing":     { bg: "rgba(212,168,67,0.13)",   color: "#d4a843",  emoji: "✨" },
-  "Aliyah":       { bg: "rgba(22,163,74,0.12)",    color: "#4ade80",  emoji: "🇮🇱" },
-  "Family":       { bg: "rgba(236,72,153,0.12)",   color: "#f472b6",  emoji: "👨‍👩‍👧‍👦" },
-  "Livelihood":   { bg: "rgba(99,102,241,0.13)",   color: "#818cf8",  emoji: "🌾" },
-  "Community":    { bg: "rgba(255,99,31,0.13)",    color: "#ff8a5c",  emoji: "🫂" },
-  "Gratitude":    { bg: "rgba(251,191,36,0.13)",   color: "#fbbf24",  emoji: "🙏" },
-  "Protection":   { bg: "rgba(139,92,246,0.13)",   color: "#a78bfa",  emoji: "🛡" },
-  "Other":        { bg: "rgba(100,116,139,0.12)",  color: "#94a3b8",  emoji: "✡" },
+  "Healing":    { bg: "rgba(74,222,128,0.12)",  color: "#4ade80", emoji: "💚" },
+  "Blessing":   { bg: "rgba(212,168,67,0.13)",  color: "#d4a843", emoji: "✨" },
+  "Aliyah":     { bg: "rgba(22,163,74,0.12)",   color: "#4ade80", emoji: "🇮🇱" },
+  "Family":     { bg: "rgba(236,72,153,0.12)",  color: "#f472b6", emoji: "👨‍👩‍👧‍👦" },
+  "Livelihood": { bg: "rgba(99,102,241,0.13)",  color: "#818cf8", emoji: "🌾" },
+  "Community":  { bg: "rgba(255,99,31,0.13)",   color: "#ff8a5c", emoji: "🫂" },
+  "Gratitude":  { bg: "rgba(251,191,36,0.13)",  color: "#fbbf24", emoji: "🙏" },
+  "Protection": { bg: "rgba(139,92,246,0.13)",  color: "#a78bfa", emoji: "🛡" },
+  "Other":      { bg: "rgba(100,116,139,0.12)", color: "#94a3b8", emoji: "✡" },
 };
 
 function fmtRelative(iso: string): string {
@@ -45,13 +44,6 @@ function fmtRelative(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function loadRequests(): PrayerRequest[] {
-  try { const r = localStorage.getItem(STORAGE_KEY); if (r) return JSON.parse(r); } catch {}
-  return DEFAULT_REQUESTS;
-}
-function saveRequests(list: PrayerRequest[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch {}
-}
 function loadCastAmens(): Set<string> {
   try { const r = localStorage.getItem(AMENS_KEY); if (r) return new Set(JSON.parse(r)); } catch {}
   return new Set();
@@ -59,12 +51,9 @@ function loadCastAmens(): Set<string> {
 function saveCastAmens(s: Set<string>) {
   try { localStorage.setItem(AMENS_KEY, JSON.stringify([...s])); } catch {}
 }
-
-const DEFAULT_REQUESTS: PrayerRequest[] = [
-  { id: "p1", name: "Rivka", isAnonymous: false, text: "Please pray for my mother's complete recovery from illness. May Hashem grant her strength and healing.", category: "Healing", adminResponse: "May Hashem send a refuah shleimah — a complete healing — to your mother. 🙏", status: "approved", pinned: true, submittedAt: new Date(Date.now() - 2 * 86400000).toISOString(), amens: 14 },
-  { id: "p2", name: "Anonymous", isAnonymous: true, text: "Praying that our aliyah paperwork comes through soon. We have waited three years.", category: "Aliyah", adminResponse: "", status: "approved", pinned: false, submittedAt: new Date(Date.now() - 5 * 86400000).toISOString(), amens: 22 },
-  { id: "p3", name: "Shmuel", isAnonymous: false, text: "Grateful for making aliyah this month. Thank you Hashem and Shavei Israel!", category: "Gratitude", adminResponse: "Baruch Hashem! Welcome home to Eretz Yisrael! 🇮🇱", status: "approved", pinned: false, submittedAt: new Date(Date.now() - 1 * 86400000).toISOString(), amens: 31 },
-];
+function emptyForm(userName = "") {
+  return { name: userName, isAnonymous: false, text: "", category: "Blessing" };
+}
 
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "10px 12px", borderRadius: 10,
@@ -76,60 +65,98 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: "0.06em", marginBottom: 5, display: "block",
 };
 
-function emptyForm() {
-  return { name: "", isAnonymous: false, text: "", category: "Blessing" };
-}
-
-export default function PrayerBoardModal({ onClose, userName, isAdmin = false }: Props) {
+export default function PrayerBoardModal({ onClose, userName = "", isAdmin = false }: Props) {
   const { t } = useLanguage();
-  const [requests, setRequests] = useState<PrayerRequest[]>(loadRequests);
-  const [castAmens, setCastAmens] = useState<Set<string>>(loadCastAmens);
-  const [view, setView]       = useState<"board" | "submit" | "admin">("board");
-  const [form, setForm]       = useState(() => ({ ...emptyForm(), name: userName || "" }));
-  const [submitted, setSubmitted] = useState(false);
+
+  const [requests, setRequests]       = useState<PrayerRequest[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [castAmens, setCastAmens]     = useState<Set<string>>(loadCastAmens);
+  const [view, setView]               = useState<"board" | "submit" | "admin">("board");
+  const [form, setForm]               = useState(() => emptyForm(userName));
+  const [submitting, setSubmitting]   = useState(false);
+  const [submitted, setSubmitted]     = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [adminFilter, setAdminFilter] = useState<"all" | "pending" | "approved" | "removed">("all");
   const [responseId, setResponseId]   = useState<string | null>(null);
   const [responseText, setResponseText] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [filterCat, setFilterCat] = useState("All");
+  const [filterCat, setFilterCat]     = useState("All");
+  const [amenLoading, setAmenLoading] = useState<string | null>(null);
 
-  function persist(list: PrayerRequest[]) { setRequests(list); saveRequests(list); }
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/prayer-requests");
+      if (res.ok) setRequests(await res.json());
+    } catch {}
+    setLoading(false);
+  }, []);
 
-  function submitRequest() {
+  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+
+  async function submitRequest() {
     if (!form.text.trim()) { setSubmitError("Please write your prayer request."); return; }
     setSubmitError("");
-    const req: PrayerRequest = {
-      id: `pr-${Date.now()}`,
-      name: form.isAnonymous ? "Anonymous" : (form.name.trim() || "Anonymous"),
-      isAnonymous: form.isAnonymous,
-      text: form.text.trim(),
-      category: form.category,
-      adminResponse: "",
-      status: "pending",
-      pinned: false,
-      submittedAt: new Date().toISOString(),
-      amens: 0,
-    };
-    persist([req, ...requests]);
-    setSubmitted(true);
+    setSubmitting(true);
+    const id = `pr-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const displayName = form.isAnonymous ? "Anonymous" : (form.name.trim() || "Anonymous");
+    try {
+      const res = await fetch("/api/prayer-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, name: displayName, isAnonymous: form.isAnonymous, text: form.text.trim(), category: form.category }),
+      });
+      if (!res.ok) { setSubmitError("Failed to submit. Please try again."); return; }
+      setSubmitted(true);
+    } catch {
+      setSubmitError("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  function castAmen(id: string) {
-    if (castAmens.has(id)) return;
-    const next = new Set(castAmens); next.add(id);
-    setCastAmens(next); saveCastAmens(next);
-    persist(requests.map(r => r.id === id ? { ...r, amens: r.amens + 1 } : r));
+  async function castAmen(id: string) {
+    if (castAmens.has(id) || amenLoading === id) return;
+    setAmenLoading(id);
+    try {
+      const res = await fetch(`/api/prayer-requests/${id}/amen`, { method: "POST" });
+      if (res.ok) {
+        const { amens } = await res.json();
+        setRequests(prev => prev.map(r => r.id === id ? { ...r, amens } : r));
+        const next = new Set(castAmens); next.add(id);
+        setCastAmens(next); saveCastAmens(next);
+      }
+    } catch {}
+    setAmenLoading(null);
   }
 
-  function approve(id: string) { persist(requests.map(r => r.id === id ? { ...r, status: "approved" } : r)); }
-  function remove(id: string)  { persist(requests.map(r => r.id === id ? { ...r, status: "removed", pinned: false } : r)); setDeleteConfirm(null); }
-  function togglePin(id: string) { persist(requests.map(r => r.id === id ? { ...r, pinned: !r.pinned } : r)); }
+  async function patchRequest(id: string, patch: { status?: "pending" | "approved" | "removed"; pinned?: boolean; adminResponse?: string }) {
+    try {
+      const res = await fetch(`/api/prayer-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        const updated: PrayerRequest = await res.json();
+        setRequests(prev => prev.map(r => r.id === id ? updated : r));
+      }
+    } catch {}
+  }
 
-  function saveResponse(id: string) {
-    persist(requests.map(r => r.id === id ? { ...r, adminResponse: responseText } : r));
+  function approve(id: string) { patchRequest(id, { status: "approved" }); }
+  function removeReq(id: string) { patchRequest(id, { status: "removed" }); setDeleteConfirm(null); }
+  function togglePin(id: string) {
+    const req = requests.find(r => r.id === id);
+    if (req) patchRequest(id, { pinned: !req.pinned });
+  }
+  async function saveResponse(id: string) {
+    await patchRequest(id, { adminResponse: responseText });
     setResponseId(null); setResponseText("");
   }
+
+  const pending   = requests.filter(r => r.status === "pending");
+  const adminList = adminFilter === "all" ? requests : requests.filter(r => r.status === adminFilter);
 
   const approved = useMemo(() => {
     let list = requests.filter(r => r.status === "approved");
@@ -139,17 +166,14 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
     return [...pinned, ...rest];
   }, [requests, filterCat]);
 
-  const pending = requests.filter(r => r.status === "pending");
-  const adminList = adminFilter === "all" ? requests : requests.filter(r => r.status === adminFilter);
-
-
-  // ── Submit form ────────────────────────────────────────────────────────────
+  // ── Submit view ────────────────────────────────────────────────────────────
   if (view === "submit") return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
         <div className="modal-handle" />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-          <button onClick={() => { setView("board"); setSubmitted(false); setForm(emptyForm()); setSubmitError(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-muted)" }}>← Back</button>
+          <button onClick={() => { setView("board"); setSubmitted(false); setForm(emptyForm(userName)); setSubmitError(""); }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-muted)" }}>← Back</button>
           <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>🙏 {t.prayerBoardSubmitTitle}</div>
           <div />
         </div>
@@ -160,20 +184,17 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
             <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>Prayer Submitted</div>
             <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6, marginBottom: 6 }}>
               Your prayer request is <strong style={{ color: "#d4a843" }}>pending review</strong>.<br />
-              The admin will approve it for the community.
+              The admin will approve it for the community board.
             </div>
-            <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 18, color: "#d4a843", margin: "20px 0" }}>
-              יְהִי רָצוֹן
-            </div>
+            <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 18, color: "#d4a843", margin: "20px 0" }}>יְהִי רָצוֹן</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 24 }}>May it be G-d's will</div>
             <button className="btn-gold" style={{ padding: "12px 32px", fontSize: 14, fontWeight: 700 }}
-              onClick={() => { setView("board"); setSubmitted(false); setForm(emptyForm()); }}>
+              onClick={() => { setView("board"); setSubmitted(false); setForm(emptyForm(userName)); fetchRequests(); }}>
               Back to Prayer Board
             </button>
           </div>
         ) : (
           <>
-            {/* Category picker */}
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>{t.prayerBoardCategory}</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -193,40 +214,38 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
               </div>
             </div>
 
-            {/* Prayer text */}
             <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>YOUR PRAYER REQUEST <span style={{ color: "#ef4444" }}>*</span></label>
               <textarea style={{ ...inputStyle, minHeight: 100, resize: "vertical", lineHeight: 1.6 }}
                 value={form.text} onChange={e => setForm(f => ({ ...f, text: e.target.value }))}
-                placeholder="Share your prayer request with the community…" />
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, textAlign: "right" }}>{form.text.length}/500</div>
+                placeholder="Share your prayer request with the Bnei Menashe community…" maxLength={1000} />
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, textAlign: "right" }}>{form.text.length}/1000</div>
             </div>
 
-            {/* Anonymous toggle */}
             <div style={{ marginBottom: 14 }}>
               <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "12px 14px", background: "var(--card)", borderRadius: 12, border: "1px solid var(--border)" }}>
                 <input type="checkbox" checked={form.isAnonymous} onChange={e => setForm(f => ({ ...f, isAnonymous: e.target.checked }))}
                   style={{ accentColor: "#d4a843", width: 16, height: 16 }} />
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: form.isAnonymous ? "#d4a843" : "var(--text-primary)" }}>🔒 Submit Anonymously</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>Your name will not be shown on the board</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>Your name will not appear on the community board</div>
                 </div>
               </label>
             </div>
 
-            {/* Name (optional unless anonymous) */}
             {!form.isAnonymous && (
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>YOUR NAME (optional)</label>
-                <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Leave blank to appear as 'Anonymous'" />
+                <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Leave blank to appear as 'Anonymous'" />
               </div>
             )}
 
             {submitError && <div style={{ fontSize: 12, color: "#ef4444", marginBottom: 10 }}>⚠️ {submitError}</div>}
 
-            <button className="btn-gold" style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 800, marginBottom: 10, opacity: !form.text.trim() ? 0.6 : 1 }}
-              onClick={submitRequest} disabled={!form.text.trim()}>
-              🙏 Submit Prayer Request
+            <button className="btn-gold" style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 800, marginBottom: 10, opacity: (!form.text.trim() || submitting) ? 0.6 : 1 }}
+              onClick={submitRequest} disabled={!form.text.trim() || submitting}>
+              {submitting ? "Submitting…" : "🙏 Submit Prayer Request"}
             </button>
             <button onClick={() => setView("board")} className="btn-close-full">Cancel</button>
           </>
@@ -247,11 +266,10 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
         </div>
 
         <div style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(212,168,67,0.06)", border: "1px solid rgba(212,168,67,0.15)", marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: "#d4a843", fontWeight: 600 }}>⚡ Admin Mode — {requests.length} total · {pending.length} pending</div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Approve, respond, pin, or remove prayer requests</div>
+          <div style={{ fontSize: 12, color: "#d4a843", fontWeight: 600 }}>⚡ Admin — {requests.length} total · {pending.length} pending review</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Approve, respond, pin, or remove community prayer requests</div>
         </div>
 
-        {/* Filter tabs */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4, marginBottom: 14 }}>
           {(["all", "pending", "approved", "removed"] as const).map(f => {
             const counts: Record<string, number> = { all: requests.length, pending: pending.length, approved: requests.filter(r => r.status === "approved").length, removed: requests.filter(r => r.status === "removed").length };
@@ -275,7 +293,7 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
             {[...adminList].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).map(req => {
-              const cs = CAT_STYLE[req.category] || CAT_STYLE["Other"];
+              const cs = CAT_STYLE[req.category] ?? CAT_STYLE["Other"];
               const statusColors: Record<string, string> = { pending: "#d4a843", approved: "#4ade80", removed: "#94a3b8" };
               return (
                 <div key={req.id} style={{ borderRadius: 14, background: "var(--card)", border: "1px solid var(--border)", overflow: "hidden" }}>
@@ -284,7 +302,7 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
                       <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: cs.bg, border: `1px solid ${cs.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{cs.emoji}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 9, fontWeight: 900, color: statusColors[req.status] || "#94a3b8", letterSpacing: ".08em" }}>{req.status.toUpperCase()}</span>
+                          <span style={{ fontSize: 9, fontWeight: 900, color: statusColors[req.status] ?? "#94a3b8", letterSpacing: ".08em" }}>{req.status.toUpperCase()}</span>
                           <span style={{ fontSize: 9, fontWeight: 700, color: cs.color, background: cs.bg, borderRadius: 4, padding: "1px 5px" }}>{req.category}</span>
                           {req.pinned && <span style={{ fontSize: 9, color: "#d4a843" }}>📌 PINNED</span>}
                         </div>
@@ -320,7 +338,7 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
                     </button>
                     <button onClick={() => { setResponseId(req.id); setResponseText(req.adminResponse); }} style={{ flex: 1, padding: "6px", borderRadius: 8, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", cursor: "pointer", fontSize: 10, fontWeight: 800, color: "#818cf8" }}>✍ Respond</button>
                     {deleteConfirm === req.id ? (
-                      <button onClick={() => remove(req.id)} style={{ flex: 1, padding: "6px", borderRadius: 8, background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", fontSize: 10, fontWeight: 800, color: "#ef4444" }}>CONFIRM</button>
+                      <button onClick={() => removeReq(req.id)} style={{ flex: 1, padding: "6px", borderRadius: 8, background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", fontSize: 10, fontWeight: 800, color: "#ef4444" }}>CONFIRM</button>
                     ) : (
                       <button onClick={() => setDeleteConfirm(req.id)} style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "none", cursor: "pointer", fontSize: 10, color: "#ef4444", fontWeight: 700 }}>🗑</button>
                     )}
@@ -335,32 +353,33 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
     </div>
   );
 
-  // ── Public prayer board ────────────────────────────────────────────────────
+  // ── Public board ───────────────────────────────────────────────────────────
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92vh", overflowY: "auto" }}>
         <div className="modal-handle" />
 
-        {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>
-              🙏 Prayer Board
-            </div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Community prayers & blessings</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>🙏 {t.prayerBoardTitle}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Community prayers &amp; blessings</div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {isAdmin && (
+              <button onClick={() => setView("admin")}
+                style={{ padding: "7px 12px", borderRadius: 10, fontSize: 11, fontWeight: 800, cursor: "pointer", background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.3)", color: "#d4a843" }}>
+                {pending.length > 0 ? `⚡ ${pending.length} pending` : "⚡ Admin"}
+              </button>
+            )}
+            <button className="modal-close-btn" onClick={onClose}>✕</button>
+          </div>
         </div>
 
-        {/* Hebrew verse banner */}
         <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 16, background: "linear-gradient(135deg, #0f1e38, #1a1a2a)", border: "1px solid rgba(212,168,67,0.2)", textAlign: "center" }}>
-          <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 20, color: "#d4a843", marginBottom: 4 }}>
-            שְׁמַע יְהוָה קוֹלִי אֶקְרָא
-          </div>
+          <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 20, color: "#d4a843", marginBottom: 4 }}>שְׁמַע יְהוָה קוֹלִי אֶקְרָא</div>
           <div style={{ fontSize: 11, color: "var(--text-muted)" }}>"Hear, O Lord, my voice when I call" — Tehillim 27:7</div>
         </div>
 
-        {/* Category filter */}
         <div style={{ display: "flex", gap: 5, overflowX: "auto", paddingBottom: 8, marginBottom: 14, scrollbarWidth: "none" }}>
           {["All", ...CATEGORIES].map(cat => {
             const cs = CAT_STYLE[cat];
@@ -370,9 +389,9 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
                 style={{
                   padding: "5px 11px", borderRadius: 20, fontSize: 11, fontWeight: 700,
                   whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, transition: "all 0.15s",
-                  background: active ? (cs?.bg || "rgba(212,168,67,0.12)") : "var(--elevated)",
-                  border: active ? `1px solid ${cs?.color || "#d4a843"}` : "1px solid var(--border)",
-                  color: active ? (cs?.color || "#d4a843") : "var(--text-muted)",
+                  background: active ? (cs?.bg ?? "rgba(212,168,67,0.12)") : "var(--elevated)",
+                  border: active ? `1px solid ${cs?.color ?? "#d4a843"}` : "1px solid var(--border)",
+                  color: active ? (cs?.color ?? "#d4a843") : "var(--text-muted)",
                 }}>
                 {cs ? `${cs.emoji} ` : ""}{cat}
               </button>
@@ -380,8 +399,12 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
           })}
         </div>
 
-        {/* Prayer cards */}
-        {approved.length === 0 ? (
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)", fontSize: 14 }}>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>🙏</div>
+            Loading community prayers…
+          </div>
+        ) : approved.length === 0 ? (
           <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-muted)" }}>
             <div style={{ fontSize: 44, marginBottom: 10 }}>🕍</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
@@ -392,57 +415,49 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
             {approved.map(req => {
-              const cs = CAT_STYLE[req.category] || CAT_STYLE["Other"];
+              const cs = CAT_STYLE[req.category] ?? CAT_STYLE["Other"];
               const hasAmen = castAmens.has(req.id);
               return (
-                <div key={req.id} style={{
-                  borderRadius: 16,
-                  background: req.pinned ? "linear-gradient(135deg, rgba(212,168,67,0.06), rgba(20,16,5,0.7))" : "var(--card)",
-                  border: req.pinned ? "1px solid rgba(212,168,67,0.3)" : "1px solid var(--border)",
-                  overflow: "hidden",
-                }}>
-                  <div style={{ padding: "14px 16px" }}>
+                <div key={req.id} style={{ borderRadius: 16, background: "var(--card)", border: req.pinned ? "1px solid rgba(212,168,67,0.3)" : "1px solid var(--border)", overflow: "hidden" }}>
+                  {req.pinned && (
+                    <div style={{ background: "linear-gradient(135deg, rgba(212,168,67,0.12), rgba(212,168,67,0.06))", padding: "5px 14px", borderBottom: "1px solid rgba(212,168,67,0.15)", display: "flex", alignItems: "center", gap: 5 }}>
+                      <span style={{ fontSize: 10 }}>📌</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#d4a843", letterSpacing: ".06em" }}>PINNED BY ADMIN</span>
+                    </div>
+                  )}
+                  <div style={{ padding: "14px 14px 10px" }}>
                     <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <div style={{ width: 42, height: 42, borderRadius: 12, flexShrink: 0, background: cs.bg, border: `1px solid ${cs.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{cs.emoji}</div>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: cs.bg, border: `1px solid ${cs.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{cs.emoji}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: ".06em", color: cs.color, background: cs.bg, borderRadius: 4, padding: "2px 6px" }}>{req.category.toUpperCase()}</span>
-                          {req.pinned && <span style={{ fontSize: 10, color: "#d4a843" }}>📌</span>}
-                          <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: "auto" }}>{fmtRelative(req.submittedAt)}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: cs.color, background: cs.bg, borderRadius: 4, padding: "1px 6px" }}>{req.category}</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{req.isAnonymous ? "🔒 Anonymous" : req.name}</span>
+                          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>· {fmtRelative(req.submittedAt)}</span>
                         </div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: req.isAnonymous ? "var(--text-muted)" : "var(--text-primary)", marginBottom: 6 }}>
-                          {req.isAnonymous ? "🔒 Anonymous" : req.name}
-                        </div>
-                        <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.65 }}>
-                          {req.text}
-                        </div>
+                        <div style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.6 }}>{req.text}</div>
                         {req.adminResponse && (
-                          <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 10, background: "rgba(212,168,67,0.07)", border: "1px solid rgba(212,168,67,0.2)" }}>
-                            <div style={{ fontSize: 10, fontWeight: 800, color: "#d4a843", letterSpacing: ".06em", marginBottom: 4 }}>✡ PASTORAL BLESSING</div>
-                            <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{req.adminResponse}</div>
+                          <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 10, background: "rgba(212,168,67,0.07)", border: "1px solid rgba(212,168,67,0.18)" }}>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: "#d4a843", letterSpacing: ".06em", marginBottom: 3 }}>✡ PASTORAL BLESSING</div>
+                            <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>{req.adminResponse}</div>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
-
-                  {/* Amen button */}
-                  <div style={{ padding: "8px 16px 12px", display: "flex", alignItems: "center", gap: 10 }}>
-                    <button onClick={() => castAmen(req.id)}
+                  <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end" }}>
+                    <button onClick={() => castAmen(req.id)} disabled={hasAmen || amenLoading === req.id}
                       style={{
-                        display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", borderRadius: 20,
+                        display: "flex", alignItems: "center", gap: 5,
+                        padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: hasAmen ? "default" : "pointer",
                         background: hasAmen ? "rgba(212,168,67,0.15)" : "var(--elevated)",
                         border: hasAmen ? "1px solid rgba(212,168,67,0.4)" : "1px solid var(--border)",
-                        cursor: hasAmen ? "default" : "pointer",
-                        fontSize: 13, fontWeight: 800,
                         color: hasAmen ? "#d4a843" : "var(--text-muted)",
-                        transition: "all 0.2s",
+                        transition: "all 0.2s", opacity: amenLoading === req.id ? 0.6 : 1,
                       }}>
-                      <span style={{ fontSize: 16 }}>🙏</span>
-                      <span>Amen</span>
-                      {req.amens > 0 && <span style={{ fontSize: 12, fontWeight: 600, color: hasAmen ? "#d4a843" : "var(--text-muted)" }}>· {req.amens}</span>}
+                      <span>{hasAmen ? "🙏" : "🤲"}</span>
+                      <span>{t.prayerBoardAmen}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: hasAmen ? "#d4a843" : "var(--text-secondary)" }}>{req.amens}</span>
                     </button>
-                    {hasAmen && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>You said Amen ✓</span>}
                   </div>
                 </div>
               );
@@ -450,22 +465,10 @@ export default function PrayerBoardModal({ onClose, userName, isAdmin = false }:
           </div>
         )}
 
-        {/* Submit CTA */}
-        <div style={{ marginBottom: 12, padding: "14px 16px", borderRadius: 16, background: "linear-gradient(135deg, #1a1a30, #0f1e2a)", border: "1px solid rgba(212,168,67,0.18)", textAlign: "center" }}>
-          <div style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 16, color: "#d4a843", marginBottom: 6 }}>תְּפִלָּה</div>
-          <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12 }}>Share your prayer with the community</div>
-          <button className="btn-gold" style={{ padding: "10px 28px", fontSize: 13, fontWeight: 800 }}
-            onClick={() => { setSubmitted(false); setForm(emptyForm()); setView("submit"); }}>
-            🙏 Add Prayer Request
-          </button>
-        </div>
-
-        {/* Footer admin — only visible to administrator */}
-        {isAdmin && (
-          <div style={{ textAlign: "center", marginBottom: 10 }}>
-            <button onClick={() => setView("admin")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", opacity: 0.5, padding: "6px 12px" }}>⚙ Admin</button>
-          </div>
-        )}
+        <button className="btn-gold" style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 800, marginBottom: 8 }}
+          onClick={() => { setView("submit"); setSubmitted(false); }}>
+          🙏 Share a Prayer Request
+        </button>
         <button onClick={onClose} className="btn-close-full">Close</button>
       </div>
     </div>

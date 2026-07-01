@@ -15,6 +15,7 @@ import chatRouter from "./chat";
 import holidayHalachaRouter from "./holidayHalacha";
 import memorialsRouter from "./memorials";
 import feedbackRouter from "./feedback";
+import prayerBoardRouter from "./prayerBoard";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(chatRouter);
 router.use(holidayHalachaRouter);
 router.use(memorialsRouter);
 router.use(feedbackRouter);
+router.use(prayerBoardRouter);
 
 export default router;
