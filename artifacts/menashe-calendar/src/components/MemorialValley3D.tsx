@@ -11,6 +11,7 @@ import {
   SceneEnvironment,
   QualityProvider,
   useQuality,
+  FPSAdaptation,
 } from "../scene";
 
 /* ── LCG seeded deterministic random ──────────────────────────────────────── */
@@ -5210,6 +5211,9 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 
   return (
     <>
+      {/* FPS monitor — silently demotes/promotes quality tier to maintain smoothness */}
+      <FPSAdaptation />
+
       <AAACamera />
 
       {/* ── Camera controls: orbit (default) or first-person walk ── */}

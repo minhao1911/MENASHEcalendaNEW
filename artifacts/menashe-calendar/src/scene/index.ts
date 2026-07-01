@@ -9,8 +9,9 @@ export { GoldenHourLighting }        from "./lighting/GoldenHourLighting";
 export { PostProcessingPipeline }    from "./fx/PostProcessingPipeline";
 export { SceneEnvironment, HDR_PRESETS } from "./env/SceneEnvironment";
 export { ScenePerf }                 from "./perf/ScenePerf";
-export { QualityProvider, useQuality } from "./QualityContext";
+export { QualityProvider, useQuality, useSetQuality } from "./QualityContext";
 export type { QualityTier, QualitySettings } from "./QualityContext";
+export { FPSAdaptation } from "./fx/FPSAdaptation";
 export {
   configureLoaders,
   preloadAssets,

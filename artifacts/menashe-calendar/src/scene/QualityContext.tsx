@@ -13,7 +13,7 @@
  *  medium      mid-range desktop or modern mobile — balanced
  *  battery     low-end or constrained — minimal GPU load
  */
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
 export type QualityTier = "high" | "medium" | "battery";
 
@@ -114,18 +114,30 @@ function detectTier(): QualityTier {
   return "high";
 }
 
-const QualityContext = createContext<QualitySettings>(PRESETS.high);
+const QualityContext         = createContext<QualitySettings>(PRESETS.high);
+const QualityDispatchContext = createContext<(tier: QualityTier) => void>(() => {});
 
 export function QualityProvider({ children }: { children: ReactNode }) {
-  const settings = useMemo(() => PRESETS[detectTier()], []);
+  const [tier, setTier] = useState<QualityTier>(detectTier);
+  const settings = useMemo(() => PRESETS[tier], [tier]);
   return (
-    <QualityContext.Provider value={settings}>
-      {children}
-    </QualityContext.Provider>
+    <QualityDispatchContext.Provider value={setTier}>
+      <QualityContext.Provider value={settings}>
+        {children}
+      </QualityContext.Provider>
+    </QualityDispatchContext.Provider>
   );
 }
 
 /** Read the current quality settings. Works inside and outside the R3F Canvas. */
 export function useQuality(): QualitySettings {
   return useContext(QualityContext);
+}
+
+/**
+ * Returns a stable setter that promotes/demotes the quality tier at runtime.
+ * Must be called inside a QualityProvider.  Used by FPSAdaptation.
+ */
+export function useSetQuality(): (tier: QualityTier) => void {
+  return useContext(QualityDispatchContext);
 }
