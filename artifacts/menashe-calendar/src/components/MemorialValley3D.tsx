@@ -1275,10 +1275,16 @@ function AAAStonePathways() {
         <boxGeometry args={[5.5, 0.14, 52]} />
         <meshStandardMaterial color="#ddd0a8" roughness={0.78} metalness={0.06} />
       </mesh>
-      {/* Avenue centre line — lighter inlaid strip for visual depth cue */}
+      {/* Avenue centre line — golden inlaid strip with subtle sacred glow */}
       <mesh position={[0, 0.115, 1]} receiveShadow>
         <boxGeometry args={[0.7, 0.04, 52]} />
-        <meshStandardMaterial color="#ece0bc" roughness={0.70} metalness={0.08} />
+        <meshStandardMaterial
+          color="#ece0bc"
+          roughness={0.65}
+          metalness={0.12}
+          emissive={new THREE.Color("#c8a840")}
+          emissiveIntensity={0.07}
+        />
       </mesh>
       {/* Cross transept path */}
       <mesh position={[0, 0.09, 4]} receiveShadow>
@@ -4053,6 +4059,189 @@ function AAATallCandleVariety() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SPR-037B: PATHWAY GUIDE LIGHTS — golden emissive stones embedded flush
+   in the avenue edges every 2 m, guiding visitors toward the altar
+══════════════════════════════════════════════════════════════════════════ */
+function AAAPathwayGuides() {
+  const sphereGeo = useMemo(() => new THREE.SphereGeometry(0.075, 7, 5), []);
+  const matRef    = useRef<THREE.MeshStandardMaterial>(null!);
+
+  const matrices = useMemo(() => {
+    const dum = new THREE.Object3D();
+    const R_G = makeLCG(201);
+    const mats: THREE.Matrix4[] = [];
+    for (let z = 22; z >= -12; z -= 2) {
+      for (const x of [-2.55, 2.55]) {
+        const jx = x + (R_G() - 0.5) * 0.35;
+        const jz = z + (R_G() - 0.5) * 0.75;
+        dum.position.set(jx, terrainHeightAt(jx, jz) + 0.09, jz);
+        dum.rotation.set(0, 0, 0);
+        dum.scale.setScalar(1);
+        dum.updateMatrix();
+        mats.push(dum.matrix.clone());
+      }
+    }
+    return mats;
+  }, []);
+
+  const meshRef = useRef<THREE.InstancedMesh>(null!);
+  useEffect(() => {
+    matrices.forEach((m, i) => meshRef.current?.setMatrixAt(i, m));
+    if (meshRef.current) meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [matrices]);
+
+  useFrame(({ clock }) => {
+    if (!matRef.current) return;
+    const t = clock.getElapsedTime();
+    matRef.current.emissiveIntensity = 0.75 + Math.sin(t * 0.85) * 0.32
+      + Math.sin(t * 2.1) * 0.10;
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[sphereGeo, undefined, matrices.length]}>
+      <meshStandardMaterial
+        ref={matRef}
+        color="#ffe090"
+        emissive={new THREE.Color("#D4AF37")}
+        emissiveIntensity={0.8}
+        roughness={0.30}
+        metalness={0.60}
+      />
+    </instancedMesh>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-037B: PATHWAY SHRINES — candle alcoves beside the Sacred Avenue
+   between torch pairs; visitors can pause, reflect, light a candle
+══════════════════════════════════════════════════════════════════════════ */
+const SHRINE_Z_POSITIONS: [number, number][] = [
+  [2, 0.0], [6, 0.45], [10, 0.9], [14, 1.35], [18, 1.8],
+];
+
+function AAAPathwayShrines() {
+  const { lightPoolSize } = useQuality();
+  const baseGeo   = useMemo(() => new THREE.BoxGeometry(1.02, 0.26, 0.72), []);
+  const pillarGeo = useMemo(() => new THREE.BoxGeometry(0.18, 0.44, 0.18), []);
+  const waxGeo    = useMemo(() => new THREE.CylinderGeometry(0.065, 0.082, 0.32, 8), []);
+  const flameGeo  = useMemo(() => new THREE.ConeGeometry(0.058, 0.20, 6, 1, true), []);
+  const flameRefs = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    flameRefs.current.forEach((m, i) => {
+      if (!m) return;
+      m.emissiveIntensity = 1.1 + Math.sin(t * 4.8 + i * 0.62) * 0.55;
+    });
+  });
+
+  let flameIdx = 0;
+  return (
+    <>
+      {SHRINE_Z_POSITIONS.flatMap(([z, _phase], si) =>
+        ([-5.8, 5.8] as number[]).map((x, xi) => {
+          const gy = terrainHeightAt(x, z);
+          const showLight = (si * 2 + xi) < lightPoolSize;
+          const fi1 = flameIdx++, fi2 = flameIdx++;
+          return (
+            <group key={`shrine-${si}-${xi}`} position={[x, gy, z]}>
+              {/* Stone plinth */}
+              <mesh position={[0, 0.13, 0]} castShadow receiveShadow geometry={baseGeo}>
+                <meshStandardMaterial color="#c8bda8" roughness={0.84} metalness={0.05} />
+              </mesh>
+              {/* Corner pillars */}
+              {([-0.36, 0.36] as number[]).map((dx, pi) => (
+                <mesh key={pi} position={[dx, 0.50, 0]} castShadow geometry={pillarGeo}>
+                  <meshStandardMaterial color="#b8ad98" roughness={0.82} metalness={0.06} />
+                </mesh>
+              ))}
+              {/* Two candles on the plinth */}
+              {([-0.20, 0.20] as number[]).map((dx, ci) => {
+                const fi = ci === 0 ? fi1 : fi2;
+                return (
+                  <group key={ci} position={[dx, 0.42, 0]}>
+                    <mesh geometry={waxGeo} castShadow>
+                      <meshStandardMaterial color="#f5edd0" roughness={0.52} metalness={0.02} />
+                    </mesh>
+                    <mesh position={[0, 0.26, 0]} geometry={flameGeo}>
+                      <meshStandardMaterial
+                        ref={el => { flameRefs.current[fi] = el; }}
+                        color="#ffaa30"
+                        emissive={new THREE.Color("#ff6600")}
+                        emissiveIntensity={1.1}
+                        transparent opacity={0.92}
+                        roughness={0.28}
+                        depthWrite={false}
+                      />
+                    </mesh>
+                  </group>
+                );
+              })}
+              {showLight && (
+                <pointLight position={[0, 1.5, 0]} color="#ff9933" intensity={1.5} distance={5.5} decay={2} />
+              )}
+            </group>
+          );
+        })
+      )}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPR-037B: PATHWAY PETALS — rose petals scattered along the Sacred Avenue
+   Instanced flat planes, warm pink, slightly emissive for candlelight warmth
+══════════════════════════════════════════════════════════════════════════ */
+const _PETAL_DATA: [number, number, number, number][] = (() => {
+  const R_P = makeLCG(777);
+  const pts: [number, number, number, number][] = [];
+  for (let i = 0; i < 72; i++) {
+    const z = R_P() * 36 - 12;
+    const x = (R_P() - 0.5) * 4.8;
+    if (Math.abs(x) < 0.28) continue; // keep centre strip clear
+    const gy = terrainHeightAt(x, z) + 0.025;
+    pts.push([x, gy, z, R_P() * Math.PI * 2]);
+  }
+  return pts;
+})();
+
+function AAAPathwayPetals() {
+  const petalGeo = useMemo(() => new THREE.PlaneGeometry(0.13, 0.09), []);
+  const matrices = useMemo(() => {
+    const dum = new THREE.Object3D();
+    return _PETAL_DATA.map(([x, y, z, rot]) => {
+      dum.position.set(x, y, z);
+      dum.rotation.set(-Math.PI / 2, 0, rot);
+      dum.scale.setScalar(1);
+      dum.updateMatrix();
+      return dum.matrix.clone();
+    });
+  }, []);
+
+  const meshRef = useRef<THREE.InstancedMesh>(null!);
+  useEffect(() => {
+    matrices.forEach((m, i) => meshRef.current?.setMatrixAt(i, m));
+    if (meshRef.current) meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [matrices]);
+
+  return (
+    <instancedMesh ref={meshRef} args={[petalGeo, undefined, matrices.length]}>
+      <meshStandardMaterial
+        color="#e06878"
+        emissive={new THREE.Color("#c03050")}
+        emissiveIntensity={0.14}
+        roughness={0.72}
+        metalness={0.0}
+        side={THREE.DoubleSide}
+        transparent
+        opacity={0.82}
+        depthWrite={false}
+      />
+    </instancedMesh>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    SACRED AVENUE TORCHES — paired glowing stone lanterns guiding the path
 ══════════════════════════════════════════════════════════════════════════ */
 const AVENUE_TORCH_PAIRS: [number, number][] = [
@@ -4299,6 +4488,9 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       <AAATerrain />
       <AAAStonePathways />
 
+      {/* SPR-037B: Rose petals along the Sacred Avenue */}
+      <AAAPathwayPetals />
+
       {/* Water */}
       <AAAWaterSystem />
 
@@ -4332,6 +4524,10 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 
       {/* Sacred Avenue torch guides — lead user from entry toward altar */}
       <AAAAvenueTorches />
+
+      {/* SPR-037B: Golden guide lights + candle shrines along the pathway */}
+      <AAAPathwayGuides />
+      <AAAPathwayShrines />
 
       {/* Trees */}
       <AAAOliveTrees />
