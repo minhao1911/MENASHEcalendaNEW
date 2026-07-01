@@ -67,6 +67,7 @@ const ShabbatBanner = lazy(() => import("./components/ShabbatBanner"));
 const WhatsNewModal = lazy(() => import("./modals/WhatsNewModal"));
 // Plain constants — import from the tiny side-effect-free module, not the full modal
 import { APP_VERSION, VERSION_KEY } from "./modals/whatsNewVersion";
+import { prefetchAdjacentPages } from "./lib/prefetch";
 
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
@@ -514,6 +515,14 @@ function AppShell() {
   const showPremiumPage = useCallback(() => setActivePage("premium"), []);
   const openSiddur      = useCallback(() => setActivePage("siddur"),  []);
   const goHome          = useCallback(() => setActivePage("home"),    []);
+
+  // Prefetch chunks for the pages most likely to be visited next, during idle time.
+  // Because React.lazy() and a bare import() share the same ES module cache,
+  // pre-loaded chunks render instantly with no Suspense spinner.
+  useEffect(() => {
+    prefetchAdjacentPages(activePage);
+  }, [activePage]);
+
   const onDayClick      = useCallback((d: number, m: number, y: number) => setDayModal({ day: d, month: m, year: y }), []);
   const onReadBook      = useCallback((book: Book) => setReadingBook(book), []);
   const onAdmin         = useCallback(() => { if (isAdmin) setModal("admin"); }, [isAdmin]);
