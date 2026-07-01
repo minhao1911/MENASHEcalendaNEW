@@ -1,7 +1,15 @@
 import { useRef, useMemo, useEffect, useState, useCallback } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, PointerLockControls, Instances, Instance, Text, Html } from "@react-three/drei";
-import * as THREE from "three";
+import {
+  AdditiveBlending, AmbientLight, BackSide, BoxGeometry, BufferAttribute,
+  BufferGeometry, CircleGeometry, Color, ConeGeometry, CylinderGeometry,
+  DirectionalLight, DoubleSide, FogExp2, Group, InstancedMesh,
+  MathUtils, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial,
+  MOUSE, Object3D, PerspectiveCamera, PlaneGeometry, PointLight,
+  Points, PointsMaterial, RingGeometry, ShaderMaterial, SphereGeometry,
+  TorusGeometry, TOUCH, Vector3,
+} from "three";
 import type { CommunityYahrzeitEntry } from "../lib/userApi";
 import { useLanguage } from "../context/LanguageContext";
 import {
@@ -405,17 +413,17 @@ function AAATerraceWalls() {
   const N = 48;
 
   /* One InstancedMesh per tier (different height = different geometry) */
-  const tier0Ref = useRef<THREE.InstancedMesh>(null!);
-  const tier1Ref = useRef<THREE.InstancedMesh>(null!);
-  const tier2Ref = useRef<THREE.InstancedMesh>(null!);
+  const tier0Ref = useRef<InstancedMesh>(null!);
+  const tier1Ref = useRef<InstancedMesh>(null!);
+  const tier2Ref = useRef<InstancedMesh>(null!);
   const refs = [tier0Ref, tier1Ref, tier2Ref];
 
-  const geos = useMemo(() => TIERS.map(t => new THREE.BoxGeometry(0.68, t.h, 0.32)), [TIERS]);
+  const geos = useMemo(() => TIERS.map(t => new BoxGeometry(0.68, t.h, 0.32)), [TIERS]);
 
   const matrixSets = useMemo(() => {
-    const dum = new THREE.Object3D();
+    const dum = new Object3D();
     return TIERS.map(t => {
-      const mats: THREE.Matrix4[] = [];
+      const mats: Matrix4[] = [];
       for (let j = 0; j < N; j++) {
         const a = (j / N) * Math.PI * 2;
         dum.position.set(Math.cos(a) * t.rad, t.y, Math.sin(a) * t.rad + 4);
@@ -450,7 +458,7 @@ function AAATerraceWalls() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAATerrain() {
   const mainGeo = useMemo(() => {
-    const g = new THREE.PlaneGeometry(100, 100, 160, 160);
+    const g = new PlaneGeometry(100, 100, 160, 160);
     g.rotateX(-Math.PI / 2);
     const pos = g.attributes.position!;
     const nr  = makeLCG(3);
@@ -514,7 +522,7 @@ function AAATerrain() {
       colors[i * 3 + 2] = b0;
     }
 
-    g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    g.setAttribute("color", new BufferAttribute(colors, 3));
     g.computeVertexNormals();
     return g;
   }, []);
@@ -561,8 +569,8 @@ function AAAWater({ position, args, rotation = [-Math.PI / 2, 0, 0] as [number, 
 }) {
   const uniforms = useRef({
     uTime:    { value: 0 },
-    uDeep:    { value: new THREE.Color("#1e5a8a") },
-    uShallow: { value: new THREE.Color("#5ab0d8") },
+    uDeep:    { value: new Color("#1e5a8a") },
+    uShallow: { value: new Color("#5ab0d8") },
   });
   useFrame(({ clock }) => { uniforms.current.uTime.value = clock.getElapsedTime(); });
   return (
@@ -572,7 +580,7 @@ function AAAWater({ position, args, rotation = [-Math.PI / 2, 0, 0] as [number, 
         uniforms={uniforms.current}
         vertexShader={WATER_VERT}
         fragmentShader={WATER_FRAG}
-        transparent side={THREE.DoubleSide}
+        transparent side={DoubleSide}
       />
     </mesh>
   );
@@ -643,7 +651,7 @@ function AAAWaterfall({ position, height = 4, width = 2 }: {
           uniforms={uniforms.current}
           vertexShader={fallVert}
           fragmentShader={fallFrag}
-          transparent side={THREE.DoubleSide}
+          transparent side={DoubleSide}
         />
       </mesh>
       {/* Mist / spray at base */}
@@ -712,7 +720,7 @@ function AAABridge({ position, rotation = 0, span = 8 }: {
 function AAAArchitecture() {
   const stoneMat  = { color: "#ddd0b0", roughness: 0.76, metalness: 0.06 };
   const stoneDark = { color: "#c4b494", roughness: 0.82, metalness: 0.04 };
-  const goldMat   = { color: "#D4AF37", roughness: 0.35, metalness: 0.75, emissive: "#8a6200" as unknown as THREE.Color, emissiveIntensity: 0.25 };
+  const goldMat   = { color: "#D4AF37", roughness: 0.35, metalness: 0.75, emissive: "#8a6200" as unknown as Color, emissiveIntensity: 0.25 };
 
   return (
     <group position={[0, 0, -25]}>
@@ -828,7 +836,7 @@ const TREE_SCALES = TREE_POS.map((_, i) => 0.82 + (i % 7) * 0.065);
 function AAAOliveTrees() {
   /* Trunk geometry — 10-sided for a rounder, more natural silhouette */
   const trunkGeo = useMemo(() => {
-    const g = new THREE.CylinderGeometry(0.10, 0.28, 3.2, 10, 4);
+    const g = new CylinderGeometry(0.10, 0.28, 3.2, 10, 4);
     /* Twist each vertex to simulate gnarled old-growth trunk */
     const pos = g.attributes.position!;
     for (let i = 0; i < pos.count; i++) {
@@ -843,15 +851,15 @@ function AAAOliveTrees() {
   }, []);
 
   /* Three canopy tiers — ellipsoid shapes for olive density */
-  const canopyA = useMemo(() => new THREE.SphereGeometry(1.55, 11, 8), []);
-  const canopyB = useMemo(() => new THREE.SphereGeometry(1.25, 10, 7), []);
-  const canopyC = useMemo(() => new THREE.SphereGeometry(0.95, 9,  7), []);
-  const canopyD = useMemo(() => new THREE.SphereGeometry(0.72, 8,  6), []);
+  const canopyA = useMemo(() => new SphereGeometry(1.55, 11, 8), []);
+  const canopyB = useMemo(() => new SphereGeometry(1.25, 10, 7), []);
+  const canopyC = useMemo(() => new SphereGeometry(0.95, 9,  7), []);
+  const canopyD = useMemo(() => new SphereGeometry(0.72, 8,  6), []);
 
   /* Wind refs — animate the three canopy instance groups */
-  const grpA = useRef<THREE.Group>(null!);
-  const grpB = useRef<THREE.Group>(null!);
-  const grpC = useRef<THREE.Group>(null!);
+  const grpA = useRef<Group>(null!);
+  const grpB = useRef<Group>(null!);
+  const grpC = useRef<Group>(null!);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -960,31 +968,31 @@ const SHRUB_POS = Array.from({ length: 35 }, () => {
 
 function AAAMediterraneanVegetation() {
   /* ── Cypress tree: 4 stacked layered cones create the classic narrow-columnar silhouette */
-  const cyp1Geo = useMemo(() => new THREE.ConeGeometry(0.95, 3.2, 11, 3), []);  // base tier
-  const cyp2Geo = useMemo(() => new THREE.ConeGeometry(0.76, 2.9, 10, 3), []);  // mid-low
-  const cyp3Geo = useMemo(() => new THREE.ConeGeometry(0.54, 2.5,  9, 3), []);  // mid-high
-  const cyp4Geo = useMemo(() => new THREE.ConeGeometry(0.30, 2.1,  8, 2), []);  // tip
-  const cypTrunkGeo = useMemo(() => new THREE.CylinderGeometry(0.10, 0.15, 1.8, 7), []);
+  const cyp1Geo = useMemo(() => new ConeGeometry(0.95, 3.2, 11, 3), []);  // base tier
+  const cyp2Geo = useMemo(() => new ConeGeometry(0.76, 2.9, 10, 3), []);  // mid-low
+  const cyp3Geo = useMemo(() => new ConeGeometry(0.54, 2.5,  9, 3), []);  // mid-high
+  const cyp4Geo = useMemo(() => new ConeGeometry(0.30, 2.1,  8, 2), []);  // tip
+  const cypTrunkGeo = useMemo(() => new CylinderGeometry(0.10, 0.15, 1.8, 7), []);
 
   /* ── Olive/broad-leafed tree: 3 overlapping sphere clusters form a rounded canopy */
-  const oliveCanopy1 = useMemo(() => new THREE.SphereGeometry(1.55, 9, 7), []);  // main crown
-  const oliveCanopy2 = useMemo(() => new THREE.SphereGeometry(1.10, 8, 6), []);  // side lobe
-  const oliveTrunkGeo = useMemo(() => new THREE.CylinderGeometry(0.13, 0.18, 3.5, 7), []);
+  const oliveCanopy1 = useMemo(() => new SphereGeometry(1.55, 9, 7), []);  // main crown
+  const oliveCanopy2 = useMemo(() => new SphereGeometry(1.10, 8, 6), []);  // side lobe
+  const oliveTrunkGeo = useMemo(() => new CylinderGeometry(0.13, 0.18, 3.5, 7), []);
 
   /* ── Lavender geometry */
-  const lavStemGeo = useMemo(() => new THREE.CylinderGeometry(0.022, 0.03, 0.6, 5), []);
-  const lavHeadGeo = useMemo(() => new THREE.SphereGeometry(0.14, 6, 5), []);
+  const lavStemGeo = useMemo(() => new CylinderGeometry(0.022, 0.03, 0.6, 5), []);
+  const lavHeadGeo = useMemo(() => new SphereGeometry(0.14, 6, 5), []);
 
   /* ── Flower geometry */
-  const flowerGeo = useMemo(() => new THREE.SphereGeometry(0.18, 7, 5), []);
+  const flowerGeo = useMemo(() => new SphereGeometry(0.18, 7, 5), []);
 
   /* ── Shrub: two overlapping spheres for irregular lumpy silhouette */
-  const shrubMainGeo = useMemo(() => new THREE.SphereGeometry(0.88, 9, 7), []);
-  const shrubLobeGeo = useMemo(() => new THREE.SphereGeometry(0.62, 8, 6), []);
+  const shrubMainGeo = useMemo(() => new SphereGeometry(0.88, 9, 7), []);
+  const shrubLobeGeo = useMemo(() => new SphereGeometry(0.62, 8, 6), []);
 
   /* Wind sway refs */
-  const swayRootRef  = useRef<THREE.Group>(null!);
-  const swayRootRef2 = useRef<THREE.Group>(null!);
+  const swayRootRef  = useRef<Group>(null!);
+  const swayRootRef2 = useRef<Group>(null!);
 
   useFrame(({ clock }) => {
     const t  = clock.getElapsedTime();
@@ -1105,7 +1113,7 @@ function AAAMediterraneanVegetation() {
       {/* Lavender heads */}
       <Instances geometry={lavHeadGeo} limit={LAVENDER_PTS.length}>
         <meshStandardMaterial color="#8868b0" roughness={0.82} metalness={0.0}
-          emissive={new THREE.Color("#3a2560")} emissiveIntensity={0.22} />
+          emissive={new Color("#3a2560")} emissiveIntensity={0.22} />
         {LAVENDER_PTS.map(([x, z], i) => (
           <Instance key={i} position={[x + (i % 3 - 1) * 0.12, 0.65, z + (i % 2 - 0.5) * 0.1]}
             scale={[1, 1.6, 1]} />
@@ -1115,7 +1123,7 @@ function AAAMediterraneanVegetation() {
       {/* ── FLOWERS ── */}
       <Instances geometry={flowerGeo} limit={FLOWER_PTS.length}>
         <meshStandardMaterial color="#f0ede8" roughness={0.72} metalness={0.0}
-          emissive={new THREE.Color("#ecdfc0")} emissiveIntensity={0.16} />
+          emissive={new Color("#ecdfc0")} emissiveIntensity={0.16} />
         {FLOWER_PTS.map(([x, z], i) => (
           <Instance key={i} position={[x, 0.22 + (i % 3) * 0.04, z]}
             scale={0.62 + (i % 5) * 0.08}
@@ -1154,8 +1162,8 @@ function AAAMediterraneanVegetation() {
 function AAAPollenParticles() {
   const { particleScale } = useQuality();
   const N       = Math.max(20, Math.ceil(220 * particleScale));
-  const ref     = useRef<THREE.InstancedMesh>(null!);
-  const dum     = useMemo(() => new THREE.Object3D(), []);
+  const ref     = useRef<InstancedMesh>(null!);
+  const dum     = useMemo(() => new Object3D(), []);
   const pts     = useMemo(() => {
     const rp = makeLCG(33);
     return Array.from({ length: 220 }, () => ({
@@ -1190,7 +1198,7 @@ function AAAPollenParticles() {
       <sphereGeometry args={[1, 4, 3]} />
       <meshStandardMaterial
         color="#f0e060"
-        emissive={new THREE.Color("#b89800")}
+        emissive={new Color("#b89800")}
         emissiveIntensity={1.4}
         transparent opacity={0.52}
         depthWrite={false}
@@ -1206,8 +1214,8 @@ function AAAPollenParticles() {
 function AAAPathwayMotes() {
   const { particleScale } = useQuality();
   const N   = Math.max(12, Math.ceil(54 * particleScale));
-  const ref = useRef<THREE.InstancedMesh>(null!);
-  const dum = useMemo(() => new THREE.Object3D(), []);
+  const ref = useRef<InstancedMesh>(null!);
+  const dum = useMemo(() => new Object3D(), []);
 
   /* Stable per-particle seed data — confined to the centreline band */
   const pts = useMemo(() => {
@@ -1250,7 +1258,7 @@ function AAAPathwayMotes() {
       <sphereGeometry args={[1, 5, 4]} />
       <meshStandardMaterial
         color="#ffe8a0"
-        emissive={new THREE.Color("#D4AF37")}
+        emissive={new Color("#D4AF37")}
         emissiveIntensity={2.8}
         transparent
         opacity={0.48}
@@ -1267,17 +1275,17 @@ function AAAPathwayMotes() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAStonePathways() {
   /* Geometries */
-  const circGeo  = useMemo(() => new THREE.BoxGeometry(0.85, 0.1,  0.52), []);
-  const edgeGeo  = useMemo(() => new THREE.BoxGeometry(0.40, 0.22, 0.40), []);
-  const stepGeo  = useMemo(() => new THREE.BoxGeometry(0.70, 0.25, 0.42), []);
+  const circGeo  = useMemo(() => new BoxGeometry(0.85, 0.1,  0.52), []);
+  const edgeGeo  = useMemo(() => new BoxGeometry(0.40, 0.22, 0.40), []);
+  const stepGeo  = useMemo(() => new BoxGeometry(0.70, 0.25, 0.42), []);
 
   /* Pre-compute instance matrices */
   const { circMats, edgeMats, stepMats } = useMemo(() => {
-    const dum = new THREE.Object3D();
+    const dum = new Object3D();
     const N_CIRC = 56, N_EDGE = 32, N_STEP_RING = 40;
 
     /* Circular pool path (56) */
-    const circMats: THREE.Matrix4[] = [];
+    const circMats: Matrix4[] = [];
     for (let i = 0; i < N_CIRC; i++) {
       const a = (i / N_CIRC) * Math.PI * 2;
       dum.position.set(Math.cos(a) * 7.5, 0.09, Math.sin(a) * 10.5 + 4);
@@ -1287,7 +1295,7 @@ function AAAStonePathways() {
     }
 
     /* Stone edging (32) */
-    const edgeMats: THREE.Matrix4[] = [];
+    const edgeMats: Matrix4[] = [];
     for (let i = 0; i < N_EDGE; i++) {
       const a = (i / N_EDGE) * Math.PI * 2;
       dum.position.set(Math.cos(a) * 8.5, 0.12, Math.sin(a) * 11.5 + 4);
@@ -1298,7 +1306,7 @@ function AAAStonePathways() {
 
     /* Terrace step edges (3 rings × 40 = 120) */
     const RINGS = [8.5, 14.5, 20.5];
-    const stepMats: THREE.Matrix4[] = [];
+    const stepMats: Matrix4[] = [];
     RINGS.forEach((r, ri) => {
       for (let j = 0; j < N_STEP_RING; j++) {
         const a = (j / N_STEP_RING) * Math.PI * 2;
@@ -1313,9 +1321,9 @@ function AAAStonePathways() {
   }, []);
 
   /* Apply matrices via refs */
-  const circRef = useRef<THREE.InstancedMesh>(null!);
-  const edgeRef = useRef<THREE.InstancedMesh>(null!);
-  const stepRef = useRef<THREE.InstancedMesh>(null!);
+  const circRef = useRef<InstancedMesh>(null!);
+  const edgeRef = useRef<InstancedMesh>(null!);
+  const stepRef = useRef<InstancedMesh>(null!);
 
   useEffect(() => {
     circMats.forEach((m, i) => circRef.current?.setMatrixAt(i, m));
@@ -1344,7 +1352,7 @@ function AAAStonePathways() {
           color="#ece0bc"
           roughness={0.65}
           metalness={0.12}
-          emissive={new THREE.Color("#c8a840")}
+          emissive={new Color("#c8a840")}
           emissiveIntensity={0.07}
         />
       </mesh>
@@ -1383,10 +1391,10 @@ function AAAStonePathways() {
    CANDLE FIELD — instanced + bloom-reactive emissive
 ══════════════════════════════════════════════════════════════════════════ */
 function AAABackgroundCandles() {
-  const waxGeo    = useMemo(() => new THREE.CylinderGeometry(0.06, 0.082, 0.35, 8), []);
-  const flameGeo  = useMemo(() => new THREE.ConeGeometry(0.07, 0.24, 7, 1, true), []);
-  const flameMatRef = useRef<THREE.MeshStandardMaterial>(null!);
-  const flameGrpRef = useRef<THREE.Group>(null!);
+  const waxGeo    = useMemo(() => new CylinderGeometry(0.06, 0.082, 0.35, 8), []);
+  const flameGeo  = useMemo(() => new ConeGeometry(0.07, 0.24, 7, 1, true), []);
+  const flameMatRef = useRef<MeshStandardMaterial>(null!);
+  const flameGrpRef = useRef<Group>(null!);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -1410,7 +1418,7 @@ function AAABackgroundCandles() {
           <meshStandardMaterial
             ref={flameMatRef}
             color="#ff9922"
-            emissive={new THREE.Color("#ff5500")}
+            emissive={new Color("#ff5500")}
             emissiveIntensity={1.4}
             transparent opacity={0.9}
             roughness={0.3}
@@ -1431,7 +1439,7 @@ function AAABackgroundCandles() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAEternalAltar() {
   const flameUniforms = useRef({ uTime: { value: 0 }, uOffset: { value: 0 } });
-  const lightRef = useRef<THREE.PointLight>(null!);
+  const lightRef = useRef<PointLight>(null!);
   useFrame(({ clock }) => {
     flameUniforms.current.uTime.value = clock.getElapsedTime();
     if (lightRef.current) lightRef.current.intensity = 4.5 + Math.sin(clock.getElapsedTime() * 4.8) * 1.5;
@@ -1465,7 +1473,7 @@ function AAAEternalAltar() {
           uniforms={flameUniforms.current}
           vertexShader={FLAME_VERT}
           fragmentShader={FLAME_FRAG}
-          transparent depthWrite={false} side={THREE.DoubleSide}
+          transparent depthWrite={false} side={DoubleSide}
         />
       </mesh>
       <pointLight ref={lightRef} position={[0, 3.2, 0]} color="#ff8822" intensity={5.0} distance={18} decay={2} />
@@ -1488,12 +1496,12 @@ function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted, in
   const showLight = highlighted || index < lightPoolSize;
 
   const flameUniforms = useRef({ uTime: { value: 0 }, uOffset: { value: animOffset } });
-  const lightRef  = useRef<THREE.PointLight>(null!);
-  const grpRef    = useRef<THREE.Group>(null!);
-  const ring1Ref  = useRef<THREE.Mesh>(null!);
-  const ring2Ref  = useRef<THREE.Mesh>(null!);
-  const ring1Mat  = useRef<THREE.MeshStandardMaterial>(null!);
-  const ring2Mat  = useRef<THREE.MeshStandardMaterial>(null!);
+  const lightRef  = useRef<PointLight>(null!);
+  const grpRef    = useRef<Group>(null!);
+  const ring1Ref  = useRef<Mesh>(null!);
+  const ring2Ref  = useRef<Mesh>(null!);
+  const ring1Mat  = useRef<MeshStandardMaterial>(null!);
+  const ring2Mat  = useRef<MeshStandardMaterial>(null!);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -1532,13 +1540,13 @@ function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted, in
           <mesh ref={ring1Ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
             <ringGeometry args={[0.36, 0.52, 28]} />
             <meshStandardMaterial ref={ring1Mat} color="#D4AF37"
-              emissive={new THREE.Color("#D4AF37")} emissiveIntensity={2.8}
+              emissive={new Color("#D4AF37")} emissiveIntensity={2.8}
               transparent opacity={0.8} depthWrite={false} />
           </mesh>
           <mesh ref={ring2Ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
             <ringGeometry args={[0.36, 0.52, 28]} />
             <meshStandardMaterial ref={ring2Mat} color="#ffcc44"
-              emissive={new THREE.Color("#ffcc44")} emissiveIntensity={2.2}
+              emissive={new Color("#ffcc44")} emissiveIntensity={2.2}
               transparent opacity={0.5} depthWrite={false} />
           </mesh>
         </>
@@ -1557,7 +1565,7 @@ function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted, in
           uniforms={flameUniforms.current}
           vertexShader={FLAME_VERT}
           fragmentShader={FLAME_FRAG}
-          transparent depthWrite={false} side={THREE.DoubleSide}
+          transparent depthWrite={false} side={DoubleSide}
         />
       </mesh>
 
@@ -1576,10 +1584,10 @@ function AAAEntryCandle({ pos, entry, animOffset, onCandleClick, highlighted, in
    PHASE 3: NEW CANDLE PLACEMENT ANIMATION — golden pulse rings
 ══════════════════════════════════════════════════════════════════════════ */
 function AAANewCandleAnim({ pos }: { pos: [number, number, number] }) {
-  const r1 = useRef<THREE.Mesh>(null!), r2 = useRef<THREE.Mesh>(null!), r3 = useRef<THREE.Mesh>(null!);
-  const m1 = useRef<THREE.MeshStandardMaterial>(null!), m2 = useRef<THREE.MeshStandardMaterial>(null!), m3 = useRef<THREE.MeshStandardMaterial>(null!);
+  const r1 = useRef<Mesh>(null!), r2 = useRef<Mesh>(null!), r3 = useRef<Mesh>(null!);
+  const m1 = useRef<MeshStandardMaterial>(null!), m2 = useRef<MeshStandardMaterial>(null!), m3 = useRef<MeshStandardMaterial>(null!);
   const startTime = useRef<number | null>(null);
-  const ringGeo   = useMemo(() => new THREE.RingGeometry(0.38, 0.56, 32), []);
+  const ringGeo   = useMemo(() => new RingGeometry(0.38, 0.56, 32), []);
 
   useFrame(({ clock }) => {
     if (startTime.current === null) startTime.current = clock.getElapsedTime();
@@ -1603,13 +1611,13 @@ function AAANewCandleAnim({ pos }: { pos: [number, number, number] }) {
   return (
     <group position={[pos[0], pos[1] + 0.05, pos[2]]} rotation={[-Math.PI / 2, 0, 0]}>
       <mesh ref={r1} geometry={ringGeo}>
-        <meshStandardMaterial ref={m1} color="#D4AF37" emissive={new THREE.Color("#D4AF37")} emissiveIntensity={3.0} transparent opacity={0.85} depthWrite={false} />
+        <meshStandardMaterial ref={m1} color="#D4AF37" emissive={new Color("#D4AF37")} emissiveIntensity={3.0} transparent opacity={0.85} depthWrite={false} />
       </mesh>
       <mesh ref={r2} geometry={ringGeo}>
-        <meshStandardMaterial ref={m2} color="#ffcc44" emissive={new THREE.Color("#ffcc44")} emissiveIntensity={2.2} transparent opacity={0} depthWrite={false} />
+        <meshStandardMaterial ref={m2} color="#ffcc44" emissive={new Color("#ffcc44")} emissiveIntensity={2.2} transparent opacity={0} depthWrite={false} />
       </mesh>
       <mesh ref={r3} geometry={ringGeo}>
-        <meshStandardMaterial ref={m3} color="#ff9922" emissive={new THREE.Color("#ff9922")} emissiveIntensity={1.6} transparent opacity={0} depthWrite={false} />
+        <meshStandardMaterial ref={m3} color="#ff9922" emissive={new Color("#ff9922")} emissiveIntensity={1.6} transparent opacity={0} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -1625,9 +1633,9 @@ const MAX_VIRTUAL_FLOWERS = 40;
 
 export function AAAVirtualFlowers({ flowers }: { flowers: { pos: [number, number, number]; colorIdx: number }[] }) {
   const capped   = flowers.slice(-MAX_VIRTUAL_FLOWERS);
-  const petalGeo = useMemo(() => new THREE.SphereGeometry(0.11, 6, 5), []);
-  const centerGeo = useMemo(() => new THREE.SphereGeometry(0.058, 6, 4), []);
-  const stemGeo   = useMemo(() => new THREE.CylinderGeometry(0.017, 0.024, 0.32, 5), []);
+  const petalGeo = useMemo(() => new SphereGeometry(0.11, 6, 5), []);
+  const centerGeo = useMemo(() => new SphereGeometry(0.058, 6, 4), []);
+  const stemGeo   = useMemo(() => new CylinderGeometry(0.017, 0.024, 0.32, 5), []);
 
   if (!capped.length) return null;
 
@@ -1648,7 +1656,7 @@ export function AAAVirtualFlowers({ flowers }: { flowers: { pos: [number, number
                 <mesh key={j} position={[Math.cos(a) * 0.13, 0.35, Math.sin(a) * 0.13]} geometry={petalGeo}>
                   <meshStandardMaterial
                     color={col}
-                    emissive={new THREE.Color(col)}
+                    emissive={new Color(col)}
                     emissiveIntensity={0.55}
                     roughness={0.58}
                   />
@@ -1657,7 +1665,7 @@ export function AAAVirtualFlowers({ flowers }: { flowers: { pos: [number, number
             })}
             {/* Center — bright emissive instead of point light */}
             <mesh position={[0, 0.37, 0]} geometry={centerGeo}>
-              <meshStandardMaterial color="#ffe050" emissive={new THREE.Color("#ddaa00")} emissiveIntensity={1.6} roughness={0.4} />
+              <meshStandardMaterial color="#ffe050" emissive={new Color("#ddaa00")} emissiveIntensity={1.6} roughness={0.4} />
             </mesh>
           </group>
         );
@@ -1680,7 +1688,7 @@ function AAAPlacedCandle({ pos, name, animOffset }: { pos: [number, number, numb
       </mesh>
       <mesh position={[0, 0.56, 0]}>
         <coneGeometry args={[0.09, 0.24, 8, 1, true]} />
-        <shaderMaterial uniforms={u.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG} transparent depthWrite={false} side={THREE.DoubleSide} />
+        <shaderMaterial uniforms={u.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG} transparent depthWrite={false} side={DoubleSide} />
       </mesh>
       <pointLight color="#ff9933" intensity={0.9} distance={3.5} decay={2} />
       <Text position={[0, 0.94, 0]} fontSize={0.11} color="#ffd988" anchorX="center">
@@ -1696,8 +1704,8 @@ function AAAPlacedCandle({ pos, name, animOffset }: { pos: [number, number, numb
 function AAAFloatingLanterns() {
   const { particleScale, lightPoolSize } = useQuality();
   const activeLanterns = useMemo(() => LANTERNS.slice(0, Math.max(4, Math.ceil(LANTERNS.length * particleScale))), [particleScale]);
-  const grpRefs = useRef<THREE.Group[]>([]);
-  const matRefs = useRef<THREE.MeshStandardMaterial[]>([]);
+  const grpRefs = useRef<Group[]>([]);
+  const matRefs = useRef<MeshStandardMaterial[]>([]);
   const posRef  = useRef(activeLanterns.map(d => ({ x: d.x, y: d.startY, z: d.z })));
 
   useFrame(({ clock }, delta) => {
@@ -1724,8 +1732,8 @@ function AAAFloatingLanterns() {
           <mesh>
             <boxGeometry args={[0.36, 0.48, 0.36]} />
             <meshStandardMaterial
-              ref={el => { if (el) matRefs.current[i] = el as THREE.MeshStandardMaterial; }}
-              color="#ffcc66" emissive={new THREE.Color("#ff7700")}
+              ref={el => { if (el) matRefs.current[i] = el as MeshStandardMaterial; }}
+              color="#ffcc66" emissive={new Color("#ff7700")}
               emissiveIntensity={1.2} transparent opacity={0.78}
               roughness={0.3} metalness={0.1}
             />
@@ -1738,7 +1746,7 @@ function AAAFloatingLanterns() {
           ))}
           <mesh>
             <sphereGeometry args={[0.1, 8, 6]} />
-            <meshStandardMaterial color="#ffee88" emissive={new THREE.Color("#ffcc00")} emissiveIntensity={3.5} />
+            <meshStandardMaterial color="#ffee88" emissive={new Color("#ffcc00")} emissiveIntensity={3.5} />
           </mesh>
           {i < lightPoolSize && (
             <pointLight color="#ffaa33" intensity={1.2} distance={5.5} decay={2} />
@@ -1755,8 +1763,8 @@ function AAAFloatingLanterns() {
 function AAAGoldenDust() {
   const { particleScale } = useQuality();
   const n    = Math.max(20, Math.ceil(150 * particleScale));
-  const ref  = useRef<THREE.InstancedMesh>(null!);
-  const dum  = useMemo(() => new THREE.Object3D(), []);
+  const ref  = useRef<InstancedMesh>(null!);
+  const dum  = useMemo(() => new Object3D(), []);
   const pts  = useMemo(() => {
     const r = makeLCG(77);
     return Array.from({ length: n }, () => ({ x: (r()-0.5)*55, y: r()*14+0.5, z: (r()-0.5)*55, sp: 0.15+r()*0.32, ph: r()*Math.PI*2 }));
@@ -1776,7 +1784,7 @@ function AAAGoldenDust() {
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, n]}>
       <sphereGeometry args={[1, 4, 4]} />
-      <meshStandardMaterial color="#D4AF37" emissive={new THREE.Color("#aa8800")} emissiveIntensity={2.5} transparent opacity={0.65} />
+      <meshStandardMaterial color="#D4AF37" emissive={new Color("#aa8800")} emissiveIntensity={2.5} transparent opacity={0.65} />
     </instancedMesh>
   );
 }
@@ -1786,14 +1794,14 @@ function AAAGoldenDust() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAMovingClouds() {
   /* Layer A — main cloud bank, mid-altitude */
-  const refA0 = useRef<THREE.Group>(null!); const refA1 = useRef<THREE.Group>(null!);
-  const refA2 = useRef<THREE.Group>(null!); const refA3 = useRef<THREE.Group>(null!);
-  const refA4 = useRef<THREE.Group>(null!); const refA5 = useRef<THREE.Group>(null!);
+  const refA0 = useRef<Group>(null!); const refA1 = useRef<Group>(null!);
+  const refA2 = useRef<Group>(null!); const refA3 = useRef<Group>(null!);
+  const refA4 = useRef<Group>(null!); const refA5 = useRef<Group>(null!);
   /* Layer B — high cirrus wisps */
-  const refB0 = useRef<THREE.Group>(null!); const refB1 = useRef<THREE.Group>(null!);
-  const refB2 = useRef<THREE.Group>(null!);
+  const refB0 = useRef<Group>(null!); const refB1 = useRef<Group>(null!);
+  const refB2 = useRef<Group>(null!);
   /* Layer C — low atmospheric haze bands */
-  const refC0 = useRef<THREE.Group>(null!); const refC1 = useRef<THREE.Group>(null!);
+  const refC0 = useRef<Group>(null!); const refC1 = useRef<Group>(null!);
 
   const layerA = [
     { r: refA0, y: 22, z: -12, speed: 1.00, scale: 1.40, op: 0.74 },
@@ -1955,12 +1963,12 @@ function terrainHeightAt(x: number, z: number): number {
 interface FootstepPt { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; }
 
 function FootstepParticles({ particlesRef }: { particlesRef: React.MutableRefObject<FootstepPt[]> }) {
-  const meshRef = useRef<THREE.Points>(null!);
+  const meshRef = useRef<Points>(null!);
   const MAX_P   = 80;
   const positions = useMemo(() => new Float32Array(MAX_P * 3), []);
   const geo = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const g = new BufferGeometry();
+    g.setAttribute("position", new BufferAttribute(positions, 3));
     return g;
   }, [positions]);
 
@@ -1981,7 +1989,7 @@ function FootstepParticles({ particlesRef }: { particlesRef: React.MutableRefObj
     }
     for (let i = count; i < MAX_P; i++) positions[i * 3 + 1] = -999;
     if (meshRef.current) {
-      (meshRef.current.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+      (meshRef.current.geometry.attributes.position as BufferAttribute).needsUpdate = true;
     }
   });
 
@@ -2092,12 +2100,12 @@ function FirstPersonController({
   const keys     = useRef({ w: false, a: false, s: false, d: false });
 
   /* ── Shared motion state ── */
-  const vel       = useRef(new THREE.Vector3());
+  const vel       = useRef(new Vector3());
   const bobT      = useRef(0);
   const stepTimer = useRef(0);
-  const fwdVec    = useRef(new THREE.Vector3());
-  const rightVec  = useRef(new THREE.Vector3());
-  const UP        = new THREE.Vector3(0, 1, 0);
+  const fwdVec    = useRef(new Vector3());
+  const rightVec  = useRef(new Vector3());
+  const UP        = new Vector3(0, 1, 0);
 
   /* ── Touch input refs ── */
   const joystick   = useRef({ x: 0, y: 0 });
@@ -2167,7 +2175,7 @@ function FirstPersonController({
     camera.rotation.y = 0;      // face -Z: from Z=22 through the gate toward the Sacred Avenue
     camera.rotation.x = -0.08;  // slight downward pitch — player sees the path immediately
     camera.rotation.z = 0;
-    ctrlRef.current = { target: new THREE.Vector3(spawnX, spawnY, 0), update: () => {} };
+    ctrlRef.current = { target: new Vector3(spawnX, spawnY, 0), update: () => {} };
     if (isTouch.current) {
       isLocked.current = true;
       camera.rotation.order = "YXZ";
@@ -2235,7 +2243,7 @@ function FirstPersonController({
 
   /* ── Walk FOV: lerp to 64° on mount, restore orbit FOV (72°) on unmount ── */
   useEffect(() => {
-    const pc = camera as THREE.PerspectiveCamera;
+    const pc = camera as PerspectiveCamera;
     return () => {
       pc.fov = 72;
       pc.updateProjectionMatrix();
@@ -2250,10 +2258,10 @@ function FirstPersonController({
     const wantY   = groundY + 1.65;
 
     /* SPR-037A: Lerp FOV toward cinematic walk value (64°) */
-    const pc = camera as THREE.PerspectiveCamera;
+    const pc = camera as PerspectiveCamera;
     const targetFov = 64;
     if (Math.abs(pc.fov - targetFov) > 0.05) {
-      pc.fov = THREE.MathUtils.lerp(pc.fov, targetFov, 3 * dt);
+      pc.fov = MathUtils.lerp(pc.fov, targetFov, 3 * dt);
       pc.updateProjectionMatrix();
     }
 
@@ -2284,13 +2292,13 @@ function FirstPersonController({
       /* Gentle breathing idle — subtle sine oscillation when standing still */
       const breathY = Math.sin(clock.getElapsedTime() * 0.55) * 0.024
                     + Math.sin(clock.getElapsedTime() * 1.30) * 0.008;
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + breathY, 0.05);
+      camera.position.y = MathUtils.lerp(camera.position.y, wantY + breathY, 0.05);
       return;
     }
 
     /* ── Movement direction from keyboard (desktop) or joystick (touch) ── */
     rightVec.current.crossVectors(fwdVec.current, UP).normalize();
-    const moveDir = new THREE.Vector3();
+    const moveDir = new Vector3();
     if (isTouch.current) {
       moveDir.addScaledVector(fwdVec.current,  -joystick.current.y);
       moveDir.addScaledVector(rightVec.current,  joystick.current.x);
@@ -2303,7 +2311,7 @@ function FirstPersonController({
     const isMoving = moveDir.lengthSq() > 0.01;
     /* SPR-037A: grounded walking — slower speed, weighted accel/decel */
     const SPEED = 2.55, ACCEL = 4.4, DECEL = 3.0;
-    const ZERO  = new THREE.Vector3();
+    const ZERO  = new Vector3();
     if (isMoving) {
       moveDir.normalize();
       vel.current.lerp(moveDir.clone().multiplyScalar(SPEED), ACCEL * dt);
@@ -2328,15 +2336,15 @@ function FirstPersonController({
       /* Subtle left/right body sway — gentle Z-axis roll, respects reduced-motion */
       if (!reducedMotion.current) {
         const targetRoll = Math.sin(bobT.current * 0.5) * 0.006;
-        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z ?? 0, targetRoll, 6 * dt);
+        camera.rotation.z = MathUtils.lerp(camera.rotation.z ?? 0, targetRoll, 6 * dt);
       }
     } else {
       /* Decay accumulators so bob + sway settle smoothly back to neutral */
       bobT.current *= 0.88;
-      camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z ?? 0, 0, 4 * dt);
+      camera.rotation.z = MathUtils.lerp(camera.rotation.z ?? 0, 0, 4 * dt);
     }
     /* SPR-037A: Tighter terrain hugging (0.12) — feet feel planted, no hovering */
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.12);
+    camera.position.y = MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.12);
 
     /* Footstep dust particles */
     if (isMoving && speed > 0.4) {
@@ -2442,7 +2450,7 @@ function FirstPersonController({
 function CameraIdleDrift({ ctrlRef }: { ctrlRef: React.MutableRefObject<any> }) {
   const { camera } = useThree();
   const lastInteract = useRef(Date.now());
-  const basePos      = useRef(new THREE.Vector3());
+  const basePos      = useRef(new Vector3());
   const drifting     = useRef(false);
 
   useEffect(() => {
@@ -2522,9 +2530,9 @@ function CameraStateTracker({
 function AAABirdFlock() {
   const { particleScale } = useQuality();
   const activeBirds = useMemo(() => BIRDS.slice(0, Math.max(1, Math.ceil(BIRDS.length * particleScale))), [particleScale]);
-  const groupRef = useRef<THREE.Group>(null!);
+  const groupRef = useRef<Group>(null!);
   const wingGeo  = useMemo(() => {
-    const g = new THREE.PlaneGeometry(1.15, 0.30, 2, 1);
+    const g = new PlaneGeometry(1.15, 0.30, 2, 1);
     const pos = g.attributes.position!;
     for (let i = 0; i < pos.count; i++) {
       pos.setY(i, pos.getY(i) + Math.abs(pos.getX(i)) * 0.18);
@@ -2532,12 +2540,12 @@ function AAABirdFlock() {
     g.computeVertexNormals();
     return g;
   }, []);
-  const bodyGeo = useMemo(() => new THREE.SphereGeometry(0.09, 6, 4), []);
+  const bodyGeo = useMemo(() => new SphereGeometry(0.09, 6, 4), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     activeBirds.forEach((b, i) => {
-      const g = groupRef.current?.children[i] as THREE.Group;
+      const g = groupRef.current?.children[i] as Group;
       if (!g) return;
       const a = b.phase + t * b.speed;
       g.position.set(
@@ -2548,7 +2556,7 @@ function AAABirdFlock() {
       g.rotation.y = -a - Math.PI / 2 + Math.sin(t * 0.36 + b.phase) * 0.1;
       g.rotation.z = Math.sin(t * 0.32 + b.phase) * 0.07;
       const flap = Math.sin(t * b.flapSp + b.phase) * b.flapAm;
-      const lw = g.children[0] as THREE.Mesh, rw = g.children[1] as THREE.Mesh;
+      const lw = g.children[0] as Mesh, rw = g.children[1] as Mesh;
       if (lw) lw.rotation.z =  flap;
       if (rw) rw.rotation.z = -flap;
     });
@@ -2559,10 +2567,10 @@ function AAABirdFlock() {
       {activeBirds.map((_, i) => (
         <group key={i}>
           <mesh geometry={wingGeo} position={[-0.62, 0, 0]}>
-            <meshStandardMaterial color="#28200e" roughness={0.9} side={THREE.DoubleSide} />
+            <meshStandardMaterial color="#28200e" roughness={0.9} side={DoubleSide} />
           </mesh>
           <mesh geometry={wingGeo} position={[0.62, 0, 0]} scale={[-1, 1, 1]}>
-            <meshStandardMaterial color="#28200e" roughness={0.9} side={THREE.DoubleSide} />
+            <meshStandardMaterial color="#28200e" roughness={0.9} side={DoubleSide} />
           </mesh>
           <mesh geometry={bodyGeo}>
             <meshStandardMaterial color="#221a0a" roughness={0.9} />
@@ -2579,13 +2587,13 @@ function AAABirdFlock() {
 function AAAButterflies() {
   const { particleScale } = useQuality();
   const activeFlies = useMemo(() => BFLIES.slice(0, Math.max(1, Math.ceil(BFLIES.length * particleScale))), [particleScale]);
-  const groupRef = useRef<THREE.Group>(null!);
-  const wingGeo  = useMemo(() => new THREE.PlaneGeometry(0.20, 0.15), []);
+  const groupRef = useRef<Group>(null!);
+  const wingGeo  = useMemo(() => new PlaneGeometry(0.20, 0.15), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     activeFlies.forEach((bf, i) => {
-      const g = groupRef.current?.children[i] as THREE.Group;
+      const g = groupRef.current?.children[i] as Group;
       if (!g) return;
       g.position.set(
         bf.x + Math.sin(t * bf.speed + bf.phase) * bf.radius,
@@ -2594,7 +2602,7 @@ function AAAButterflies() {
       );
       g.rotation.y = t * bf.speed * 0.4 + bf.phase;
       const flap = Math.sin(t * bf.flapSp) * 0.78;
-      const lw = g.children[0] as THREE.Mesh, rw = g.children[1] as THREE.Mesh;
+      const lw = g.children[0] as Mesh, rw = g.children[1] as Mesh;
       if (lw) lw.rotation.y =  flap;
       if (rw) rw.rotation.y = -flap;
     });
@@ -2606,13 +2614,13 @@ function AAAButterflies() {
         <group key={i}>
           <mesh geometry={wingGeo} position={[-0.11, 0, 0]}>
             <meshStandardMaterial color={bf.col} transparent opacity={0.76}
-              side={THREE.DoubleSide} roughness={0.62}
-              emissive={new THREE.Color(bf.col)} emissiveIntensity={0.18} />
+              side={DoubleSide} roughness={0.62}
+              emissive={new Color(bf.col)} emissiveIntensity={0.18} />
           </mesh>
           <mesh geometry={wingGeo} position={[0.11, 0, 0]}>
             <meshStandardMaterial color={bf.col} transparent opacity={0.76}
-              side={THREE.DoubleSide} roughness={0.62}
-              emissive={new THREE.Color(bf.col)} emissiveIntensity={0.18} />
+              side={DoubleSide} roughness={0.62}
+              emissive={new Color(bf.col)} emissiveIntensity={0.18} />
           </mesh>
         </group>
       ))}
@@ -2626,8 +2634,8 @@ function AAAButterflies() {
 function AAADriftingLeaves() {
   const { particleScale } = useQuality();
   const activeLeaves = useMemo(() => LEAF_D.slice(0, Math.max(4, Math.ceil(LEAF_D.length * particleScale))), [particleScale]);
-  const ref = useRef<THREE.InstancedMesh>(null!);
-  const dum = useMemo(() => new THREE.Object3D(), []);
+  const ref = useRef<InstancedMesh>(null!);
+  const dum = useMemo(() => new Object3D(), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -2654,7 +2662,7 @@ function AAADriftingLeaves() {
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, activeLeaves.length]}>
       <planeGeometry args={[1, 1.15]} />
-      <meshStandardMaterial color="#b04c20" roughness={0.88} side={THREE.DoubleSide}
+      <meshStandardMaterial color="#b04c20" roughness={0.88} side={DoubleSide}
         transparent opacity={0.84} depthWrite={false} />
     </instancedMesh>
   );
@@ -2665,9 +2673,9 @@ function AAADriftingLeaves() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAGodRays() {
   const N   = 16;
-  const ref = useRef<THREE.InstancedMesh>(null!);
-  const mat = useRef<THREE.MeshBasicMaterial>(null!);
-  const dum = useMemo(() => new THREE.Object3D(), []);
+  const ref = useRef<InstancedMesh>(null!);
+  const mat = useRef<MeshBasicMaterial>(null!);
+  const dum = useMemo(() => new Object3D(), []);
 
   const shafts = useMemo(() => {
     const r = makeLCG(97);
@@ -2708,8 +2716,8 @@ function AAAGodRays() {
         transparent
         opacity={0}
         depthWrite={false}
-        blending={THREE.AdditiveBlending}
-        side={THREE.DoubleSide}
+        blending={AdditiveBlending}
+        side={DoubleSide}
       />
     </instancedMesh>
   );
@@ -2720,8 +2728,8 @@ function AAAGodRays() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAWaterfallMist({ position }: { position: [number, number, number] }) {
   const N   = 20;
-  const ref = useRef<THREE.InstancedMesh>(null!);
-  const dum = useMemo(() => new THREE.Object3D(), []);
+  const ref = useRef<InstancedMesh>(null!);
+  const dum = useMemo(() => new Object3D(), []);
   const pts = useMemo(() => {
     const r = makeLCG(71 + Math.round(position[0] * 7 + position[2] * 3));
     return Array.from({ length: N }, () => ({
@@ -2760,8 +2768,8 @@ function AAAWaterfallMist({ position }: { position: [number, number, number] }) 
 function AAAGrassBlades() {
   const { particleScale } = useQuality();
   const activeGrass = useMemo(() => GRASS.slice(0, Math.max(10, Math.ceil(GRASS.length * particleScale))), [particleScale]);
-  const ref = useRef<THREE.InstancedMesh>(null!);
-  const dum = useMemo(() => new THREE.Object3D(), []);
+  const ref = useRef<InstancedMesh>(null!);
+  const dum = useMemo(() => new Object3D(), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -2779,7 +2787,7 @@ function AAAGrassBlades() {
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, activeGrass.length]}>
       <planeGeometry args={[1, 1]} />
-      <meshStandardMaterial color="#548030" roughness={0.88} side={THREE.DoubleSide}
+      <meshStandardMaterial color="#548030" roughness={0.88} side={DoubleSide}
         transparent opacity={0.88} depthWrite={false} />
     </instancedMesh>
   );
@@ -2800,8 +2808,8 @@ function AAACandleSmoke() {
     return pts;
   }, []);
   const N   = smkPos.length;
-  const ref = useRef<THREE.InstancedMesh>(null!);
-  const dum = useMemo(() => new THREE.Object3D(), []);
+  const ref = useRef<InstancedMesh>(null!);
+  const dum = useMemo(() => new Object3D(), []);
   const ph  = useMemo(() => smkPos.map((_, i) => (i * 0.41) % (Math.PI * 2)), [smkPos]);
 
   useFrame(({ clock }) => {
@@ -2829,14 +2837,14 @@ function AAACandleSmoke() {
    DAY/NIGHT: SKY DOME — animated horizon/zenith gradient with sun disc
 ══════════════════════════════════════════════════════════════════════════ */
 function AAASkyDome() {
-  const matRef = useRef<THREE.ShaderMaterial>(null!);
+  const matRef = useRef<ShaderMaterial>(null!);
   const { scene } = useThree();
 
   const uniforms = useMemo(() => ({
-    uZenith:  { value: new THREE.Color(0.29, 0.49, 0.82) },
-    uHorizon: { value: new THREE.Color(0.98, 0.75, 0.42) },
-    uSunGlow: { value: new THREE.Color(1.0,  0.95, 0.72) },
-    uSunDir:  { value: new THREE.Vector3(0.5, 0.3, 0.4).normalize() },
+    uZenith:  { value: new Color(0.29, 0.49, 0.82) },
+    uHorizon: { value: new Color(0.98, 0.75, 0.42) },
+    uSunGlow: { value: new Color(1.0,  0.95, 0.72) },
+    uSunDir:  { value: new Vector3(0.5, 0.3, 0.4).normalize() },
     uSunStr:  { value: 1.0 },
     uTime:    { value: 0.0 },
   }), []);
@@ -2867,7 +2875,7 @@ function AAASkyDome() {
     u.uSunStr.value = Math.max(0, elev + 0.1) * 1.4;
 
     /* Update scene fog live */
-    if (scene.fog instanceof THREE.FogExp2) {
+    if (scene.fog instanceof FogExp2) {
       scene.fog.color.setRGB(fog.r, fog.g, fog.b);
       const isDeepNight = t > 0.42 && t < 0.70;
       scene.fog.density = isDeepNight ? 0.016 : 0.011;
@@ -2882,7 +2890,7 @@ function AAASkyDome() {
         vertexShader={SKY_VERT}
         fragmentShader={SKY_FRAG}
         uniforms={uniforms}
-        side={THREE.BackSide}
+        side={BackSide}
         depthWrite={false}
       />
     </mesh>
@@ -2905,12 +2913,12 @@ function AAAStarField() {
       positions[i * 3 + 1] = Math.cos(phi) * rad;
       positions[i * 3 + 2] = Math.sin(phi) * Math.sin(theta) * rad;
     }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const geo = new BufferGeometry();
+    geo.setAttribute('position', new BufferAttribute(positions, 3));
     return geo;
   }, []);
 
-  const matRef = useRef<THREE.PointsMaterial>(null!);
+  const matRef = useRef<PointsMaterial>(null!);
 
   useFrame(({ clock }) => {
     const t = (clock.getElapsedTime() % CYCLE_DURATION) / CYCLE_DURATION;
@@ -2943,9 +2951,9 @@ function AAAStarField() {
    DAY/NIGHT: MOON — glowing disc arcs across the night sky
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAMoon() {
-  const groupRef = useRef<THREE.Group>(null!);
-  const discRef  = useRef<THREE.MeshBasicMaterial>(null!);
-  const haloRef  = useRef<THREE.MeshBasicMaterial>(null!);
+  const groupRef = useRef<Group>(null!);
+  const discRef  = useRef<MeshBasicMaterial>(null!);
+  const haloRef  = useRef<MeshBasicMaterial>(null!);
 
   useFrame(({ clock }) => {
     const t = (clock.getElapsedTime() % CYCLE_DURATION) / CYCLE_DURATION;
@@ -2997,9 +3005,9 @@ function AAAMoon() {
    (replaces static GoldenHourLighting so everything stays in sync)
 ══════════════════════════════════════════════════════════════════════════ */
 function DayNightLighting() {
-  const sunRef  = useRef<THREE.DirectionalLight>(null!);
-  const fillRef = useRef<THREE.DirectionalLight>(null!);
-  const ambRef  = useRef<THREE.AmbientLight>(null!);
+  const sunRef  = useRef<DirectionalLight>(null!);
+  const fillRef = useRef<DirectionalLight>(null!);
+  const ambRef  = useRef<AmbientLight>(null!);
 
   useFrame(({ clock }) => {
     const raw = clock.getElapsedTime();
@@ -3108,7 +3116,7 @@ function AAAGroundMist() {
           vertexShader={MIST_VERT}
           fragmentShader={MIST_FRAG}
           transparent depthWrite={false}
-          side={THREE.DoubleSide}
+          side={DoubleSide}
         />
       </mesh>
       {/* Layer 2 — slightly higher, offset rotation for non-repeating pattern */}
@@ -3119,7 +3127,7 @@ function AAAGroundMist() {
           vertexShader={MIST_VERT}
           fragmentShader={MIST_FRAG}
           transparent depthWrite={false}
-          side={THREE.DoubleSide}
+          side={DoubleSide}
         />
       </mesh>
       {/* Layer 3 — wispy tendrils near candle clusters */}
@@ -3130,7 +3138,7 @@ function AAAGroundMist() {
           vertexShader={MIST_VERT}
           fragmentShader={MIST_FRAG}
           transparent depthWrite={false}
-          side={THREE.DoubleSide}
+          side={DoubleSide}
         />
       </mesh>
     </group>
@@ -3229,7 +3237,7 @@ function AAADistantMountains() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAATreeOfRemembrance() {
   const trunkGeo = useMemo(() => {
-    const g = new THREE.CylinderGeometry(0.42, 0.88, 7.0, 14, 7);
+    const g = new CylinderGeometry(0.42, 0.88, 7.0, 14, 7);
     const pos = g.attributes.position!;
     for (let i = 0; i < pos.count; i++) {
       const y  = pos.getY(i);
@@ -3243,20 +3251,20 @@ function AAATreeOfRemembrance() {
   }, []);
 
   const rootGeo = useMemo(() => {
-    const g = new THREE.CylinderGeometry(0.07, 0.52, 2.4, 6, 2);
+    const g = new CylinderGeometry(0.07, 0.52, 2.4, 6, 2);
     const pos = g.attributes.position!;
     for (let i = 0; i < pos.count; i++) pos.setX(i, pos.getX(i) + pos.getY(i) * 0.28);
     g.computeVertexNormals();
     return g;
   }, []);
 
-  const canA = useMemo(() => new THREE.SphereGeometry(5.0, 12, 9), []);
-  const canB = useMemo(() => new THREE.SphereGeometry(3.8, 11, 8), []);
-  const canC = useMemo(() => new THREE.SphereGeometry(3.0, 10, 8), []);
-  const canD = useMemo(() => new THREE.SphereGeometry(2.2, 9,  7), []);
-  const canE = useMemo(() => new THREE.SphereGeometry(1.5, 8,  6), []);
+  const canA = useMemo(() => new SphereGeometry(5.0, 12, 9), []);
+  const canB = useMemo(() => new SphereGeometry(3.8, 11, 8), []);
+  const canC = useMemo(() => new SphereGeometry(3.0, 10, 8), []);
+  const canD = useMemo(() => new SphereGeometry(2.2, 9,  7), []);
+  const canE = useMemo(() => new SphereGeometry(1.5, 8,  6), []);
 
-  const canopyRef = useRef<THREE.Group>(null!);
+  const canopyRef = useRef<Group>(null!);
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     const sw = Math.sin(t * 0.30) * 0.016 + Math.sin(t * 0.88) * 0.006;
@@ -3307,7 +3315,7 @@ function AAATreeOfRemembrance() {
         </mesh>
         <mesh position={[-1.2, 12.8, -1.0]} geometry={canD}>
           <meshStandardMaterial color="#507830" roughness={0.85} metalness={0.0}
-            emissive={new THREE.Color("#1a3008")} emissiveIntensity={0.14} />
+            emissive={new Color("#1a3008")} emissiveIntensity={0.14} />
         </mesh>
         <mesh position={[2.2, 12.4, 0.5]} geometry={canD}>
           <meshStandardMaterial color="#4c7030" roughness={0.85} metalness={0.0} />
@@ -3315,11 +3323,11 @@ function AAATreeOfRemembrance() {
         {/* Silver-green sunlit tips */}
         <mesh position={[0, 14.2, 0]} geometry={canE}>
           <meshStandardMaterial color="#78a850" roughness={0.82} metalness={0.0}
-            emissive={new THREE.Color("#2a5010")} emissiveIntensity={0.22} />
+            emissive={new Color("#2a5010")} emissiveIntensity={0.22} />
         </mesh>
         <mesh position={[-1.4, 13.5, 0.8]} geometry={canE}>
           <meshStandardMaterial color="#6ea046" roughness={0.83} metalness={0.0}
-            emissive={new THREE.Color("#244808")} emissiveIntensity={0.18} />
+            emissive={new Color("#244808")} emissiveIntensity={0.18} />
         </mesh>
       </group>
       {/* Moss ring at base */}
@@ -3331,7 +3339,7 @@ function AAATreeOfRemembrance() {
       <mesh position={[0.96, 1.3, 0]} rotation={[0, -Math.PI / 2, 0]} castShadow>
         <boxGeometry args={[0.04, 0.52, 0.72]} />
         <meshStandardMaterial color="#c8b860" roughness={0.5} metalness={0.5}
-          emissive={new THREE.Color("#8a7020")} emissiveIntensity={0.32} />
+          emissive={new Color("#8a7020")} emissiveIntensity={0.32} />
       </mesh>
       <Text position={[1.02, 1.3, 0]} fontSize={0.11} color="#D4AF37" anchorX="center" rotation={[0, Math.PI / 2, 0]}>
         עץ הזיכרון
@@ -3386,7 +3394,7 @@ function AAAMemorialGate() {
       <mesh position={[0, 7.34, 0.71]}>
         <cylinderGeometry args={[0.30, 0.30, 0.11, 6]} />
         <meshStandardMaterial color="#D4AF37" roughness={0.32} metalness={0.78}
-          emissive={new THREE.Color("#9a7800")} emissiveIntensity={0.6} />
+          emissive={new Color("#9a7800")} emissiveIntensity={0.6} />
       </mesh>
       {/* Moss weathering on pillars */}
       {[-3.6, 3.6].map((x, i) => (
@@ -3412,7 +3420,7 @@ function AAAMemorialGate() {
             <shaderMaterial
               uniforms={i === 0 ? flameU.current : flameU2.current}
               vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
-              transparent depthWrite={false} side={THREE.DoubleSide}
+              transparent depthWrite={false} side={DoubleSide}
             />
           </mesh>
           <pointLight color="#ff9933" intensity={3.2} distance={9} decay={2} position={[0, 2.1, 0]} />
@@ -3435,18 +3443,18 @@ function AAAMemorialGate() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAEntranceBoards({ entries }: { entries: CommunityYahrzeitEntry[] }) {
   /* ── Shared geometry (one GPU buffer reused across all 3 boards) ── */
-  const boardGeo   = useMemo(() => new THREE.BoxGeometry(3.6, 2.4, 0.18), []);
-  const frameGeo   = useMemo(() => new THREE.BoxGeometry(4.0, 2.8, 0.14), []);
-  const postGeo    = useMemo(() => new THREE.CylinderGeometry(0.12, 0.17, 3.8, 8), []);
-  const dividerGeo = useMemo(() => new THREE.BoxGeometry(2.4, 0.028, 0.012), []);
+  const boardGeo   = useMemo(() => new BoxGeometry(3.6, 2.4, 0.18), []);
+  const frameGeo   = useMemo(() => new BoxGeometry(4.0, 2.8, 0.14), []);
+  const postGeo    = useMemo(() => new CylinderGeometry(0.12, 0.17, 3.8, 8), []);
+  const dividerGeo = useMemo(() => new BoxGeometry(2.4, 0.028, 0.012), []);
 
   /* ── Per-board refs for proximity-driven glow ── */
-  const light0 = useRef<THREE.PointLight>(null!);
-  const light1 = useRef<THREE.PointLight>(null!);
-  const light2 = useRef<THREE.PointLight>(null!);
-  const face0  = useRef<THREE.MeshStandardMaterial>(null!);
-  const face1  = useRef<THREE.MeshStandardMaterial>(null!);
-  const face2  = useRef<THREE.MeshStandardMaterial>(null!);
+  const light0 = useRef<PointLight>(null!);
+  const light1 = useRef<PointLight>(null!);
+  const light2 = useRef<PointLight>(null!);
+  const face0  = useRef<MeshStandardMaterial>(null!);
+  const face1  = useRef<MeshStandardMaterial>(null!);
+  const face2  = useRef<MeshStandardMaterial>(null!);
 
   /* Board world positions — matched to group position props below */
   const BOARD_POS: [number, number, number][] = [
@@ -3650,15 +3658,15 @@ function FirstVisitBoardBeacons() {
   const elapsed = useRef(0);
 
   /* Explicit refs per beam to avoid null-flash from inline callbacks */
-  const mesh0 = useRef<THREE.Mesh>(null!);
-  const mesh1 = useRef<THREE.Mesh>(null!);
-  const mesh2 = useRef<THREE.Mesh>(null!);
-  const mat0  = useRef<THREE.MeshStandardMaterial>(null!);
-  const mat1  = useRef<THREE.MeshStandardMaterial>(null!);
-  const mat2  = useRef<THREE.MeshStandardMaterial>(null!);
+  const mesh0 = useRef<Mesh>(null!);
+  const mesh1 = useRef<Mesh>(null!);
+  const mesh2 = useRef<Mesh>(null!);
+  const mat0  = useRef<MeshStandardMaterial>(null!);
+  const mat1  = useRef<MeshStandardMaterial>(null!);
+  const mat2  = useRef<MeshStandardMaterial>(null!);
 
   /* Open-top cone beam — widens at the bottom, vanishes toward sky */
-  const beamGeo = useMemo(() => new THREE.CylinderGeometry(0.025, 0.30, 6.0, 8, 1, true), []);
+  const beamGeo = useMemo(() => new CylinderGeometry(0.025, 0.30, 6.0, 8, 1, true), []);
 
   useFrame((_, dt) => {
     if (!active) return;
@@ -3695,17 +3703,17 @@ function FirstVisitBoardBeacons() {
       <mesh ref={mesh0} geometry={beamGeo} position={[5.8, 5.0, 18.5]}>
         <meshStandardMaterial ref={mat0} color="#D4AF37" emissive="#D4AF37"
           emissiveIntensity={1.8} transparent opacity={0.62}
-          depthWrite={false} side={THREE.DoubleSide} />
+          depthWrite={false} side={DoubleSide} />
       </mesh>
       <mesh ref={mesh1} geometry={beamGeo} position={[-5.8, 5.0, 14.0]}>
         <meshStandardMaterial ref={mat1} color="#D4AF37" emissive="#D4AF37"
           emissiveIntensity={1.8} transparent opacity={0.62}
-          depthWrite={false} side={THREE.DoubleSide} />
+          depthWrite={false} side={DoubleSide} />
       </mesh>
       <mesh ref={mesh2} geometry={beamGeo} position={[5.8, 5.0, 9.5]}>
         <meshStandardMaterial ref={mat2} color="#D4AF37" emissive="#D4AF37"
           emissiveIntensity={1.8} transparent opacity={0.62}
-          depthWrite={false} side={THREE.DoubleSide} />
+          depthWrite={false} side={DoubleSide} />
       </mesh>
     </>
   );
@@ -3726,11 +3734,11 @@ const LILY_DATA = Array.from({ length: 16 }, () => {
 });
 
 function AAAWaterLilies() {
-  const padGeo    = useMemo(() => new THREE.CircleGeometry(1, 12), []);
-  const petalGeo  = useMemo(() => new THREE.SphereGeometry(0.12, 6, 4), []);
-  const centerGeo = useMemo(() => new THREE.SphereGeometry(0.16, 7, 5), []);
+  const padGeo    = useMemo(() => new CircleGeometry(1, 12), []);
+  const petalGeo  = useMemo(() => new SphereGeometry(0.12, 6, 4), []);
+  const centerGeo = useMemo(() => new SphereGeometry(0.16, 7, 5), []);
 
-  const padRefs = useRef<THREE.Mesh[]>([]);
+  const padRefs = useRef<Mesh[]>([]);
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     LILY_DATA.forEach((l, i) => {
@@ -3752,7 +3760,7 @@ function AAAWaterLilies() {
             geometry={padGeo}
           >
             <meshStandardMaterial color="#2a6216" roughness={0.84} metalness={0.0}
-              emissive={new THREE.Color("#0c3006")} emissiveIntensity={0.14} />
+              emissive={new Color("#0c3006")} emissiveIntensity={0.14} />
           </mesh>
           {/* Flower on every third lily */}
           {l.bloom && (
@@ -3764,14 +3772,14 @@ function AAAWaterLilies() {
                     <meshStandardMaterial
                       color={l.pink ? "#f8e4f0" : "#fff8e8"}
                       roughness={0.55}
-                      emissive={new THREE.Color(l.pink ? "#d090b8" : "#d4aa40")}
+                      emissive={new Color(l.pink ? "#d090b8" : "#d4aa40")}
                       emissiveIntensity={0.42}
                     />
                   </mesh>
                 );
               })}
               <mesh position={[0, 0.09, 0]} scale={l.size * 0.9} geometry={centerGeo}>
-                <meshStandardMaterial color="#ffe060" emissive={new THREE.Color("#ddaa00")} emissiveIntensity={1.4} roughness={0.4} />
+                <meshStandardMaterial color="#ffe060" emissive={new Color("#ddaa00")} emissiveIntensity={1.4} roughness={0.4} />
               </mesh>
             </group>
           )}
@@ -3801,10 +3809,10 @@ const FTREE_DATA = [
 ];
 
 function AAAFloweringTrees() {
-  const canA   = useMemo(() => new THREE.SphereGeometry(1.45, 9, 7), []);
-  const canB   = useMemo(() => new THREE.SphereGeometry(1.05, 8, 6), []);
-  const canC   = useMemo(() => new THREE.SphereGeometry(0.72, 7, 5), []);
-  const blosGeo = useMemo(() => new THREE.SphereGeometry(0.075, 5, 4), []);
+  const canA   = useMemo(() => new SphereGeometry(1.45, 9, 7), []);
+  const canB   = useMemo(() => new SphereGeometry(1.05, 8, 6), []);
+  const canC   = useMemo(() => new SphereGeometry(0.72, 7, 5), []);
+  const blosGeo = useMemo(() => new SphereGeometry(0.075, 5, 4), []);
 
   /* Pre-compute blossom cloud positions per tree */
   const blossomClouds = useMemo(() => FTREE_DATA.map(t => {
@@ -3817,7 +3825,7 @@ function AAAFloweringTrees() {
     }));
   }), []);
 
-  const swayRef = useRef<THREE.Group>(null!);
+  const swayRef = useRef<Group>(null!);
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     const sw = Math.sin(t * 0.44) * 0.014 + Math.sin(t * 1.12) * 0.005;
@@ -3840,21 +3848,21 @@ function AAAFloweringTrees() {
             {/* Canopy clusters */}
             <mesh position={[0, 3.6 * tree.sc, 0]} geometry={canA}>
               <meshStandardMaterial color={col} roughness={0.74} metalness={0.0}
-                emissive={new THREE.Color(emCol)} emissiveIntensity={0.30} />
+                emissive={new Color(emCol)} emissiveIntensity={0.30} />
             </mesh>
             <mesh position={[0.75 * tree.sc, 4.4 * tree.sc, -0.55 * tree.sc]} geometry={canB}>
               <meshStandardMaterial color={col} roughness={0.71} metalness={0.0}
-                emissive={new THREE.Color(emCol)} emissiveIntensity={0.32} />
+                emissive={new Color(emCol)} emissiveIntensity={0.32} />
             </mesh>
             <mesh position={[-0.65 * tree.sc, 4.8 * tree.sc, 0.55 * tree.sc]} geometry={canC}>
               <meshStandardMaterial color={tipCol} roughness={0.67} metalness={0.0}
-                emissive={new THREE.Color(emCol)} emissiveIntensity={0.42} />
+                emissive={new Color(emCol)} emissiveIntensity={0.42} />
             </mesh>
             {/* Blossom cloud particles */}
             {blossomClouds[ti].map((b, bi) => (
               <mesh key={bi} position={[b.dx, b.dy, b.dz]} scale={b.sc * 0.52} geometry={blosGeo}>
                 <meshStandardMaterial color={col} roughness={0.60}
-                  emissive={new THREE.Color(emCol)} emissiveIntensity={0.52}
+                  emissive={new Color(emCol)} emissiveIntensity={0.52}
                   transparent opacity={0.80} depthWrite={false} />
               </mesh>
             ))}
@@ -3879,7 +3887,7 @@ const SAPLING_DATA = Array.from({ length: 32 }, () => {
 }).filter(s => !(Math.abs(s.x) < 10 && s.z > 4));
 
 function AAASaplings() {
-  const leafGeo = useMemo(() => new THREE.SphereGeometry(0.36, 6, 5), []);
+  const leafGeo = useMemo(() => new SphereGeometry(0.36, 6, 5), []);
   const COLS = ["#4e7820", "#3a6218", "#567e2e"];
 
   return (
@@ -4001,7 +4009,7 @@ function AAAMossRuins() {
         <mesh position={[2.2, 1.1, 0.5]}>
           <coneGeometry args={[0.08, 0.22, 8, 1, true]} />
           <shaderMaterial uniforms={flameU.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
-            transparent depthWrite={false} side={THREE.DoubleSide} />
+            transparent depthWrite={false} side={DoubleSide} />
         </mesh>
         <pointLight color="#ff9933" intensity={1.8} distance={6} decay={2} position={[2.2, 1.2, 0.6]} />
       </group>
@@ -4061,8 +4069,8 @@ const TALL_CANDLES = Array.from({ length: 24 }, () => {
 
 function AAATallCandleVariety() {
   const flameU = useRef({ uTime: { value: 0 }, uOffset: { value: 0 } });
-  const lightRef1 = useRef<THREE.PointLight>(null!);
-  const lightRef2 = useRef<THREE.PointLight>(null!);
+  const lightRef1 = useRef<PointLight>(null!);
+  const lightRef2 = useRef<PointLight>(null!);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -4083,7 +4091,7 @@ function AAATallCandleVariety() {
           <mesh position={[0, c.h + 0.14, 0]}>
             <coneGeometry args={[0.075, 0.21, 8, 1, true]} />
             <shaderMaterial uniforms={flameU.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
-              transparent depthWrite={false} side={THREE.DoubleSide} />
+              transparent depthWrite={false} side={DoubleSide} />
           </mesh>
         </group>
       ))}
@@ -4096,13 +4104,13 @@ function AAATallCandleVariety() {
         <mesh position={[0, 1.04, 0]}>
           <sphereGeometry args={[0.42, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
           <meshStandardMaterial color="#D4AF37" roughness={0.4} metalness={0.6}
-            emissive={new THREE.Color("#8a6000")} emissiveIntensity={0.4} />
+            emissive={new Color("#8a6000")} emissiveIntensity={0.4} />
         </mesh>
         {/* Bowl flame */}
         <mesh position={[0, 1.28, 0]}>
           <coneGeometry args={[0.32, 0.68, 10, 1, true]} />
           <shaderMaterial uniforms={flameU.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
-            transparent depthWrite={false} side={THREE.DoubleSide} />
+            transparent depthWrite={false} side={DoubleSide} />
         </mesh>
         <pointLight ref={lightRef1} color="#ff8811" intensity={2.8} distance={10} decay={2} position={[0, 1.5, 0]} />
       </group>
@@ -4114,12 +4122,12 @@ function AAATallCandleVariety() {
         <mesh position={[0, 1.04, 0]}>
           <sphereGeometry args={[0.42, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
           <meshStandardMaterial color="#D4AF37" roughness={0.4} metalness={0.6}
-            emissive={new THREE.Color("#8a6000")} emissiveIntensity={0.4} />
+            emissive={new Color("#8a6000")} emissiveIntensity={0.4} />
         </mesh>
         <mesh position={[0, 1.28, 0]}>
           <coneGeometry args={[0.32, 0.68, 10, 1, true]} />
           <shaderMaterial uniforms={flameU.current} vertexShader={FLAME_VERT} fragmentShader={FLAME_FRAG}
-            transparent depthWrite={false} side={THREE.DoubleSide} />
+            transparent depthWrite={false} side={DoubleSide} />
         </mesh>
         <pointLight ref={lightRef2} color="#ff8811" intensity={2.4} distance={10} decay={2} position={[0, 1.5, 0]} />
       </group>
@@ -4132,13 +4140,13 @@ function AAATallCandleVariety() {
    in the avenue edges every 2 m, guiding visitors toward the altar
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAPathwayGuides() {
-  const sphereGeo = useMemo(() => new THREE.SphereGeometry(0.075, 7, 5), []);
-  const matRef    = useRef<THREE.MeshStandardMaterial>(null!);
+  const sphereGeo = useMemo(() => new SphereGeometry(0.075, 7, 5), []);
+  const matRef    = useRef<MeshStandardMaterial>(null!);
 
   const matrices = useMemo(() => {
-    const dum = new THREE.Object3D();
+    const dum = new Object3D();
     const R_G = makeLCG(201);
-    const mats: THREE.Matrix4[] = [];
+    const mats: Matrix4[] = [];
     for (let z = 22; z >= -12; z -= 2) {
       for (const x of [-2.55, 2.55]) {
         const jx = x + (R_G() - 0.5) * 0.35;
@@ -4153,7 +4161,7 @@ function AAAPathwayGuides() {
     return mats;
   }, []);
 
-  const meshRef = useRef<THREE.InstancedMesh>(null!);
+  const meshRef = useRef<InstancedMesh>(null!);
   useEffect(() => {
     matrices.forEach((m, i) => meshRef.current?.setMatrixAt(i, m));
     if (meshRef.current) meshRef.current.instanceMatrix.needsUpdate = true;
@@ -4171,7 +4179,7 @@ function AAAPathwayGuides() {
       <meshStandardMaterial
         ref={matRef}
         color="#ffe090"
-        emissive={new THREE.Color("#D4AF37")}
+        emissive={new Color("#D4AF37")}
         emissiveIntensity={0.8}
         roughness={0.30}
         metalness={0.60}
@@ -4191,12 +4199,12 @@ const SHRINE_Z_POSITIONS: [number, number][] = [
 function AAAPathwayShrines() {
   const { lightPoolSize } = useQuality();
   const { camera } = useThree();
-  const baseGeo   = useMemo(() => new THREE.BoxGeometry(1.02, 0.26, 0.72), []);
-  const pillarGeo = useMemo(() => new THREE.BoxGeometry(0.18, 0.44, 0.18), []);
-  const waxGeo    = useMemo(() => new THREE.CylinderGeometry(0.065, 0.082, 0.32, 8), []);
-  const flameGeo  = useMemo(() => new THREE.ConeGeometry(0.058, 0.20, 6, 1, true), []);
-  const flameRefs = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
-  const lightRefs = useRef<(THREE.PointLight | null)[]>([]);
+  const baseGeo   = useMemo(() => new BoxGeometry(1.02, 0.26, 0.72), []);
+  const pillarGeo = useMemo(() => new BoxGeometry(0.18, 0.44, 0.18), []);
+  const waxGeo    = useMemo(() => new CylinderGeometry(0.065, 0.082, 0.32, 8), []);
+  const flameGeo  = useMemo(() => new ConeGeometry(0.058, 0.20, 6, 1, true), []);
+  const flameRefs = useRef<(MeshStandardMaterial | null)[]>([]);
+  const lightRefs = useRef<(PointLight | null)[]>([]);
 
   /* Shrine plinth centres — used to gauge visitor proximity per shrine */
   const shrineCentres = useMemo(
@@ -4211,7 +4219,7 @@ function AAAPathwayShrines() {
       const dx = camera.position.x - c.x;
       const dz = camera.position.z - c.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
-      const prox = THREE.MathUtils.clamp(1 - dist / 4.5, 0, 1);
+      const prox = MathUtils.clamp(1 - dist / 4.5, 0, 1);
 
       const f1 = flameRefs.current[fi++];
       const f2 = flameRefs.current[fi++];
@@ -4256,7 +4264,7 @@ function AAAPathwayShrines() {
                       <meshStandardMaterial
                         ref={el => { flameRefs.current[fi] = el; }}
                         color="#ffaa30"
-                        emissive={new THREE.Color("#ff6600")}
+                        emissive={new Color("#ff6600")}
                         emissiveIntensity={1.1}
                         transparent opacity={0.92}
                         roughness={0.28}
@@ -4298,9 +4306,9 @@ const _PETAL_DATA: [number, number, number, number][] = (() => {
 })();
 
 function AAAPathwayPetals() {
-  const petalGeo = useMemo(() => new THREE.PlaneGeometry(0.13, 0.09), []);
+  const petalGeo = useMemo(() => new PlaneGeometry(0.13, 0.09), []);
   const matrices = useMemo(() => {
-    const dum = new THREE.Object3D();
+    const dum = new Object3D();
     return _PETAL_DATA.map(([x, y, z, rot]) => {
       dum.position.set(x, y, z);
       dum.rotation.set(-Math.PI / 2, 0, rot);
@@ -4310,7 +4318,7 @@ function AAAPathwayPetals() {
     });
   }, []);
 
-  const meshRef = useRef<THREE.InstancedMesh>(null!);
+  const meshRef = useRef<InstancedMesh>(null!);
   useEffect(() => {
     matrices.forEach((m, i) => meshRef.current?.setMatrixAt(i, m));
     if (meshRef.current) meshRef.current.instanceMatrix.needsUpdate = true;
@@ -4320,11 +4328,11 @@ function AAAPathwayPetals() {
     <instancedMesh ref={meshRef} args={[petalGeo, undefined, matrices.length]}>
       <meshStandardMaterial
         color="#e06878"
-        emissive={new THREE.Color("#c03050")}
+        emissive={new Color("#c03050")}
         emissiveIntensity={0.14}
         roughness={0.72}
         metalness={0.0}
-        side={THREE.DoubleSide}
+        side={DoubleSide}
         transparent
         opacity={0.82}
         depthWrite={false}
@@ -4344,12 +4352,12 @@ function AAAAvenueSanctuaryArch() {
   const baseY     = useMemo(() => terrainHeightAt(0, 11), []);
   const archCtrY  = baseY + PILLAR_H + 0.46; // centre of torus ring
 
-  const pillarGeo = useMemo(() => new THREE.BoxGeometry(0.66, PILLAR_H, 0.66), []);
-  const capGeo    = useMemo(() => new THREE.BoxGeometry(0.90, 0.35, 0.90), []);
-  const lintGeo   = useMemo(() => new THREE.BoxGeometry(SPAN * 2 + 0.66, 0.30, 0.68), []);
+  const pillarGeo = useMemo(() => new BoxGeometry(0.66, PILLAR_H, 0.66), []);
+  const capGeo    = useMemo(() => new BoxGeometry(0.90, 0.35, 0.90), []);
+  const lintGeo   = useMemo(() => new BoxGeometry(SPAN * 2 + 0.66, 0.30, 0.68), []);
   /* Half-torus arch crown: radius=SPAN so the ring ends land over the pillar centres */
   const archGeo   = useMemo(
-    () => new THREE.TorusGeometry(SPAN, 0.21, 8, 26, Math.PI),
+    () => new TorusGeometry(SPAN, 0.21, 8, 26, Math.PI),
     []
   );
 
@@ -4384,7 +4392,7 @@ function AAAAvenueSanctuaryArch() {
           color="#D4AF37"
           roughness={0.28}
           metalness={0.78}
-          emissive={new THREE.Color("#9a7800")}
+          emissive={new Color("#9a7800")}
           emissiveIntensity={0.60}
         />
       </mesh>
@@ -4417,8 +4425,8 @@ function AAAArchVines() {
   const PILLAR_HALF = 0.33;
   const baseY       = useMemo(() => terrainHeightAt(0, 11), []);
 
-  const leafGeo  = useMemo(() => new THREE.PlaneGeometry(0.10, 0.075), []);
-  const bloomGeo = useMemo(() => new THREE.PlaneGeometry(0.065, 0.065), []);
+  const leafGeo  = useMemo(() => new PlaneGeometry(0.10, 0.075), []);
+  const bloomGeo = useMemo(() => new PlaneGeometry(0.065, 0.065), []);
 
   type VineInstance = {
     x: number; y: number; z: number;
@@ -4494,9 +4502,9 @@ function AAAArchVines() {
     return { leafData: leaves, bloomData: blooms };
   }, [baseY]);
 
-  const leafRef  = useRef<THREE.InstancedMesh>(null!);
-  const bloomRef = useRef<THREE.InstancedMesh>(null!);
-  const dumSway  = useMemo(() => new THREE.Object3D(), []);
+  const leafRef  = useRef<InstancedMesh>(null!);
+  const bloomRef = useRef<InstancedMesh>(null!);
+  const dumSway  = useMemo(() => new Object3D(), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -4538,7 +4546,7 @@ function AAAArchVines() {
           color="#4a7a22"
           roughness={0.68}
           metalness={0.0}
-          side={THREE.DoubleSide}
+          side={DoubleSide}
           transparent
           opacity={0.92}
           depthWrite={false}
@@ -4548,11 +4556,11 @@ function AAAArchVines() {
       <instancedMesh ref={bloomRef} args={[bloomGeo, undefined, bloomData.length]}>
         <meshStandardMaterial
           color="#e8b0c8"
-          emissive={new THREE.Color("#c86088")}
+          emissive={new Color("#c86088")}
           emissiveIntensity={0.22}
           roughness={0.55}
           metalness={0.0}
-          side={THREE.DoubleSide}
+          side={DoubleSide}
           transparent
           opacity={0.9}
           depthWrite={false}
@@ -4576,10 +4584,10 @@ function AAAVineFireflies() {
   const proximity = useRef(0); // 0 = far, 1 = right at the arch
 
   const N_TOTAL = Math.max(6, Math.ceil(18 * particleScale));
-  const ref     = useRef<THREE.InstancedMesh>(null!);
-  const matRef  = useRef<THREE.MeshStandardMaterial>(null!);
-  const dum     = useMemo(() => new THREE.Object3D(), []);
-  const glowGeo = useMemo(() => new THREE.SphereGeometry(0.026, 6, 6), []);
+  const ref     = useRef<InstancedMesh>(null!);
+  const matRef  = useRef<MeshStandardMaterial>(null!);
+  const dum     = useMemo(() => new Object3D(), []);
+  const glowGeo = useMemo(() => new SphereGeometry(0.026, 6, 6), []);
 
   const flies = useMemo(() => {
     const R = makeLCG(9042);
@@ -4608,8 +4616,8 @@ function AAAVineFireflies() {
     const dx = camera.position.x;
     const dz = camera.position.z - ARCH_Z;
     const dist = Math.sqrt(dx * dx + dz * dz);
-    const targetProximity = THREE.MathUtils.clamp(1 - dist / 6, 0, 1);
-    proximity.current = THREE.MathUtils.lerp(proximity.current, targetProximity, 0.06);
+    const targetProximity = MathUtils.clamp(1 - dist / 6, 0, 1);
+    proximity.current = MathUtils.lerp(proximity.current, targetProximity, 0.06);
     const prox = proximity.current;
 
     /* As the visitor nears, the swarm draws in slightly tighter around the
@@ -4641,14 +4649,14 @@ function AAAVineFireflies() {
         <meshStandardMaterial
           ref={matRef}
           color="#ffe6a0"
-          emissive={new THREE.Color("#ffd060")}
+          emissive={new Color("#ffd060")}
           emissiveIntensity={1.1}
           roughness={0.4}
           metalness={0}
           transparent
           opacity={0.9}
           depthWrite={false}
-          blending={THREE.AdditiveBlending}
+          blending={AdditiveBlending}
         />
       </instancedMesh>
     </group>
@@ -4664,12 +4672,12 @@ const AVENUE_TORCH_PAIRS: [number, number][] = [
 
 function AAAAvenueTorches() {
   const { camera } = useThree();
-  const postGeo  = useMemo(() => new THREE.CylinderGeometry(0.085, 0.125, 2.1, 8, 2), []);
-  const baseGeo  = useMemo(() => new THREE.CylinderGeometry(0.22, 0.30, 0.30, 8, 1), []);
-  const flameGeo = useMemo(() => new THREE.SphereGeometry(0.20, 7, 5), []);
-  const capGeo   = useMemo(() => new THREE.CylinderGeometry(0.24, 0.20, 0.13, 8, 1), []);
+  const postGeo  = useMemo(() => new CylinderGeometry(0.085, 0.125, 2.1, 8, 2), []);
+  const baseGeo  = useMemo(() => new CylinderGeometry(0.22, 0.30, 0.30, 8, 1), []);
+  const flameGeo = useMemo(() => new SphereGeometry(0.20, 7, 5), []);
+  const capGeo   = useMemo(() => new CylinderGeometry(0.24, 0.20, 0.13, 8, 1), []);
 
-  const flameRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const flameRefs = useRef<(Mesh | null)[]>([]);
 
   /* Torch positions — used to gauge visitor proximity per torch */
   const torchPositions = useMemo(
@@ -4689,8 +4697,8 @@ function AAAAvenueTorches() {
         const dx = camera.position.x - p.x;
         const dz = camera.position.z - p.z;
         const dist = Math.sqrt(dx * dx + dz * dz);
-        const prox = THREE.MathUtils.clamp(1 - dist / 5, 0, 1);
-        const mat = m.material as THREE.MeshStandardMaterial;
+        const prox = MathUtils.clamp(1 - dist / 5, 0, 1);
+        const mat = m.material as MeshStandardMaterial;
         if (mat) mat.emissiveIntensity = 3.2 + prox * 2.2;
       }
     });
@@ -4721,7 +4729,7 @@ function AAAAvenueTorches() {
               >
                 <meshStandardMaterial
                   color="#ffb040"
-                  emissive={new THREE.Color("#ff6800")}
+                  emissive={new Color("#ff6800")}
                   emissiveIntensity={3.2}
                   roughness={0.28}
                   metalness={0.0}
@@ -4747,10 +4755,10 @@ function AAASceneCameraDriver({ sceneView, ctrlRef, walkMode }: {
   walkMode:  boolean;
 }) {
   const { camera } = useThree();
-  const fromCam    = useRef(new THREE.Vector3(0, 4.2, 22));
-  const toCam      = useRef(new THREE.Vector3(0, 4.2, 18));
-  const fromTarget = useRef(new THREE.Vector3(0, 2.0, 0));
-  const toTarget   = useRef(new THREE.Vector3(0, 2.0, 0));
+  const fromCam    = useRef(new Vector3(0, 4.2, 22));
+  const toCam      = useRef(new Vector3(0, 4.2, 18));
+  const fromTarget = useRef(new Vector3(0, 2.0, 0));
+  const toTarget   = useRef(new Vector3(0, 2.0, 0));
   const progress   = useRef(1);
   const animating  = useRef(false);
   const prevView   = useRef<SceneViewType>(sceneView);
@@ -4884,8 +4892,8 @@ const INSCRIPTION_DATA = [
 ══════════════════════════════════════════════════════════════════════════ */
 function AAADestinationMarkers() {
   const { camera } = useThree();
-  const lightRefs = useRef<(THREE.PointLight | null)[]>([]);
-  const crystRefs = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
+  const lightRefs = useRef<(PointLight | null)[]>([]);
+  const crystRefs = useRef<(MeshStandardMaterial | null)[]>([]);
 
   useFrame(() => {
     for (let i = 0; i < DESTINATIONS.length; i++) {
@@ -4926,9 +4934,9 @@ function AAADestinationMarkers() {
             <mesh position={[0, 1.82, 0]}>
               <octahedronGeometry args={[0.17, 0]} />
               <meshStandardMaterial
-                ref={el => { crystRefs.current[i] = el as THREE.MeshStandardMaterial | null; }}
+                ref={el => { crystRefs.current[i] = el as MeshStandardMaterial | null; }}
                 color="#D4AF37"
-                emissive={new THREE.Color("#D4AF37")}
+                emissive={new Color("#D4AF37")}
                 emissiveIntensity={1.1}
                 roughness={0.18} metalness={0.65}
                 transparent opacity={0.90}
@@ -4936,7 +4944,7 @@ function AAADestinationMarkers() {
             </mesh>
             {/* Proximity point light */}
             <pointLight
-              ref={el => { lightRefs.current[i] = el as THREE.PointLight | null; }}
+              ref={el => { lightRefs.current[i] = el as PointLight | null; }}
               color="#ffe090" intensity={0.9} distance={12} decay={2}
               position={[0, 2.1, 0]}
             />
@@ -4970,11 +4978,11 @@ function AAADestinationMarkers() {
 ══════════════════════════════════════════════════════════════════════════ */
 function AAASecondaryPaths() {
   const N       = SPATH_STONES.length;
-  const meshRef = useRef<THREE.InstancedMesh>(null!);
-  const stoneGeo = useMemo(() => new THREE.CylinderGeometry(0.29, 0.34, 0.09, 7), []);
+  const meshRef = useRef<InstancedMesh>(null!);
+  const stoneGeo = useMemo(() => new CylinderGeometry(0.29, 0.34, 0.09, 7), []);
 
   useEffect(() => {
-    const dum = new THREE.Object3D();
+    const dum = new Object3D();
     SPATH_STONES.forEach(([x, y, z], i) => {
       dum.position.set(x, y, z);
       dum.rotation.set(0, (i * 0.618) % (Math.PI * 2), 0);
@@ -4998,30 +5006,30 @@ function AAASecondaryPaths() {
    4 InstancedMesh passes (base / back wall / left side / right side).
 ══════════════════════════════════════════════════════════════════════════ */
 function AAAStoneAlcoves() {
-  const wallGeo = useMemo(() => new THREE.BoxGeometry(1.40, 0.65, 0.22), []);
-  const sideGeo = useMemo(() => new THREE.BoxGeometry(0.22, 0.65, 0.75), []);
-  const baseGeo = useMemo(() => new THREE.BoxGeometry(2.00, 0.08, 1.20), []);
+  const wallGeo = useMemo(() => new BoxGeometry(1.40, 0.65, 0.22), []);
+  const sideGeo = useMemo(() => new BoxGeometry(0.22, 0.65, 0.75), []);
+  const baseGeo = useMemo(() => new BoxGeometry(2.00, 0.08, 1.20), []);
 
-  const baseRef = useRef<THREE.InstancedMesh>(null!);
-  const wallRef = useRef<THREE.InstancedMesh>(null!);
-  const lsRef   = useRef<THREE.InstancedMesh>(null!);
-  const rsRef   = useRef<THREE.InstancedMesh>(null!);
+  const baseRef = useRef<InstancedMesh>(null!);
+  const wallRef = useRef<InstancedMesh>(null!);
+  const lsRef   = useRef<InstancedMesh>(null!);
+  const rsRef   = useRef<InstancedMesh>(null!);
 
   useEffect(() => {
-    const dum = new THREE.Object3D();
+    const dum = new Object3D();
 
     const setMatrix = (
-      ref: React.MutableRefObject<THREE.InstancedMesh>,
-      mats: THREE.Matrix4[],
+      ref: React.MutableRefObject<InstancedMesh>,
+      mats: Matrix4[],
     ) => {
       mats.forEach((m, i) => ref.current?.setMatrixAt(i, m));
       if (ref.current) ref.current.instanceMatrix.needsUpdate = true;
     };
 
-    const baseMats: THREE.Matrix4[] = [];
-    const wallMats: THREE.Matrix4[] = [];
-    const lsMats:   THREE.Matrix4[] = [];
-    const rsMats:   THREE.Matrix4[] = [];
+    const baseMats: Matrix4[] = [];
+    const wallMats: Matrix4[] = [];
+    const lsMats:   Matrix4[] = [];
+    const rsMats:   Matrix4[] = [];
 
     for (const zone of ALCOVE_ZONES) {
       const ty = terrainHeightAt(zone.cx, zone.cz);
@@ -5030,7 +5038,7 @@ function AAAStoneAlcoves() {
       const cosA = Math.cos(angle), sinA = Math.sin(angle);
 
       /* Apply a local-space offset in the rotated frame */
-      const place = (lx: number, ly: number, lz: number): THREE.Matrix4 => {
+      const place = (lx: number, ly: number, lz: number): Matrix4 => {
         const wx = zone.cx + lx * cosA + lz * sinA;
         const wz = zone.cz - lx * sinA + lz * cosA;
         dum.position.set(wx, ty + ly, wz);
@@ -5078,17 +5086,17 @@ function AAAStoneAlcoves() {
 function AAAJourneyLanterns() {
   const N = LANTERN_POSITIONS.length;
 
-  const baseRef    = useRef<THREE.InstancedMesh>(null!);
-  const postRef    = useRef<THREE.InstancedMesh>(null!);
-  const lanternRef = useRef<THREE.InstancedMesh>(null!);
-  const glowMat    = useRef<THREE.MeshStandardMaterial>(null!);
+  const baseRef    = useRef<InstancedMesh>(null!);
+  const postRef    = useRef<InstancedMesh>(null!);
+  const lanternRef = useRef<InstancedMesh>(null!);
+  const glowMat    = useRef<MeshStandardMaterial>(null!);
 
-  const baseGeo    = useMemo(() => new THREE.BoxGeometry(0.30, 0.14, 0.30), []);
-  const postGeo    = useMemo(() => new THREE.CylinderGeometry(0.036, 0.044, 1.12, 6), []);
-  const lanternGeo = useMemo(() => new THREE.BoxGeometry(0.23, 0.27, 0.23), []);
+  const baseGeo    = useMemo(() => new BoxGeometry(0.30, 0.14, 0.30), []);
+  const postGeo    = useMemo(() => new CylinderGeometry(0.036, 0.044, 1.12, 6), []);
+  const lanternGeo = useMemo(() => new BoxGeometry(0.23, 0.27, 0.23), []);
 
   useEffect(() => {
-    const dum = new THREE.Object3D();
+    const dum = new Object3D();
     LANTERN_POSITIONS.forEach(([x, y, z], i) => {
       dum.position.set(x, y + 0.07, z); dum.rotation.set(0, 0, 0); dum.scale.set(1,1,1);
       dum.updateMatrix(); baseRef.current?.setMatrixAt(i, dum.matrix);
@@ -5122,7 +5130,7 @@ function AAAJourneyLanterns() {
         <meshStandardMaterial
           ref={glowMat}
           color="#ffe8a0"
-          emissive={new THREE.Color("#ffaa30")}
+          emissive={new Color("#ffaa30")}
           emissiveIntensity={0.9}
           roughness={0.28} metalness={0.0}
           transparent opacity={0.84}
@@ -5229,8 +5237,8 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
           enableDamping dampingFactor={0.055}
           rotateSpeed={0.42} panSpeed={0.9} zoomSpeed={0.72}
           minDistance={3} maxDistance={48}
-          mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
-          touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
+          mouseButtons={{ LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.PAN }}
+          touches={{ ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN }}
           maxPolarAngle={Math.PI / 2.06} minPolarAngle={Math.PI / 12}
           target={[0, 2.0, 8]}
         />
@@ -5474,7 +5482,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 const MM_SIZE  = 120;
 const MM_HALF  = MM_SIZE / 2;
 const MM_SCALE = MM_SIZE / 54;        // ±27 scene units → 120 px
-const _mmFwd   = new THREE.Vector3(); // reused across frames (no alloc per frame)
+const _mmFwd   = new Vector3(); // reused across frames (no alloc per frame)
 const mm_x  = (sx: number) => MM_HALF + sx * MM_SCALE;
 const mm_z  = (sz: number) => MM_HALF + sz * MM_SCALE;
 
@@ -5589,7 +5597,7 @@ function AAAMiniMap({ litCount }: { litCount: number }) {
 /* ══════════════════════════════════════════════════════════════════════════
    PHASE 3: CAMERA FOCUS — smooth pan to selected candle, returns home
 ══════════════════════════════════════════════════════════════════════════ */
-const HOME_TARGET = new THREE.Vector3(0, 0, 4);
+const HOME_TARGET = new Vector3(0, 0, 4);
 
 function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView, walkMode }: {
   selectedId: string | null;
@@ -5601,10 +5609,10 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView, walkMode }: {
   const { camera } = useThree();
   const animating  = useRef(false);
   const progress   = useRef(0);
-  const fromTarget = useRef(new THREE.Vector3(0, 0, 4));
-  const toTarget   = useRef(new THREE.Vector3(0, 0, 4));
-  const fromCam    = useRef(new THREE.Vector3());
-  const toCam      = useRef(new THREE.Vector3());
+  const fromTarget = useRef(new Vector3(0, 0, 4));
+  const toTarget   = useRef(new Vector3(0, 0, 4));
+  const fromCam    = useRef(new Vector3());
+  const toCam      = useRef(new Vector3());
   /* 'candle' = flying to a selected memorial; 'overview' = returning to scene view.
      Only 'candle' animations run while walkMode is true. */
   const animType = useRef<'candle' | 'overview'>('overview');
@@ -5675,8 +5683,8 @@ function AAAFocusCamera({ selectedId, entries, ctrlRef, sceneView, walkMode }: {
     const t = progress.current * progress.current * (3 - 2 * progress.current);
     ctrlRef.current.target.lerpVectors(fromTarget.current, toTarget.current, t);
     /* Also walk the camera position toward the candle (FPS-friendly) */
-    camera.position.x = THREE.MathUtils.lerp(fromCam.current.x, toCam.current.x, t);
-    camera.position.z = THREE.MathUtils.lerp(fromCam.current.z, toCam.current.z, t);
+    camera.position.x = MathUtils.lerp(fromCam.current.x, toCam.current.x, t);
+    camera.position.z = MathUtils.lerp(fromCam.current.z, toCam.current.z, t);
     if (progress.current >= 1) animating.current = false;
   });
 

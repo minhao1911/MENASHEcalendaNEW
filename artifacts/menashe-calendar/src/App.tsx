@@ -12,13 +12,14 @@ import { fetchUserProfile, saveUserProfile, fetchPublicProfile, type PublicProfi
 import { dark } from "@clerk/themes";
 import { Switch, Route, useLocation, Redirect } from "wouter";
 import { LanguageProvider } from "./context/LanguageContext";
-import Landing from "./pages/Landing";
-import Home from "./pages/Home";
-import CalendarPage from "./pages/CalendarPage";
-import ZmanimPage from "./pages/ZmanimPage";
-import SiddurPage from "./pages/SiddurPage";
-import SettingsPage from "./pages/SettingsPage";
-import PremiumPage from "./pages/PremiumPage";
+// Pages are lazily loaded — only the active page is needed on first paint
+const Landing = lazy(() => import("./pages/Landing"));
+const Home = lazy(() => import("./pages/Home"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const ZmanimPage = lazy(() => import("./pages/ZmanimPage"));
+const SiddurPage = lazy(() => import("./pages/SiddurPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const PremiumPage = lazy(() => import("./pages/PremiumPage"));
 import BottomNav from "./components/BottomNav";
 import FeedbackButton from "./components/FeedbackButton";
 import { useNotifications } from "./hooks/useNotifications";
@@ -858,7 +859,9 @@ function HomeRoute() {
         <LanguageProvider>
           <div className="app-container">
             <div className="app-shell">
-              <Landing onSignIn={() => { window.location.href = `${basePath}/sign-in`; }} />
+              <Suspense fallback={null}>
+                <Landing onSignIn={() => { window.location.href = `${basePath}/sign-in`; }} />
+              </Suspense>
             </div>
           </div>
         </LanguageProvider>
