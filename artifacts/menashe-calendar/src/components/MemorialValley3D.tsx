@@ -4532,6 +4532,80 @@ function AAAArchVines() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SPR-038: VINE FIREFLIES — small glowing motes drifting near the flowering
+   vines on the inner sanctuary arch pillars; reinforces the living-garden feel
+══════════════════════════════════════════════════════════════════════════ */
+function AAAVineFireflies() {
+  const { particleScale } = useQuality();
+  const SPAN     = 2.26;
+  const PILLAR_H = 4.20;
+  const baseY    = useMemo(() => terrainHeightAt(0, 11), []);
+
+  const N_TOTAL = Math.max(6, Math.ceil(18 * particleScale));
+  const ref     = useRef<THREE.InstancedMesh>(null!);
+  const matRef  = useRef<THREE.MeshStandardMaterial>(null!);
+  const dum     = useMemo(() => new THREE.Object3D(), []);
+  const glowGeo = useMemo(() => new THREE.SphereGeometry(0.026, 6, 6), []);
+
+  const flies = useMemo(() => {
+    const R = makeLCG(9042);
+    const pillars = [-SPAN, SPAN];
+    return Array.from({ length: N_TOTAL }, (_, i) => {
+      const cx = pillars[i % 2];
+      return {
+        cx,
+        cy: baseY + 0.4 + R() * (PILLAR_H * 0.85),
+        cz: (R() - 0.5) * 0.6,
+        radiusX: 0.22 + R() * 0.28,
+        radiusZ: 0.18 + R() * 0.24,
+        bob: 0.16 + R() * 0.18,
+        speed: 0.28 + R() * 0.35,
+        phase: R() * Math.PI * 2,
+        flicker: R() * Math.PI * 2,
+      };
+    });
+  }, [N_TOTAL, baseY]);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    flies.forEach((f, i) => {
+      dum.position.set(
+        f.cx + Math.sin(t * f.speed + f.phase) * f.radiusX,
+        f.cy + Math.sin(t * f.speed * 1.7 + f.phase * 1.3) * f.bob,
+        f.cz + Math.cos(t * f.speed * 0.8 + f.phase) * f.radiusZ,
+      );
+      const pulse = 0.55 + Math.sin(t * 3.2 + f.flicker) * 0.35 + Math.sin(t * 7.1 + f.flicker) * 0.10;
+      dum.scale.setScalar(Math.max(0.3, pulse));
+      dum.updateMatrix();
+      ref.current?.setMatrixAt(i, dum.matrix);
+    });
+    if (ref.current) ref.current.instanceMatrix.needsUpdate = true;
+    if (matRef.current) {
+      matRef.current.emissiveIntensity = 1.1 + Math.sin(t * 2.4) * 0.25;
+    }
+  });
+
+  return (
+    <group position={[0, 0, 11]}>
+      <instancedMesh ref={ref} args={[glowGeo, undefined, flies.length]}>
+        <meshStandardMaterial
+          ref={matRef}
+          color="#ffe6a0"
+          emissive={new THREE.Color("#ffd060")}
+          emissiveIntensity={1.1}
+          roughness={0.4}
+          metalness={0}
+          transparent
+          opacity={0.9}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </instancedMesh>
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    SACRED AVENUE TORCHES — paired glowing stone lanterns guiding the path
 ══════════════════════════════════════════════════════════════════════════ */
 const AVENUE_TORCH_PAIRS: [number, number][] = [
@@ -4817,6 +4891,9 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 
       {/* SPR-038: Flowering vines climbing the inner arch pillars */}
       <AAAArchVines />
+
+      {/* SPR-038: Fireflies drifting near the vines */}
+      <AAAVineFireflies />
 
       {/* Sacred Avenue torch guides — lead user from entry toward altar */}
       <AAAAvenueTorches />
