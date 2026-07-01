@@ -31,7 +31,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/menashe-calendar run dev"
+args = "pnpm install --frozen-lockfile && pnpm --filter @workspace/menashe-calendar run dev"
 waitForPort = 5000
 
 [agent]
