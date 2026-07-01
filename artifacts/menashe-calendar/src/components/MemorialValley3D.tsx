@@ -1199,6 +1199,67 @@ function AAAPollenParticles() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SPR-037B: PATHWAY MOTES — sacred light motes drifting upward from the
+   golden inlaid centreline, like incense smoke catching candlelight
+══════════════════════════════════════════════════════════════════════════ */
+function AAAPathwayMotes() {
+  const { particleScale } = useQuality();
+  const N   = Math.max(12, Math.ceil(54 * particleScale));
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  const dum = useMemo(() => new THREE.Object3D(), []);
+
+  /* Stable per-particle seed data — confined to the centreline band */
+  const pts = useMemo(() => {
+    const R = makeLCG(314);
+    return Array.from({ length: 54 }, () => ({
+      x:   (R() - 0.5) * 1.1,          // ±0.55 m — within the golden inlay strip
+      z:   R() * 36 - 12,              // full avenue length z = −12 … +22
+      y0:  R() * 3.4,                  // starting height offset (staggered so they don't all pulse together)
+      sp:  0.18 + R() * 0.24,          // rise speed (m/s)
+      ph:  R() * Math.PI * 2,          // individual phase
+      sw:  (R() - 0.5) * 0.28,        // horizontal sway amplitude
+      sc:  0.016 + R() * 0.020,       // base scale
+    }));
+  }, []);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    pts.slice(0, N).forEach((p, i) => {
+      /* Rise upward, wrap at 3.8 m back to ground level */
+      const yRaw = p.y0 + t * p.sp;
+      const y    = (yRaw % 3.8) + terrainHeightAt(p.x, p.z) + 0.05;
+      /* Gentle horizontal sway — drifts slightly as it rises */
+      const x    = p.x + Math.sin(t * 0.55 + p.ph) * p.sw;
+      const z    = p.z + Math.cos(t * 0.40 + p.ph * 1.2) * 0.22;
+      /* Size pulses softly — larger near ground, fades as it rises */
+      const frac = ((yRaw % 3.8)) / 3.8;           // 0 = ground, 1 = top
+      const fade = Math.sin(frac * Math.PI);        // peaks at mid-height
+      const sc   = p.sc * (0.6 + fade * 0.8) * (0.9 + Math.sin(t * p.sp * 2.5 + p.ph) * 0.1);
+
+      dum.position.set(x, y, z);
+      dum.scale.setScalar(sc);
+      dum.updateMatrix();
+      ref.current.setMatrixAt(i, dum.matrix);
+    });
+    ref.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, N]}>
+      <sphereGeometry args={[1, 5, 4]} />
+      <meshStandardMaterial
+        color="#ffe8a0"
+        emissive={new THREE.Color("#D4AF37")}
+        emissiveIntensity={2.8}
+        transparent
+        opacity={0.48}
+        depthWrite={false}
+      />
+    </instancedMesh>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    STONE PATHWAYS — detailed limestone paths
    SPR-030: Circular stones, edging, terrace edges converted to InstancedMesh.
    Reduction: ~208 individual draw calls → 3 draw calls.
@@ -4525,9 +4586,10 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       {/* Sacred Avenue torch guides — lead user from entry toward altar */}
       <AAAAvenueTorches />
 
-      {/* SPR-037B: Golden guide lights + candle shrines along the pathway */}
+      {/* SPR-037B: Golden guide lights + candle shrines + rising motes along the pathway */}
       <AAAPathwayGuides />
       <AAAPathwayShrines />
+      <AAAPathwayMotes />
 
       {/* Trees */}
       <AAAOliveTrees />
