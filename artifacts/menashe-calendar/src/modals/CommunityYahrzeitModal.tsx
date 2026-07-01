@@ -219,6 +219,7 @@ export default function CommunityYahrzeitModal({ onClose, userName }: Props) {
 
   /* ───────────────────────────────────────────────────────────────────────── */
   return (
+    <>
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-sheet"
@@ -843,14 +844,15 @@ export default function CommunityYahrzeitModal({ onClose, userName }: Props) {
         </div>
       </div>
 
-      {/* ── Memorial Sanctuary full-screen experience ── */}
-      {showSanctuary && (
-        <MemorialSanctuaryModal
-          onClose={() => { setShowSanctuary(false); load(); }}
-          userName={userName}
-          initialEntries={entries}
-        />
-      )}
     </div>
+    {/* ── Memorial Sanctuary full-screen experience ── */}
+    {showSanctuary && (
+      <MemorialSanctuaryModal
+        onClose={() => { setShowSanctuary(false); load(); }}
+        userName={userName}
+        initialEntries={entries}
+      />
+    )}
+    </>
   );
 }
