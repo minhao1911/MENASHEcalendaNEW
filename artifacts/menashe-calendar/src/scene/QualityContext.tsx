@@ -40,6 +40,13 @@ export interface QualitySettings {
    * Candles beyond this index skip their point light entirely.
    */
   lightPoolSize:      number;
+  /** Whether N8AO ambient occlusion is active (disabled on battery tier) */
+  aoEnabled:          boolean;
+  /**
+   * Render N8AO at half resolution for performance.
+   * true on medium — saves significant GPU bandwidth with minor quality loss.
+   */
+  aoHalfRes:          boolean;
 }
 
 const PRESETS: Record<QualityTier, QualitySettings> = {
@@ -54,6 +61,8 @@ const PRESETS: Record<QualityTier, QualitySettings> = {
     bloomThreshold:   0.34, /* SPR-034D: raised from 0.28 — fewer surfaces bloom */
     particleScale:    1.0,
     lightPoolSize:    8,
+    aoEnabled:        true,
+    aoHalfRes:        false,
   },
   medium: {
     tier:             "medium",
@@ -66,6 +75,8 @@ const PRESETS: Record<QualityTier, QualitySettings> = {
     bloomThreshold:   0.38,
     particleScale:    0.50,
     lightPoolSize:    3,
+    aoEnabled:        true,
+    aoHalfRes:        true,
   },
   battery: {
     tier:             "battery",
@@ -78,6 +89,8 @@ const PRESETS: Record<QualityTier, QualitySettings> = {
     bloomThreshold:   1.0,
     particleScale:    0.22,
     lightPoolSize:    0,
+    aoEnabled:        false,
+    aoHalfRes:        true,
   },
 };
 

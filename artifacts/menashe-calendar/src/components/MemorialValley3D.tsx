@@ -5458,7 +5458,6 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       <PostProcessingPipeline
         enableSMAA
         enableBloom
-        enableSSAO={false}
       />
     </>
   );
