@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { runMigrations } from "./migrate";
-import { startPushScheduler, startExpoScheduler, startHolidayWebPushScheduler, startYahrzeitPushScheduler, startHolidayHourReminderScheduler } from "./routes/push";
+import { startPushScheduler, startExpoScheduler, startHolidayWebPushScheduler, startYahrzeitPushScheduler, startHolidayHourReminderScheduler, startWeeklyYahrzeitDigestScheduler } from "./routes/push";
 
 const rawPort = process.env["PORT"] ?? "8080";
 
@@ -24,6 +24,7 @@ async function start() {
   startHolidayWebPushScheduler();
   startHolidayHourReminderScheduler();
   startYahrzeitPushScheduler();
+  startWeeklyYahrzeitDigestScheduler();
 
   app.listen(port, (err) => {
     if (err) {

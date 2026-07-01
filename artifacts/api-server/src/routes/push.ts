@@ -754,6 +754,159 @@ export function startYahrzeitPushScheduler() {
   }, 60_000);
 }
 
+// ── Weekly Yahrzeit Digest Scheduler ─────────────────────────────────────────
+//
+// Every Sunday at 08:00 local server time, broadcast a digest of ALL community
+// yahrzeits falling in the next 7 days to every web-push and Expo subscriber.
+// Personal (per-user) yahrzeit_entries are handled by startYahrzeitPushScheduler;
+// this scheduler focuses on the shared community_yahrzeit table so the whole
+// community stays informed together.
+
+let _weeklyDigestLastFiredDate = "";
+
+export function startWeeklyYahrzeitDigestScheduler() {
+  setInterval(async () => {
+    if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
+
+    const now = new Date();
+
+    // Only fire on Sundays at 08:00
+    if (now.getDay() !== 0) return;
+    if (now.getHours() !== 8 || now.getMinutes() >= 5) return;
+
+    const dateKey = now.toDateString();
+    if (_weeklyDigestLastFiredDate === dateKey) return;
+    _weeklyDigestLastFiredDate = dateKey;
+
+    // Build the 7 Hebrew (day, month) pairs for Sun–Sat
+    type DaySpec = { hDay: number; hMonth: number; gregDate: Date };
+    const weekDays: DaySpec[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      d.setHours(12, 0, 0, 0);
+      const hd = new HDate(d);
+      weekDays.push({ hDay: hd.getDate(), hMonth: hd.getMonth(), gregDate: d });
+    }
+
+    // Deduplicate — in rare edge cases two Gregorian dates can share the same
+    // Hebrew date (start/end of Hebrew month around midnight), so use a Set.
+    const seen = new Set<string>();
+    const uniqueDays = weekDays.filter(({ hDay, hMonth }) => {
+      const k = `${hDay}-${hMonth}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
+    // Build SQL IN clause: ((day1,month1),(day2,month2),...)
+    const params: number[] = [];
+    const tuples = uniqueDays.map(({ hDay, hMonth }) => {
+      params.push(hDay, hMonth);
+      const i = params.length;
+      return `($${i - 1}, $${i})`;
+    });
+
+    let rows: Array<{ deceased_name: string; hebrew_day: number; hebrew_month: number }> = [];
+    try {
+      const r = await pool.query<{ deceased_name: string; hebrew_day: number; hebrew_month: number }>(
+        `SELECT DISTINCT ON (deceased_name) deceased_name, hebrew_day, hebrew_month
+         FROM community_yahrzeit
+         WHERE (hebrew_day, hebrew_month) IN (${tuples.join(", ")})
+         ORDER BY deceased_name`,
+        params,
+      );
+      rows = r.rows;
+    } catch (err) {
+      logger.error({ err }, "weekly-yahrzeit-digest: failed to query community_yahrzeit");
+      return;
+    }
+
+    if (rows.length === 0) {
+      logger.info("weekly-yahrzeit-digest: no yahrzeits this week — skipping broadcast");
+      return;
+    }
+
+    // Match each row back to its Gregorian weekday name for the body text
+    function gregDayName(hDay: number, hMonth: number): string {
+      const match = weekDays.find((d) => d.hDay === hDay && d.hMonth === hMonth);
+      if (!match) return "";
+      return match.gregDate.toLocaleDateString("en-US", { weekday: "short" });
+    }
+
+    // Build compact body — max ~100 chars for readability
+    const MAX_NAMED = 3;
+    const named = rows.slice(0, MAX_NAMED).map((r) => {
+      const day = gregDayName(r.hebrew_day, r.hebrew_month);
+      return day ? `${r.deceased_name} (${day})` : r.deceased_name;
+    });
+    const extra = rows.length - named.length;
+
+    const title = `🕯 ${rows.length} Yahrzeit${rows.length > 1 ? "s" : ""} This Week`;
+    const body =
+      named.join(" · ") +
+      (extra > 0 ? ` · +${extra} more` : "") +
+      " — May their memory be a blessing.";
+
+    // ── Web push ─────────────────────────────────────────────────────────────
+    let webRows: Array<{ id: string; endpoint: string; p256dh: string; auth: string }> = [];
+    try {
+      const r = await pool.query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
+        "SELECT id, endpoint, p256dh, auth FROM push_subscriptions",
+      );
+      webRows = r.rows;
+    } catch (err) {
+      logger.error({ err }, "weekly-yahrzeit-digest: failed to load web push subscriptions");
+    }
+
+    let webSent = 0;
+    for (const row of webRows) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+          JSON.stringify({ title, body, tag: `yahrzeit-digest-${dateKey}`, icon: "/favicon.svg" }),
+        );
+        webSent++;
+      } catch (err: any) {
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
+          await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [row.id]).catch(() => {});
+        }
+      }
+    }
+
+    // ── Expo push ─────────────────────────────────────────────────────────────
+    let expoRows: Array<{ token: string }> = [];
+    try {
+      const r = await pool.query<{ token: string }>("SELECT token FROM expo_push_tokens");
+      expoRows = r.rows;
+    } catch {}
+
+    const msgs: import("expo-server-sdk").ExpoPushMessage[] = expoRows
+      .filter((r) => Expo.isExpoPushToken(r.token))
+      .map((r) => ({
+        to: r.token,
+        title,
+        body,
+        sound: "default" as const,
+        data: { tag: `yahrzeit-digest-${dateKey}` },
+      }));
+
+    if (msgs.length > 0) {
+      try {
+        const chunks = expo.chunkPushNotifications(msgs);
+        for (const chunk of chunks) await expo.sendPushNotificationsAsync(chunk);
+      } catch (err) {
+        logger.error({ err }, "weekly-yahrzeit-digest: expo send failed");
+      }
+    }
+
+    logger.info(
+      { yahrzeits: rows.length, webSubscribers: webSent, expoSubscribers: msgs.length },
+      "weekly-yahrzeit-digest: broadcast sent",
+    );
+  }, 60_000); // check every minute
+}
+
 // ── Expo Push Scheduler ──────────────────────────────────────────────────────
 
 function nextShabbatCandles(from: Date = new Date()): Date {
