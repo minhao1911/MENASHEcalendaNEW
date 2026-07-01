@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { calculateZmanim, formatTime } from "../lib/zmanim";
 import { getHebrewDate, getHebrewMonthName, hebrewDayNumeral } from "../lib/hebrewCalendar";
 import { Location } from "../lib/locations";
@@ -133,7 +133,7 @@ function RemindButton({ zmanName, time, tz }: { zmanName: string; time: Date | n
   );
 }
 
-export default function ZmanimPage({ location, onInfo, onLocationClick, isPremium = false, onShowPremium }: ZmanimPageProps) {
+const ZmanimPage = memo(function ZmanimPage({ location, onInfo, onLocationClick, isPremium = false, onShowPremium }: ZmanimPageProps) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -474,4 +474,6 @@ export default function ZmanimPage({ location, onInfo, onLocationClick, isPremiu
       </div>
     </div>
   );
-}
+});
+
+export default ZmanimPage;

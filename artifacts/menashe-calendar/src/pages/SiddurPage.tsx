@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { GOLD, GOLD_GRAD } from "../lib/theme";
 
 export interface Book {
@@ -42,7 +42,7 @@ interface SiddurPageProps {
   isAdmin?: boolean;
 }
 
-export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey, isPremium, onShowPremium, isAdmin = false }: SiddurPageProps) {
+const SiddurPage = memo(function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey, isPremium, onShowPremium, isAdmin = false }: SiddurPageProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -242,7 +242,9 @@ export default function SiddurPage({ onReadBook, onAdmin, adminPin, refreshKey, 
       </div>
     </div>
   );
-}
+});
+
+export default SiddurPage;
 
 function BookCard({
   book, userIsPremium, onRead, onShowPremium,

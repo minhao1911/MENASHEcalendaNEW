@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import { HebrewCalendar, flags } from "@hebcal/core";
 import { getMonthCalendar, hebrewDayNumeral, getHebrewMonthsBetween } from "../lib/hebrewCalendar";
 import { Location } from "../lib/locations";
@@ -29,7 +29,7 @@ const DAY_HEADERS: { en: string; he: string }[] = [
   { en: "Sat", he: "שבת" },
 ];
 
-export default function CalendarPage({ location, onNavigate, onDayClick, onLocationClick }: CalendarPageProps) {
+const CalendarPage = memo(function CalendarPage({ location, onNavigate, onDayClick, onLocationClick }: CalendarPageProps) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -545,4 +545,6 @@ export default function CalendarPage({ location, onNavigate, onDayClick, onLocat
       </div>
     </div>
   );
-}
+});
+
+export default CalendarPage;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { useUser } from "@clerk/react";
 import { HebrewCalendar, HDate, flags } from "@hebcal/core";
 import { getOmerDay, buildHebrewText } from "../modals/OmerModal";
@@ -2738,7 +2738,7 @@ function MemorialSanctuaryEntry({ onEnter }: { onEnter: () => void }) {
   );
 }
 
-export default function Home({
+const Home = memo(function Home({
   location, theme, isPremium, candleEnabled,
   onNavigate, onMoreTools, onShowHolidays, onShowParashah, onShowPremium, onShowDafYomi, onShowOmer,
   onLocationClick, onToggleTheme, onOpenSiddur, onShowCommunity, onShowCensus, onShowMembers,
@@ -3249,7 +3249,9 @@ export default function Home({
 
     </div>
   );
-}
+});
+
+export default Home;
 
 /* ─────────────────────────────────────────────────────────────────────
    AI Chat Floating Widget

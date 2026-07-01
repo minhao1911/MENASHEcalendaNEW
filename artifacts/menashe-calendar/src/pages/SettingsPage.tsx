@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, memo } from "react";
 import { useUser, useOrganization } from "@clerk/react";
 import { HDate } from "@hebcal/core";
 import { Location } from "../lib/locations";
@@ -140,7 +140,7 @@ function VersionFooter({ userId, versionLabel }: { userId: string; versionLabel:
   );
 }
 
-export default function SettingsPage({
+const SettingsPage = memo(function SettingsPage({
   theme, location,
   onToggleTheme, onSetTheme, onLocationClick, onPremium, onTahara, onYartzeit, onBirthday, onCommunity, onCensus,
   onProfile, onSignOut, onWhatsNew, profileName, profileRole,
@@ -1406,4 +1406,6 @@ export default function SettingsPage({
       </div>
     </div>
   );
-}
+});
+
+export default SettingsPage;

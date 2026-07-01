@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { GOLD, GOLD_GRAD } from "../lib/theme";
 
 interface PremiumPageProps {
@@ -415,7 +415,7 @@ const COMPARE_ICONS: Record<string, string> = {
   "Premium Siddur Library (PRO books)": "📚",
 };
 
-export default function PremiumPage({ onUpgrade, onBack, isPremium = false }: PremiumPageProps) {
+const PremiumPage = memo(function PremiumPage({ onUpgrade, onBack, isPremium = false }: PremiumPageProps) {
   const [showAllCompare, setShowAllCompare] = useState(false);
   const visibleCompare = showAllCompare ? COMPARE_ROWS : COMPARE_ROWS.slice(0, 9);
 
@@ -740,7 +740,9 @@ export default function PremiumPage({ onUpgrade, onBack, isPremium = false }: Pr
       </div>
     </div>
   );
-}
+});
+
+export default PremiumPage;
 
 const UPI_ID = import.meta.env.VITE_UPI_ID ?? "menashepay@upi";
 

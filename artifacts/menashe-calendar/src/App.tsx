@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import {
   ClerkProvider,
   SignIn,
@@ -473,31 +473,74 @@ function AppShell() {
   const isLight = theme === "light";
   const isAdmin = membership?.role === "org:admin";
 
-  function showToast(msg: string) {
+  const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(""), 2500);
-  }
+  }, []);
 
-  function setTheme(next: "dark" | "light" | "sapphire") {
+  const setTheme = useCallback((next: "dark" | "light" | "sapphire") => {
     setThemeState(next);
     try { localStorage.setItem("menashe-theme", next); } catch {}
     const label = next === "dark" ? "Royal Midnight" : next === "light" ? "Parchment Light" : "Deep Sapphire";
-    showToast(`Theme: ${label}`);
-  }
+    setToast(`Theme: ${label}`);
+    setTimeout(() => setToast(""), 2500);
+  }, []);
 
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : theme === "light" ? "sapphire" : "dark";
-    setTheme(next);
-  }
+  // toggleTheme reads theme — use functional updater so deps stay []
+  const toggleTheme = useCallback(() => {
+    setThemeState(prev => {
+      const next = prev === "dark" ? "light" : prev === "light" ? "sapphire" : "dark";
+      try { localStorage.setItem("menashe-theme", next); } catch {}
+      const label = next === "dark" ? "Royal Midnight" : next === "light" ? "Parchment Light" : "Deep Sapphire";
+      setToast(`Theme: ${label}`);
+      setTimeout(() => setToast(""), 2500);
+      return next;
+    });
+  }, []);
 
-  function selectLocation(loc: Location) {
+  const selectLocation = useCallback((loc: Location) => {
     setLocation(loc);
     try { localStorage.setItem("menashe-location", JSON.stringify(loc)); } catch {}
     setModal(null);
-    showToast(`Location set to ${loc.name}`);
-  }
+    setToast(`Location set to ${loc.name}`);
+    setTimeout(() => setToast(""), 2500);
+  }, []);
 
   const closeModal = useCallback(() => setModal(null), []);
+
+  // Stable callbacks — prevent page re-renders when unrelated AppShell state changes
+  const onNavigate      = useCallback((p: string) => setActivePage(p as Page), []);
+  const showPremiumPage = useCallback(() => setActivePage("premium"), []);
+  const openSiddur      = useCallback(() => setActivePage("siddur"),  []);
+  const goHome          = useCallback(() => setActivePage("home"),    []);
+  const onDayClick      = useCallback((d: number, m: number, y: number) => setDayModal({ day: d, month: m, year: y }), []);
+  const onReadBook      = useCallback((book: Book) => setReadingBook(book), []);
+  const onAdmin         = useCallback(() => { if (isAdmin) setModal("admin"); }, [isAdmin]);
+  const onSignOut       = useCallback(() => signOut({ redirectUrl: `${basePath}/` }), [signOut]);
+  // Modal openers — setModal from useState is always stable, so deps are []
+  const onLocationClick       = useCallback(() => setModal("location"),         []);
+  const showMoreTools         = useCallback(() => setModal("more"),             []);
+  const showHolidays          = useCallback(() => setModal("holidays"),         []);
+  const showParashah          = useCallback(() => setModal("parashah"),         []);
+  const showDafYomi           = useCallback(() => setModal("dafyomi"),          []);
+  const showOmer              = useCallback(() => setModal("omer"),             []);
+  const showCommunity         = useCallback(() => setModal("community"),        []);
+  const showCensus            = useCallback(() => setModal("census"),           []);
+  const showMembers           = useCallback(() => setModal("members"),          []);
+  const showNotifications     = useCallback(() => setModal("notifications"),    []);
+  const showAnnouncements     = useCallback(() => setModal("announcements"),    []);
+  const showEvents            = useCallback(() => setModal("events"),           []);
+  const showCommunityYahrzeit = useCallback(() => setModal("community-yahrzeit"), []);
+  const showYartzeit          = useCallback(() => setModal("yartzeit"),         []);
+  const showMussar            = useCallback(() => setModal("mussar"),           []);
+  const showPrayerBoard       = useCallback(() => setModal("prayers-board"),    []);
+  const showTorahTracker      = useCallback(() => setModal("torah-tracker"),    []);
+  const showTahara            = useCallback(() => setModal("tahara"),           []);
+  const showBirthday          = useCallback(() => setModal("birthday"),         []);
+  const showProfile           = useCallback(() => setModal("profile"),          []);
+  const showWhatsNew          = useCallback(() => setModal("whats-new"),        []);
+  const showPremiumModal      = useCallback(() => setModal("premium"),          []);
+  const showZmanimInfo        = useCallback(() => setModal("zmaniminfo"),       []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -513,6 +556,9 @@ function AppShell() {
 
   if (shareToken) return <Suspense fallback={null}><SharePage token={shareToken} /></Suspense>;
 
+  // Derived value memoized so it doesn't cause spurious re-renders
+  const notifActive = useMemo(() => Object.values(notifPrefs).some(Boolean), [notifPrefs]);
+
   function renderPage() {
     switch (activePage) {
       case "home":
@@ -522,29 +568,29 @@ function AppShell() {
             theme={theme}
             isPremium={isPremium}
             candleEnabled={candleEnabled}
-            onNavigate={(p) => setActivePage(p as Page)}
-            onMoreTools={() => setModal("more")}
-            onShowHolidays={() => setModal("holidays")}
-            onShowParashah={() => setModal("parashah")}
-            onShowPremium={() => setActivePage("premium")}
-            onShowDafYomi={() => setModal("dafyomi")}
-            onShowOmer={() => setModal("omer")}
-            onLocationClick={() => setModal("location")}
+            onNavigate={onNavigate}
+            onMoreTools={showMoreTools}
+            onShowHolidays={showHolidays}
+            onShowParashah={showParashah}
+            onShowPremium={showPremiumPage}
+            onShowDafYomi={showDafYomi}
+            onShowOmer={showOmer}
+            onLocationClick={onLocationClick}
             onToggleTheme={toggleTheme}
-            onOpenSiddur={() => setActivePage("siddur")}
-            onShowCommunity={() => setModal("community")}
-            onShowCensus={() => setModal("census")}
-            onShowMembers={() => setModal("members")}
-            onNotifBell={() => setModal("notifications")}
-            notifActive={Object.values(notifPrefs).some(Boolean)}
+            onOpenSiddur={openSiddur}
+            onShowCommunity={showCommunity}
+            onShowCensus={showCensus}
+            onShowMembers={showMembers}
+            onNotifBell={showNotifications}
+            notifActive={notifActive}
             announcementCount={announcementCount}
-            onShowAnnouncements={() => setModal("announcements")}
-            onShowEvents={() => setModal("events")}
-            onShowCommunityYahrzeit={() => setModal("community-yahrzeit")}
-            onShowYartzeit={() => setModal("yartzeit")}
-            onShowMussar={() => setModal("mussar")}
-            onShowPrayerBoard={() => setModal("prayers-board")}
-            onShowTorahTracker={() => setModal("torah-tracker")}
+            onShowAnnouncements={showAnnouncements}
+            onShowEvents={showEvents}
+            onShowCommunityYahrzeit={showCommunityYahrzeit}
+            onShowYartzeit={showYartzeit}
+            onShowMussar={showMussar}
+            onShowPrayerBoard={showPrayerBoard}
+            onShowTorahTracker={showTorahTracker}
             unreadAnnouncements={unreadAnnouncements}
             profileName={publicProfile?.displayName}
             profilePhotoUrl={publicProfile?.profilePhotoUrl}
@@ -555,30 +601,30 @@ function AppShell() {
         return (
           <CalendarPage
             location={location}
-            onNavigate={(p) => setActivePage(p as Page)}
-            onDayClick={(d, m, y) => setDayModal({ day: d, month: m, year: y })}
-            onLocationClick={() => setModal("location")}
+            onNavigate={onNavigate}
+            onDayClick={onDayClick}
+            onLocationClick={onLocationClick}
           />
         );
       case "zmanim":
         return (
           <ZmanimPage
             location={location}
-            onInfo={() => setModal("zmaniminfo")}
-            onLocationClick={() => setModal("location")}
+            onInfo={showZmanimInfo}
+            onLocationClick={onLocationClick}
             isPremium={isPremium}
-            onShowPremium={() => setActivePage("premium")}
+            onShowPremium={showPremiumPage}
           />
         );
       case "siddur":
         return (
           <SiddurPage
-            onReadBook={(book) => setReadingBook(book)}
-            onAdmin={() => { if (isAdmin) setModal("admin"); }}
+            onReadBook={onReadBook}
+            onAdmin={onAdmin}
             adminPin="1948"
             refreshKey={siddurRefreshKey}
             isPremium={isPremium}
-            onShowPremium={() => setActivePage("premium")}
+            onShowPremium={showPremiumPage}
             isAdmin={isAdmin}
           />
         );
@@ -589,16 +635,16 @@ function AppShell() {
             location={location}
             onToggleTheme={toggleTheme}
             onSetTheme={setTheme}
-            onLocationClick={() => setModal("location")}
-            onPremium={() => setActivePage("premium")}
-            onTahara={() => setModal("tahara")}
-            onYartzeit={() => setModal("yartzeit")}
-            onBirthday={() => setModal("birthday")}
-            onCommunity={() => setModal("community")}
-            onCensus={() => setModal("census")}
-            onProfile={() => setModal("profile")}
-            onWhatsNew={() => setModal("whats-new")}
-            onSignOut={() => signOut({ redirectUrl: `${basePath}/` })}
+            onLocationClick={onLocationClick}
+            onPremium={showPremiumPage}
+            onTahara={showTahara}
+            onYartzeit={showYartzeit}
+            onBirthday={showBirthday}
+            onCommunity={showCommunity}
+            onCensus={showCensus}
+            onProfile={showProfile}
+            onWhatsNew={showWhatsNew}
+            onSignOut={onSignOut}
             profileName={publicProfile?.displayName}
             profileRole={publicProfile?.role !== "Member" ? publicProfile?.role : undefined}
             notifPermission={notifPermission}
@@ -618,8 +664,8 @@ function AppShell() {
       case "premium":
         return (
           <PremiumPage
-            onUpgrade={() => setModal("premium")}
-            onBack={() => setActivePage("home")}
+            onUpgrade={showPremiumModal}
+            onBack={goHome}
           />
         );
     }
