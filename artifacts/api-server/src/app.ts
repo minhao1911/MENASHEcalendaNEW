@@ -106,7 +106,38 @@ if (process.env.NODE_ENV === "production") {
   );
   if (fs.existsSync(frontendDir)) {
     logger.info({ frontendDir }, "Serving static frontend");
-    app.use(express.static(frontendDir, { maxAge: "1d", etag: true }));
+    app.use(
+      express.static(frontendDir, {
+        etag: true,
+        // Per-file Cache-Control strategy:
+        //
+        //   /assets/*.js  and  /assets/*.css
+        //     → "public, max-age=31536000, immutable"
+        //     Vite injects a content-hash into every asset filename (e.g.
+        //     vendor-react-CPl9HvQc.js).  The hash changes whenever the file
+        //     changes, so it is safe to tell the browser "cache this forever
+        //     and never revalidate".  The `immutable` directive further
+        //     suppresses the browser's conditional GET on reload — zero extra
+        //     network round-trips for returning users.
+        //
+        //   Everything else (index.html, manifest.json, sw.js, icons …)
+        //     → "public, no-cache"
+        //     These files are not content-hashed, so they must always be
+        //     revalidated.  `no-cache` still allows the browser to serve from
+        //     its local cache when the ETag matches, making the response
+        //     instant while guaranteeing freshness.
+        setHeaders(res, filePath) {
+          if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+            res.setHeader(
+              "Cache-Control",
+              "public, max-age=31536000, immutable",
+            );
+          } else {
+            res.setHeader("Cache-Control", "public, no-cache");
+          }
+        },
+      }),
+    );
     // SPA fallback — all non-API routes return index.html
     app.get("*", (_req, res) => {
       res.sendFile(path.join(frontendDir, "index.html"));
