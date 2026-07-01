@@ -4376,6 +4376,122 @@ function AAAAvenueSanctuaryArch() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SPR-038: INNER ARCH VINES — flowering vines climbing the sanctuary arch
+   pillars at z=11; instanced leaf + bloom planes scattered along the pillar
+   faces, giving the weathered stone a living, garden quality
+══════════════════════════════════════════════════════════════════════════ */
+function AAAArchVines() {
+  const SPAN        = 2.26;
+  const PILLAR_H    = 4.20;
+  const PILLAR_HALF = 0.33;
+  const baseY       = useMemo(() => terrainHeightAt(0, 11), []);
+
+  const leafGeo  = useMemo(() => new THREE.PlaneGeometry(0.10, 0.075), []);
+  const bloomGeo = useMemo(() => new THREE.PlaneGeometry(0.065, 0.065), []);
+
+  const { leafMatrices, bloomMatrices } = useMemo(() => {
+    const R   = makeLCG(4110);
+    const dum = new THREE.Object3D();
+    const leaves: THREE.Matrix4[] = [];
+    const blooms: THREE.Matrix4[] = [];
+
+    const pillars = [
+      { cx: -SPAN, innerXOffset: PILLAR_HALF, innerRotY: Math.PI / 2 },
+      { cx: SPAN,  innerXOffset: -PILLAR_HALF, innerRotY: -Math.PI / 2 },
+    ];
+
+    const LEAVES_PER_PILLAR  = 56;
+    const BLOOMS_PER_PILLAR  = 14;
+
+    for (const p of pillars) {
+      for (let i = 0; i < LEAVES_PER_PILLAR; i++) {
+        const heightT     = Math.pow(R(), 1.55); // bias growth toward the base
+        const y           = baseY + 0.08 + heightT * (PILLAR_H * 0.88);
+        const onInnerFace = R() < 0.55;
+        const spread      = (R() - 0.5) * 0.52;  // jitter along the face width
+        const poke        = 0.012 + R() * 0.035; // sticks out from the stone
+
+        if (onInnerFace) {
+          dum.position.set(p.cx + p.innerXOffset + poke * Math.sign(p.innerXOffset), y, spread);
+          dum.rotation.set((R() - 0.5) * 0.5, p.innerRotY + (R() - 0.5) * 0.6, (R() - 0.5) * 0.9);
+        } else {
+          dum.position.set(p.cx + spread, y, PILLAR_HALF + poke);
+          dum.rotation.set((R() - 0.5) * 0.5, (R() - 0.5) * 0.6, (R() - 0.5) * 0.9);
+        }
+        dum.scale.setScalar(0.65 + R() * 0.7);
+        dum.updateMatrix();
+        leaves.push(dum.matrix.clone());
+      }
+
+      for (let i = 0; i < BLOOMS_PER_PILLAR; i++) {
+        const heightT     = Math.pow(R(), 1.7);
+        const y           = baseY + 0.15 + heightT * (PILLAR_H * 0.78);
+        const onInnerFace = R() < 0.5;
+        const spread      = (R() - 0.5) * 0.48;
+        const poke        = 0.018 + R() * 0.03;
+
+        if (onInnerFace) {
+          dum.position.set(p.cx + p.innerXOffset + poke * Math.sign(p.innerXOffset), y, spread);
+          dum.rotation.set((R() - 0.5) * 0.4, p.innerRotY, (R() - 0.5) * Math.PI * 2);
+        } else {
+          dum.position.set(p.cx + spread, y, PILLAR_HALF + poke);
+          dum.rotation.set((R() - 0.5) * 0.4, 0, (R() - 0.5) * Math.PI * 2);
+        }
+        dum.scale.setScalar(0.55 + R() * 0.5);
+        dum.updateMatrix();
+        blooms.push(dum.matrix.clone());
+      }
+    }
+
+    return { leafMatrices: leaves, bloomMatrices: blooms };
+  }, [baseY]);
+
+  const leafRef  = useRef<THREE.InstancedMesh>(null!);
+  const bloomRef = useRef<THREE.InstancedMesh>(null!);
+
+  useEffect(() => {
+    leafMatrices.forEach((m, i) => leafRef.current?.setMatrixAt(i, m));
+    if (leafRef.current) leafRef.current.instanceMatrix.needsUpdate = true;
+  }, [leafMatrices]);
+
+  useEffect(() => {
+    bloomMatrices.forEach((m, i) => bloomRef.current?.setMatrixAt(i, m));
+    if (bloomRef.current) bloomRef.current.instanceMatrix.needsUpdate = true;
+  }, [bloomMatrices]);
+
+  return (
+    <group position={[0, 0, 11]}>
+      {/* Climbing leaves */}
+      <instancedMesh ref={leafRef} args={[leafGeo, undefined, leafMatrices.length]}>
+        <meshStandardMaterial
+          color="#4a7a22"
+          roughness={0.68}
+          metalness={0.0}
+          side={THREE.DoubleSide}
+          transparent
+          opacity={0.92}
+          depthWrite={false}
+        />
+      </instancedMesh>
+      {/* Scattered blooms among the vines */}
+      <instancedMesh ref={bloomRef} args={[bloomGeo, undefined, bloomMatrices.length]}>
+        <meshStandardMaterial
+          color="#e8b0c8"
+          emissive={new THREE.Color("#c86088")}
+          emissiveIntensity={0.22}
+          roughness={0.55}
+          metalness={0.0}
+          side={THREE.DoubleSide}
+          transparent
+          opacity={0.9}
+          depthWrite={false}
+        />
+      </instancedMesh>
+    </group>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    SACRED AVENUE TORCHES — paired glowing stone lanterns guiding the path
 ══════════════════════════════════════════════════════════════════════════ */
 const AVENUE_TORCH_PAIRS: [number, number][] = [
@@ -4658,6 +4774,9 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
 
       {/* SPR-037B: Inner sanctuary arch — second threshold midway down the avenue */}
       <AAAAvenueSanctuaryArch />
+
+      {/* SPR-038: Flowering vines climbing the inner arch pillars */}
+      <AAAArchVines />
 
       {/* Sacred Avenue torch guides — lead user from entry toward altar */}
       <AAAAvenueTorches />
