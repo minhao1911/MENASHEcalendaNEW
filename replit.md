@@ -4,11 +4,14 @@ A sacred Jewish calendar app for the Bnei Menashe community — featuring Hebrew
 
 ## Run & Operate
 
-### Replit workflows (both must be running)
+### Replit workflows (all three should be running)
 - **Start application** — `pnpm --filter @workspace/menashe-calendar run dev` (Vite dev server, port 5000, webview)
 - **API Server** — `cd artifacts/api-server && pnpm run dev:rebuild` (always builds then starts; Express, port 8080, console)
   - `dev:rebuild` runs `pnpm run build && pnpm run start` so it is safe from a clean checkout
   - The frontend proxies all `/api/*` requests to `http://localhost:8080` (configured in `artifacts/menashe-calendar/vite.config.ts`)
+- **Mobile App** — `PORT=8081 pnpm --filter @workspace/menashe-mobile run dev` (Expo Metro bundler, port 8081, console)
+  - Opens a QR code in the console — scan with Expo Go on a physical device to test natively
+  - Web preview available at port 8081; connects to the same API server at `https://$REPLIT_DEV_DOMAIN/api`
 
 ### Other useful commands
 - `pnpm run typecheck` — full typecheck across all packages
