@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import {
   ClerkProvider,
   SignIn,
@@ -26,42 +26,45 @@ import { useUnreadAnnouncements } from "./hooks/useUnreadAnnouncements";
 import { usePushSubscription } from "./hooks/usePushSubscription";
 import { useAnnouncements } from "./hooks/useAnnouncements";
 
-import LocationModal from "./modals/LocationModal";
-import DayModal from "./modals/DayModal";
-import HolidaysModal from "./modals/HolidaysModal";
-import PremiumModal from "./modals/PremiumModal";
-import ParashahModal from "./modals/ParashahModal";
-import DafYomiModal from "./modals/DafYomiModal";
-import SefariaSearchModal from "./modals/SefariaSearchModal";
-import HebrewDateModal from "./modals/HebrewDateModal";
-import LuachModal from "./modals/LuachModal";
-import MussarModal from "./modals/MussarModal";
-import ZmanimInfoModal from "./modals/ZmanimInfoModal";
-import TorahNoteModal from "./modals/TorahNoteModal";
-import BirthdayModal from "./modals/BirthdayModal";
-import TaharaModal from "./modals/TaharaModal";
-import MikvehCalendarModal from "./modals/MikvehCalendarModal";
-import YartzeitModal from "./modals/YartzeitModal";
-import CommunityModal from "./modals/CommunityModal";
-import CensusModal from "./modals/CensusModal";
-import AnnouncementsModal from "./modals/AnnouncementsModal";
-import EventsModal from "./modals/EventsModal";
-import MemberDirectoryModal from "./modals/MemberDirectoryModal";
-import PrayerBoardModal from "./modals/PrayerBoardModal";
-import TorahTrackerModal from "./modals/TorahTrackerModal";
-import ProfileModal from "./modals/ProfileModal";
-import SharePage from "./pages/SharePage";
-import BookReaderModal from "./modals/BookReaderModal";
-import AdminModal from "./modals/AdminModal";
-import OmerModal from "./modals/OmerModal";
-import PrayerTimesModal from "./modals/PrayerTimesModal";
-import CommunityYahrzeitModal from "./modals/CommunityYahrzeitModal";
-import MoreToolsModal from "./pages/MoreToolsModal";
-import ChatModal from "./modals/ChatModal";
-import NotificationDrawer from "./components/NotificationDrawer";
-import InstallPrompt from "./components/InstallPrompt";
-import ShabbatBanner from "./components/ShabbatBanner";
-import WhatsNewModal, { APP_VERSION, VERSION_KEY } from "./modals/WhatsNewModal";
+// Modals are lazily loaded — they are not needed on first paint
+const LocationModal = lazy(() => import("./modals/LocationModal"));
+const DayModal = lazy(() => import("./modals/DayModal"));
+const HolidaysModal = lazy(() => import("./modals/HolidaysModal"));
+const PremiumModal = lazy(() => import("./modals/PremiumModal"));
+const ParashahModal = lazy(() => import("./modals/ParashahModal"));
+const DafYomiModal = lazy(() => import("./modals/DafYomiModal"));
+const SefariaSearchModal = lazy(() => import("./modals/SefariaSearchModal"));
+const HebrewDateModal = lazy(() => import("./modals/HebrewDateModal"));
+const LuachModal = lazy(() => import("./modals/LuachModal"));
+const MussarModal = lazy(() => import("./modals/MussarModal"));
+const ZmanimInfoModal = lazy(() => import("./modals/ZmanimInfoModal"));
+const TorahNoteModal = lazy(() => import("./modals/TorahNoteModal"));
+const BirthdayModal = lazy(() => import("./modals/BirthdayModal"));
+const TaharaModal = lazy(() => import("./modals/TaharaModal"));
+const MikvehCalendarModal = lazy(() => import("./modals/MikvehCalendarModal"));
+const YartzeitModal = lazy(() => import("./modals/YartzeitModal"));
+const CommunityModal = lazy(() => import("./modals/CommunityModal"));
+const CensusModal = lazy(() => import("./modals/CensusModal"));
+const AnnouncementsModal = lazy(() => import("./modals/AnnouncementsModal"));
+const EventsModal = lazy(() => import("./modals/EventsModal"));
+const MemberDirectoryModal = lazy(() => import("./modals/MemberDirectoryModal"));
+const PrayerBoardModal = lazy(() => import("./modals/PrayerBoardModal"));
+const TorahTrackerModal = lazy(() => import("./modals/TorahTrackerModal"));
+const ProfileModal = lazy(() => import("./modals/ProfileModal"));
+const SharePage = lazy(() => import("./pages/SharePage"));
+const BookReaderModal = lazy(() => import("./modals/BookReaderModal"));
+const AdminModal = lazy(() => import("./modals/AdminModal"));
+const OmerModal = lazy(() => import("./modals/OmerModal"));
+const PrayerTimesModal = lazy(() => import("./modals/PrayerTimesModal"));
+const CommunityYahrzeitModal = lazy(() => import("./modals/CommunityYahrzeitModal"));
+const MoreToolsModal = lazy(() => import("./pages/MoreToolsModal"));
+const ChatModal = lazy(() => import("./modals/ChatModal"));
+const NotificationDrawer = lazy(() => import("./components/NotificationDrawer"));
+const InstallPrompt = lazy(() => import("./components/InstallPrompt"));
+const ShabbatBanner = lazy(() => import("./components/ShabbatBanner"));
+const WhatsNewModal = lazy(() => import("./modals/WhatsNewModal"));
+// Plain constants — import from the tiny side-effect-free module, not the full modal
+import { APP_VERSION, VERSION_KEY } from "./modals/whatsNewVersion";
 
 import { LOCATIONS, Location } from "./lib/locations";
 import type { Book } from "./pages/SiddurPage";
@@ -507,7 +510,7 @@ function AppShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, [readingBook]);
 
-  if (shareToken) return <SharePage token={shareToken} />;
+  if (shareToken) return <Suspense fallback={null}><SharePage token={shareToken} /></Suspense>;
 
   function renderPage() {
     switch (activePage) {
@@ -625,6 +628,7 @@ function AppShell() {
     <LanguageProvider>
       <div className={`app-container${theme === "light" ? " light-theme" : theme === "sapphire" ? " sapphire-theme" : ""}`}>
         <div className="app-shell">
+          <Suspense fallback={null}>
           {readingBook && (
             <BookReaderModal book={readingBook} onClose={() => setReadingBook(null)} />
           )}
@@ -827,12 +831,14 @@ function AppShell() {
               )}
             </>
           )}
+          </Suspense>
         </div>
       </div>
-      <ShabbatBanner location={location} />
-      <InstallPrompt />
-
-      {chatOpen && <ChatModal onClose={() => setChatOpen(false)} />}
+      <Suspense fallback={null}>
+        <ShabbatBanner location={location} />
+        <InstallPrompt />
+        {chatOpen && <ChatModal onClose={() => setChatOpen(false)} />}
+      </Suspense>
       <FeedbackButton />
     </LanguageProvider>
   );

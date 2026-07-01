@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 
 function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -22,7 +22,7 @@ interface BurningCandleProps {
   compact?: boolean;
 }
 
-export default function BurningCandle({
+const BurningCandle = memo(function BurningCandle({
   deceasedName,
   yahrzeitNumber,
   donorName,
@@ -375,4 +375,6 @@ export default function BurningCandle({
       </div>
     </>
   );
-}
+});
+
+export default BurningCandle;

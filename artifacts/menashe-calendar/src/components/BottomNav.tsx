@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useLanguage } from "../context/LanguageContext";
 
 interface BottomNavProps {
@@ -55,7 +56,7 @@ function SettingsIcon({ active }: { active: boolean }) {
   );
 }
 
-export default function BottomNav({ active, onNavigate }: BottomNavProps) {
+const BottomNav = memo(function BottomNav({ active, onNavigate }: BottomNavProps) {
   const { t } = useLanguage();
 
   const NAV_ITEMS = [
@@ -87,4 +88,6 @@ export default function BottomNav({ active, onNavigate }: BottomNavProps) {
       })}
     </nav>
   );
-}
+});
+
+export default BottomNav;

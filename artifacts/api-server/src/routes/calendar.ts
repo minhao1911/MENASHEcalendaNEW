@@ -3,6 +3,25 @@ import { HebrewCalendar, Location as HebLocation } from "@hebcal/core";
 
 const router = Router();
 
+// Simple in-memory cache — keyed by all response-shaping params, TTL 1 hour
+// Bounded to MAX_CACHE_ENTRIES to prevent memory exhaustion on high-cardinality query strings.
+const ICS_TTL_MS = 60 * 60 * 1000; // 1 hour
+const MAX_CACHE_ENTRIES = 200;
+const icsCache = new Map<string, { body: string; expiresAt: number }>();
+
+function icsCacheSet(key: string, body: string): void {
+  const now = Date.now();
+  // Evict expired entries before checking cap (keeps map tidy)
+  for (const [k, v] of icsCache) {
+    if (v.expiresAt <= now) icsCache.delete(k);
+  }
+  // Evict oldest entry if still at cap
+  if (icsCache.size >= MAX_CACHE_ENTRIES) {
+    icsCache.delete(icsCache.keys().next().value as string);
+  }
+  icsCache.set(key, { body, expiresAt: now + ICS_TTL_MS });
+}
+
 function toICSDateUTC(date: Date): string {
   return date.toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z";
 }
@@ -48,6 +67,18 @@ router.get("/calendar/ics", async (req, res) => {
     }
 
     const numMonths = Math.min(12, Math.max(1, parseInt(months) || 6));
+
+    // Cache key includes all response-shaping inputs (locationName affects X-WR-CALNAME and HebLocation)
+    // numMonths (normalized) is used, not raw `months`, to avoid key skew from equivalent values like "6"/"06"
+    const cacheKey = `${lat}|${lng}|${tz}|${country.slice(0, 2).toUpperCase()}|${numMonths}|${locationName}`;
+    const cached = icsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="menashe-calendar.ics"`);
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.setHeader("X-Cache", "HIT");
+      return res.send(cached.body);
+    }
     const start = new Date();
     const end = new Date();
     end.setMonth(end.getMonth() + numMonths);
@@ -118,9 +149,13 @@ router.get("/calendar/ics", async (req, res) => {
 
     const icsContent = lines.join("\r\n");
 
+    // Store in cache (bounded, evicts expired + oldest-first at cap)
+    icsCacheSet(cacheKey, icsContent);
+
     res.setHeader("Content-Type", "text/calendar; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="menashe-calendar.ics"`);
     res.setHeader("Cache-Control", "public, max-age=3600");
+    res.setHeader("X-Cache", "MISS");
     return res.send(icsContent);
   } catch (err) {
     req.log.error(err);

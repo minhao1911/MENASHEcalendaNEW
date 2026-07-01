@@ -2,8 +2,7 @@ import { useLanguage } from "../context/LanguageContext";
 
 interface Props { onClose: () => void; }
 
-export const APP_VERSION = "1.2";
-export const VERSION_KEY = "menashe-version-seen";
+export { APP_VERSION, VERSION_KEY } from "./whatsNewVersion";
 
 interface Release {
   version: string;
