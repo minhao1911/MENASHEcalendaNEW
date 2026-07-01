@@ -1851,7 +1851,7 @@ function AAACamera() {
        view naturally — the arch fills the centre with the torchlit avenue
        stretching into the valley behind it.                              */
     const spawnX = 0, spawnZ = 22;
-    const spawnY = terrainHeightAt(spawnX, spawnZ) + 1.7;
+    const spawnY = terrainHeightAt(spawnX, spawnZ) + 1.65;
     camera.position.set(spawnX, spawnY, spawnZ);
     camera.lookAt(0, 3.5, 8); // face through the gate toward the Sacred Avenue
   }, [camera]);
@@ -2036,12 +2036,18 @@ function FirstPersonController({
   const touchLook  = useRef({ yaw: Math.PI, pitch: -0.08 });
   const lookPtrId  = useRef<number | null>(null);
   const lookLast   = useRef<{ x: number; y: number } | null>(null);
-  const LOOK_SENS  = 0.0025; /* SPR-034D: calmer touch-look */
+  const LOOK_SENS  = 0.0020; /* SPR-037A: calmer touch-look */
 
   /* ── Desktop passive look (no pointer-lock required) ── */
   const passiveLook = useRef({ yaw: Math.PI, pitch: -0.08 });
   const lastMouseXY = useRef<{ x: number; y: number } | null>(null);
-  const PASSIVE_SENS = 0.0015; /* SPR-034D: calmer desktop passive look */
+  const PASSIVE_SENS = 0.0012; /* SPR-037A: calmer desktop passive look */
+
+  /* ── Accessibility: no motion if user prefers reduced motion ── */
+  const reducedMotion = useRef(
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
   /* ── Stable desktop callbacks ── */
   const handleLock = useCallback(() => {
@@ -2085,7 +2091,7 @@ function FirstPersonController({
   /* ── Init ctrlRef; on touch always "active" ── */
   useEffect(() => {
     const spawnX = 0, spawnZ = 22;
-    const spawnY = terrainHeightAt(spawnX, spawnZ) + 1.7;
+    const spawnY = terrainHeightAt(spawnX, spawnZ) + 1.65;
     ctrlRef.current = { target: new THREE.Vector3(spawnX, spawnY, 0), update: () => {} };
     if (isTouch.current) {
       isLocked.current = true;
@@ -2098,11 +2104,12 @@ function FirstPersonController({
     if (resetRef) {
       resetRef.current = {
         reset: () => {
-          const sy = terrainHeightAt(spawnX, spawnZ) + 1.7;
+          const sy = terrainHeightAt(spawnX, spawnZ) + 1.65;
           camera.position.set(spawnX, sy, spawnZ);
           camera.rotation.order = "YXZ";
           camera.rotation.y = Math.PI;   // face -Z (into the memorial valley)
           camera.rotation.x = -0.08;
+          camera.rotation.z = 0;         // clear any residual sway roll
           passiveLook.current = { yaw: Math.PI, pitch: -0.08 };
           touchLook.current   = { yaw: Math.PI, pitch: -0.08 };
           vel.current.set(0, 0, 0);
@@ -2151,12 +2158,29 @@ function FirstPersonController({
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
   }, []);
 
+  /* ── Walk FOV: lerp to 64° on mount, restore orbit FOV (72°) on unmount ── */
+  useEffect(() => {
+    const pc = camera as THREE.PerspectiveCamera;
+    return () => {
+      pc.fov = 72;
+      pc.updateProjectionMatrix();
+    };
+  }, [camera]);
+
   useFrame(({ clock }, delta) => {
     const dt      = Math.min(delta, 0.05);
     const cx      = camera.position.x;
     const cz      = camera.position.z;
     const groundY = terrainHeightAt(cx, cz);
-    const wantY   = groundY + 1.7;
+    const wantY   = groundY + 1.65;
+
+    /* SPR-037A: Lerp FOV toward cinematic walk value (64°) */
+    const pc = camera as THREE.PerspectiveCamera;
+    const targetFov = 64;
+    if (Math.abs(pc.fov - targetFov) > 0.05) {
+      pc.fov = THREE.MathUtils.lerp(pc.fov, targetFov, 3 * dt);
+      pc.updateProjectionMatrix();
+    }
 
     /* Apply look angles — touch swipe OR desktop passive (pre-pointer-lock) */
     if (isTouch.current) {
@@ -2202,8 +2226,8 @@ function FirstPersonController({
       if (keys.current.d) moveDir.addScaledVector(rightVec.current,  1);
     }
     const isMoving = moveDir.lengthSq() > 0.01;
-    /* SPR-034D: calmer walking — reduced speed, softer accel/decel */
-    const SPEED = 3.0, ACCEL = 5.5, DECEL = 4.0;
+    /* SPR-037A: grounded walking — slower speed, weighted accel/decel */
+    const SPEED = 2.55, ACCEL = 4.4, DECEL = 3.0;
     const ZERO  = new THREE.Vector3();
     if (isMoving) {
       moveDir.normalize();
@@ -2220,18 +2244,24 @@ function FirstPersonController({
     camera.position.x = nd > WORLD_R ? nx * WORLD_R / nd : nx;
     camera.position.z = nd > WORLD_R ? nz * WORLD_R / nd : nz;
 
-    /* Ground follow + head bob — SPR-034D: gentler frequency + amplitude */
+    /* SPR-037A: Ground follow + head bob + subtle sway */
     const speed = vel.current.length();
     let bobOffset = 0;
     if (isMoving && speed > 0.5) {
-      bobT.current += dt * 5.5;
-      bobOffset = Math.sin(bobT.current) * 0.016;
+      bobT.current += dt * 4.5;  // 037A: slower, more reverent pace
+      bobOffset = reducedMotion.current ? 0 : Math.sin(bobT.current) * 0.012;
+      /* Subtle left/right body sway — gentle Z-axis roll, respects reduced-motion */
+      if (!reducedMotion.current) {
+        const targetRoll = Math.sin(bobT.current * 0.5) * 0.006;
+        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z ?? 0, targetRoll, 6 * dt);
+      }
     } else {
-      /* Decay angular accumulator so bob settles smoothly back to 0 */
+      /* Decay accumulators so bob + sway settle smoothly back to neutral */
       bobT.current *= 0.88;
+      camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z ?? 0, 0, 4 * dt);
     }
-    /* Smooth ground follow — 0.08 for calm terrain hugging */
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.08);
+    /* SPR-037A: Tighter terrain hugging (0.12) — feet feel planted, no hovering */
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, wantY + bobOffset, 0.12);
 
     /* Footstep dust particles */
     if (isMoving && speed > 0.4) {
@@ -2298,7 +2328,7 @@ function FirstPersonController({
   /* ── DESKTOP OVERLAY — walk hint pill (fades after 6 s) ── */
   return (
     <>
-      <PointerLockControls ref={plcRef} onLock={handleLock} onUnlock={handleUnlock} />
+      <PointerLockControls ref={plcRef} onLock={handleLock} onUnlock={handleUnlock} pointerSpeed={0.55} />
       <Html fullscreen zIndexRange={[8, 0]}>
         <div style={{
           position: "absolute", inset: 0,
@@ -4263,7 +4293,7 @@ function AAAValleyScene({ entries, placedCandles, virtualFlowers, newCandlePos, 
       {/* ── Day/night lighting (replaces static GoldenHourLighting) ── */}
       <DayNightLighting />
       {/* SceneEnvironment: env map IBL only — AAASkyDome handles the sky visuals */}
-      <SceneEnvironment fogColor="#d4a85a" fogDensity={0.007} envIntensity={0.55} showSky={false} />
+      <SceneEnvironment fogColor="#d4a85a" fogDensity={0.009} envIntensity={0.55} showSky={false} />
 
       {/* Ground & terrain */}
       <AAATerrain />
