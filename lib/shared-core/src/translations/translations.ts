@@ -79,6 +79,26 @@ export interface SharedTranslations {
   homeInsightTitle: string;
   homeQuickActionsTitle: string;
 
+  /* ── Home Premium additional (SPR-M005A) ── */
+  homeTodaysFocusLabel: string;
+  homeCandleLightingToday: string;
+  homePrepareForShabbat: string;
+  homeTodaysZmanimLabel: string;
+  homeAllTimesLocal: string;
+  homeMinchaGedola: string;
+  homeReadSummary: string;
+  homeOpenDafYomi: string;
+  homeViewAllHolidays: string;
+  homeGoPremium: string;
+  homeSupportMission: string;
+  homeViewBenefits: string;
+  homeSanctuaryAction: string;
+  homeStudyAction: string;
+  homeMoreAction: string;
+  homeMemorialTagline: string;
+  homeAITagline: string;
+  homeUntilNextShabbatLabel: string;
+
   /* ── Settings ── */
   settingsTitle: string;
   settingsAppearance: string;
@@ -240,6 +260,25 @@ export const sharedEn: SharedTranslations = {
   homeInsightTitle: "Daily Torah Insight",
   homeQuickActionsTitle: "Quick Actions",
 
+  homeTodaysFocusLabel: "TODAY'S FOCUS",
+  homeCandleLightingToday: "Candle Lighting Today",
+  homePrepareForShabbat: "Prepare your heart for Shabbat",
+  homeTodaysZmanimLabel: "TODAY'S ZMANIM",
+  homeAllTimesLocal: "All Times Local",
+  homeMinchaGedola: "Mincha Gedola",
+  homeReadSummary: "Read Summary",
+  homeOpenDafYomi: "Open Daf Yomi",
+  homeViewAllHolidays: "View All Holidays",
+  homeGoPremium: "Go Premium",
+  homeSupportMission: "Support the mission. Unlock more.",
+  homeViewBenefits: "View Benefits",
+  homeSanctuaryAction: "Sanctuary",
+  homeStudyAction: "Study",
+  homeMoreAction: "More",
+  homeMemorialTagline: "A place of remembrance and eternal light.",
+  homeAITagline: "Ask. Learn. Grow. Your AI companion.",
+  homeUntilNextShabbatLabel: "UNTIL NEXT SHABBAT",
+
   settingsTitle: "Settings",
   settingsAppearance: "APPEARANCE",
   settingsTheme: "Theme",
@@ -397,6 +436,25 @@ export const sharedTk: SharedTranslations = {
   homeAskRavMenashe: "Rav Menashe zawh…",
   homeInsightTitle: "Nizan Torah Thu",
   homeQuickActionsTitle: "Thil Tihpui Dan",
+
+  homeTodaysFocusLabel: "NIZAN PAWIMAWH",
+  homeCandleLightingToday: "Katni Mei Nizan",
+  homePrepareForShabbat: "Shabbat tan na lungril buatsaih rawh",
+  homeTodaysZmanimLabel: "NIZAN ZMANIM",
+  homeAllTimesLocal: "Hun Hmun Dan",
+  homeMinchaGedola: "Mincha Gedola",
+  homeReadSummary: "Sawi Suk En",
+  homeOpenDafYomi: "Daf Yomi Zuk",
+  homeViewAllHolidays: "Ni Thianghlim Zawng En",
+  homeGoPremium: "Premium Nei Ta",
+  homeSupportMission: "Mission tanpui la zawng zawng en rawh.",
+  homeViewBenefits: "Fimkhur Dan En",
+  homeSanctuaryAction: "Inn Thianghlim",
+  homeStudyAction: "Zir",
+  homeMoreAction: "Zawk",
+  homeMemorialTagline: "Hriat leh lungngaih hmun thianghlim.",
+  homeAITagline: "Zawh. Zir. Hmasawn. Na AI pawl.",
+  homeUntilNextShabbatLabel: "SHABBAT THAR HMAA",
 
   settingsTitle: "Siam Dan",
   settingsAppearance: "SIM BUATSAIH",
