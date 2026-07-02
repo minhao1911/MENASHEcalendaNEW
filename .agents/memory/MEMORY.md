@@ -21,3 +21,4 @@
 - [Memorial Sanctuary — camera reset bug](memorial-camera-reset-bug.md) — entries in AAAFocusCamera deps caused camera teleport on every API poll; fix = entriesRef pattern + walkMode guard + animType ref.
 - [Gold token split](gold-token-split.md) — GOLD=#d4a843 (all UI) vs GOLD_SANCTUARY=#D4AF37 (Memorial 3D only); intentional distinction, not a bug.
 - [Memorial Sanctuary — no fabricated data](memorial-no-fake-data.md) — all fake counts/names/activity removed in SPR-035; real data or honest empty state only.
+- [Mobile production build verification](mobile-build-verify.md) — run `node scripts/build.js` in artifacts/menashe-mobile to verify prod build; port conflict with dev workflow is harmless.
