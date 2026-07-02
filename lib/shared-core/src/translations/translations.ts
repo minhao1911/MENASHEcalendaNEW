@@ -188,6 +188,29 @@ export interface SharedTranslations {
   sacredStudyLessonsCompleted: string;
   sacredStudyThisWeek: string;
 
+  /* ── Sacred Memory (Mobile) ── */
+  sacredMemoryTitle: string;
+  sacredMemorySubtitle: string;
+  sacredMemoryTodaysRemembrance: string;
+  sacredMemoryNoRemembrance: string;
+  sacredMemoryMyFamilyMemorials: string;
+  sacredMemoryNoFamilyMemorials: string;
+  sacredMemoryLightCandle: string;
+  sacredMemoryLightCandleDesc: string;
+  sacredMemoryLightCandleCta: string;
+  sacredMemoryRecentCandles: string;
+  sacredMemoryNoRecentCandles: string;
+  sacredMemoryPrayerReflection: string;
+  sacredMemoryCommunityMemorial: string;
+  sacredMemoryViewCommunity: string;
+  sacredMemoryCandlesLit: string;
+  sacredMemoryLearningNow: string;
+  sacredMemoryEnterSanctuary: string;
+  sacredMemoryEnterSanctuaryCta: string;
+  sacredMemoryEnterSanctuaryDesc: string;
+  sacredMemoryEntryLabel: string;
+  sacredMemoryEntrySub: string;
+
   /* ── Translation Editor ── */
   txEditorTitle: string;
   txEditorSubtitle: string;
@@ -385,6 +408,28 @@ export const sharedEn: SharedTranslations = {
   sacredStudyLessonsCompleted: "Lessons Completed",
   sacredStudyThisWeek: "This Week's Reading",
 
+  sacredMemoryTitle: "Sacred Memory",
+  sacredMemorySubtitle: "Remember with light. Honor with love.",
+  sacredMemoryTodaysRemembrance: "Today's Remembrance",
+  sacredMemoryNoRemembrance: "No remembrance scheduled today.",
+  sacredMemoryMyFamilyMemorials: "My Family Memorials",
+  sacredMemoryNoFamilyMemorials: "Memorials you light will appear here.",
+  sacredMemoryLightCandle: "Light a Candle",
+  sacredMemoryLightCandleDesc: "Honor a loved one's memory with a single tap.",
+  sacredMemoryLightCandleCta: "Light Candle",
+  sacredMemoryRecentCandles: "Recent Candles",
+  sacredMemoryNoRecentCandles: "No candles lit yet. Be the first to light one.",
+  sacredMemoryPrayerReflection: "Prayer & Reflection",
+  sacredMemoryCommunityMemorial: "Community Memorial",
+  sacredMemoryViewCommunity: "View Community Memorial",
+  sacredMemoryCandlesLit: "Candles Lit",
+  sacredMemoryLearningNow: "Learning Now",
+  sacredMemoryEnterSanctuary: "Enter Sanctuary",
+  sacredMemoryEnterSanctuaryCta: "Enter 3D Sanctuary",
+  sacredMemoryEnterSanctuaryDesc: "Step gently into the immersive memorial garden — a sacred space to walk among the lights of those remembered.",
+  sacredMemoryEntryLabel: "Sacred Memory",
+  sacredMemoryEntrySub: "Remember & reflect",
+
   txEditorTitle: "Edit Thadou Kuki Labels",
   txEditorSubtitle: "Correct any translation below. Changes are saved on your device.",
   txEditorSave: "Save Changes",
@@ -580,6 +625,28 @@ export const sharedTk: SharedTranslations = {
   sacredStudyStudyDays: "Kihilna Ni",
   sacredStudyLessonsCompleted: "Kihilna Kichaisa",
   sacredStudyThisWeek: "Hiche Hapta Sim",
+
+  sacredMemoryTitle: "Hriatna Thianghlim",
+  sacredMemorySubtitle: "Mei chun hriat rawh. Hmangaihna chun zahawm sak rawh.",
+  sacredMemoryTodaysRemembrance: "Tunni Hriatna",
+  sacredMemoryNoRemembrance: "Tunni ah hriatna rêl a nei lo.",
+  sacredMemoryMyFamilyMemorials: "Ka Chhungkua Hriatna",
+  sacredMemoryNoFamilyMemorials: "I mei kat sa hriatna te hi hetah hian a lang ding ahi.",
+  sacredMemoryLightCandle: "Mei Kat Rawh",
+  sacredMemoryLightCandleDesc: "Hmangaih tak i hriat tur chu tap khat hian zahawm sak rawh.",
+  sacredMemoryLightCandleCta: "Mei Kat",
+  sacredMemoryRecentCandles: "Mei Kat Changkhat",
+  sacredMemoryNoRecentCandles: "Mei kat lai a nei lo. I mahni mei kat hmasa ber ni rawh.",
+  sacredMemoryPrayerReflection: "Chibai leh Ngaihtuahna",
+  sacredMemoryCommunityMemorial: "Mipil Hriatna",
+  sacredMemoryViewCommunity: "Mipil Hriatna En Rawh",
+  sacredMemoryCandlesLit: "Mei Kat Zat",
+  sacredMemoryLearningNow: "Tuna Kihilna",
+  sacredMemoryEnterSanctuary: "Inn Thianghlim Lut",
+  sacredMemoryEnterSanctuaryCta: "3D Inn Thianghlim Lut Rawh",
+  sacredMemoryEnterSanctuaryDesc: "Hriatna Inn Thianghlim thu chu senkhat hmangin lut rawh — mite hriatna eng zawng zawng vak lai zin theihna hmun thianghlim.",
+  sacredMemoryEntryLabel: "Hriatna Thianghlim",
+  sacredMemoryEntrySub: "Hriat leh Ngaihtuah",
 
   txEditorTitle: "Thadou Kuki Label Siam",
   txEditorSubtitle: "Label dang tak chu hnuaiah siam rawh. Na device-ah chhuang a ni.",

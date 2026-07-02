@@ -5,6 +5,7 @@ import {
   Animated, Easing,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
@@ -43,10 +44,11 @@ export default function CommunityScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
+  const params = useLocalSearchParams<{ form?: string }>();
 
   const [entries, setEntries] = useState<CommunityYahrzeitEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [screen, setScreen] = useState<Screen>("board");
+  const [screen, setScreen] = useState<Screen>(params.form ? "form" : "board");
 
   const [announcements, setAnnouncements] = useState<MobileAnnouncement[]>([]);
   const [announcementsExpanded, setAnnouncementsExpanded] = useState(true);

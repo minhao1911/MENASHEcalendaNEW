@@ -287,7 +287,7 @@ const SectionHeader = memo(function SectionHeader({
 const QA_ITEMS = [
   { id: "calendar",     label: "Calendar",     icon: "calendar"   as const, bg: "#4A90D9", route: "/(tabs)/calendar" },
   { id: "zmanim",       label: "Zmanim",       icon: "clock"      as const, bg: "#9B59B6", route: "/(tabs)/zmanim"   },
-  { id: "sanctuary",    label: "Sanctuary",    icon: "home"       as const, bg: "#E67E22", route: "/(tabs)/community"},
+  { id: "sanctuary",    label: "Sanctuary",    icon: "home"       as const, bg: "#E67E22", route: "/sacred-memory"},
   { id: "study",        label: "Study",        icon: "book-open"  as const, bg: "#27AE60", route: "/(tabs)/torah"    },
   { id: "daf-yomi",     label: "Daf Yomi",     icon: "award"      as const, bg: "#E67E22", route: "/daf-yomi"        },
   { id: "library",      label: "Library",      icon: "book"       as const, bg: "#8E44AD", route: "/siddur"          },
@@ -1086,10 +1086,10 @@ export default function HomeScreen() {
         borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2,
       }, a7]}>
         <TouchableOpacity
-          onPress={() => router.push("/(tabs)/community")}
+          onPress={() => router.push("/sacred-memory")}
           activeOpacity={0.92}
           accessibilityLabel="Enter Memorial Sanctuary"
-          accessibilityHint="Opens the three-dimensional memorial world"
+          accessibilityHint="Opens the Sacred Memory experience"
           accessibilityRole="button"
         >
           <LinearGradient
@@ -1124,7 +1124,7 @@ export default function HomeScreen() {
                 </Text>
                 <PillButton
                   label={t.homeEnterSanctuary}
-                  onPress={() => router.push("/(tabs)/community")}
+                  onPress={() => router.push("/sacred-memory")}
                   bg={gold}
                   fg="#1a0f00"
                 />
