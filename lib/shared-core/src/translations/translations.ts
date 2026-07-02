@@ -176,6 +176,18 @@ export interface SharedTranslations {
   fabPrayerBoard: string;
   fabTorahTracker: string;
 
+  /* ── Sacred Study (Mobile) ── */
+  sacredStudyBeginJourney: string;
+  sacredStudyStudyPaths: string;
+  sacredStudyJewishCalendar: string;
+  sacredStudyBookmarks: string;
+  sacredStudyRecentlySaved: string;
+  sacredStudyNoBookmarks: string;
+  sacredStudyLearningJourney: string;
+  sacredStudyStudyDays: string;
+  sacredStudyLessonsCompleted: string;
+  sacredStudyThisWeek: string;
+
   /* ── Translation Editor ── */
   txEditorTitle: string;
   txEditorSubtitle: string;
@@ -362,6 +374,17 @@ export const sharedEn: SharedTranslations = {
   fabPrayerBoard: "Prayer Board",
   fabTorahTracker: "Torah Tracker",
 
+  sacredStudyBeginJourney: "Begin Your Journey",
+  sacredStudyStudyPaths: "Study Paths",
+  sacredStudyJewishCalendar: "Jewish Calendar",
+  sacredStudyBookmarks: "Bookmarks",
+  sacredStudyRecentlySaved: "Recently Saved",
+  sacredStudyNoBookmarks: "Nothing saved yet. Continue any study to save your place here.",
+  sacredStudyLearningJourney: "Learning Journey",
+  sacredStudyStudyDays: "Study Days",
+  sacredStudyLessonsCompleted: "Lessons Completed",
+  sacredStudyThisWeek: "This Week's Reading",
+
   txEditorTitle: "Edit Thadou Kuki Labels",
   txEditorSubtitle: "Correct any translation below. Changes are saved on your device.",
   txEditorSave: "Save Changes",
@@ -546,6 +569,17 @@ export const sharedTk: SharedTranslations = {
   fabTorahWisdom: "Torah Thu 48 Dan",
   fabPrayerBoard: "Thu Dawt Hmang",
   fabTorahTracker: "Torah Chhiar",
+
+  sacredStudyBeginJourney: "Na Kholna Pat Din",
+  sacredStudyStudyPaths: "Kihilna Lampi",
+  sacredStudyJewishCalendar: "Judah Kalendar",
+  sacredStudyBookmarks: "Khumkholna",
+  sacredStudyRecentlySaved: "Achangin Khumsa",
+  sacredStudyNoBookmarks: "Ima khumsa nai lou hi. Kihilna khat kichai teng na mun hi ah khumsa hung um ding ahi.",
+  sacredStudyLearningJourney: "Kihilna Kholna",
+  sacredStudyStudyDays: "Kihilna Ni",
+  sacredStudyLessonsCompleted: "Kihilna Kichaisa",
+  sacredStudyThisWeek: "Hiche Hapta Sim",
 
   txEditorTitle: "Thadou Kuki Label Siam",
   txEditorSubtitle: "Label dang tak chu hnuaiah siam rawh. Na device-ah chhuang a ni.",

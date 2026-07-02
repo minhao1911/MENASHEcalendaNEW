@@ -42,12 +42,36 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 // ─── Local content — presentation only, not calendar/torah logic ─────────────
 
 const LAST_STUDY_KEY = "menashe-last-study";
+const STUDY_HISTORY_KEY = "menashe-study-history";
+const MAX_HISTORY = 30;
 
 interface LastStudy {
   label: string;
   route: string;
   params?: Record<string, string>;
   at: number;
+}
+
+/** Gentle, non-competitive learning stats derived purely from local study history. */
+function computeJourneyStats(history: LastStudy[]) {
+  const now = new Date();
+  const startOfDay = (t: number) => {
+    const d = new Date(t);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  };
+  const startOfWeek = (() => {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay());
+    return d.getTime();
+  })();
+
+  const studyDays = new Set(history.map((h) => startOfDay(h.at))).size;
+  const lessonsCompleted = history.length;
+  const thisWeek = history.filter((h) => h.at >= startOfWeek).length;
+
+  return { studyDays, lessonsCompleted, thisWeek };
 }
 
 const TORAH_INSIGHTS = [
@@ -198,11 +222,13 @@ export default function SacredStudyScreen() {
   const topPad = insets.top > 0 ? insets.top : Platform.OS === "web" ? 48 : 20;
 
   const [lastStudy, setLastStudy] = useState<LastStudy | null>(null);
+  const [history, setHistory] = useState<LastStudy[]>([]);
   const [insightExpanded, setInsightExpanded] = useState(false);
   const [parashaExpanded, setParashaExpanded] = useState(false);
 
   useEffect(() => {
     storageGet<LastStudy | null>(LAST_STUDY_KEY, null).then(setLastStudy);
+    storageGet<LastStudy[]>(STUDY_HISTORY_KEY, []).then(setHistory);
   }, []);
 
   const parasha: ParashaInfo | null = useMemo(() => getCurrentParashaInfo(), []);
@@ -218,7 +244,30 @@ export default function SacredStudyScreen() {
     const record: LastStudy = { ...entry, at: Date.now() };
     setLastStudy(record);
     storageSet(LAST_STUDY_KEY, record);
+    setHistory((prev) => {
+      const next = [record, ...prev].slice(0, MAX_HISTORY);
+      storageSet(STUDY_HISTORY_KEY, next);
+      return next;
+    });
   }, []);
+
+  const goCalendar = useCallback(() => {
+    router.push("/(tabs)/calendar");
+  }, []);
+
+  const bookmarksRef = useRef<View>(null);
+  const scrollRef = useRef<any>(null);
+  const bookmarksY = useRef(0);
+
+  const scrollToBookmarks = useCallback(() => {
+    scrollRef.current?.scrollTo?.({ y: Math.max(bookmarksY.current - 24, 0), animated: !reducedMotion });
+  }, [reducedMotion]);
+
+  // Recently saved study — auto-bookmarked from history, excludes the item already
+  // surfaced in "Continue Learning" so the two sections don't repeat the same entry.
+  const bookmarks = useMemo(() => history.slice(1, 5), [history]);
+
+  const journeyStats = useMemo(() => computeJourneyStats(history), [history]);
 
   const goSiddur = useCallback((category: string) => {
     recordStudy({ label: `Siddur — ${category}`, route: "/siddur", params: { category } });
@@ -270,6 +319,8 @@ export default function SacredStudyScreen() {
   const a4 = useEntrance(260, reducedMotion);
   const a5 = useEntrance(310, reducedMotion);
   const a6 = useEntrance(360, reducedMotion);
+  const a7 = useEntrance(410, reducedMotion);
+  const a8 = useEntrance(460, reducedMotion);
 
   const parashaPress = usePressScale(reducedMotion, 0.98);
   const dafPress = usePressScale(reducedMotion, 0.97);
@@ -287,6 +338,7 @@ export default function SacredStudyScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Animated.ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: (insets.bottom || 0) + 104,
@@ -361,7 +413,7 @@ export default function SacredStudyScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[type.overline, { color: gold }]}>
-                  {lastStudy ? "CONTINUE LEARNING" : "BEGIN YOUR STUDY"}
+                  {lastStudy ? "CONTINUE LEARNING" : t.sacredStudyBeginJourney.toUpperCase()}
                 </Text>
                 <Text style={[type.label, { color: colors.textPrimary, marginTop: 2 }]} numberOfLines={1}>
                   {lastStudy ? lastStudy.label : "Start with this week's Parashah"}
@@ -517,16 +569,63 @@ export default function SacredStudyScreen() {
           </View>
         </Animated.View>
 
-        {/* ─── 8. STUDY COLLECTIONS ───────────────────────────────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 8 }, a6]}>
-          <SectionHeader icon="grid" label="Study Collections" gold={gold} muted={colors.textMuted} />
+        {/* ─── 8. STUDY PATHS ─────────────────────────────────────────────── */}
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a6]}>
+          <SectionHeader icon="grid" label={t.sacredStudyStudyPaths} gold={gold} muted={colors.textMuted} />
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: sp[3] }}>
-            <CollectionTile icon="feather" label="Torah" sub="Track your study" color="#4ade80" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={goTorahTracker} />
             <CollectionTile icon="star" label="Parashah" sub={parasha?.name ?? "This week"} color={gold} colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={studyParasha} />
+            <CollectionTile icon="feather" label="Torah" sub="Track your study" color="#4ade80" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={goTorahTracker} />
             <CollectionTile icon="book" label="Daf Yomi" sub={daf.tractate} color="#a78bfa" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={goDaf} />
             <CollectionTile icon="book-open" label="Siddur" sub="Prayer texts" color="#6382FF" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={() => goSiddur("Siddur")} />
             <CollectionTile icon="sun" label="Prayer" sub="Daily Tefillah" color="#f0a020" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={() => goSiddur("Prayer Books")} />
+            <CollectionTile icon="calendar" label={t.sacredStudyJewishCalendar} sub="Hebrew dates & holidays" color="#5eb3c9" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={goCalendar} />
             <CollectionTile icon="layers" label="Learning Library" sub="All sacred texts" color="#e07856" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={() => goSiddur("All")} />
+            <CollectionTile icon="bookmark" label={t.sacredStudyBookmarks} sub={bookmarks.length ? `${bookmarks.length} saved` : "Nothing saved yet"} color="#d16b8f" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={scrollToBookmarks} />
+          </View>
+        </Animated.View>
+
+        {/* ─── 9. BOOKMARKS ───────────────────────────────────────────────── */}
+        <View
+          ref={bookmarksRef}
+          onLayout={(e) => { bookmarksY.current = e.nativeEvent.layout.y; }}
+        >
+          <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a7]}>
+            <SectionHeader icon="bookmark" label={t.sacredStudyBookmarks} gold={gold} muted={colors.textMuted} />
+            {bookmarks.length === 0 ? (
+              <View style={{ backgroundColor: colors.card, borderRadius: rd.lg, borderWidth: 1, borderColor: colors.cardBorder, padding: sp[4] }}>
+                <Text style={[type.bodySm, { color: colors.textMuted }]}>{t.sacredStudyNoBookmarks}</Text>
+              </View>
+            ) : (
+              <View style={{ gap: sp[2] }}>
+                {bookmarks.map((item, idx) => (
+                  <Pressable
+                    key={`${item.route}-${item.at}-${idx}`}
+                    onPress={() => router.push(item.params ? ({ pathname: item.route, params: item.params } as any) : (item.route as any))}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t.sacredStudyRecentlySaved}: ${item.label}`}
+                    style={{
+                      backgroundColor: colors.card, borderRadius: rd.md, padding: sp[3.5],
+                      flexDirection: "row", alignItems: "center", gap: sp[3],
+                      borderWidth: 1, borderColor: colors.cardBorder, minHeight: 48,
+                    }}
+                  >
+                    <Feather name="bookmark" size={15} color={gold} />
+                    <Text style={[type.bodySm, { color: colors.textPrimary, flex: 1 }]} numberOfLines={1}>{item.label}</Text>
+                    <Feather name="chevron-right" size={16} color={colors.textMuted} />
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </Animated.View>
+        </View>
+
+        {/* ─── 10. LEARNING JOURNEY ───────────────────────────────────────── */}
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 8 }, a8]}>
+          <SectionHeader icon="trending-up" label={t.sacredStudyLearningJourney} gold={gold} muted={colors.textMuted} />
+          <View style={{ flexDirection: "row", gap: sp[3] }}>
+            <JourneyStat value={journeyStats.studyDays} label={t.sacredStudyStudyDays} colors={colors} type={type} rd={rd} sp={sp} shadow={shadow} icon="sun" />
+            <JourneyStat value={journeyStats.lessonsCompleted} label={t.sacredStudyLessonsCompleted} colors={colors} type={type} rd={rd} sp={sp} shadow={shadow} icon="check-circle" />
+            <JourneyStat value={journeyStats.thisWeek} label={t.sacredStudyThisWeek} colors={colors} type={type} rd={rd} sp={sp} shadow={shadow} icon="calendar" />
           </View>
         </Animated.View>
       </Animated.ScrollView>
@@ -572,5 +671,36 @@ const SiddurTimeCard = memo(function SiddurTimeCard({
         <Text style={[type.caption, { color: colors.textMuted }]}>{sub}</Text>
       </Pressable>
     </Animated.View>
+  );
+});
+
+// ─── Learning Journey stat card — gentle, non-competitive progress display ───
+
+interface JourneyStatProps {
+  value: number;
+  label: string;
+  colors: ReturnType<typeof useThemeTokens>["colors"];
+  type: ReturnType<typeof useThemeTokens>["type"];
+  rd: ReturnType<typeof useThemeTokens>["rd"];
+  sp: ReturnType<typeof useThemeTokens>["sp"];
+  shadow: ReturnType<typeof useThemeTokens>["shadow"];
+  icon: React.ComponentProps<typeof Feather>["name"];
+}
+
+const JourneyStat = memo(function JourneyStat({ value, label, colors, type, rd, sp, shadow, icon }: JourneyStatProps) {
+  return (
+    <View
+      accessibilityRole="text"
+      accessibilityLabel={`${label}: ${value}`}
+      style={{
+        flex: 1, backgroundColor: colors.card, borderRadius: rd.lg, padding: sp[3.5],
+        alignItems: "center", gap: 6, borderWidth: 1, borderColor: colors.cardBorder,
+        minHeight: 92, justifyContent: "center", ...shadow.level1,
+      }}
+    >
+      <Feather name={icon} size={16} color={colors.accentGold} />
+      <Text style={{ fontSize: 20, fontWeight: "800", color: colors.textPrimary }}>{value}</Text>
+      <Text style={[type.caption, { color: colors.textMuted, textAlign: "center" }]} numberOfLines={2}>{label}</Text>
+    </View>
   );
 });
