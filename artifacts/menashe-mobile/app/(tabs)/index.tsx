@@ -2,20 +2,19 @@
  * SPR-M008 — Daily Experience Refinement
  * Mobile Home Screen — Vision Implementation Sprint
  *
- * Sections (top → bottom):
- *   1.  Header  (hamburger · logo · location · bell)
- *   2.  Lang bar (star · EN | TK)
- *   3.  Hero    (gradient · dates · glass zmanim)
- *   4.  Today's Focus
- *   5.  Shabbat Countdown
- *   6.  Sacred Time (Zmanim row)
- *   7.  Quick Actions  2×4
- *   8.  Learning Gallery  (Parasha · Insight · Daf Yomi)
- *   9.  Upcoming Holiday
- *  10.  Community Preview
- *  11.  Memorial Sanctuary flagship card
- *  12.  Rav Menashe AI flagship card
- *  13.  Go Premium
+ * Phases:
+ *   1.  Hero Experience         — balance, hierarchy, artwork, 30-35% viewport
+ *   2.  Today's Focus           — one priority item, proper visual weight
+ *   3.  Sacred Time             — scannable zmanim row, current-prayer emphasis
+ *   4.  Shabbat Experience      — Countdown → Candle Lighting → Havdalah hierarchy
+ *   5.  Quick Actions           — 48dp targets, icon consistency, premium press
+ *   6.  Learning Experience     — one visual family, consistent CTA placement
+ *   7.  Sanctuary Card          — flagship depth, invitation to reflect
+ *   8.  Rav Menashe AI          — sapphire premium, conversation preview
+ *   9.  Visual Rhythm           — consistent margins, breathing room, no crowding
+ *  10.  Micro Interactions       — effortless press, card scale, entrance fade
+ *  11.  Performance             — memoised sections, stable refs
+ *  12.  Accessibility           — VoiceOver, 48dp targets, Reduced Motion
  *
  * Architecture rules (SPR-M008):
  *   ✓ MMDL reused      ✓ MEL followed     ✓ Component Library reused
@@ -63,36 +62,35 @@ import { useLanguage } from "@/context/LanguageContext";
 // ─── Daf Yomi helpers ─────────────────────────────────────────────────────────
 
 const TRACTATES = [
-  { name: "Berakhot", pages: 64 }, { name: "Shabbat", pages: 157 },
-  { name: "Eruvin", pages: 105 }, { name: "Pesachim", pages: 121 },
-  { name: "Yoma", pages: 88 }, { name: "Sukkah", pages: 56 },
-  { name: "Beitzah", pages: 40 }, { name: "Rosh Hashana", pages: 35 },
-  { name: "Ta'anit", pages: 31 }, { name: "Megillah", pages: 32 },
-  { name: "Moed Katan", pages: 29 }, { name: "Chagigah", pages: 27 },
-  { name: "Yevamot", pages: 122 }, { name: "Ketubot", pages: 112 },
-  { name: "Nedarim", pages: 91 }, { name: "Nazir", pages: 66 },
-  { name: "Sotah", pages: 49 }, { name: "Gittin", pages: 90 },
-  { name: "Kiddushin", pages: 82 }, { name: "Bava Kamma", pages: 119 },
-  { name: "Bava Metzia", pages: 119 }, { name: "Bava Batra", pages: 176 },
-  { name: "Sanhedrin", pages: 113 }, { name: "Makkot", pages: 24 },
-  { name: "Shevuot", pages: 49 }, { name: "Avodah Zarah", pages: 76 },
-  { name: "Horayot", pages: 14 }, { name: "Zevachim", pages: 120 },
-  { name: "Menachot", pages: 110 }, { name: "Chullin", pages: 142 },
-  { name: "Bekhorot", pages: 61 }, { name: "Arakhin", pages: 34 },
-  { name: "Temurah", pages: 34 }, { name: "Keritot", pages: 28 },
-  { name: "Meilah", pages: 22 }, { name: "Niddah", pages: 73 },
+  { name: "Berakhot",     pages: 64  }, { name: "Shabbat",       pages: 157 },
+  { name: "Eruvin",       pages: 105 }, { name: "Pesachim",      pages: 121 },
+  { name: "Yoma",         pages: 88  }, { name: "Sukkah",        pages: 56  },
+  { name: "Beitzah",      pages: 40  }, { name: "Rosh Hashana",  pages: 35  },
+  { name: "Ta'anit",      pages: 31  }, { name: "Megillah",      pages: 32  },
+  { name: "Moed Katan",   pages: 29  }, { name: "Chagigah",      pages: 27  },
+  { name: "Yevamot",      pages: 122 }, { name: "Ketubot",       pages: 112 },
+  { name: "Nedarim",      pages: 91  }, { name: "Nazir",         pages: 66  },
+  { name: "Sotah",        pages: 49  }, { name: "Gittin",        pages: 90  },
+  { name: "Kiddushin",    pages: 82  }, { name: "Bava Kamma",    pages: 119 },
+  { name: "Bava Metzia",  pages: 119 }, { name: "Bava Batra",    pages: 176 },
+  { name: "Sanhedrin",    pages: 113 }, { name: "Makkot",        pages: 24  },
+  { name: "Shevuot",      pages: 49  }, { name: "Avodah Zarah",  pages: 76  },
+  { name: "Horayot",      pages: 14  }, { name: "Zevachim",      pages: 120 },
+  { name: "Menachot",     pages: 110 }, { name: "Chullin",       pages: 142 },
+  { name: "Bekhorot",     pages: 61  }, { name: "Arakhin",       pages: 34  },
+  { name: "Temurah",      pages: 34  }, { name: "Keritot",       pages: 28  },
+  { name: "Meilah",       pages: 22  }, { name: "Niddah",        pages: 73  },
 ];
-const TOTAL_PAGES = TRACTATES.reduce((a, t) => a + t.pages, 0);
-const CYCLE_START = new Date(2020, 0, 5);
+const TOTAL_PAGES  = TRACTATES.reduce((a, t) => a + t.pages, 0);
+const CYCLE_START  = new Date(2020, 0, 5);
 
 function getTodayDaf(): { tractate: string; daf: number } {
-  const daysSince = Math.floor((Date.now() - CYCLE_START.getTime()) / 86400000);
-  const dayInCycle = ((daysSince % TOTAL_PAGES) + TOTAL_PAGES) % TOTAL_PAGES;
-  let cumulative = 0;
+  const daysSince   = Math.floor((Date.now() - CYCLE_START.getTime()) / 86_400_000);
+  const dayInCycle  = ((daysSince % TOTAL_PAGES) + TOTAL_PAGES) % TOTAL_PAGES;
+  let   cumulative  = 0;
   for (const t of TRACTATES) {
-    if (dayInCycle < cumulative + t.pages) {
+    if (dayInCycle < cumulative + t.pages)
       return { tractate: t.name, daf: dayInCycle - cumulative + 2 };
-    }
     cumulative += t.pages;
   }
   return { tractate: "Berakhot", daf: 2 };
@@ -106,17 +104,17 @@ function getDafProgress(tractate: string, daf: number): number {
 
 function getOmerDay(): number | null {
   const hd = new HDate(new Date());
-  const m = hd.getMonth();
-  const d = hd.getDate();
+  const m  = hd.getMonth();
+  const d  = hd.getDate();
   if (m === 1 && d >= 16) return d - 15;
-  if (m === 2) return 15 + d;
-  if (m === 3 && d <= 5) return 44 + d;
+  if (m === 2)            return 15 + d;
+  if (m === 3 && d <= 5)  return 44 + d;
   return null;
 }
 
 function getNextWeekday(targetDay: number): Date {
-  const d = new Date();
-  let diff = (targetDay - d.getDay() + 7) % 7;
+  const d    = new Date();
+  let   diff = (targetDay - d.getDay() + 7) % 7;
   if (diff === 0) diff = 7;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
@@ -135,16 +133,16 @@ function formatCountdown(ms: number): string {
 }
 
 const TORAH_INSIGHTS = [
-  { quote: "\"The Torah is a tree of life to those who hold fast to it.\"", source: "Proverbs 3:18" },
-  { quote: "\"Who is wise? One who learns from every person.\"", source: "Pirkei Avot 4:1" },
-  { quote: "\"Love your neighbor as yourself\" — the entire Torah stands on this principle.", source: "Leviticus 19:18" },
-  { quote: "\"In the place where a penitent stands, even the perfectly righteous cannot stand.\"", source: "Talmud, Berakhot 34b" },
-  { quote: "\"G-d is present in every place, in every moment, in every thought.\"", source: "Baal Shem Tov" },
-  { quote: "\"Turn it over and turn it over again, for everything is contained within it.\"", source: "Pirkei Avot 5:22" },
-  { quote: "\"Every day one must say: the world was created for my sake.\"", source: "Talmud, Sanhedrin 37a" },
+  { quote: "\"The Torah is a tree of life to those who hold fast to it.\"",           source: "Proverbs 3:18"       },
+  { quote: "\"Who is wise? One who learns from every person.\"",                       source: "Pirkei Avot 4:1"     },
+  { quote: "\"Love your neighbor as yourself\" — the entire Torah stands on this.",    source: "Leviticus 19:18"     },
+  { quote: "\"In the place where a penitent stands, the righteous cannot stand.\"",   source: "Talmud, Berakhot 34b"},
+  { quote: "\"G-d is present in every place, in every moment, in every thought.\"",   source: "Baal Shem Tov"       },
+  { quote: "\"Turn it over again, for everything is contained within it.\"",           source: "Pirkei Avot 5:22"    },
+  { quote: "\"Every day one must say: the world was created for my sake.\"",           source: "Sanhedrin 37a"       },
 ];
 
-// ─── Accessibility: reduced motion ────────────────────────────────────────────
+// ─── Phase 12: Reduced Motion ─────────────────────────────────────────────────
 
 function useReducedMotionSafe(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -156,18 +154,18 @@ function useReducedMotionSafe(): boolean {
   return reduced;
 }
 
-// ─── Staggered entrance animation (MEL motionGuide — entrance recipe) ─────────
+// ─── Phase 10: Staggered entrance (MEL motionGuide — entrance recipe) ─────────
 
 function useEntrance(delay = 0): Animated.AnimatedProps<ViewStyle> {
   const reducedMotion = useReducedMotionSafe();
   const opacity    = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(reducedMotion ? 0 : 12)).current;
+  const translateY = useRef(new Animated.Value(reducedMotion ? 0 : 14)).current;
   useEffect(() => {
-    const duration = reducedMotion ? 0 : 400;
+    const duration = reducedMotion ? 0 : 420;
     const t = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(opacity,    { toValue: 1, duration, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration, useNativeDriver: true }),
+        Animated.timing(opacity,    { toValue: 1, duration,       useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 0, duration,       useNativeDriver: true }),
       ]).start();
     }, reducedMotion ? 0 : delay);
     return () => clearTimeout(t);
@@ -175,7 +173,7 @@ function useEntrance(delay = 0): Animated.AnimatedProps<ViewStyle> {
   return { opacity, transform: [{ translateY }] } as any;
 }
 
-// ─── Hero shimmer — fades out on mount to reveal artwork ──────────────────────
+// ─── Phase 1: Hero shimmer — fades out on mount to reveal artwork ──────────────
 
 function useHeroShimmer() {
   const reducedMotion = useReducedMotionSafe();
@@ -184,13 +182,24 @@ function useHeroShimmer() {
     const t = setTimeout(() => {
       Animated.timing(opacity, {
         toValue:  0,
-        duration: reducedMotion ? 0 : 700,
+        duration: reducedMotion ? 0 : 900,
         useNativeDriver: true,
       }).start();
-    }, reducedMotion ? 0 : 120);
+    }, reducedMotion ? 0 : 300);
     return () => clearTimeout(t);
   }, [opacity, reducedMotion]);
   return opacity;
+}
+
+// ─── Phase 10: Animated press scale ───────────────────────────────────────────
+
+function usePressScale(toValue = 0.95) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPressIn  = useCallback(() =>
+    Animated.timing(scale, { toValue,  duration: 80,  useNativeDriver: true }).start(), [scale, toValue]);
+  const onPressOut = useCallback(() =>
+    Animated.timing(scale, { toValue: 1.0, duration: 150, useNativeDriver: true }).start(), [scale]);
+  return { scale, onPressIn, onPressOut };
 }
 
 // ─── Overline label ───────────────────────────────────────────────────────────
@@ -206,22 +215,14 @@ const Overline = memo(function Overline({ text, color }: { text: string; color: 
   );
 });
 
-// ─── Pill / CTA button ────────────────────────────────────────────────────────
-// MEL interactionGuide: press scale 0.96, 80ms, then release to 1 @ 150ms
+// ─── MEL PillButton — press scale 0.96 @80ms, release @150ms ──────────────────
 
 const PillButton = memo(function PillButton({
   label, onPress, bg, fg, small,
 }: {
   label: string; onPress: () => void; bg: string; fg: string; small?: boolean;
 }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn  = useCallback(() => {
-    Animated.timing(scale, { toValue: 0.95, duration: 80,  useNativeDriver: true }).start();
-  }, [scale]);
-  const onPressOut = useCallback(() => {
-    Animated.timing(scale, { toValue: 1.00, duration: 150, useNativeDriver: true }).start();
-  }, [scale]);
-
+  const { scale, onPressIn, onPressOut } = usePressScale(0.94);
   return (
     <Pressable
       onPress={onPress}
@@ -230,34 +231,112 @@ const PillButton = memo(function PillButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => ({
-        backgroundColor: pressed ? bg + "d0" : bg,
-        borderRadius: 9999,
-        paddingHorizontal: small ? 14 : 20,
-        paddingVertical:   small ?  8 : 11,
-        flexDirection: "row", alignItems: "center", gap: 5,
+        backgroundColor: pressed ? bg + "d8" : bg,
+        borderRadius:    9999,
+        paddingHorizontal: small ? 14 : 22,
+        paddingVertical:   small ?  9 : 13,
+        minHeight: small ? 36 : 44,
+        flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
         alignSelf: "flex-start",
       })}
     >
-      <Animated.View style={{ transform: [{ scale }], flexDirection: "row", alignItems: "center", gap: 5 }}>
-        <Text style={{ fontSize: small ? 12 : 13, fontWeight: "700", color: fg }}>{label}</Text>
-        <Feather name="chevron-right" size={small ? 11 : 12} color={fg} />
+      <Animated.View style={{ transform: [{ scale }], flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <Text style={{ fontSize: small ? 12 : 13, fontWeight: "700", color: fg, letterSpacing: 0.1 }}>{label}</Text>
+        <Feather name="chevron-right" size={small ? 11 : 13} color={fg} />
       </Animated.View>
     </Pressable>
   );
 });
 
-// ─── Quick action items ────────────────────────────────────────────────────────
+// ─── Section header label ──────────────────────────────────────────────────────
+
+const SectionHeader = memo(function SectionHeader({
+  icon, label, onPress, ctaLabel, HX,
+}: {
+  icon: string; label: string; onPress?: () => void; ctaLabel?: string; HX: number;
+}) {
+  return (
+    <View style={{
+      paddingHorizontal: HX,
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      marginBottom: 14,
+    }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+        <Feather name={icon as any} size={13} color="#d4a843" />
+        <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: "#888", textTransform: "uppercase" }}>
+          {label}
+        </Text>
+      </View>
+      {onPress && ctaLabel ? (
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="link"
+          accessibilityLabel={ctaLabel}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, flexDirection: "row", alignItems: "center", gap: 4 })}
+        >
+          <Text style={{ fontSize: 11, color: "#d4a843", fontWeight: "600" }}>{ctaLabel}</Text>
+          <Feather name="chevron-right" size={11} color="#d4a843" />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+});
+
+// ─── Phase 5: Quick Action items ──────────────────────────────────────────────
 
 const QA_ITEMS = [
   { id: "calendar",     label: "Calendar",     icon: "calendar"   as const, bg: "#4A90D9", route: "/(tabs)/calendar" },
   { id: "zmanim",       label: "Zmanim",       icon: "clock"      as const, bg: "#9B59B6", route: "/(tabs)/zmanim"   },
   { id: "sanctuary",    label: "Sanctuary",    icon: "home"       as const, bg: "#E67E22", route: "/(tabs)/community"},
-  { id: "study",        label: "Study",        icon: "book-open"  as const, bg: "#27AE60", route: "/(tabs)/torah"   },
-  { id: "daf-yomi",     label: "Daf Yomi",     icon: "award"      as const, bg: "#E67E22", route: "/daf-yomi"       },
-  { id: "library",      label: "Library",      icon: "book"       as const, bg: "#8E44AD", route: "/siddur"         },
-  { id: "prayer-board", label: "Prayer Board", icon: "users"      as const, bg: "#16A085", route: "/prayer-board"   },
-  { id: "48-ways",      label: "48 Ways",      icon: "star"       as const, bg: "#D4A843", route: "/mussar"         },
+  { id: "study",        label: "Study",        icon: "book-open"  as const, bg: "#27AE60", route: "/(tabs)/torah"    },
+  { id: "daf-yomi",     label: "Daf Yomi",     icon: "award"      as const, bg: "#E67E22", route: "/daf-yomi"        },
+  { id: "library",      label: "Library",      icon: "book"       as const, bg: "#8E44AD", route: "/siddur"          },
+  { id: "prayer-board", label: "Prayer Board", icon: "users"      as const, bg: "#16A085", route: "/prayer-board"    },
+  { id: "48-ways",      label: "48 Ways",      icon: "star"       as const, bg: "#D4A843", route: "/mussar"          },
 ];
+
+const QuickActionCard = memo(function QuickActionCard({
+  item, cardBg, borderColor, textSecondary, rd,
+}: {
+  item: typeof QA_ITEMS[number];
+  cardBg: string; borderColor: string; textSecondary: string; rd: any;
+}) {
+  const { scale, onPressIn, onPressOut } = usePressScale(0.93);
+  return (
+    <Pressable
+      onPress={() => router.push(item.route as any)}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      accessibilityLabel={item.label}
+      accessibilityRole="button"
+      style={{
+        width: "22%",
+        alignItems: "center",
+        minHeight: 92,
+        justifyContent: "center",
+        gap: 9,
+        paddingVertical: 18,
+        borderRadius: rd.lg,
+        backgroundColor: cardBg,
+        borderWidth: 1, borderColor,
+      }}
+    >
+      <Animated.View style={{ transform: [{ scale }], alignItems: "center", gap: 9 }}>
+        <View style={{
+          width: 50, height: 50,
+          borderRadius: rd.md,
+          backgroundColor: item.bg + "1e",
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <Feather name={item.icon} size={22} color={item.bg} />
+        </View>
+        <Text style={{ fontSize: 11, fontWeight: "600", textAlign: "center", color: textSecondary, lineHeight: 14 }}>
+          {item.label}
+        </Text>
+      </Animated.View>
+    </Pressable>
+  );
+});
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
@@ -277,32 +356,29 @@ export default function HomeScreen() {
     : hour < 17 ? t.homeGoodAfternoon
     : t.homeGoodEvening;
 
-  const hdate           = useMemo(() => getHebrewDate(today), [today]);
-  const hebrewDateStr   = useMemo(() => formatHebrewDate(hdate), [hdate]);
+  const hdate            = useMemo(() => getHebrewDate(today), [today]);
+  const hebrewDateStr    = useMemo(() => formatHebrewDate(hdate), [hdate]);
   const hebrewNumeralStr = useMemo(() => {
     try { return formatHebrewDateHebrew(hdate); } catch { return ""; }
   }, [hdate]);
+
   const parasha     = useMemo(() => getCurrentParasha(), []);
   const holidays    = useMemo(() => getUpcomingHolidays(30), []);
   const nextHoliday = holidays[0] ?? null;
-  // Phase 2: holiday-today detection for priority ordering
+
   const todayHoliday = useMemo(() => {
     if (!nextHoliday) return null;
     const hd = nextHoliday.date;
     return hd.getFullYear() === today.getFullYear()
-      && hd.getMonth()     === today.getMonth()
-      && hd.getDate()      === today.getDate()
-      ? nextHoliday
-      : null;
+        && hd.getMonth()     === today.getMonth()
+        && hd.getDate()      === today.getDate()
+      ? nextHoliday : null;
   }, [nextHoliday, today]);
 
-  // Phase 2: fast-today detection — fasts sit below holidays, above candle lighting
-  // Matches standard hebcal fast names (Fast of Gedaliah, Tisha B'Av, Ta'anit Esther, etc.)
   const todayFast = useMemo(() => {
     if (!todayHoliday) return null;
     return /fast|tzom|tisha|ta'?anit|taanis/i.test(todayHoliday.name)
-      ? todayHoliday
-      : null;
+      ? todayHoliday : null;
   }, [todayHoliday]);
 
   const daf         = useMemo(() => getTodayDaf(), []);
@@ -322,7 +398,7 @@ export default function HomeScreen() {
     [isFriday, today],
   );
   const saturday = useMemo(() => {
-    const d = new Date(friday.getTime() + 86400000);
+    const d = new Date(friday.getTime() + 86_400_000);
     d.setHours(0, 0, 0, 0);
     return d;
   }, [friday]);
@@ -372,7 +448,7 @@ export default function HomeScreen() {
   });
 
   const todayInsight = useMemo(() => {
-    const idx = Math.abs(Math.floor(today.getTime() / 86400000) % TORAH_INSIGHTS.length);
+    const idx = Math.abs(Math.floor(today.getTime() / 86_400_000) % TORAH_INSIGHTS.length);
     return TORAH_INSIGHTS[idx];
   }, [today]);
 
@@ -382,7 +458,7 @@ export default function HomeScreen() {
   const isSapphire = theme === "sapphire";
 
   const heroGradientColors = isLight
-    ? (["#F0E6CE", "#E8D5A8", "#D9BB6E"] as const)
+    ? (["#F5EDD8", "#EDD9A3", "#D9BB6E"] as const)
     : isSapphire
       ? (["#0c1830", "#1a2e58", "#0c1830"] as const)
       : (["#090f1d", "#101824", "#182032"] as const);
@@ -395,27 +471,25 @@ export default function HomeScreen() {
   const textMuted     = colors.textMuted;
   const textSecondary = colors.textSecondary;
   const borderColor   = colors.cardBorder;
-  // Semantic accent shortcuts from tokens — used throughout cards
   const successColor  = colors.success;
-  const warningColor  = colors.warning;
-  // Sapphire blue — always the AI brand color regardless of theme
   const sapphireBlue  = "#6382FF" as const;
 
-  // Phase 10: staggered entrance (MEL motionGuide)
+  // Phase 10: staggered entrance — MEL motionGuide
   const a0  = useEntrance(0);
-  const a1  = useEntrance(50);
-  const a2  = useEntrance(100);
-  const a3  = useEntrance(150);
-  const a4  = useEntrance(200);
-  const a5  = useEntrance(240);
-  const a6  = useEntrance(280);
-  const a7  = useEntrance(320);
-  const a9  = useEntrance(400);
+  const a1  = useEntrance(60);
+  const a2  = useEntrance(110);
+  const a3  = useEntrance(160);
+  const a4  = useEntrance(210);
+  const a5  = useEntrance(260);
+  const a6  = useEntrance(310);
+  const a7  = useEntrance(360);
+  const a8  = useEntrance(400);
+  const a9  = useEntrance(440);
 
-  // Phase 1: hero shimmer fade-out
+  // Phase 1: hero shimmer
   const shimmerOpacity = useHeroShimmer();
 
-  // Horizontal page margin — consistent across all sections
+  // Phase 9: consistent horizontal page margin
   const HX = 20;
 
   return (
@@ -424,36 +498,36 @@ export default function HomeScreen() {
       contentContainerStyle={{ paddingBottom: (insets.bottom || 0) + 104 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* ─── 1. HEADER ────────────────────────────────────────────────────────── */}
+
+      {/* ─── 1. HEADER ──────────────────────────────────────────────────────────── */}
       <Animated.View style={[{
         paddingTop: topPad, paddingHorizontal: HX, paddingBottom: 12,
         flexDirection: "row", alignItems: "center",
       }, a0]}>
-        {/* Hamburger */}
+        {/* Hamburger — 48dp touch target */}
         <TouchableOpacity
-          style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: 8 }}
+          style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center", marginRight: 6 }}
           activeOpacity={0.7}
-          accessibilityLabel="Menu"
+          accessibilityLabel="Open menu"
           accessibilityRole="button"
         >
           <Feather name="menu" size={22} color={textPrimary} />
         </TouchableOpacity>
 
         {/* Logo + Brand */}
-        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 9 }}>
+        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10 }}>
           <View style={{
-            width: 34, height: 34, borderRadius: 9,
-            backgroundColor: gold + "1e",
-            borderWidth: 1, borderColor: gold + "44",
+            width: 36, height: 36, borderRadius: 10,
+            backgroundColor: gold + "1e", borderWidth: 1, borderColor: gold + "44",
             alignItems: "center", justifyContent: "center",
           }}>
-            <Text style={{ fontSize: 16 }}>⛩</Text>
+            <Text style={{ fontSize: 17 }}>⛩</Text>
           </View>
           <View>
-            <Text style={{ fontSize: 13, fontWeight: "800", color: gold, letterSpacing: 1.6 }}>
+            <Text style={{ fontSize: 13, fontWeight: "800", color: gold, letterSpacing: 1.8 }}>
               BNEI MENASHE
             </Text>
-            <Text style={{ fontSize: 10, color: textMuted, letterSpacing: 0.4 }}>
+            <Text style={{ fontSize: 10, color: textMuted, letterSpacing: 0.4, marginTop: 1 }}>
               {t.homeSacredCalendar}
             </Text>
           </View>
@@ -463,19 +537,19 @@ export default function HomeScreen() {
         <View style={{
           flexDirection: "row", alignItems: "center", gap: 4,
           backgroundColor: isLight ? "#fff8ee" : cardBg,
-          borderRadius: rd.pill, paddingHorizontal: 10, paddingVertical: 6,
+          borderRadius: rd.pill, paddingHorizontal: 10, paddingVertical: 7,
           borderWidth: 1, borderColor, marginRight: 10,
         }}>
           <Feather name="map-pin" size={10} color={gold} />
-          <Text style={{ fontSize: 11, color: textMuted, fontWeight: "500" }}>
+          <Text style={{ fontSize: 11, color: textMuted, fontWeight: "500" }} numberOfLines={1}>
             {location.name}
           </Text>
         </View>
 
-        {/* Bell */}
+        {/* Bell — 48dp target */}
         <TouchableOpacity
           style={{
-            width: 44, height: 44, borderRadius: 22,
+            width: 48, height: 48, borderRadius: 24,
             backgroundColor: cardBg, borderWidth: 1, borderColor,
             alignItems: "center", justifyContent: "center",
           }}
@@ -483,9 +557,9 @@ export default function HomeScreen() {
           accessibilityLabel="Notifications"
           accessibilityRole="button"
         >
-          <Feather name="bell" size={16} color={textPrimary} />
+          <Feather name="bell" size={17} color={textPrimary} />
           <View style={{
-            position: "absolute", top: 8, right: 9,
+            position: "absolute", top: 9, right: 10,
             width: 7, height: 7, borderRadius: 4,
             backgroundColor: "#fb923c",
             borderWidth: 1.5, borderColor: pageBg,
@@ -495,15 +569,15 @@ export default function HomeScreen() {
 
       {/* ─── 2. LANG BAR ──────────────────────────────────────────────────────── */}
       <Animated.View style={[{
-        paddingHorizontal: HX, marginBottom: 14,
+        paddingHorizontal: HX, marginBottom: 16,
         flexDirection: "row", alignItems: "center", gap: 10,
       }, a0]}>
         <View style={{
-          width: 30, height: 30, borderRadius: 15,
+          width: 32, height: 32, borderRadius: 16,
           backgroundColor: gold + "18", borderWidth: 1, borderColor: gold + "44",
           alignItems: "center", justifyContent: "center",
         }}>
-          <Text style={{ fontSize: 13, color: gold }}>✡</Text>
+          <Text style={{ fontSize: 14, color: gold }}>✡</Text>
         </View>
 
         <View style={{
@@ -515,15 +589,16 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={l}
               style={{
-                paddingHorizontal: 14, paddingVertical: 8,
-                minHeight: 44, justifyContent: "center",
+                paddingHorizontal: 16, paddingVertical: 8,
+                minHeight: 44, minWidth: 52, justifyContent: "center", alignItems: "center",
                 borderRadius: rd.pill,
                 backgroundColor: lang === l ? gold : "transparent",
               }}
               onPress={() => setLang(l)}
               activeOpacity={0.8}
-              accessibilityLabel={l === "en" ? "English" : "Thadou Kuki"}
+              accessibilityLabel={l === "en" ? "Switch to English" : "Switch to Thadou Kuki"}
               accessibilityRole="button"
+              accessibilityState={{ selected: lang === l }}
             >
               <Text style={{ fontSize: 11, fontWeight: "700", color: lang === l ? colors.primaryForeground : textMuted }}>
                 {l.toUpperCase()}
@@ -533,123 +608,142 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      {/* ─── 3. HERO — Phase 1 ────────────────────────────────────────────────── */}
-      {/* 35% of a 667dp viewport ≈ 233dp; minHeight 244 sits cleanly in range.  */}
+      {/* ─── 3. HERO — Phase 1 ──────────────────────────────────────────────────── */}
+      {/* 35% of a 680dp average viewport ≈ 238dp; minHeight 264 sits cleanly in range */}
       <Animated.View style={[{
-        marginHorizontal: HX, marginBottom: 20,
-        borderRadius: 26, overflow: "hidden", ...shadow.level2,
+        marginHorizontal: HX, marginBottom: 24,
+        borderRadius: 28, overflow: "hidden",
+        ...shadow.level2,
       }, a1]}>
         <LinearGradient
           colors={heroGradientColors}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={{ minHeight: 244 }}
+          style={{ minHeight: 264 }}
         >
-          {/* Split layout: left text / right artwork */}
+          {/* Split: text (left) / artwork (right) */}
           <View style={{ flexDirection: "row", flex: 1 }}>
-            {/* Left: hierarchy — gregorian → greeting → Hebrew date → numeral */}
+            {/* Left — typography hierarchy: date → greeting → Hebrew date → numeral */}
             <View style={{
-              flex: 1, paddingTop: 22, paddingLeft: 20,
-              paddingRight: 10, paddingBottom: 14, justifyContent: "center",
+              flex: 1,
+              paddingTop: 24, paddingLeft: 22, paddingRight: 12, paddingBottom: 16,
+              justifyContent: "center",
             }}>
-              <Text style={{ fontSize: 11, color: isLight ? "#6b4c1e" : textMuted, fontWeight: "500", marginBottom: 3 }}>
+              {/* Gregorian date — smallest, most muted */}
+              <Text style={{
+                fontSize: 11, letterSpacing: 0.2, marginBottom: 5,
+                color: isLight ? "#7a5c2e" : textMuted,
+                fontWeight: "500",
+              }}>
                 {gregDate}
               </Text>
-              <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 9 }}>
+
+              {/* Greeting — mid-size, warm accent */}
+              <Text style={{ fontSize: 14, fontWeight: "700", marginBottom: 10, lineHeight: 20 }}>
                 <Text style={{ color: heroAccent }}>{greeting}</Text>
                 {firstName ? (
                   <Text style={{ color: isLight ? "#3d2c0e" : textPrimary }}>{", " + firstName}</Text>
                 ) : null}
               </Text>
+
+              {/* Hebrew date — largest, dominant */}
               <Text style={{
-                fontSize: 25, fontWeight: "800",
+                fontSize: 28, fontWeight: "800",
                 color: isLight ? "#1a0f00" : textPrimary,
-                letterSpacing: -0.3, lineHeight: 30,
-                textShadowColor: isLight ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.4)",
+                letterSpacing: -0.4, lineHeight: 34,
+                textShadowColor: isLight ? "rgba(0,0,0,0.07)" : "rgba(0,0,0,0.45)",
                 textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 3,
+                textShadowRadius: 4,
               }}>
                 {hebrewDateStr}
               </Text>
+
+              {/* Hebrew numeral — accent colour, secondary */}
               {hebrewNumeralStr ? (
-                <Text style={{ fontSize: 14, color: isLight ? "#8b6914" : gold, marginTop: 5, fontWeight: "600", letterSpacing: 0.3 }}>
+                <Text style={{
+                  fontSize: 15, fontWeight: "600", letterSpacing: 0.4, marginTop: 6,
+                  color: isLight ? "#8b6914" : gold,
+                }}>
                   {hebrewNumeralStr}
                 </Text>
               ) : null}
             </View>
 
-            {/* Right: warm golden-hour artwork */}
-            <View style={{ width: 144, overflow: "hidden" }}>
+            {/* Right — golden-hour artwork panel */}
+            <View style={{ width: 140, overflow: "hidden" }}>
               <LinearGradient
                 colors={isLight
                   ? (["#fde9b4", "#f5c36a", "#d97008", "#6a2800"] as const)
                   : (["#251000", "#6a3206", "#cb7a08", "#f5c36a"] as const)}
                 start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
-                style={{ flex: 1, minHeight: 200, alignItems: "center", justifyContent: "flex-end", paddingBottom: 8 }}
+                style={{ flex: 1, minHeight: 200, alignItems: "center", justifyContent: "flex-end", paddingBottom: 10 }}
               >
-                {/* Sun glow behind temple */}
-                <View style={{
-                  position: "absolute", top: 12, left: 0, right: 0,
-                  alignItems: "center",
-                }}>
+                {/* Sun glow — larger, more warmth */}
+                <View style={{ position: "absolute", top: 14, left: 0, right: 0, alignItems: "center" }}>
                   <View style={{
-                    width: 52, height: 52, borderRadius: 26,
-                    backgroundColor: "rgba(255,200,60,0.22)",
+                    width: 64, height: 64, borderRadius: 32,
+                    backgroundColor: "rgba(255,210,80,0.20)",
+                  }} />
+                  <View style={{
+                    position: "absolute",
+                    width: 40, height: 40, borderRadius: 20,
+                    backgroundColor: "rgba(255,200,60,0.28)",
+                    top: 12, alignSelf: "center",
                   }} />
                 </View>
 
                 {/* Birds — layered depth */}
-                <Text style={{ position: "absolute", top: 18, left: 10, fontSize: 8, opacity: 0.70 }}>🐦</Text>
-                <Text style={{ position: "absolute", top: 25, left: 26, fontSize: 6, opacity: 0.55 }}>🐦</Text>
-                <Text style={{ position: "absolute", top: 14, right: 18, fontSize: 7, opacity: 0.60 }}>🐦</Text>
-                <Text style={{ position: "absolute", top: 30, right: 30, fontSize: 5, opacity: 0.45 }}>🐦</Text>
+                <Text style={{ position: "absolute", top: 18, left: 10,  fontSize: 8, opacity: 0.72 }}>🐦</Text>
+                <Text style={{ position: "absolute", top: 26, left: 28,  fontSize: 6, opacity: 0.55 }}>🐦</Text>
+                <Text style={{ position: "absolute", top: 14, right: 18, fontSize: 7, opacity: 0.62 }}>🐦</Text>
+                <Text style={{ position: "absolute", top: 31, right: 32, fontSize: 5, opacity: 0.45 }}>🐦</Text>
 
-                {/* Temple with depth shadow */}
+                {/* Temple — with layered shadow for depth */}
                 <Text style={{
-                  fontSize: 72, lineHeight: 82, marginBottom: -4,
-                  textShadowColor: "rgba(0,0,0,0.45)",
-                  textShadowOffset: { width: 0, height: 5 },
-                  textShadowRadius: 10,
+                  fontSize: 74, lineHeight: 84, marginBottom: -4,
+                  textShadowColor: "rgba(0,0,0,0.50)",
+                  textShadowOffset: { width: 0, height: 6 },
+                  textShadowRadius: 12,
                 }}>
                   ⛩
                 </Text>
 
                 {/* Horizon glow */}
-                <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 52, backgroundColor: "rgba(190,90,0,0.28)" }} />
+                <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 56, backgroundColor: "rgba(190,90,0,0.30)" }} />
 
-                {/* Left edge fade for seamless blend with left panel */}
+                {/* Left edge blend */}
                 <LinearGradient
                   colors={isLight
-                    ? (["#F0E6CE", "transparent"] as const)
+                    ? (["#F5EDD8", "transparent"] as const)
                     : isSapphire
                       ? (["#0c1830", "transparent"] as const)
                       : (["#090f1d", "transparent"] as const)}
                   start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-                  style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 40 }}
+                  style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 44 }}
                   pointerEvents="none"
                 />
               </LinearGradient>
             </View>
           </View>
 
-          {/* Glass zmanim bar */}
+          {/* Glass Zmanim bar — 3 key times, immediately scannable */}
           {Platform.OS !== "web" ? (
             <BlurView
-              intensity={55} tint={isLight ? "light" : "dark"}
-              style={{ marginHorizontal: 12, marginBottom: 12, borderRadius: rd.lg, overflow: "hidden" }}
+              intensity={60} tint={isLight ? "light" : "dark"}
+              style={{ marginHorizontal: 14, marginBottom: 14, borderRadius: rd.lg, overflow: "hidden" }}
             >
               <ZmanimBar todayZm={todayZm} location={location} textPrimary={textPrimary} textMuted={textMuted} isLight={isLight} />
             </BlurView>
           ) : (
             <View style={{
-              marginHorizontal: 12, marginBottom: 12, borderRadius: rd.lg, overflow: "hidden",
-              backgroundColor: isLight ? "rgba(255,248,238,0.88)" : "rgba(0,0,0,0.55)",
-              borderWidth: 1, borderColor: isLight ? "rgba(200,133,42,0.18)" : "rgba(255,255,255,0.08)",
+              marginHorizontal: 14, marginBottom: 14, borderRadius: rd.lg, overflow: "hidden",
+              backgroundColor: isLight ? "rgba(255,248,238,0.90)" : "rgba(0,0,0,0.58)",
+              borderWidth: 1, borderColor: isLight ? "rgba(200,133,42,0.20)" : "rgba(255,255,255,0.09)",
             }}>
               <ZmanimBar todayZm={todayZm} location={location} textPrimary={textPrimary} textMuted={textMuted} isLight={isLight} />
             </View>
           )}
 
-          {/* Phase 1: elegant shimmer placeholder that fades out on mount */}
+          {/* Phase 1: elegant loading shimmer, fades out on mount */}
           <Animated.View
             pointerEvents="none"
             style={{
@@ -661,8 +755,8 @@ export default function HomeScreen() {
         </LinearGradient>
       </Animated.View>
 
-      {/* ─── 4. TODAY'S FOCUS — Phase 2 ──────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 16 }, a2]}>
+      {/* ─── 4. TODAY'S FOCUS — Phase 2 ────────────────────────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a2]}>
         <TodaysFocusCard
           mode={countdownMode}
           isShabbat={isShabbat}
@@ -684,8 +778,8 @@ export default function HomeScreen() {
         />
       </Animated.View>
 
-      {/* ─── 5. SHABBAT COUNTDOWN — Phase 4 ──────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 16 }, a2]}>
+      {/* ─── 5. SHABBAT COUNTDOWN — Phase 4 ────────────────────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a2]}>
         <ShabbatCountdownCard
           mode={countdownMode}
           countdownMs={countdownMs}
@@ -705,25 +799,15 @@ export default function HomeScreen() {
         />
       </Animated.View>
 
-      {/* ─── 6. SACRED TIME (ZMANIM) ROW — Phase 3 ───────────────────────────── */}
-      <Animated.View style={[{ marginBottom: 20 }, a3]}>
-        <View style={{ paddingHorizontal: HX, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-            <Feather name="clock" size={13} color={gold} />
-            <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase" }}>
-              {t.homeSacredTimeLabel}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => router.push("/(tabs)/zmanim")}
-            accessibilityLabel={t.homeAllTimesLocal}
-            accessibilityRole="link"
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, flexDirection: "row", alignItems: "center", gap: 4 })}
-          >
-            <Text style={{ fontSize: 11, color: gold, fontWeight: "600" }}>{t.homeAllTimesLocal}</Text>
-            <Feather name="chevron-right" size={11} color={gold} />
-          </Pressable>
-        </View>
+      {/* ─── 6. SACRED TIME — Phase 3 ───────────────────────────────────────────── */}
+      <Animated.View style={[{ marginBottom: 24 }, a3]}>
+        <SectionHeader
+          icon="clock"
+          label={t.homeSacredTimeLabel}
+          onPress={() => router.push("/(tabs)/zmanim")}
+          ctaLabel={t.homeAllTimesLocal}
+          HX={HX}
+        />
 
         <ScrollView
           horizontal
@@ -731,18 +815,16 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingHorizontal: HX, gap: 10 }}
         >
           {(() => {
-            // Memoised outside render — stable reference per zmanim recalc
             const zmanList = [
-              { label: t.homeDawn,         icon: "sunrise" as const, time: todayZm.alotHaShachar },
-              { label: t.homeSunrise,       icon: "sunrise" as const, time: todayZm.sunrise       },
-              { label: t.homeMinchaGedola,  icon: "sun"     as const, time: todayZm.chatzot       },
-              { label: t.homeSunset,        icon: "sunset"  as const, time: todayZm.sunset        },
-              { label: t.homeNightfall,     icon: "moon"    as const, time: todayZm.tzais         },
-              { label: t.homeTzais,         icon: "moon"    as const, time: todayZm.tzais         },
+              { label: t.homeDawn,        icon: "sunrise" as const, time: todayZm.alotHaShachar },
+              { label: t.homeSunrise,     icon: "sunrise" as const, time: todayZm.sunrise       },
+              { label: t.homeMinchaGedola,icon: "sun"     as const, time: todayZm.chatzot       },
+              { label: t.homeSunset,      icon: "sunset"  as const, time: todayZm.sunset        },
+              { label: t.homeNightfall,   icon: "moon"    as const, time: todayZm.tzais         },
+              { label: t.homeTzais,       icon: "moon"    as const, time: todayZm.tzais         },
             ];
-            // currentIdx: derived from stable `now` tick (not Date.now() inline)
-            const nowMs = now;
-            let currentIdx = -1;
+            const nowMs    = now;
+            let   currentIdx = -1;
             zmanList.forEach((z, i) => {
               if (z.time && new Date(z.time).getTime() <= nowMs) currentIdx = i;
             });
@@ -753,29 +835,29 @@ export default function HomeScreen() {
                   key={z.label + i}
                   style={{
                     alignItems: "center", gap: 6,
-                    backgroundColor: isCurrent ? gold + "18" : cardBg,
+                    backgroundColor: isCurrent ? gold + "1a" : cardBg,
                     borderRadius: rd.lg,
-                    paddingVertical: 14, paddingHorizontal: 14,
+                    paddingVertical: 16, paddingHorizontal: 16,
                     borderWidth: isCurrent ? 1.5 : 1,
                     borderColor: isCurrent ? gold : borderColor,
-                    minWidth: 84,
+                    minWidth: 88,
                     ...(isCurrent ? shadow.level2 : shadow.level1),
                   }}
-                  accessibilityLabel={`${z.label}: ${z.time ? formatTime(z.time, location.tz) : "—"}${isCurrent ? ", current time" : ""}`}
+                  accessibilityLabel={`${z.label}: ${z.time ? formatTime(z.time, location.tz) : "—"}${isCurrent ? ", current period" : ""}`}
                 >
                   {isCurrent && (
-                    <Text style={{ fontSize: 8, fontWeight: "800", letterSpacing: 0.8, color: gold, textTransform: "uppercase" }}>
+                    <Text style={{ fontSize: 8, fontWeight: "800", letterSpacing: 1.0, color: gold, textTransform: "uppercase" }}>
                       {t.homeNowLabel}
                     </Text>
                   )}
                   <View style={{
-                    width: 32, height: 32, borderRadius: 16,
+                    width: 34, height: 34, borderRadius: 17,
                     backgroundColor: gold + (isCurrent ? "2a" : "18"),
                     alignItems: "center", justifyContent: "center",
                   }}>
-                    <Feather name={z.icon} size={14} color={gold} />
+                    <Feather name={z.icon} size={15} color={gold} />
                   </View>
-                  <Text style={{ fontSize: 10, color: textMuted, fontWeight: "600", textAlign: "center", letterSpacing: 0.4 }}>
+                  <Text style={{ fontSize: 10, color: isCurrent ? gold : textMuted, fontWeight: "600", textAlign: "center", letterSpacing: 0.3 }}>
                     {z.label}
                   </Text>
                   <Text style={{ fontSize: 14, fontWeight: "700", color: textPrimary }}>
@@ -789,52 +871,29 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 7. QUICK ACTIONS 2×4 — Phase 5 ──────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 20 }, a4]}>
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a4]}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
           {QA_ITEMS.map((item) => (
-            <Pressable
+            <QuickActionCard
               key={item.id}
-              onPress={() => router.push(item.route as any)}
-              accessibilityLabel={item.label}
-              accessibilityRole="button"
-              style={({ pressed }) => ({
-                width: "22%",
-                alignItems: "center",
-                gap: 8,
-                paddingVertical: 16,
-                borderRadius: rd.lg,
-                backgroundColor: cardBg,
-                borderWidth: 1, borderColor,
-                transform: [{ scale: pressed ? 0.93 : 1 }],
-                ...shadow.level1,
-              })}
-            >
-              <View style={{
-                width: 46, height: 46,
-                borderRadius: rd.md,
-                backgroundColor: item.bg + "20",
-                alignItems: "center", justifyContent: "center",
-              }}>
-                <Feather name={item.icon} size={21} color={item.bg} />
-              </View>
-              <Text style={{ fontSize: 11, fontWeight: "600", textAlign: "center", color: textSecondary, lineHeight: 14 }}>
-                {item.label}
-              </Text>
-            </Pressable>
+              item={item}
+              cardBg={cardBg}
+              borderColor={borderColor}
+              textSecondary={textSecondary}
+              rd={rd}
+            />
           ))}
         </View>
       </Animated.View>
 
-      {/* ─── 8. LEARNING GALLERY — Phase 6 ───────────────────────────────────── */}
-      {/* All 3 cards share one visual family: same overline · same illustration   */}
-      {/* container · same title scale · same body scale · CTA anchored at bottom */}
-      <Animated.View style={[{ marginBottom: 20 }, a5]}>
-        <View style={{ paddingHorizontal: HX, flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 12 }}>
-          <Feather name="book-open" size={13} color={gold} />
-          <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase" }}>
-            {t.homeLearningLabel}
-          </Text>
-        </View>
+      {/* ─── 8. LEARNING EXPERIENCE — Phase 6 ──────────────────────────────────── */}
+      {/* All 3 cards: one visual family — same overline · illustration · CTA style */}
+      <Animated.View style={[{ marginBottom: 24 }, a5]}>
+        <SectionHeader
+          icon="book-open"
+          label={t.homeLearningLabel}
+          HX={HX}
+        />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -843,7 +902,7 @@ export default function HomeScreen() {
           {/* ── Parasha card ── */}
           <Pressable
             style={({ pressed }) => ({
-              width: 244, borderRadius: rd.xl, overflow: "hidden",
+              width: 252, borderRadius: rd.xl, overflow: "hidden",
               transform: [{ scale: pressed ? 0.97 : 1 }],
               ...shadow.level2,
             })}
@@ -852,24 +911,19 @@ export default function HomeScreen() {
             accessibilityRole="button"
           >
             <View style={[s.galleryCard, { backgroundColor: cardBg, borderColor, borderRadius: rd.xl }]}>
-              {/* Overline */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
                 <Feather name="book" size={11} color={gold} />
                 <Overline text={t.homeParashah} color={gold} />
               </View>
-              {/* Title */}
-              <Text style={{ fontSize: 16, fontWeight: "700", color: textPrimary, lineHeight: 22 }} numberOfLines={1}>
+              <Text style={{ fontSize: 17, fontWeight: "700", color: textPrimary, lineHeight: 23 }} numberOfLines={1}>
                 {parasha !== "" ? `Parashat ${parasha}` : "—"}
               </Text>
-              {/* Subtitle */}
-              <Text style={{ fontSize: 12, color: textMuted, marginTop: 2, fontStyle: "italic" }} numberOfLines={1}>
+              <Text style={{ fontSize: 12, color: textMuted, marginTop: 3, fontStyle: "italic" }} numberOfLines={1}>
                 פרשת {parasha}
               </Text>
-              {/* Illustration — consistent family container */}
               <View style={s.illustrationContainer}>
                 <Text style={s.illustrationEmoji}>📜</Text>
               </View>
-              {/* CTA anchored at bottom */}
               <PillButton
                 label={t.homeReadSummary}
                 onPress={() => router.push("/(tabs)/torah")}
@@ -881,62 +935,58 @@ export default function HomeScreen() {
           </Pressable>
 
           {/* ── Torah Insight card ── */}
-          <View style={[{
-            width: 244, borderRadius: rd.xl, overflow: "hidden", ...shadow.level2,
-          }]}>
+          <View style={{ width: 252, borderRadius: rd.xl, overflow: "hidden", ...shadow.level2 }}>
             <View style={[s.galleryCard, { backgroundColor: cardBg, borderColor, borderRadius: rd.xl }]}>
-              {/* Overline */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
                 <Feather name="zap" size={11} color="#E67E22" />
                 <Overline text={t.homeInsightTitle} color="#E67E22" />
               </View>
-              {/* Quote — body text, italic */}
-              <Text style={{ fontSize: 13, fontStyle: "italic", color: textSecondary, lineHeight: 20 }} numberOfLines={3}>
+              <Text style={{ fontSize: 13, fontStyle: "italic", color: textSecondary, lineHeight: 21 }} numberOfLines={3}>
                 {todayInsight.quote}
               </Text>
-              {/* Illustration */}
               <View style={s.illustrationContainer}>
                 <Text style={s.illustrationEmoji}>🌳</Text>
               </View>
-              {/* Source */}
-              <Text style={{ fontSize: 11, fontWeight: "600", color: textMuted, marginTop: 4 }} numberOfLines={1}>
+              <Text style={{ fontSize: 11, fontWeight: "600", color: textMuted, marginBottom: 12 }} numberOfLines={1}>
                 — {todayInsight.source}
               </Text>
+              <PillButton
+                label={t.homeReadSummary}
+                onPress={() => router.push("/(tabs)/torah")}
+                bg={isLight ? "#1a0f00" : cardBg}
+                fg={isLight ? "#fff" : textPrimary}
+                small
+              />
             </View>
           </View>
 
           {/* ── Daf Yomi card ── */}
           <Pressable
             style={({ pressed }) => ({
-              width: 244, borderRadius: rd.xl, overflow: "hidden",
+              width: 252, borderRadius: rd.xl, overflow: "hidden",
               transform: [{ scale: pressed ? 0.97 : 1 }],
               ...shadow.level2,
             })}
             onPress={() => router.push("/daf-yomi")}
-            accessibilityLabel={`Daf Yomi: ${daf.tractate} ${daf.daf}`}
+            accessibilityLabel={`Daf Yomi: ${daf.tractate}, page ${daf.daf}`}
             accessibilityRole="button"
           >
             <View style={[s.galleryCard, { backgroundColor: cardBg, borderColor, borderRadius: rd.xl }]}>
-              {/* Overline */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
                 <Feather name="award" size={11} color="#E67E22" />
                 <Overline text={t.homeDafYomi} color="#E67E22" />
               </View>
-              {/* Title */}
-              <Text style={{ fontSize: 16, fontWeight: "700", color: textPrimary, lineHeight: 22 }} numberOfLines={1}>
+              <Text style={{ fontSize: 17, fontWeight: "700", color: textPrimary, lineHeight: 23 }} numberOfLines={1}>
                 {daf.tractate}
               </Text>
-              {/* Subtitle */}
-              <Text style={{ fontSize: 12, color: textMuted, marginTop: 2 }} numberOfLines={1}>
+              <Text style={{ fontSize: 12, color: textMuted, marginTop: 3 }} numberOfLines={1}>
                 {t.homeDafYomiToday} · {t.homeDafYomi} {daf.daf}
               </Text>
-              {/* Illustration */}
               <View style={s.illustrationContainer}>
                 <Text style={s.illustrationEmoji}>📄</Text>
-                {/* Progress ring — compact, below emoji */}
                 <View style={{
                   position: "absolute", bottom: 4, right: 4,
-                  width: 30, height: 30, borderRadius: 15,
+                  width: 32, height: 32, borderRadius: 16,
                   backgroundColor: successColor + "22",
                   borderWidth: 1.5, borderColor: successColor,
                   alignItems: "center", justifyContent: "center",
@@ -944,11 +994,10 @@ export default function HomeScreen() {
                   <Text style={{ fontSize: 8, fontWeight: "700", color: successColor }}>{dafProgress}%</Text>
                 </View>
               </View>
-              {/* CTA anchored at bottom */}
               <PillButton
                 label={t.homeOpenDafYomi}
                 onPress={() => router.push("/daf-yomi")}
-                bg={isLight ? "#1a0f00" : colors.card}
+                bg={isLight ? "#1a0f00" : cardBg}
                 fg={isLight ? "#fff" : textPrimary}
                 small
               />
@@ -957,29 +1006,29 @@ export default function HomeScreen() {
         </ScrollView>
       </Animated.View>
 
-      {/* ─── 9. UPCOMING HOLIDAY ──────────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 16 }, a6]}>
+      {/* ─── 9. UPCOMING HOLIDAY ────────────────────────────────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a6]}>
         <Pressable
           style={({ pressed }) => ({
             backgroundColor: cardBg, borderRadius: rd.xl, borderWidth: 1, borderColor,
             flexDirection: "row", alignItems: "center",
-            paddingHorizontal: 16, paddingVertical: 14, gap: 14,
+            paddingHorizontal: 18, paddingVertical: 16, gap: 14,
             transform: [{ scale: pressed ? 0.98 : 1 }],
             ...shadow.level1,
           })}
           onPress={() => router.push("/(tabs)/calendar")}
-          accessibilityLabel={t.homeUpcomingHoliday}
+          accessibilityLabel={`${t.homeUpcomingHoliday}${nextHoliday ? ": " + nextHoliday.name : ""}`}
           accessibilityRole="link"
         >
           <View style={{
-            width: 44, height: 44, borderRadius: 22,
+            width: 46, height: 46, borderRadius: 23,
             backgroundColor: gold + "18", borderWidth: 1, borderColor: gold + "40",
             alignItems: "center", justifyContent: "center",
           }}>
             <Text style={{ fontSize: 20, opacity: 0.85 }}>✡</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, textTransform: "uppercase", color: gold, marginBottom: 4 }}>
+            <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase", color: gold, marginBottom: 5 }}>
               {t.homeUpcomingHoliday}
             </Text>
             {nextHoliday ? (
@@ -997,13 +1046,13 @@ export default function HomeScreen() {
         </Pressable>
       </Animated.View>
 
-      {/* ─── 10. COMMUNITY PREVIEW ────────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 16 }, a6]}>
+      {/* ─── 10. COMMUNITY PREVIEW ──────────────────────────────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a6]}>
         <Pressable
           style={({ pressed }) => ({
             backgroundColor: cardBg, borderRadius: rd.xl, borderWidth: 1, borderColor,
             flexDirection: "row", alignItems: "center",
-            paddingHorizontal: 16, paddingVertical: 14, gap: 14,
+            paddingHorizontal: 18, paddingVertical: 16, gap: 14,
             transform: [{ scale: pressed ? 0.98 : 1 }],
             ...shadow.level1,
           })}
@@ -1012,25 +1061,28 @@ export default function HomeScreen() {
           accessibilityRole="link"
         >
           <View style={{
-            width: 44, height: 44, borderRadius: 22,
+            width: 46, height: 46, borderRadius: 23,
             backgroundColor: successColor + "18",
             borderWidth: 1, borderColor: successColor + "40",
             alignItems: "center", justifyContent: "center",
           }}>
-            <Feather name="users" size={18} color={successColor} />
+            <Feather name="users" size={19} color={successColor} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, fontWeight: "700", color: textPrimary }}>{t.homeCommunityPreviewTitle}</Text>
-            <Text style={{ fontSize: 12, color: textMuted, marginTop: 2 }}>{t.homeCommunityPreviewDesc}</Text>
+            <Text style={{ fontSize: 12, color: textMuted, marginTop: 2, lineHeight: 18 }}>{t.homeCommunityPreviewDesc}</Text>
           </View>
-          <Text style={{ fontSize: 12, color: successColor, fontWeight: "600" }}>{t.homeCommunityPreviewCta}</Text>
+          <View style={{ alignItems: "flex-end", gap: 4 }}>
+            <Text style={{ fontSize: 12, color: successColor, fontWeight: "600" }}>{t.homeCommunityPreviewCta}</Text>
+            <Feather name="chevron-right" size={14} color={successColor} />
+          </View>
         </Pressable>
       </Animated.View>
 
-      {/* ─── 11. MEMORIAL SANCTUARY — Phase 7 ────────────────────────────────── */}
-      {/* Flagship card: invites reflection, not entertainment.                   */}
+      {/* ─── 11. MEMORIAL SANCTUARY — Phase 7 ──────────────────────────────────── */}
+      {/* Flagship card — invites reflection, not entertainment                     */}
       <Animated.View style={[{
-        marginHorizontal: HX, marginBottom: 16,
+        marginHorizontal: HX, marginBottom: 18,
         borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2,
       }, a7]}>
         <TouchableOpacity
@@ -1041,28 +1093,33 @@ export default function HomeScreen() {
           accessibilityRole="button"
         >
           <LinearGradient
-            colors={["#2d1a0a", "#1c0e00", "#271400", "#3a2208"]}
+            colors={["#3a1e08", "#1c0e00", "#2a1500", "#3a2208"]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={{ minHeight: 200, padding: 22 }}
+            style={{ minHeight: 212, padding: 24 }}
           >
-            {/* Warm candlelight ambient glow */}
+            {/* Layered warm candlelight glow */}
             <View style={{
-              position: "absolute", top: -20, right: -20,
-              width: 140, height: 140, borderRadius: 70,
-              backgroundColor: "rgba(212,120,10,0.12)",
+              position: "absolute", top: -32, right: -32,
+              width: 160, height: 160, borderRadius: 80,
+              backgroundColor: "rgba(212,120,10,0.14)",
+            }} />
+            <View style={{
+              position: "absolute", top: -10, right: -10,
+              width: 90, height: 90, borderRadius: 45,
+              backgroundColor: "rgba(240,150,20,0.10)",
             }} />
 
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <View style={{ flex: 1 }}>
                 <Overline text={t.homeMemorialTitle} color={gold} />
                 <Text style={{
-                  fontSize: 20, fontWeight: "800",
-                  color: "#f0e0c0", marginTop: 6, marginBottom: 6, lineHeight: 26,
-                  letterSpacing: -0.2,
+                  fontSize: 22, fontWeight: "800",
+                  color: "#f4e0c4", marginTop: 8, marginBottom: 8, lineHeight: 28,
+                  letterSpacing: -0.3,
                 }}>
                   Memorial Sanctuary
                 </Text>
-                <Text style={{ fontSize: 13, color: "#c4b090", marginBottom: 18, lineHeight: 20 }}>
+                <Text style={{ fontSize: 13, color: "#c4b090", marginBottom: 20, lineHeight: 20, maxWidth: 200 }}>
                   {t.homeMemorialTagline}
                 </Text>
                 <PillButton
@@ -1073,18 +1130,23 @@ export default function HomeScreen() {
                 />
               </View>
 
-              {/* Candle with warm glow */}
-              <View style={{ alignItems: "center", justifyContent: "center", marginLeft: 16 }}>
+              {/* Candle — warm glowing orb */}
+              <View style={{ alignItems: "center", justifyContent: "center", marginLeft: 18 }}>
                 <View style={{
-                  width: 72, height: 72, borderRadius: 36,
-                  backgroundColor: "rgba(212,120,10,0.18)",
+                  width: 80, height: 80, borderRadius: 40,
+                  backgroundColor: "rgba(212,120,10,0.22)",
                   alignItems: "center", justifyContent: "center",
                 }}>
+                  <View style={{
+                    position: "absolute",
+                    width: 56, height: 56, borderRadius: 28,
+                    backgroundColor: "rgba(240,160,30,0.14)",
+                  }} />
                   <Text style={{
-                    fontSize: 40,
-                    textShadowColor: "rgba(255,160,30,0.7)",
+                    fontSize: 42,
+                    textShadowColor: "rgba(255,160,30,0.80)",
                     textShadowOffset: { width: 0, height: 0 },
-                    textShadowRadius: 12,
+                    textShadowRadius: 16,
                   }}>🕯</Text>
                 </View>
               </View>
@@ -1093,12 +1155,12 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* ─── 12. RAV MENASHE AI — Phase 8 ────────────────────────────────────── */}
-      {/* Premium sapphire appearance. Welcoming, not transactional.              */}
+      {/* ─── 12. RAV MENASHE AI — Phase 8 ──────────────────────────────────────── */}
+      {/* Premium sapphire. Welcoming, not transactional.                           */}
       <Animated.View style={[{
-        marginHorizontal: HX, marginBottom: 16,
+        marginHorizontal: HX, marginBottom: 18,
         borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2,
-      }, a7]}>
+      }, a8]}>
         <TouchableOpacity
           onPress={() => router.push("/(tabs)/torah")}
           activeOpacity={0.92}
@@ -1107,32 +1169,44 @@ export default function HomeScreen() {
           accessibilityRole="button"
         >
           <LinearGradient
-            colors={["#04091a", "#091628", "#0d1e40", "#091628"]}
+            colors={["#04091a", "#0a1830", "#0e2248", "#091628"]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={{ minHeight: 200, padding: 22 }}
+            style={{ minHeight: 212, padding: 24 }}
           >
-            {/* Sapphire constellation ambient glow */}
+            {/* Sapphire ambient glow — layered */}
             <View style={{
-              position: "absolute", top: -30, right: -30,
-              width: 160, height: 160, borderRadius: 80,
+              position: "absolute", top: -36, right: -36,
+              width: 180, height: 180, borderRadius: 90,
               backgroundColor: "rgba(99,130,255,0.10)",
             }} />
-            {/* Decorative stars */}
-            <Text style={{ position: "absolute", top: 14, right: 24, fontSize: 8, color: "#6382FF", opacity: 0.7 }}>✦</Text>
-            <Text style={{ position: "absolute", top: 26, right: 44, fontSize: 5, color: "#a0b4d8", opacity: 0.6 }}>✦</Text>
-            <Text style={{ position: "absolute", top: 10, right: 60, fontSize: 6, color: "#6382FF", opacity: 0.5 }}>✦</Text>
+            <View style={{
+              position: "absolute", top: -6, right: -6,
+              width: 100, height: 100, borderRadius: 50,
+              backgroundColor: "rgba(99,130,255,0.07)",
+            }} />
+
+            {/* Constellation stars */}
+            <Text style={{ position: "absolute", top: 14, right: 22,  fontSize: 9,  color: "#6382FF", opacity: 0.72 }}>✦</Text>
+            <Text style={{ position: "absolute", top: 26, right: 44,  fontSize: 5,  color: "#a0b4d8", opacity: 0.60 }}>✦</Text>
+            <Text style={{ position: "absolute", top: 10, right: 62,  fontSize: 6,  color: "#6382FF", opacity: 0.50 }}>✦</Text>
+            <Text style={{ position: "absolute", top: 38, right: 28,  fontSize: 4,  color: "#c4d4ff", opacity: 0.45 }}>✦</Text>
+            <Text style={{ position: "absolute", top: 18, right: 82,  fontSize: 4,  color: "#6382FF", opacity: 0.38 }}>✦</Text>
 
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <View style={{ flex: 1 }}>
                 <Overline text={t.homeAITitle} color={sapphireBlue} />
                 <Text style={{
-                  fontSize: 20, fontWeight: "800",
-                  color: "#dce8ff", marginTop: 6, marginBottom: 6, lineHeight: 26,
-                  letterSpacing: -0.2,
+                  fontSize: 22, fontWeight: "800",
+                  color: "#dce8ff", marginTop: 8, marginBottom: 6, lineHeight: 28,
+                  letterSpacing: -0.3,
                 }}>
                   Rav Menashe AI
                 </Text>
-                <Text style={{ fontSize: 13, color: "#8aabcf", marginBottom: 18, lineHeight: 20 }}>
+                {/* Conversation preview — welcoming */}
+                <Text style={{ fontSize: 12, color: "#5a7aaa", marginBottom: 4, fontStyle: "italic" }}>
+                  "Ask me about this week's Parashah..."
+                </Text>
+                <Text style={{ fontSize: 13, color: "#8aabcf", marginBottom: 20, lineHeight: 20, maxWidth: 200 }}>
                   {t.homeAITagline}
                 </Text>
                 <PillButton
@@ -1143,18 +1217,23 @@ export default function HomeScreen() {
                 />
               </View>
 
-              {/* AI orb with sapphire glow */}
-              <View style={{ alignItems: "center", justifyContent: "center", marginLeft: 16 }}>
+              {/* AI orb — sapphire glow */}
+              <View style={{ alignItems: "center", justifyContent: "center", marginLeft: 18 }}>
                 <View style={{
-                  width: 72, height: 72, borderRadius: 36,
-                  backgroundColor: "rgba(99,130,255,0.14)",
+                  width: 80, height: 80, borderRadius: 40,
+                  backgroundColor: "rgba(99,130,255,0.16)",
                   alignItems: "center", justifyContent: "center",
                 }}>
+                  <View style={{
+                    position: "absolute",
+                    width: 56, height: 56, borderRadius: 28,
+                    backgroundColor: "rgba(99,130,255,0.12)",
+                  }} />
                   <Text style={{
-                    fontSize: 40,
-                    textShadowColor: "rgba(99,130,255,0.8)",
+                    fontSize: 42,
+                    textShadowColor: "rgba(99,130,255,0.85)",
                     textShadowOffset: { width: 0, height: 0 },
-                    textShadowRadius: 14,
+                    textShadowRadius: 18,
                   }}>🔮</Text>
                 </View>
               </View>
@@ -1163,26 +1242,33 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* ─── 13. GO PREMIUM ───────────────────────────────────────────────────── */}
+      {/* ─── 13. GO PREMIUM ─────────────────────────────────────────────────────── */}
       <Animated.View style={[{ marginHorizontal: HX, marginBottom: 6 }, a9]}>
-        <View style={{
-          flexDirection: "row", alignItems: "center",
-          backgroundColor: cardBg,
-          borderRadius: rd.xl,
-          borderWidth: 1, borderColor: gold + "30",
-          paddingVertical: 14, paddingHorizontal: 16,
-          gap: 12, ...shadow.level1,
-        }}>
+        <Pressable
+          style={({ pressed }) => ({
+            flexDirection: "row", alignItems: "center",
+            backgroundColor: cardBg,
+            borderRadius: rd.xl,
+            borderWidth: 1, borderColor: gold + "38",
+            paddingVertical: 16, paddingHorizontal: 18,
+            gap: 14,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+            ...shadow.level1,
+          })}
+          onPress={() => {}}
+          accessibilityLabel={t.homeGoPremium}
+          accessibilityRole="button"
+        >
           <View style={{
-            width: 38, height: 38, borderRadius: 19,
-            backgroundColor: gold + "18", borderWidth: 1, borderColor: gold + "40",
+            width: 42, height: 42, borderRadius: 21,
+            backgroundColor: gold + "18", borderWidth: 1, borderColor: gold + "44",
             alignItems: "center", justifyContent: "center",
           }}>
-            <Text style={{ fontSize: 18 }}>💎</Text>
+            <Text style={{ fontSize: 20 }}>💎</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: "700", color: textPrimary }}>{t.homeGoPremium}</Text>
-            <Text style={{ fontSize: 12, color: textMuted, marginTop: 1 }}>{t.homeSupportMission}</Text>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: textPrimary }}>{t.homeGoPremium}</Text>
+            <Text style={{ fontSize: 12, color: textMuted, marginTop: 2, lineHeight: 18 }}>{t.homeSupportMission}</Text>
           </View>
           <PillButton
             label={t.homeViewBenefits}
@@ -1191,13 +1277,13 @@ export default function HomeScreen() {
             fg={colors.primaryForeground}
             small
           />
-        </View>
+        </Pressable>
       </Animated.View>
     </ScrollView>
   );
 }
 
-// ─── ZmanimBar — glass bar inside hero ────────────────────────────────────────
+// ─── ZmanimBar — scannable glass bar inside Hero — Phase 3 ────────────────────
 
 const ZmanimBar = memo(function ZmanimBar({
   todayZm, location, textPrimary, textMuted, isLight,
@@ -1210,16 +1296,23 @@ const ZmanimBar = memo(function ZmanimBar({
 }) {
   const gold = isLight ? "#c8852a" : "#d4a843";
   return (
-    <View style={{ flexDirection: "row", justifyContent: "space-around", paddingVertical: 11, paddingHorizontal: 8 }}>
+    <View style={{
+      flexDirection: "row", justifyContent: "space-around",
+      paddingVertical: 13, paddingHorizontal: 10,
+    }}>
       {[
         { icon: "sunrise" as const, label: "Sunrise",   time: todayZm.sunrise },
         { icon: "sunset"  as const, label: "Sunset",    time: todayZm.sunset  },
         { icon: "moon"    as const, label: "Nightfall", time: todayZm.tzais   },
       ].map((z) => z.time ? (
-        <View key={z.label} style={{ alignItems: "center", gap: 4 }}>
-          <Feather name={z.icon} size={14} color={gold} />
+        <View
+          key={z.label}
+          style={{ alignItems: "center", gap: 5 }}
+          accessibilityLabel={`${z.label}: ${formatTime(z.time, location.tz)}`}
+        >
+          <Feather name={z.icon} size={15} color={gold} />
           <Text style={{ fontSize: 10, color: isLight ? "#8a6a40" : textMuted, fontWeight: "600" }}>{z.label}</Text>
-          <Text style={{ fontSize: 15, fontWeight: "700", color: isLight ? "#1a0f00" : textPrimary }}>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: isLight ? "#1a0f00" : textPrimary }}>
             {formatTime(z.time, location.tz)}
           </Text>
         </View>
@@ -1229,7 +1322,7 @@ const ZmanimBar = memo(function ZmanimBar({
 });
 
 // ─── Today's Focus Card — Phase 2 ─────────────────────────────────────────────
-// Priority: Holiday Today > Fast Today > Candle Lighting > Shabbat > Omer > Upcoming > Default
+// Exactly ONE priority item. Priority: Holiday > Fast > Candle > Shabbat > Omer > Upcoming > Default
 
 const TodaysFocusCard = memo(function TodaysFocusCard({
   mode, isShabbat, isFriday, omerDay, todayHoliday, todayFast, nextHoliday,
@@ -1254,46 +1347,23 @@ const TodaysFocusCard = memo(function TodaysFocusCard({
   let subtitle = "";
   let accent   = gold;
 
-  // Phase 2 — priority order per SPR-M008 spec:
-  // 1. Holiday Today  2. Fast Today  3. Candle  4. Shabbat  5. Omer  6. Upcoming  7. Default
   if (todayHoliday && !todayFast) {
-    // Major holiday (non-fast)
-    icon     = "🎉";
-    title    = todayHoliday.name;
-    subtitle = "Observed today";
-    accent   = gold;
+    icon = "🎉"; title = todayHoliday.name; subtitle = "Observed today"; accent = gold;
   } else if (todayFast) {
-    // Fast day
-    icon     = "🌿";
-    title    = todayFast.name;
-    subtitle = "Fast day observed today";
-    accent   = "#94a3b8"; // neutral — fasts are solemn, not celebratory
+    icon = "🌿"; title = todayFast.name; subtitle = "Fast day observed today"; accent = "#94a3b8";
   } else if (isFriday || mode === "candle") {
-    icon     = "🕯";
-    title    = t.homeCandleLightingToday;
-    subtitle = (candleLightingTime ?? "") + " · " + t.homePrepareForShabbat;
-    accent   = gold;
+    icon = "🕯"; title = t.homeCandleLightingToday;
+    subtitle = (candleLightingTime ?? "") + " · " + t.homePrepareForShabbat; accent = gold;
   } else if (isShabbat) {
-    icon     = "✨";
-    title    = t.homeShabbatInProgress;
-    subtitle = t.homeShavuaTov;
-    accent   = "#a78bfa";
+    icon = "✨"; title = t.homeShabbatInProgress; subtitle = t.homeShavuaTov; accent = "#a78bfa";
   } else if (omerDay !== null) {
-    icon     = "🌾";
-    title    = t.homeOmer;
-    subtitle = `Day ${omerDay} of the Omer`;
-    accent   = "#4ade80";
+    icon = "🌾"; title = t.homeOmer; subtitle = `Day ${omerDay} of the Omer`; accent = "#4ade80";
   } else if (nextHoliday) {
-    const daysUntil = Math.ceil((nextHoliday.date.getTime() - Date.now()) / 86400000);
-    icon     = "📅";
-    title    = nextHoliday.name;
-    subtitle = daysUntil === 1 ? "Tomorrow" : `In ${daysUntil} days`;
-    accent   = gold;
+    const daysUntil = Math.ceil((nextHoliday.date.getTime() - Date.now()) / 86_400_000);
+    icon = "📅"; title = nextHoliday.name;
+    subtitle = daysUntil === 1 ? "Tomorrow" : `In ${daysUntil} days`; accent = gold;
   } else {
-    icon     = "📖";
-    title    = t.homeDailyTorah;
-    subtitle = t.homeWeeklyParasha;
-    accent   = gold;
+    icon = "📖"; title = t.homeDailyTorah; subtitle = t.homeWeeklyParasha; accent = gold;
   }
 
   return (
@@ -1303,34 +1373,32 @@ const TodaysFocusCard = memo(function TodaysFocusCard({
         borderRadius: rd.xl,
         borderWidth: 1, borderColor,
         flexDirection: "row", alignItems: "center",
-        paddingHorizontal: 0, paddingVertical: 0,
         overflow: "hidden",
         transform: [{ scale: pressed ? 0.98 : 1 }],
         ...shadow.level1,
       })}
-      accessibilityLabel={title}
+      accessibilityLabel={`Today's focus: ${title}. ${subtitle}`}
       accessibilityRole="text"
     >
-      {/* Left accent strip — Phase 2 visual treatment */}
-      <View style={{ width: 4, alignSelf: "stretch", backgroundColor: accent }} />
+      {/* Phase 2: accent strip — thicker for visual importance */}
+      <View style={{ width: 5, alignSelf: "stretch", backgroundColor: accent }} />
 
-      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 14, gap: 14 }}>
-        {/* Icon circle */}
+      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 16, gap: 14 }}>
+        {/* Icon circle — 48dp touch target equivalent */}
         <View style={{
-          width: 44, height: 44, borderRadius: 22,
-          backgroundColor: accent + "18", borderWidth: 1, borderColor: accent + "40",
+          width: 48, height: 48, borderRadius: 24,
+          backgroundColor: accent + "18", borderWidth: 1, borderColor: accent + "44",
           alignItems: "center", justifyContent: "center",
         }}>
-          <Text style={{ fontSize: 20 }}>{icon}</Text>
+          <Text style={{ fontSize: 22 }}>{icon}</Text>
         </View>
 
-        {/* Text */}
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, textTransform: "uppercase", color: accent, marginBottom: 4 }}>
+          <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase", color: accent, marginBottom: 4 }}>
             {t.homeTodaysFocusLabel}
           </Text>
-          <Text style={{ fontSize: 15, fontWeight: "700", color: textPrimary }}>{title}</Text>
-          <Text style={{ fontSize: 12, color: textMuted, marginTop: 2 }}>{subtitle}</Text>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: textPrimary, lineHeight: 22 }}>{title}</Text>
+          <Text style={{ fontSize: 12, color: textMuted, marginTop: 2, lineHeight: 17 }}>{subtitle}</Text>
         </View>
 
         <Feather name="chevron-right" size={16} color={textMuted} />
@@ -1340,7 +1408,7 @@ const TodaysFocusCard = memo(function TodaysFocusCard({
 });
 
 // ─── Shabbat Countdown Card — Phase 4 ─────────────────────────────────────────
-// Hierarchy: label → big countdown → date → divider → candle + havdalah times
+// Hierarchy: Countdown (large, dominant) → Candle Lighting → Havdalah
 
 const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
   mode, countdownMs, countdownDateStr,
@@ -1360,76 +1428,90 @@ const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
   rd: any; shadow: any; isLight: boolean;
 }) {
   const accent = mode === "havdalah" ? "#a78bfa" : gold;
-  const label  = mode === "havdalah"
-    ? t.homeUntilHavdalah
-    : t.homeUntilNextShabbatLabel;
+  const label  = mode === "havdalah" ? t.homeUntilHavdalah : t.homeUntilNextShabbatLabel;
 
   return (
     <View style={{
       backgroundColor: cardBg,
       borderRadius: rd.xl,
       borderWidth: 1, borderColor,
-      flexDirection: "row", alignItems: "center",
-      paddingHorizontal: 16, paddingVertical: 18,
-      gap: 14, ...shadow.level2,
+      overflow: "hidden",
+      ...shadow.level2,
     }}>
-      {/* Icon */}
-      <View style={{ alignItems: "center", justifyContent: "center", width: 42 }}>
-        <Text style={{ fontSize: 30 }}>{mode === "havdalah" ? "✨" : "🕯"}</Text>
-      </View>
+      {/* Top accent line */}
+      <View style={{ height: 3, backgroundColor: accent }} />
 
-      {/* Left: label → large countdown → date */}
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase", marginBottom: 4 }}>
+      <View style={{ padding: 20 }}>
+        {/* Label */}
+        <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase", marginBottom: 8 }}>
           {label}
         </Text>
-        <Text style={{ fontSize: 32, fontWeight: "800", color: accent, letterSpacing: -0.8, lineHeight: 38 }}>
+
+        {/* Countdown — dominant, large */}
+        <Text style={{
+          fontSize: 38, fontWeight: "800",
+          color: accent, letterSpacing: -1, lineHeight: 44,
+          marginBottom: 4,
+        }}>
           {countdownMs > 0 ? formatCountdown(countdownMs) : "—"}
         </Text>
-        <Text style={{ fontSize: 11, color: textMuted, marginTop: 4 }}>{countdownDateStr}</Text>
-      </View>
 
-      {/* Divider */}
-      <View style={{ width: 1, height: 56, backgroundColor: borderColor }} />
+        {/* Date */}
+        <Text style={{ fontSize: 12, color: textMuted, marginBottom: 20, lineHeight: 17 }}>
+          {countdownDateStr}
+        </Text>
 
-      {/* Right: candle lighting + havdalah times */}
-      <View style={{ gap: 10, paddingRight: 2 }}>
-        <View style={{ alignItems: "flex-end" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-            <Text style={{ fontSize: 10 }}>🕯</Text>
-            <Text style={{ fontSize: 10, color: textMuted }}>{t.homeCandleLighting}</Text>
+        {/* Divider */}
+        <View style={{ height: 1, backgroundColor: borderColor, marginBottom: 18 }} />
+
+        {/* Candle Lighting + Havdalah — below the big number */}
+        <View style={{ flexDirection: "row", gap: 24 }}>
+          <View style={{ gap: 4 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={{ fontSize: 12 }}>🕯</Text>
+              <Text style={{ fontSize: 11, color: textMuted, fontWeight: "600" }}>{t.homeCandleLighting}</Text>
+            </View>
+            <Text style={{ fontSize: 18, fontWeight: "700", color: gold }}>{candleLightingTime}</Text>
           </View>
-          <Text style={{ fontSize: 15, fontWeight: "700", color: gold, marginTop: 2 }}>{candleLightingTime}</Text>
-        </View>
-        <View style={{ alignItems: "flex-end" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-            <Text style={{ fontSize: 10 }}>✨</Text>
-            <Text style={{ fontSize: 10, color: textMuted }}>{t.homeHavdalah}</Text>
+
+          <View style={{ width: 1, backgroundColor: borderColor }} />
+
+          <View style={{ gap: 4 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={{ fontSize: 12 }}>✨</Text>
+              <Text style={{ fontSize: 11, color: textMuted, fontWeight: "600" }}>{t.homeHavdalah}</Text>
+            </View>
+            <Text style={{ fontSize: 18, fontWeight: "700", color: mode === "havdalah" ? "#a78bfa" : gold }}>
+              {havdalahTime}
+            </Text>
           </View>
-          <Text style={{ fontSize: 15, fontWeight: "700", color: mode === "havdalah" ? "#a78bfa" : gold, marginTop: 2 }}>{havdalahTime}</Text>
         </View>
       </View>
     </View>
   );
 });
 
-// ─── Shared styles ────────────────────────────────────────────────────────────
+// ─── Shared styles — Phase 9: Visual Rhythm ───────────────────────────────────
 
 const s = StyleSheet.create({
   galleryCard: {
-    padding: 18,
+    padding: 20,
     borderWidth: 1,
+    // Phase 11: fixed minHeight so all 3 learning cards are same family height
+    minHeight: 290,
+    justifyContent: "flex-start",
   },
   // Phase 6: consistent illustration container for all learning gallery cards
   illustrationContainer: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    height: 70,
+    minHeight: 72,
     marginVertical: 14,
     position: "relative",
   },
   illustrationEmoji: {
-    fontSize: 36,
+    fontSize: 42,
     textAlign: "center",
   },
 });
