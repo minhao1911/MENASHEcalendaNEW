@@ -281,11 +281,19 @@ export default function SacredStudyScreen() {
     { key: "Maariv", label: "Evening", sub: "Maariv", icon: "moon" as const },
   ];
 
+  // Comfortable reading width — content never stretches edge-to-edge on tablets/large screens
+  const READING_MAX_WIDTH = 640;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: (insets.bottom || 0) + 104 }}
+        contentContainerStyle={{
+          paddingBottom: (insets.bottom || 0) + 104,
+          maxWidth: READING_MAX_WIDTH,
+          width: "100%",
+          alignSelf: "center",
+        }}
       >
         {/* ─── 1. HERO ─────────────────────────────────────────────────────── */}
         <Animated.View style={heroAnim}>
@@ -295,6 +303,11 @@ export default function SacredStudyScreen() {
             end={{ x: 1, y: 1 }}
             style={{ paddingTop: topPad + 16, paddingHorizontal: HX, paddingBottom: 28, overflow: "hidden" }}
           >
+            {/* Large inspirational artwork — Star of David watermark, echoes brand mark used
+                on the web Landing page (see Landing.tsx JerusalemSkyline/Stars pattern) */}
+            <View pointerEvents="none" style={{ position: "absolute", top: -60, right: -50, opacity: isLight ? 0.10 : 0.07 }}>
+              <Feather name="star" size={260} color={gold} />
+            </View>
             <View pointerEvents="none" style={{ position: "absolute", top: -36, left: -24, width: 150, height: 150, borderRadius: 75, backgroundColor: gold + "12" }} />
             <View pointerEvents="none" style={{ position: "absolute", bottom: -24, right: -24, width: 110, height: 110, borderRadius: 55, backgroundColor: gold + "0d" }} />
 
