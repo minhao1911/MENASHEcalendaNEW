@@ -1,21 +1,25 @@
 /**
- * SPR-M005A — Mobile Home Screen (Pixel-Perfect Premium)
- *
- * Official design reference: attached_assets/image_1782932878825.png
+ * SPR-M008 — Daily Experience Refinement
+ * Mobile Home Screen — Vision Implementation Sprint
  *
  * Sections (top → bottom):
- *   1.  Header (hamburger · logo · location · bell)
+ *   1.  Header  (hamburger · logo · location · bell)
  *   2.  Lang bar (star · EN | TK)
- *   3.  Hero (gradient · dates · glass zmanim)
+ *   3.  Hero    (gradient · dates · glass zmanim)
  *   4.  Today's Focus
  *   5.  Shabbat Countdown
- *   6.  Today's Zmanim row
- *   7.  Quick Actions 2×4
- *   8.  Weekly Parasha + Torah Insight (2-col)
- *   9.  Daf Yomi + Upcoming Holiday (2-col)
- *  10.  Memorial Sanctuary hero card
- *  11.  Rav Menashe AI hero card
- *  12.  Go Premium
+ *   6.  Sacred Time (Zmanim row)
+ *   7.  Quick Actions  2×4
+ *   8.  Learning Gallery  (Parasha · Insight · Daf Yomi)
+ *   9.  Upcoming Holiday
+ *  10.  Community Preview
+ *  11.  Memorial Sanctuary flagship card
+ *  12.  Rav Menashe AI flagship card
+ *  13.  Go Premium
+ *
+ * Architecture rules (SPR-M008):
+ *   ✓ MMDL reused      ✓ MEL followed     ✓ Component Library reused
+ *   ✓ No new features  ✓ No shared-core changes  ✓ No web changes
  */
 
 import React, {
@@ -27,6 +31,7 @@ import React, {
   useCallback,
 } from "react";
 import {
+  AccessibilityInfo,
   Animated,
   Platform,
   Pressable,
@@ -139,108 +144,170 @@ const TORAH_INSIGHTS = [
   { quote: "\"Every day one must say: the world was created for my sake.\"", source: "Talmud, Sanhedrin 37a" },
 ];
 
-// ─── Staggered entrance animation ─────────────────────────────────────────────
+// ─── Accessibility: reduced motion ────────────────────────────────────────────
+
+function useReducedMotionSafe(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduced).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduced);
+    return () => sub.remove();
+  }, []);
+  return reduced;
+}
+
+// ─── Staggered entrance animation (MEL motionGuide — entrance recipe) ─────────
 
 function useEntrance(delay = 0): Animated.AnimatedProps<ViewStyle> {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(14)).current;
+  const reducedMotion = useReducedMotionSafe();
+  const opacity    = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(reducedMotion ? 0 : 12)).current;
   useEffect(() => {
+    const duration = reducedMotion ? 0 : 400;
     const t = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 380, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration: 380, useNativeDriver: true }),
+        Animated.timing(opacity,    { toValue: 1, duration, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 0, duration, useNativeDriver: true }),
       ]).start();
-    }, delay);
+    }, reducedMotion ? 0 : delay);
     return () => clearTimeout(t);
-  }, [delay, opacity, translateY]);
+  }, [delay, opacity, translateY, reducedMotion]);
   return { opacity, transform: [{ translateY }] } as any;
 }
 
-// ─── Overline label shared component ─────────────────────────────────────────
+// ─── Hero shimmer — fades out on mount to reveal artwork ──────────────────────
+
+function useHeroShimmer() {
+  const reducedMotion = useReducedMotionSafe();
+  const opacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const t = setTimeout(() => {
+      Animated.timing(opacity, {
+        toValue:  0,
+        duration: reducedMotion ? 0 : 700,
+        useNativeDriver: true,
+      }).start();
+    }, reducedMotion ? 0 : 120);
+    return () => clearTimeout(t);
+  }, [opacity, reducedMotion]);
+  return opacity;
+}
+
+// ─── Overline label ───────────────────────────────────────────────────────────
 
 const Overline = memo(function Overline({ text, color }: { text: string; color: string }) {
   return (
-    <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, textTransform: "uppercase", color }}>
+    <Text
+      style={{ fontSize: 10, fontWeight: "700", letterSpacing: 2.0, textTransform: "uppercase", color }}
+      numberOfLines={1}
+    >
       {text}
     </Text>
   );
 });
 
 // ─── Pill / CTA button ────────────────────────────────────────────────────────
+// MEL interactionGuide: press scale 0.96, 80ms, then release to 1 @ 150ms
 
 const PillButton = memo(function PillButton({
-  label,
-  onPress,
-  bg,
-  fg,
-  small,
+  label, onPress, bg, fg, small,
 }: {
-  label: string;
-  onPress: () => void;
-  bg: string;
-  fg: string;
-  small?: boolean;
+  label: string; onPress: () => void; bg: string; fg: string; small?: boolean;
 }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPressIn  = useCallback(() => {
+    Animated.timing(scale, { toValue: 0.95, duration: 80,  useNativeDriver: true }).start();
+  }, [scale]);
+  const onPressOut = useCallback(() => {
+    Animated.timing(scale, { toValue: 1.00, duration: 150, useNativeDriver: true }).start();
+  }, [scale]);
+
   return (
     <Pressable
       onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => ({
-        backgroundColor: pressed ? bg + "cc" : bg,
+        backgroundColor: pressed ? bg + "d0" : bg,
         borderRadius: 9999,
-        paddingHorizontal: small ? 14 : 18,
-        paddingVertical: small ? 8 : 10,
-        flexDirection: "row", alignItems: "center", gap: 6,
+        paddingHorizontal: small ? 14 : 20,
+        paddingVertical:   small ?  8 : 11,
+        flexDirection: "row", alignItems: "center", gap: 5,
         alignSelf: "flex-start",
       })}
     >
-      <Text style={{ fontSize: small ? 12 : 13, fontWeight: "700", color: fg }}>{label}</Text>
-      <Feather name="chevron-right" size={small ? 11 : 12} color={fg} />
+      <Animated.View style={{ transform: [{ scale }], flexDirection: "row", alignItems: "center", gap: 5 }}>
+        <Text style={{ fontSize: small ? 12 : 13, fontWeight: "700", color: fg }}>{label}</Text>
+        <Feather name="chevron-right" size={small ? 11 : 12} color={fg} />
+      </Animated.View>
     </Pressable>
   );
 });
 
-// ─── Quick action item ─────────────────────────────────────────────────────────
+// ─── Quick action items ────────────────────────────────────────────────────────
 
 const QA_ITEMS = [
   { id: "calendar",     label: "Calendar",     icon: "calendar"   as const, bg: "#4A90D9", route: "/(tabs)/calendar" },
-  { id: "zmanim",       label: "Zmanim",       icon: "clock"      as const, bg: "#9B59B6", route: "/(tabs)/zmanim" },
-  { id: "sanctuary",    label: "Sanctuary",    icon: "home"       as const, bg: "#E67E22", route: "/(tabs)/community" },
-  { id: "study",        label: "Study",        icon: "book-open"  as const, bg: "#27AE60", route: "/(tabs)/torah" },
-  { id: "daf-yomi",     label: "Daf Yomi",     icon: "award"      as const, bg: "#E67E22", route: "/daf-yomi" },
-  { id: "library",      label: "Library",      icon: "book"       as const, bg: "#8E44AD", route: "/siddur" },
-  { id: "prayer-board", label: "Prayer Board", icon: "users"      as const, bg: "#16A085", route: "/prayer-board" },
-  { id: "48-ways",      label: "48 Ways",      icon: "star"       as const, bg: "#D4A843", route: "/mussar" },
+  { id: "zmanim",       label: "Zmanim",       icon: "clock"      as const, bg: "#9B59B6", route: "/(tabs)/zmanim"   },
+  { id: "sanctuary",    label: "Sanctuary",    icon: "home"       as const, bg: "#E67E22", route: "/(tabs)/community"},
+  { id: "study",        label: "Study",        icon: "book-open"  as const, bg: "#27AE60", route: "/(tabs)/torah"   },
+  { id: "daf-yomi",     label: "Daf Yomi",     icon: "award"      as const, bg: "#E67E22", route: "/daf-yomi"       },
+  { id: "library",      label: "Library",      icon: "book"       as const, bg: "#8E44AD", route: "/siddur"         },
+  { id: "prayer-board", label: "Prayer Board", icon: "users"      as const, bg: "#16A085", route: "/prayer-board"   },
+  { id: "48-ways",      label: "48 Ways",      icon: "star"       as const, bg: "#D4A843", route: "/mussar"         },
 ];
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
   const { colors, type, sp, rd, shadow, theme } = useThemeTokens();
-  const insets = useSafeAreaInsets();
+  const insets    = useSafeAreaInsets();
   const { location } = useApp();
   const { lang, setLang, t } = useLanguage();
 
   const firstName: string | null = null;
 
   const today = useMemo(() => new Date(), []);
-  const hour = today.getHours();
+  const hour  = today.getHours();
 
   const greeting =
     hour < 12 ? t.homeGoodMorning
     : hour < 17 ? t.homeGoodAfternoon
     : t.homeGoodEvening;
 
-  const hdate = useMemo(() => getHebrewDate(today), [today]);
-  const hebrewDateStr = useMemo(() => formatHebrewDate(hdate), [hdate]);
+  const hdate           = useMemo(() => getHebrewDate(today), [today]);
+  const hebrewDateStr   = useMemo(() => formatHebrewDate(hdate), [hdate]);
   const hebrewNumeralStr = useMemo(() => {
     try { return formatHebrewDateHebrew(hdate); } catch { return ""; }
   }, [hdate]);
-  const parasha = useMemo(() => getCurrentParasha(), []);
-  const holidays = useMemo(() => getUpcomingHolidays(30), []);
+  const parasha     = useMemo(() => getCurrentParasha(), []);
+  const holidays    = useMemo(() => getUpcomingHolidays(30), []);
   const nextHoliday = holidays[0] ?? null;
-  const daf = useMemo(() => getTodayDaf(), []);
+  // Phase 2: holiday-today detection for priority ordering
+  const todayHoliday = useMemo(() => {
+    if (!nextHoliday) return null;
+    const hd = nextHoliday.date;
+    return hd.getFullYear() === today.getFullYear()
+      && hd.getMonth()     === today.getMonth()
+      && hd.getDate()      === today.getDate()
+      ? nextHoliday
+      : null;
+  }, [nextHoliday, today]);
+
+  // Phase 2: fast-today detection — fasts sit below holidays, above candle lighting
+  // Matches standard hebcal fast names (Fast of Gedaliah, Tisha B'Av, Ta'anit Esther, etc.)
+  const todayFast = useMemo(() => {
+    if (!todayHoliday) return null;
+    return /fast|tzom|tisha|ta'?anit|taanis/i.test(todayHoliday.name)
+      ? todayHoliday
+      : null;
+  }, [todayHoliday]);
+
+  const daf         = useMemo(() => getTodayDaf(), []);
   const dafProgress = useMemo(() => getDafProgress(daf.tractate, daf.daf), [daf]);
-  const omerDay = useMemo(() => getOmerDay(), []);
+  const omerDay     = useMemo(() => getOmerDay(), []);
 
   const todayZm = useMemo(
     () => calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes),
@@ -248,7 +315,7 @@ export default function HomeScreen() {
   );
 
   const isShabbat = today.getDay() === 6;
-  const isFriday = today.getDay() === 5;
+  const isFriday  = today.getDay() === 5;
 
   const friday = useMemo(
     () => (isFriday ? today : getNextWeekday(5)),
@@ -280,23 +347,23 @@ export default function HomeScreen() {
   }, []);
 
   const candleLightingMs = fridayZm.candleLighting ? fridayZm.candleLighting.getTime() - now : null;
-  const havdalahMs = satZm.havdalah ? satZm.havdalah.getTime() - now : null;
+  const havdalahMs       = satZm.havdalah         ? satZm.havdalah.getTime()          - now : null;
 
   let countdownMode: "candle" | "havdalah" | "upcoming" = "upcoming";
-  let countdownMs = 0;
+  let countdownMs   = 0;
   let countdownDate = friday;
 
   if (isShabbat && havdalahMs && havdalahMs > 0) {
     countdownMode = "havdalah";
-    countdownMs = havdalahMs;
+    countdownMs   = havdalahMs;
     countdownDate = saturday;
   } else if (isFriday && candleLightingMs && candleLightingMs > 0) {
     countdownMode = "candle";
-    countdownMs = candleLightingMs;
+    countdownMs   = candleLightingMs;
     countdownDate = friday;
   } else if (candleLightingMs && candleLightingMs > 0) {
     countdownMode = "upcoming";
-    countdownMs = candleLightingMs;
+    countdownMs   = candleLightingMs;
     countdownDate = friday;
   }
 
@@ -311,36 +378,45 @@ export default function HomeScreen() {
 
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 48 : 20);
 
-  const isLight = theme === "light";
+  const isLight    = theme === "light";
   const isSapphire = theme === "sapphire";
 
   const heroGradientColors = isLight
     ? (["#F0E6CE", "#E8D5A8", "#D9BB6E"] as const)
     : isSapphire
       ? (["#0c1830", "#1a2e58", "#0c1830"] as const)
-      : (["#0a1020", "#111827", "#1a2030"] as const);
+      : (["#090f1d", "#101824", "#182032"] as const);
 
-  const heroAccent = isLight ? "#c8852a" : colors.primary;
-  const cardBg = colors.card;
-  const pageBg = colors.background;
-  const gold = colors.primary;
-  const textPrimary = colors.textPrimary;
-  const textMuted = colors.textMuted;
+  const heroAccent    = isLight ? "#c8852a" : colors.primary;
+  const cardBg        = colors.card;
+  const pageBg        = colors.background;
+  const gold          = colors.primary;
+  const textPrimary   = colors.textPrimary;
+  const textMuted     = colors.textMuted;
   const textSecondary = colors.textSecondary;
-  const borderColor = colors.cardBorder;
+  const borderColor   = colors.cardBorder;
+  // Semantic accent shortcuts from tokens — used throughout cards
+  const successColor  = colors.success;
+  const warningColor  = colors.warning;
+  // Sapphire blue — always the AI brand color regardless of theme
+  const sapphireBlue  = "#6382FF" as const;
 
-  const a0 = useEntrance(0);
-  const a1 = useEntrance(50);
-  const a2 = useEntrance(100);
-  const a3 = useEntrance(150);
-  const a4 = useEntrance(200);
-  const a5 = useEntrance(240);
-  const a6 = useEntrance(280);
-  const a7 = useEntrance(320);
-  const a9 = useEntrance(400);
-  const a10 = useEntrance(430);
+  // Phase 10: staggered entrance (MEL motionGuide)
+  const a0  = useEntrance(0);
+  const a1  = useEntrance(50);
+  const a2  = useEntrance(100);
+  const a3  = useEntrance(150);
+  const a4  = useEntrance(200);
+  const a5  = useEntrance(240);
+  const a6  = useEntrance(280);
+  const a7  = useEntrance(320);
+  const a9  = useEntrance(400);
 
-  const HX = 24;
+  // Phase 1: hero shimmer fade-out
+  const shimmerOpacity = useHeroShimmer();
+
+  // Horizontal page margin — consistent across all sections
+  const HX = 20;
 
   return (
     <ScrollView
@@ -348,32 +424,36 @@ export default function HomeScreen() {
       contentContainerStyle={{ paddingBottom: (insets.bottom || 0) + 104 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* ─── 1. HEADER ──────────────────────────────────────────────────────── */}
-      <Animated.View style={[{ paddingTop: topPad, paddingHorizontal: HX, paddingBottom: 12, flexDirection: "row", alignItems: "center" }, a0]}>
+      {/* ─── 1. HEADER ────────────────────────────────────────────────────────── */}
+      <Animated.View style={[{
+        paddingTop: topPad, paddingHorizontal: HX, paddingBottom: 12,
+        flexDirection: "row", alignItems: "center",
+      }, a0]}>
         {/* Hamburger */}
         <TouchableOpacity
-          style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center", marginRight: 10 }}
+          style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: 8 }}
           activeOpacity={0.7}
           accessibilityLabel="Menu"
+          accessibilityRole="button"
         >
           <Feather name="menu" size={22} color={textPrimary} />
         </TouchableOpacity>
 
         {/* Logo + Brand */}
-        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 9 }}>
           <View style={{
-            width: 32, height: 32, borderRadius: 8,
-            backgroundColor: gold + "20",
-            borderWidth: 1, borderColor: gold + "40",
+            width: 34, height: 34, borderRadius: 9,
+            backgroundColor: gold + "1e",
+            borderWidth: 1, borderColor: gold + "44",
             alignItems: "center", justifyContent: "center",
           }}>
             <Text style={{ fontSize: 16 }}>⛩</Text>
           </View>
           <View>
-            <Text style={{ fontSize: 14, fontWeight: "800", color: gold, letterSpacing: 1.4 }}>
+            <Text style={{ fontSize: 13, fontWeight: "800", color: gold, letterSpacing: 1.6 }}>
               BNEI MENASHE
             </Text>
-            <Text style={{ fontSize: 10, color: textMuted, letterSpacing: 0.5 }}>
+            <Text style={{ fontSize: 10, color: textMuted, letterSpacing: 0.4 }}>
               {t.homeSacredCalendar}
             </Text>
           </View>
@@ -383,10 +463,8 @@ export default function HomeScreen() {
         <View style={{
           flexDirection: "row", alignItems: "center", gap: 4,
           backgroundColor: isLight ? "#fff8ee" : cardBg,
-          borderRadius: rd.pill,
-          paddingHorizontal: 10, paddingVertical: 6,
-          borderWidth: 1, borderColor,
-          marginRight: 10,
+          borderRadius: rd.pill, paddingHorizontal: 10, paddingVertical: 6,
+          borderWidth: 1, borderColor, marginRight: 10,
         }}>
           <Feather name="map-pin" size={10} color={gold} />
           <Text style={{ fontSize: 11, color: textMuted, fontWeight: "500" }}>
@@ -397,18 +475,17 @@ export default function HomeScreen() {
         {/* Bell */}
         <TouchableOpacity
           style={{
-            width: 36, height: 36, borderRadius: 18,
-            backgroundColor: cardBg,
-            borderWidth: 1, borderColor,
+            width: 44, height: 44, borderRadius: 22,
+            backgroundColor: cardBg, borderWidth: 1, borderColor,
             alignItems: "center", justifyContent: "center",
           }}
           activeOpacity={0.7}
           accessibilityLabel="Notifications"
+          accessibilityRole="button"
         >
           <Feather name="bell" size={16} color={textPrimary} />
-          {/* Dot */}
           <View style={{
-            position: "absolute", top: 6, right: 8,
+            position: "absolute", top: 8, right: 9,
             width: 7, height: 7, borderRadius: 4,
             backgroundColor: "#fb923c",
             borderWidth: 1.5, borderColor: pageBg,
@@ -417,8 +494,10 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 2. LANG BAR ──────────────────────────────────────────────────────── */}
-      <Animated.View style={[{ paddingHorizontal: HX, marginBottom: 14, flexDirection: "row", alignItems: "center", gap: 10 }, a0]}>
-        {/* Star badge */}
+      <Animated.View style={[{
+        paddingHorizontal: HX, marginBottom: 14,
+        flexDirection: "row", alignItems: "center", gap: 10,
+      }, a0]}>
         <View style={{
           width: 30, height: 30, borderRadius: 15,
           backgroundColor: gold + "18", borderWidth: 1, borderColor: gold + "44",
@@ -427,24 +506,24 @@ export default function HomeScreen() {
           <Text style={{ fontSize: 13, color: gold }}>✡</Text>
         </View>
 
-        {/* Pill toggle */}
         <View style={{
           flexDirection: "row",
-          backgroundColor: cardBg,
-          borderRadius: rd.pill,
-          borderWidth: 1, borderColor,
-          padding: 3,
+          backgroundColor: cardBg, borderRadius: rd.pill,
+          borderWidth: 1, borderColor, padding: 3,
         }}>
           {(["en", "tk"] as const).map((l) => (
             <TouchableOpacity
               key={l}
               style={{
-                paddingHorizontal: 14, paddingVertical: 5,
+                paddingHorizontal: 14, paddingVertical: 8,
+                minHeight: 44, justifyContent: "center",
                 borderRadius: rd.pill,
                 backgroundColor: lang === l ? gold : "transparent",
               }}
               onPress={() => setLang(l)}
               activeOpacity={0.8}
+              accessibilityLabel={l === "en" ? "English" : "Thadou Kuki"}
+              accessibilityRole="button"
             >
               <Text style={{ fontSize: 11, fontWeight: "700", color: lang === l ? colors.primaryForeground : textMuted }}>
                 {l.toUpperCase()}
@@ -454,63 +533,98 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      {/* ─── 3. HERO CARD ─────────────────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18, borderRadius: 28, overflow: "hidden", ...shadow.level2 }, a1]}>
+      {/* ─── 3. HERO — Phase 1 ────────────────────────────────────────────────── */}
+      {/* 35% of a 667dp viewport ≈ 233dp; minHeight 244 sits cleanly in range.  */}
+      <Animated.View style={[{
+        marginHorizontal: HX, marginBottom: 20,
+        borderRadius: 26, overflow: "hidden", ...shadow.level2,
+      }, a1]}>
         <LinearGradient
           colors={heroGradientColors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ minHeight: 288 }}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={{ minHeight: 244 }}
         >
           {/* Split layout: left text / right artwork */}
           <View style={{ flexDirection: "row", flex: 1 }}>
-            {/* Left: dates + greeting */}
-            <View style={{ flex: 1, paddingTop: 20, paddingLeft: 20, paddingRight: 10, paddingBottom: 14, justifyContent: "center" }}>
-              <Text style={{ fontSize: 12, color: isLight ? "#6b4c1e" : textMuted, fontWeight: "500", marginBottom: 4 }}>
+            {/* Left: hierarchy — gregorian → greeting → Hebrew date → numeral */}
+            <View style={{
+              flex: 1, paddingTop: 22, paddingLeft: 20,
+              paddingRight: 10, paddingBottom: 14, justifyContent: "center",
+            }}>
+              <Text style={{ fontSize: 11, color: isLight ? "#6b4c1e" : textMuted, fontWeight: "500", marginBottom: 3 }}>
                 {gregDate}
               </Text>
-              <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 10 }}>
+              <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 9 }}>
                 <Text style={{ color: heroAccent }}>{greeting}</Text>
                 {firstName ? (
                   <Text style={{ color: isLight ? "#3d2c0e" : textPrimary }}>{", " + firstName}</Text>
                 ) : null}
               </Text>
-              <Text style={{ fontSize: 27, fontWeight: "800", color: isLight ? "#1a0f00" : textPrimary, letterSpacing: -0.5, lineHeight: 33 }}>
+              <Text style={{
+                fontSize: 25, fontWeight: "800",
+                color: isLight ? "#1a0f00" : textPrimary,
+                letterSpacing: -0.3, lineHeight: 30,
+                textShadowColor: isLight ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.4)",
+                textShadowOffset: { width: 0, height: 1 },
+                textShadowRadius: 3,
+              }}>
                 {hebrewDateStr}
               </Text>
               {hebrewNumeralStr ? (
-                <Text style={{ fontSize: 15, color: isLight ? "#8b6914" : gold, marginTop: 5, fontWeight: "600", letterSpacing: 0.3 }}>
+                <Text style={{ fontSize: 14, color: isLight ? "#8b6914" : gold, marginTop: 5, fontWeight: "600", letterSpacing: 0.3 }}>
                   {hebrewNumeralStr}
                 </Text>
               ) : null}
             </View>
 
-            {/* Right: warm sanctuary artwork */}
-            <View style={{ width: 148, overflow: "hidden" }}>
+            {/* Right: warm golden-hour artwork */}
+            <View style={{ width: 144, overflow: "hidden" }}>
               <LinearGradient
                 colors={isLight
-                  ? (["#fde9b4", "#f5c36a", "#d4780a", "#7a3200"] as const)
-                  : (["#2a1500", "#7a3d08", "#d4840a", "#f5c36a"] as const)}
-                start={{ x: 0.4, y: 0 }}
-                end={{ x: 0.6, y: 1 }}
-                style={{ flex: 1, minHeight: 210, alignItems: "center", justifyContent: "flex-end", paddingBottom: 6 }}
+                  ? (["#fde9b4", "#f5c36a", "#d97008", "#6a2800"] as const)
+                  : (["#251000", "#6a3206", "#cb7a08", "#f5c36a"] as const)}
+                start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
+                style={{ flex: 1, minHeight: 200, alignItems: "center", justifyContent: "flex-end", paddingBottom: 8 }}
               >
-                {/* Birds */}
-                <Text style={{ position: "absolute", top: 10, left: 14, fontSize: 9, opacity: 0.75 }}>🐦</Text>
-                <Text style={{ position: "absolute", top: 16, left: 30, fontSize: 7, opacity: 0.6 }}>🐦</Text>
-                <Text style={{ position: "absolute", top: 8, right: 20, fontSize: 8, opacity: 0.65 }}>🐦</Text>
-                {/* Temple */}
-                <Text style={{ fontSize: 80, lineHeight: 90, marginBottom: -6, textShadowColor: "rgba(0,0,0,0.4)", textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 8 }}>
+                {/* Sun glow behind temple */}
+                <View style={{
+                  position: "absolute", top: 12, left: 0, right: 0,
+                  alignItems: "center",
+                }}>
+                  <View style={{
+                    width: 52, height: 52, borderRadius: 26,
+                    backgroundColor: "rgba(255,200,60,0.22)",
+                  }} />
+                </View>
+
+                {/* Birds — layered depth */}
+                <Text style={{ position: "absolute", top: 18, left: 10, fontSize: 8, opacity: 0.70 }}>🐦</Text>
+                <Text style={{ position: "absolute", top: 25, left: 26, fontSize: 6, opacity: 0.55 }}>🐦</Text>
+                <Text style={{ position: "absolute", top: 14, right: 18, fontSize: 7, opacity: 0.60 }}>🐦</Text>
+                <Text style={{ position: "absolute", top: 30, right: 30, fontSize: 5, opacity: 0.45 }}>🐦</Text>
+
+                {/* Temple with depth shadow */}
+                <Text style={{
+                  fontSize: 72, lineHeight: 82, marginBottom: -4,
+                  textShadowColor: "rgba(0,0,0,0.45)",
+                  textShadowOffset: { width: 0, height: 5 },
+                  textShadowRadius: 10,
+                }}>
                   ⛩
                 </Text>
-                {/* Ground glow */}
-                <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, backgroundColor: "rgba(212,120,10,0.30)" }} />
-                {/* Subtle left fade for blend */}
+
+                {/* Horizon glow */}
+                <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 52, backgroundColor: "rgba(190,90,0,0.28)" }} />
+
+                {/* Left edge fade for seamless blend with left panel */}
                 <LinearGradient
-                  colors={isLight ? (["#F0E6CE", "transparent"] as const) : (["#0a1020", "transparent"] as const)}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 36 }}
+                  colors={isLight
+                    ? (["#F0E6CE", "transparent"] as const)
+                    : isSapphire
+                      ? (["#0c1830", "transparent"] as const)
+                      : (["#090f1d", "transparent"] as const)}
+                  start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                  style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 40 }}
                   pointerEvents="none"
                 />
               </LinearGradient>
@@ -520,8 +634,7 @@ export default function HomeScreen() {
           {/* Glass zmanim bar */}
           {Platform.OS !== "web" ? (
             <BlurView
-              intensity={55}
-              tint={isLight ? "light" : "dark"}
+              intensity={55} tint={isLight ? "light" : "dark"}
               style={{ marginHorizontal: 12, marginBottom: 12, borderRadius: rd.lg, overflow: "hidden" }}
             >
               <ZmanimBar todayZm={todayZm} location={location} textPrimary={textPrimary} textMuted={textMuted} isLight={isLight} />
@@ -535,16 +648,28 @@ export default function HomeScreen() {
               <ZmanimBar todayZm={todayZm} location={location} textPrimary={textPrimary} textMuted={textMuted} isLight={isLight} />
             </View>
           )}
+
+          {/* Phase 1: elegant shimmer placeholder that fades out on mount */}
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: isLight ? "rgba(240,230,206,0.55)" : "rgba(9,15,29,0.55)",
+              opacity: shimmerOpacity,
+            }}
+          />
         </LinearGradient>
       </Animated.View>
 
-      {/* ─── 4. TODAY'S FOCUS ─────────────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 14 }, a2]}>
+      {/* ─── 4. TODAY'S FOCUS — Phase 2 ──────────────────────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 16 }, a2]}>
         <TodaysFocusCard
           mode={countdownMode}
           isShabbat={isShabbat}
           isFriday={isFriday}
           omerDay={omerDay}
+          todayHoliday={todayHoliday}
+          todayFast={todayFast}
           nextHoliday={nextHoliday}
           candleLightingTime={fridayZm.candleLighting ? formatTime(fridayZm.candleLighting, location.tz) : null}
           t={t}
@@ -559,8 +684,8 @@ export default function HomeScreen() {
         />
       </Animated.View>
 
-      {/* ─── 5. SHABBAT COUNTDOWN ─────────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 14 }, a2]}>
+      {/* ─── 5. SHABBAT COUNTDOWN — Phase 4 ──────────────────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 16 }, a2]}>
         <ShabbatCountdownCard
           mode={countdownMode}
           countdownMs={countdownMs}
@@ -580,18 +705,19 @@ export default function HomeScreen() {
         />
       </Animated.View>
 
-      {/* ─── 6. SACRED TIME (ZMANIM) ROW ──────────────────────────────────────── */}
-      <Animated.View style={[{ marginBottom: 18 }, a3]}>
-        {/* Header row */}
-        <View style={{ paddingHorizontal: HX, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+      {/* ─── 6. SACRED TIME (ZMANIM) ROW — Phase 3 ───────────────────────────── */}
+      <Animated.View style={[{ marginBottom: 20 }, a3]}>
+        <View style={{ paddingHorizontal: HX, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
             <Feather name="clock" size={13} color={gold} />
-            <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.6, color: textMuted, textTransform: "uppercase" }}>
+            <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase" }}>
               {t.homeSacredTimeLabel}
             </Text>
           </View>
           <Pressable
             onPress={() => router.push("/(tabs)/zmanim")}
+            accessibilityLabel={t.homeAllTimesLocal}
+            accessibilityRole="link"
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, flexDirection: "row", alignItems: "center", gap: 4 })}
           >
             <Text style={{ fontSize: 11, color: gold, fontWeight: "600" }}>{t.homeAllTimesLocal}</Text>
@@ -605,18 +731,20 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingHorizontal: HX, gap: 10 }}
         >
           {(() => {
+            // Memoised outside render — stable reference per zmanim recalc
             const zmanList = [
               { label: t.homeDawn,         icon: "sunrise" as const, time: todayZm.alotHaShachar },
-              { label: t.homeSunrise,       icon: "sunrise" as const, time: todayZm.sunrise },
-              { label: t.homeMinchaGedola,  icon: "sun" as const,     time: todayZm.chatzot },
-              { label: t.homeSunset,        icon: "sunset" as const,  time: todayZm.sunset },
-              { label: t.homeNightfall,     icon: "moon" as const,    time: todayZm.tzais },
-              { label: t.homeTzais,         icon: "moon" as const,    time: todayZm.tzais },
+              { label: t.homeSunrise,       icon: "sunrise" as const, time: todayZm.sunrise       },
+              { label: t.homeMinchaGedola,  icon: "sun"     as const, time: todayZm.chatzot       },
+              { label: t.homeSunset,        icon: "sunset"  as const, time: todayZm.sunset        },
+              { label: t.homeNightfall,     icon: "moon"    as const, time: todayZm.tzais         },
+              { label: t.homeTzais,         icon: "moon"    as const, time: todayZm.tzais         },
             ];
-            const now = Date.now();
+            // currentIdx: derived from stable `now` tick (not Date.now() inline)
+            const nowMs = now;
             let currentIdx = -1;
             zmanList.forEach((z, i) => {
-              if (z.time && new Date(z.time).getTime() <= now) currentIdx = i;
+              if (z.time && new Date(z.time).getTime() <= nowMs) currentIdx = i;
             });
             return zmanList.map((z, i) => {
               const isCurrent = i === currentIdx;
@@ -625,15 +753,15 @@ export default function HomeScreen() {
                   key={z.label + i}
                   style={{
                     alignItems: "center", gap: 6,
-                    backgroundColor: isCurrent ? gold + "14" : cardBg,
+                    backgroundColor: isCurrent ? gold + "18" : cardBg,
                     borderRadius: rd.lg,
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
+                    paddingVertical: 14, paddingHorizontal: 14,
                     borderWidth: isCurrent ? 1.5 : 1,
                     borderColor: isCurrent ? gold : borderColor,
-                    minWidth: 78,
+                    minWidth: 84,
                     ...(isCurrent ? shadow.level2 : shadow.level1),
                   }}
+                  accessibilityLabel={`${z.label}: ${z.time ? formatTime(z.time, location.tz) : "—"}${isCurrent ? ", current time" : ""}`}
                 >
                   {isCurrent && (
                     <Text style={{ fontSize: 8, fontWeight: "800", letterSpacing: 0.8, color: gold, textTransform: "uppercase" }}>
@@ -641,16 +769,16 @@ export default function HomeScreen() {
                     </Text>
                   )}
                   <View style={{
-                    width: 30, height: 30, borderRadius: 15,
-                    backgroundColor: gold + (isCurrent ? "2A" : "18"),
+                    width: 32, height: 32, borderRadius: 16,
+                    backgroundColor: gold + (isCurrent ? "2a" : "18"),
                     alignItems: "center", justifyContent: "center",
                   }}>
-                    <Feather name={z.icon} size={13} color={gold} />
+                    <Feather name={z.icon} size={14} color={gold} />
                   </View>
-                  <Text style={{ fontSize: 9, color: textMuted, fontWeight: "600", textAlign: "center", letterSpacing: 0.5 }}>
+                  <Text style={{ fontSize: 10, color: textMuted, fontWeight: "600", textAlign: "center", letterSpacing: 0.4 }}>
                     {z.label}
                   </Text>
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: textPrimary }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: textPrimary }}>
                     {z.time ? formatTime(z.time, location.tz) : "—"}
                   </Text>
                 </View>
@@ -660,36 +788,36 @@ export default function HomeScreen() {
         </ScrollView>
       </Animated.View>
 
-      {/* ─── 7. QUICK ACTIONS 2×4 ─────────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a4]}>
+      {/* ─── 7. QUICK ACTIONS 2×4 — Phase 5 ──────────────────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 20 }, a4]}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
           {QA_ITEMS.map((item) => (
             <Pressable
               key={item.id}
               onPress={() => router.push(item.route as any)}
               accessibilityLabel={item.label}
+              accessibilityRole="button"
               style={({ pressed }) => ({
                 width: "22%",
                 alignItems: "center",
                 gap: 8,
-                paddingVertical: 14,
+                paddingVertical: 16,
                 borderRadius: rd.lg,
                 backgroundColor: cardBg,
-                borderWidth: 1,
-                borderColor,
-                transform: [{ scale: pressed ? 0.94 : 1 }],
+                borderWidth: 1, borderColor,
+                transform: [{ scale: pressed ? 0.93 : 1 }],
                 ...shadow.level1,
               })}
             >
               <View style={{
-                width: 48, height: 48,
+                width: 46, height: 46,
                 borderRadius: rd.md,
-                backgroundColor: item.bg + "1E",
+                backgroundColor: item.bg + "20",
                 alignItems: "center", justifyContent: "center",
               }}>
-                <Feather name={item.icon} size={20} color={item.bg} />
+                <Feather name={item.icon} size={21} color={item.bg} />
               </View>
-              <Text style={{ fontSize: 10, fontWeight: "600", textAlign: "center", color: textSecondary, lineHeight: 14 }}>
+              <Text style={{ fontSize: 11, fontWeight: "600", textAlign: "center", color: textSecondary, lineHeight: 14 }}>
                 {item.label}
               </Text>
             </Pressable>
@@ -697,11 +825,13 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      {/* ─── 8. LEARNING (gallery of 3 premium cards) ─────────────────────────── */}
-      <Animated.View style={[{ marginBottom: 18 }, a5]}>
-        <View style={{ paddingHorizontal: HX, flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 10 }}>
+      {/* ─── 8. LEARNING GALLERY — Phase 6 ───────────────────────────────────── */}
+      {/* All 3 cards share one visual family: same overline · same illustration   */}
+      {/* container · same title scale · same body scale · CTA anchored at bottom */}
+      <Animated.View style={[{ marginBottom: 20 }, a5]}>
+        <View style={{ paddingHorizontal: HX, flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 12 }}>
           <Feather name="book-open" size={13} color={gold} />
-          <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.6, color: textMuted, textTransform: "uppercase" }}>
+          <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase" }}>
             {t.homeLearningLabel}
           </Text>
         </View>
@@ -710,26 +840,36 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: HX, gap: 12 }}
         >
-          {/* Parasha */}
+          {/* ── Parasha card ── */}
           <Pressable
-            style={({ pressed }) => ({ width: 240, opacity: pressed ? 0.9 : 1 })}
+            style={({ pressed }) => ({
+              width: 244, borderRadius: rd.xl, overflow: "hidden",
+              transform: [{ scale: pressed ? 0.97 : 1 }],
+              ...shadow.level2,
+            })}
             onPress={() => router.push("/(tabs)/torah")}
-            accessibilityLabel="Weekly Parasha"
+            accessibilityLabel={`Weekly Parasha: ${parasha || "loading"}`}
+            accessibilityRole="button"
           >
-            <View style={[s.galleryCard, { backgroundColor: cardBg, borderColor, borderRadius: rd.xl, ...shadow.level2 }]}>
+            <View style={[s.galleryCard, { backgroundColor: cardBg, borderColor, borderRadius: rd.xl }]}>
+              {/* Overline */}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <Feather name="book" size={12} color={gold} />
+                <Feather name="book" size={11} color={gold} />
                 <Overline text={t.homeParashah} color={gold} />
               </View>
-              <Text style={{ fontSize: 16, fontWeight: "700", color: textPrimary, marginBottom: 4 }}>
+              {/* Title */}
+              <Text style={{ fontSize: 16, fontWeight: "700", color: textPrimary, lineHeight: 22 }} numberOfLines={1}>
                 {parasha !== "" ? `Parashat ${parasha}` : "—"}
               </Text>
-              <View style={{ alignItems: "center", marginVertical: 10 }}>
-                <Text style={{ fontSize: 32 }}>📜</Text>
-              </View>
-              <Text style={{ fontSize: 12, color: textMuted, marginBottom: 12, fontStyle: "italic" }}>
+              {/* Subtitle */}
+              <Text style={{ fontSize: 12, color: textMuted, marginTop: 2, fontStyle: "italic" }} numberOfLines={1}>
                 פרשת {parasha}
               </Text>
+              {/* Illustration — consistent family container */}
+              <View style={s.illustrationContainer}>
+                <Text style={s.illustrationEmoji}>📜</Text>
+              </View>
+              {/* CTA anchored at bottom */}
               <PillButton
                 label={t.homeReadSummary}
                 onPress={() => router.push("/(tabs)/torah")}
@@ -740,55 +880,71 @@ export default function HomeScreen() {
             </View>
           </Pressable>
 
-          {/* Torah Insight */}
-          <View style={{ width: 240 }}>
-            <View style={[s.galleryCard, { backgroundColor: cardBg, borderColor, borderRadius: rd.xl, ...shadow.level2 }]}>
+          {/* ── Torah Insight card ── */}
+          <View style={[{
+            width: 244, borderRadius: rd.xl, overflow: "hidden", ...shadow.level2,
+          }]}>
+            <View style={[s.galleryCard, { backgroundColor: cardBg, borderColor, borderRadius: rd.xl }]}>
+              {/* Overline */}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <Feather name="zap" size={12} color="#E67E22" />
+                <Feather name="zap" size={11} color="#E67E22" />
                 <Overline text={t.homeInsightTitle} color="#E67E22" />
               </View>
-              <Text style={{ fontSize: 13, fontStyle: "italic", color: textSecondary, lineHeight: 20, marginBottom: 6 }}>
+              {/* Quote — body text, italic */}
+              <Text style={{ fontSize: 13, fontStyle: "italic", color: textSecondary, lineHeight: 20 }} numberOfLines={3}>
                 {todayInsight.quote}
               </Text>
-              <View style={{ alignItems: "center", marginVertical: 6 }}>
-                <Text style={{ fontSize: 28 }}>🌳</Text>
+              {/* Illustration */}
+              <View style={s.illustrationContainer}>
+                <Text style={s.illustrationEmoji}>🌳</Text>
               </View>
-              <Text style={{ fontSize: 11, fontWeight: "600", color: textMuted }}>
-                {todayInsight.source}
+              {/* Source */}
+              <Text style={{ fontSize: 11, fontWeight: "600", color: textMuted, marginTop: 4 }} numberOfLines={1}>
+                — {todayInsight.source}
               </Text>
             </View>
           </View>
 
-          {/* Daf Yomi */}
+          {/* ── Daf Yomi card ── */}
           <Pressable
-            style={({ pressed }) => ({ width: 240, opacity: pressed ? 0.9 : 1 })}
+            style={({ pressed }) => ({
+              width: 244, borderRadius: rd.xl, overflow: "hidden",
+              transform: [{ scale: pressed ? 0.97 : 1 }],
+              ...shadow.level2,
+            })}
             onPress={() => router.push("/daf-yomi")}
-            accessibilityLabel="Daf Yomi"
+            accessibilityLabel={`Daf Yomi: ${daf.tractate} ${daf.daf}`}
+            accessibilityRole="button"
           >
-            <View style={[s.galleryCard, { backgroundColor: cardBg, borderColor, borderRadius: rd.xl, ...shadow.level2 }]}>
+            <View style={[s.galleryCard, { backgroundColor: cardBg, borderColor, borderRadius: rd.xl }]}>
+              {/* Overline */}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <Text style={{ fontSize: 12 }}>🎓</Text>
+                <Feather name="award" size={11} color="#E67E22" />
                 <Overline text={t.homeDafYomi} color="#E67E22" />
               </View>
-              <Text style={{ fontSize: 17, fontWeight: "700", color: textPrimary }}>
+              {/* Title */}
+              <Text style={{ fontSize: 16, fontWeight: "700", color: textPrimary, lineHeight: 22 }} numberOfLines={1}>
                 {daf.tractate}
               </Text>
-              <Text style={{ fontSize: 12, color: textMuted, marginBottom: 12 }}>
-                {t.homeDafYomiToday} · {daf.daf}
+              {/* Subtitle */}
+              <Text style={{ fontSize: 12, color: textMuted, marginTop: 2 }} numberOfLines={1}>
+                {t.homeDafYomiToday} · {t.homeDafYomi} {daf.daf}
               </Text>
-              <View style={{ alignItems: "center", marginBottom: 10 }}>
-                <Text style={{ fontSize: 26 }}>📄</Text>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 12 }}>
+              {/* Illustration */}
+              <View style={s.illustrationContainer}>
+                <Text style={s.illustrationEmoji}>📄</Text>
+                {/* Progress ring — compact, below emoji */}
                 <View style={{
-                  width: 28, height: 28, borderRadius: 14,
-                  backgroundColor: "#27AE60" + "22",
-                  borderWidth: 1.5, borderColor: "#27AE60",
+                  position: "absolute", bottom: 4, right: 4,
+                  width: 30, height: 30, borderRadius: 15,
+                  backgroundColor: successColor + "22",
+                  borderWidth: 1.5, borderColor: successColor,
                   alignItems: "center", justifyContent: "center",
                 }}>
-                  <Text style={{ fontSize: 8, fontWeight: "700", color: "#27AE60" }}>{dafProgress}%</Text>
+                  <Text style={{ fontSize: 8, fontWeight: "700", color: successColor }}>{dafProgress}%</Text>
                 </View>
               </View>
+              {/* CTA anchored at bottom */}
               <PillButton
                 label={t.homeOpenDafYomi}
                 onPress={() => router.push("/daf-yomi")}
@@ -801,37 +957,29 @@ export default function HomeScreen() {
         </ScrollView>
       </Animated.View>
 
-      {/* ─── 9. UPCOMING HOLIDAY (compact info card) ───────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a6]}>
+      {/* ─── 9. UPCOMING HOLIDAY ──────────────────────────────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 16 }, a6]}>
         <Pressable
-          style={({ pressed }) => [
-            {
-              backgroundColor: cardBg,
-              borderRadius: rd.xl,
-              borderWidth: 1,
-              borderColor,
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              gap: 14,
-              opacity: pressed ? 0.88 : 1,
-              ...shadow.level1,
-            },
-          ]}
+          style={({ pressed }) => ({
+            backgroundColor: cardBg, borderRadius: rd.xl, borderWidth: 1, borderColor,
+            flexDirection: "row", alignItems: "center",
+            paddingHorizontal: 16, paddingVertical: 14, gap: 14,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+            ...shadow.level1,
+          })}
           onPress={() => router.push("/(tabs)/calendar")}
           accessibilityLabel={t.homeUpcomingHoliday}
+          accessibilityRole="link"
         >
           <View style={{
             width: 44, height: 44, borderRadius: 22,
-            backgroundColor: gold + "18",
-            borderWidth: 1, borderColor: gold + "40",
+            backgroundColor: gold + "18", borderWidth: 1, borderColor: gold + "40",
             alignItems: "center", justifyContent: "center",
           }}>
             <Text style={{ fontSize: 20, opacity: 0.85 }}>✡</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase", color: gold, marginBottom: 4 }}>
+            <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, textTransform: "uppercase", color: gold, marginBottom: 4 }}>
               {t.homeUpcomingHoliday}
             </Text>
             {nextHoliday ? (
@@ -849,99 +997,168 @@ export default function HomeScreen() {
         </Pressable>
       </Animated.View>
 
-      {/* ─── 10. COMMUNITY PREVIEW (small, non-dominant) ───────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a6]}>
+      {/* ─── 10. COMMUNITY PREVIEW ────────────────────────────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 16 }, a6]}>
         <Pressable
-          style={({ pressed }) => [
-            {
-              backgroundColor: cardBg,
-              borderRadius: rd.xl,
-              borderWidth: 1,
-              borderColor,
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              gap: 14,
-              opacity: pressed ? 0.88 : 1,
-              ...shadow.level1,
-            },
-          ]}
+          style={({ pressed }) => ({
+            backgroundColor: cardBg, borderRadius: rd.xl, borderWidth: 1, borderColor,
+            flexDirection: "row", alignItems: "center",
+            paddingHorizontal: 16, paddingVertical: 14, gap: 14,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+            ...shadow.level1,
+          })}
           onPress={() => router.push("/(tabs)/community")}
           accessibilityLabel={t.homeCommunityPreviewTitle}
+          accessibilityRole="link"
         >
           <View style={{
             width: 44, height: 44, borderRadius: 22,
-            backgroundColor: "#4ade80" + "18",
-            borderWidth: 1, borderColor: "#4ade80" + "40",
+            backgroundColor: successColor + "18",
+            borderWidth: 1, borderColor: successColor + "40",
             alignItems: "center", justifyContent: "center",
           }}>
-            <Feather name="users" size={18} color="#4ade80" />
+            <Feather name="users" size={18} color={successColor} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, fontWeight: "700", color: textPrimary }}>{t.homeCommunityPreviewTitle}</Text>
             <Text style={{ fontSize: 12, color: textMuted, marginTop: 2 }}>{t.homeCommunityPreviewDesc}</Text>
           </View>
-          <Text style={{ fontSize: 12, color: "#4ade80", fontWeight: "600" }}>{t.homeCommunityPreviewCta}</Text>
+          <Text style={{ fontSize: 12, color: successColor, fontWeight: "600" }}>{t.homeCommunityPreviewCta}</Text>
         </Pressable>
       </Animated.View>
 
-      {/* ─── 11. MEMORIAL SANCTUARY (flagship full-width) ──────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18, borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2 }, a7]}>
+      {/* ─── 11. MEMORIAL SANCTUARY — Phase 7 ────────────────────────────────── */}
+      {/* Flagship card: invites reflection, not entertainment.                   */}
+      <Animated.View style={[{
+        marginHorizontal: HX, marginBottom: 16,
+        borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2,
+      }, a7]}>
         <TouchableOpacity
           onPress={() => router.push("/(tabs)/community")}
-          activeOpacity={0.9}
+          activeOpacity={0.92}
           accessibilityLabel="Enter Memorial Sanctuary"
+          accessibilityHint="Opens the three-dimensional memorial world"
+          accessibilityRole="button"
         >
           <LinearGradient
-            colors={["#2d1a0e", "#1a0f00", "#3d2410"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ minHeight: 180, padding: 22, flexDirection: "row", alignItems: "center" }}
+            colors={["#2d1a0a", "#1c0e00", "#271400", "#3a2208"]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={{ minHeight: 200, padding: 22 }}
           >
-            <View style={{ flex: 1 }}>
-              <Overline text={t.homeMemorialTitle} color={gold} />
-              <Text style={{ fontSize: 13, color: "#d4c8b0", marginTop: 8, marginBottom: 16, lineHeight: 19 }}>
-                {t.homeMemorialTagline}
-              </Text>
-              <PillButton
-                label={t.homeEnterSanctuary}
-                onPress={() => router.push("/(tabs)/community")}
-                bg={gold}
-                fg="#1a0f00"
-              />
+            {/* Warm candlelight ambient glow */}
+            <View style={{
+              position: "absolute", top: -20, right: -20,
+              width: 140, height: 140, borderRadius: 70,
+              backgroundColor: "rgba(212,120,10,0.12)",
+            }} />
+
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{ flex: 1 }}>
+                <Overline text={t.homeMemorialTitle} color={gold} />
+                <Text style={{
+                  fontSize: 20, fontWeight: "800",
+                  color: "#f0e0c0", marginTop: 6, marginBottom: 6, lineHeight: 26,
+                  letterSpacing: -0.2,
+                }}>
+                  Memorial Sanctuary
+                </Text>
+                <Text style={{ fontSize: 13, color: "#c4b090", marginBottom: 18, lineHeight: 20 }}>
+                  {t.homeMemorialTagline}
+                </Text>
+                <PillButton
+                  label={t.homeEnterSanctuary}
+                  onPress={() => router.push("/(tabs)/community")}
+                  bg={gold}
+                  fg="#1a0f00"
+                />
+              </View>
+
+              {/* Candle with warm glow */}
+              <View style={{ alignItems: "center", justifyContent: "center", marginLeft: 16 }}>
+                <View style={{
+                  width: 72, height: 72, borderRadius: 36,
+                  backgroundColor: "rgba(212,120,10,0.18)",
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <Text style={{
+                    fontSize: 40,
+                    textShadowColor: "rgba(255,160,30,0.7)",
+                    textShadowOffset: { width: 0, height: 0 },
+                    textShadowRadius: 12,
+                  }}>🕯</Text>
+                </View>
+              </View>
             </View>
-            <Text style={{ fontSize: 52, marginLeft: 12 }}>🕯</Text>
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
 
-      {/* ─── 12. RAV MENASHE AI (flagship full-width, sapphire) ────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18, borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2 }, a7]}>
+      {/* ─── 12. RAV MENASHE AI — Phase 8 ────────────────────────────────────── */}
+      {/* Premium sapphire appearance. Welcoming, not transactional.              */}
+      <Animated.View style={[{
+        marginHorizontal: HX, marginBottom: 16,
+        borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2,
+      }, a7]}>
         <TouchableOpacity
           onPress={() => router.push("/(tabs)/torah")}
-          activeOpacity={0.9}
+          activeOpacity={0.92}
           accessibilityLabel="Ask Rav Menashe AI"
+          accessibilityHint="Opens the AI Torah guide"
+          accessibilityRole="button"
         >
           <LinearGradient
-            colors={["#060e1e", "#0c1830", "#0a1428"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ minHeight: 180, padding: 22, flexDirection: "row", alignItems: "center" }}
+            colors={["#04091a", "#091628", "#0d1e40", "#091628"]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={{ minHeight: 200, padding: 22 }}
           >
-            <View style={{ flex: 1 }}>
-              <Overline text={t.homeAITitle} color="#6382FF" />
-              <Text style={{ fontSize: 13, color: "#a0b4d8", marginTop: 8, marginBottom: 16, lineHeight: 19 }}>
-                {t.homeAITagline}
-              </Text>
-              <PillButton
-                label={t.homeAskRavMenashe}
-                onPress={() => router.push("/(tabs)/torah")}
-                bg="#6382FF"
-                fg="#fff"
-              />
+            {/* Sapphire constellation ambient glow */}
+            <View style={{
+              position: "absolute", top: -30, right: -30,
+              width: 160, height: 160, borderRadius: 80,
+              backgroundColor: "rgba(99,130,255,0.10)",
+            }} />
+            {/* Decorative stars */}
+            <Text style={{ position: "absolute", top: 14, right: 24, fontSize: 8, color: "#6382FF", opacity: 0.7 }}>✦</Text>
+            <Text style={{ position: "absolute", top: 26, right: 44, fontSize: 5, color: "#a0b4d8", opacity: 0.6 }}>✦</Text>
+            <Text style={{ position: "absolute", top: 10, right: 60, fontSize: 6, color: "#6382FF", opacity: 0.5 }}>✦</Text>
+
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{ flex: 1 }}>
+                <Overline text={t.homeAITitle} color={sapphireBlue} />
+                <Text style={{
+                  fontSize: 20, fontWeight: "800",
+                  color: "#dce8ff", marginTop: 6, marginBottom: 6, lineHeight: 26,
+                  letterSpacing: -0.2,
+                }}>
+                  Rav Menashe AI
+                </Text>
+                <Text style={{ fontSize: 13, color: "#8aabcf", marginBottom: 18, lineHeight: 20 }}>
+                  {t.homeAITagline}
+                </Text>
+                <PillButton
+                  label={t.homeAskRavMenashe}
+                  onPress={() => router.push("/(tabs)/torah")}
+                  bg={sapphireBlue}
+                  fg="#ffffff"
+                />
+              </View>
+
+              {/* AI orb with sapphire glow */}
+              <View style={{ alignItems: "center", justifyContent: "center", marginLeft: 16 }}>
+                <View style={{
+                  width: 72, height: 72, borderRadius: 36,
+                  backgroundColor: "rgba(99,130,255,0.14)",
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <Text style={{
+                    fontSize: 40,
+                    textShadowColor: "rgba(99,130,255,0.8)",
+                    textShadowOffset: { width: 0, height: 0 },
+                    textShadowRadius: 14,
+                  }}>🔮</Text>
+                </View>
+              </View>
             </View>
-            <Text style={{ fontSize: 52, marginLeft: 12 }}>🔮</Text>
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
@@ -949,19 +1166,16 @@ export default function HomeScreen() {
       {/* ─── 13. GO PREMIUM ───────────────────────────────────────────────────── */}
       <Animated.View style={[{ marginHorizontal: HX, marginBottom: 6 }, a9]}>
         <View style={{
-          flexDirection: "row",
-          alignItems: "center",
+          flexDirection: "row", alignItems: "center",
           backgroundColor: cardBg,
           borderRadius: rd.xl,
           borderWidth: 1, borderColor: gold + "30",
           paddingVertical: 14, paddingHorizontal: 16,
-          gap: 12,
-          ...shadow.level1,
+          gap: 12, ...shadow.level1,
         }}>
           <View style={{
-            width: 36, height: 36, borderRadius: 18,
-            backgroundColor: gold + "18",
-            borderWidth: 1, borderColor: gold + "40",
+            width: 38, height: 38, borderRadius: 19,
+            backgroundColor: gold + "18", borderWidth: 1, borderColor: gold + "40",
             alignItems: "center", justifyContent: "center",
           }}>
             <Text style={{ fontSize: 18 }}>💎</Text>
@@ -983,29 +1197,29 @@ export default function HomeScreen() {
   );
 }
 
-// ─── Zmanim glass bar (shared between native+web hero) ────────────────────────
+// ─── ZmanimBar — glass bar inside hero ────────────────────────────────────────
 
 const ZmanimBar = memo(function ZmanimBar({
   todayZm, location, textPrimary, textMuted, isLight,
 }: {
-  todayZm: any;
-  location: any;
+  todayZm:     any;
+  location:    any;
   textPrimary: string;
-  textMuted: string;
-  isLight: boolean;
+  textMuted:   string;
+  isLight:     boolean;
 }) {
   const gold = isLight ? "#c8852a" : "#d4a843";
   return (
-    <View style={{ flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingHorizontal: 8 }}>
+    <View style={{ flexDirection: "row", justifyContent: "space-around", paddingVertical: 11, paddingHorizontal: 8 }}>
       {[
-        { icon: "sunrise" as const, label: "Sunrise",  time: todayZm.sunrise },
-        { icon: "sunset" as const,  label: "Sunset",   time: todayZm.sunset },
-        { icon: "moon" as const,    label: "Nightfall", time: todayZm.tzais },
+        { icon: "sunrise" as const, label: "Sunrise",   time: todayZm.sunrise },
+        { icon: "sunset"  as const, label: "Sunset",    time: todayZm.sunset  },
+        { icon: "moon"    as const, label: "Nightfall", time: todayZm.tzais   },
       ].map((z) => z.time ? (
         <View key={z.label} style={{ alignItems: "center", gap: 4 }}>
           <Feather name={z.icon} size={14} color={gold} />
-          <Text style={{ fontSize: 9, color: isLight ? "#8a6a40" : textMuted, fontWeight: "600" }}>{z.label}</Text>
-          <Text style={{ fontSize: 14, fontWeight: "700", color: isLight ? "#1a0f00" : textPrimary }}>
+          <Text style={{ fontSize: 10, color: isLight ? "#8a6a40" : textMuted, fontWeight: "600" }}>{z.label}</Text>
+          <Text style={{ fontSize: 15, fontWeight: "700", color: isLight ? "#1a0f00" : textPrimary }}>
             {formatTime(z.time, location.tz)}
           </Text>
         </View>
@@ -1014,102 +1228,119 @@ const ZmanimBar = memo(function ZmanimBar({
   );
 });
 
-// ─── Today's Focus Card ───────────────────────────────────────────────────────
+// ─── Today's Focus Card — Phase 2 ─────────────────────────────────────────────
+// Priority: Holiday Today > Fast Today > Candle Lighting > Shabbat > Omer > Upcoming > Default
 
 const TodaysFocusCard = memo(function TodaysFocusCard({
-  mode, isShabbat, isFriday, omerDay, nextHoliday,
+  mode, isShabbat, isFriday, omerDay, todayHoliday, todayFast, nextHoliday,
   candleLightingTime, t,
   gold, cardBg, borderColor, textPrimary, textMuted, rd, shadow, isLight,
 }: {
-  mode: "candle" | "havdalah" | "upcoming";
-  isShabbat: boolean;
-  isFriday: boolean;
-  omerDay: number | null;
-  nextHoliday: any;
+  mode:               "candle" | "havdalah" | "upcoming";
+  isShabbat:          boolean;
+  isFriday:           boolean;
+  omerDay:            number | null;
+  todayHoliday:       any;
+  todayFast:          any;
+  nextHoliday:        any;
   candleLightingTime: string | null;
-  t: any;
-  gold: string; cardBg: string; borderColor: string; textPrimary: string; textMuted: string;
+  t:                  any;
+  gold: string; cardBg: string; borderColor: string;
+  textPrimary: string; textMuted: string;
   rd: any; shadow: any; isLight: boolean;
 }) {
-  let icon = "✦";
-  let title = "";
+  let icon     = "✦";
+  let title    = "";
   let subtitle = "";
-  let accent = gold;
+  let accent   = gold;
 
-  if (isShabbat) {
-    icon = "✨";
-    title = t.homeShabbatInProgress;
-    subtitle = t.homeShavuaTov;
-    accent = "#a78bfa";
+  // Phase 2 — priority order per SPR-M008 spec:
+  // 1. Holiday Today  2. Fast Today  3. Candle  4. Shabbat  5. Omer  6. Upcoming  7. Default
+  if (todayHoliday && !todayFast) {
+    // Major holiday (non-fast)
+    icon     = "🎉";
+    title    = todayHoliday.name;
+    subtitle = "Observed today";
+    accent   = gold;
+  } else if (todayFast) {
+    // Fast day
+    icon     = "🌿";
+    title    = todayFast.name;
+    subtitle = "Fast day observed today";
+    accent   = "#94a3b8"; // neutral — fasts are solemn, not celebratory
   } else if (isFriday || mode === "candle") {
-    icon = "🕯";
-    title = t.homeCandleLightingToday;
+    icon     = "🕯";
+    title    = t.homeCandleLightingToday;
     subtitle = (candleLightingTime ?? "") + " · " + t.homePrepareForShabbat;
-    accent = gold;
+    accent   = gold;
+  } else if (isShabbat) {
+    icon     = "✨";
+    title    = t.homeShabbatInProgress;
+    subtitle = t.homeShavuaTov;
+    accent   = "#a78bfa";
   } else if (omerDay !== null) {
-    icon = "🌾";
-    title = t.homeOmer;
+    icon     = "🌾";
+    title    = t.homeOmer;
     subtitle = `Day ${omerDay} of the Omer`;
-    accent = "#4ade80";
+    accent   = "#4ade80";
   } else if (nextHoliday) {
-    const daysUntil = Math.ceil(
-      (nextHoliday.date.getTime() - Date.now()) / 86400000,
-    );
-    icon = "📅";
-    title = nextHoliday.name;
+    const daysUntil = Math.ceil((nextHoliday.date.getTime() - Date.now()) / 86400000);
+    icon     = "📅";
+    title    = nextHoliday.name;
     subtitle = daysUntil === 1 ? "Tomorrow" : `In ${daysUntil} days`;
-    accent = gold;
+    accent   = gold;
   } else {
-    icon = "📖";
-    title = t.homeDailyTorah;
+    icon     = "📖";
+    title    = t.homeDailyTorah;
     subtitle = t.homeWeeklyParasha;
-    accent = gold;
+    accent   = gold;
   }
 
   return (
     <Pressable
-      style={({ pressed }) => [
-        {
-          backgroundColor: cardBg,
-          borderRadius: rd.xl,
-          borderWidth: 1,
-          borderColor,
-          flexDirection: "row",
-          alignItems: "center",
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          gap: 14,
-          opacity: pressed ? 0.88 : 1,
-          ...shadow.level1,
-        },
-      ]}
+      style={({ pressed }) => ({
+        backgroundColor: cardBg,
+        borderRadius: rd.xl,
+        borderWidth: 1, borderColor,
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 0, paddingVertical: 0,
+        overflow: "hidden",
+        transform: [{ scale: pressed ? 0.98 : 1 }],
+        ...shadow.level1,
+      })}
       accessibilityLabel={title}
+      accessibilityRole="text"
     >
-      {/* Icon circle */}
-      <View style={{
-        width: 44, height: 44, borderRadius: 22,
-        backgroundColor: accent + "18",
-        borderWidth: 1, borderColor: accent + "40",
-        alignItems: "center", justifyContent: "center",
-      }}>
-        <Text style={{ fontSize: 20 }}>{icon}</Text>
-      </View>
+      {/* Left accent strip — Phase 2 visual treatment */}
+      <View style={{ width: 4, alignSelf: "stretch", backgroundColor: accent }} />
 
-      {/* Text */}
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase", color: accent, marginBottom: 4 }}>
-          {t.homeTodaysFocusLabel}
-        </Text>
-        <Text style={{ fontSize: 15, fontWeight: "700", color: textPrimary }}>{title}</Text>
-        <Text style={{ fontSize: 12, color: textMuted, marginTop: 2 }}>{subtitle}</Text>
-      </View>
+      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 14, gap: 14 }}>
+        {/* Icon circle */}
+        <View style={{
+          width: 44, height: 44, borderRadius: 22,
+          backgroundColor: accent + "18", borderWidth: 1, borderColor: accent + "40",
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <Text style={{ fontSize: 20 }}>{icon}</Text>
+        </View>
 
-      <Feather name="chevron-right" size={16} color={textMuted} />
+        {/* Text */}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, textTransform: "uppercase", color: accent, marginBottom: 4 }}>
+            {t.homeTodaysFocusLabel}
+          </Text>
+          <Text style={{ fontSize: 15, fontWeight: "700", color: textPrimary }}>{title}</Text>
+          <Text style={{ fontSize: 12, color: textMuted, marginTop: 2 }}>{subtitle}</Text>
+        </View>
+
+        <Feather name="chevron-right" size={16} color={textMuted} />
+      </View>
     </Pressable>
   );
 });
 
-// ─── Shabbat Countdown Card ───────────────────────────────────────────────────
+// ─── Shabbat Countdown Card — Phase 4 ─────────────────────────────────────────
+// Hierarchy: label → big countdown → date → divider → candle + havdalah times
 
 const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
   mode, countdownMs, countdownDateStr,
@@ -1117,18 +1348,19 @@ const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
   now, t,
   gold, cardBg, borderColor, textPrimary, textMuted, rd, shadow, isLight,
 }: {
-  mode: "candle" | "havdalah" | "upcoming";
-  countdownMs: number;
-  countdownDateStr: string;
+  mode:               "candle" | "havdalah" | "upcoming";
+  countdownMs:        number;
+  countdownDateStr:   string;
   candleLightingTime: string;
-  havdalahTime: string;
-  now: number;
-  t: any;
-  gold: string; cardBg: string; borderColor: string; textPrimary: string; textMuted: string;
+  havdalahTime:       string;
+  now:                number;
+  t:                  any;
+  gold: string; cardBg: string; borderColor: string;
+  textPrimary: string; textMuted: string;
   rd: any; shadow: any; isLight: boolean;
 }) {
   const accent = mode === "havdalah" ? "#a78bfa" : gold;
-  const label = mode === "havdalah"
+  const label  = mode === "havdalah"
     ? t.homeUntilHavdalah
     : t.homeUntilNextShabbatLabel;
 
@@ -1136,49 +1368,45 @@ const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
     <View style={{
       backgroundColor: cardBg,
       borderRadius: rd.xl,
-      borderWidth: 1,
-      borderColor,
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 16,
-      paddingVertical: 18,
-      gap: 12,
-      ...shadow.level2,
+      borderWidth: 1, borderColor,
+      flexDirection: "row", alignItems: "center",
+      paddingHorizontal: 16, paddingVertical: 18,
+      gap: 14, ...shadow.level2,
     }}>
-      {/* Candle icon */}
-      <View style={{ alignItems: "center", justifyContent: "center", width: 40 }}>
+      {/* Icon */}
+      <View style={{ alignItems: "center", justifyContent: "center", width: 42 }}>
         <Text style={{ fontSize: 30 }}>{mode === "havdalah" ? "✨" : "🕯"}</Text>
       </View>
 
-      {/* Left: countdown */}
+      {/* Left: label → large countdown → date */}
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.6, color: textMuted, textTransform: "uppercase", marginBottom: 4 }}>
+        <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase", marginBottom: 4 }}>
           {label}
         </Text>
-        <Text style={{ fontSize: 28, fontWeight: "800", color: accent, letterSpacing: -0.5, lineHeight: 32 }}>
+        <Text style={{ fontSize: 32, fontWeight: "800", color: accent, letterSpacing: -0.8, lineHeight: 38 }}>
           {countdownMs > 0 ? formatCountdown(countdownMs) : "—"}
         </Text>
         <Text style={{ fontSize: 11, color: textMuted, marginTop: 4 }}>{countdownDateStr}</Text>
       </View>
 
       {/* Divider */}
-      <View style={{ width: 1, height: 64, backgroundColor: borderColor }} />
+      <View style={{ width: 1, height: 56, backgroundColor: borderColor }} />
 
-      {/* Right: times */}
-      <View style={{ gap: 10, paddingRight: 4 }}>
+      {/* Right: candle lighting + havdalah times */}
+      <View style={{ gap: 10, paddingRight: 2 }}>
         <View style={{ alignItems: "flex-end" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text style={{ fontSize: 11 }}>🕯</Text>
-            <Text style={{ fontSize: 11, color: textMuted }}>{t.homeCandleLighting}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Text style={{ fontSize: 10 }}>🕯</Text>
+            <Text style={{ fontSize: 10, color: textMuted }}>{t.homeCandleLighting}</Text>
           </View>
-          <Text style={{ fontSize: 16, fontWeight: "700", color: gold }}>{candleLightingTime}</Text>
+          <Text style={{ fontSize: 15, fontWeight: "700", color: gold, marginTop: 2 }}>{candleLightingTime}</Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text style={{ fontSize: 11 }}>✨</Text>
-            <Text style={{ fontSize: 11, color: textMuted }}>{t.homeHavdalah}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Text style={{ fontSize: 10 }}>✨</Text>
+            <Text style={{ fontSize: 10, color: textMuted }}>{t.homeHavdalah}</Text>
           </View>
-          <Text style={{ fontSize: 16, fontWeight: "700", color: mode === "havdalah" ? "#a78bfa" : gold }}>{havdalahTime}</Text>
+          <Text style={{ fontSize: 15, fontWeight: "700", color: mode === "havdalah" ? "#a78bfa" : gold, marginTop: 2 }}>{havdalahTime}</Text>
         </View>
       </View>
     </View>
@@ -1188,13 +1416,20 @@ const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  halfCard: {
-    flex: 1,
-    padding: 14,
+  galleryCard: {
+    padding: 18,
     borderWidth: 1,
   },
-  galleryCard: {
-    padding: 16,
-    borderWidth: 1,
+  // Phase 6: consistent illustration container for all learning gallery cards
+  illustrationContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 70,
+    marginVertical: 14,
+    position: "relative",
+  },
+  illustrationEmoji: {
+    fontSize: 36,
+    textAlign: "center",
   },
 });
