@@ -22,3 +22,4 @@
 - [Gold token split](gold-token-split.md) — GOLD=#d4a843 (all UI) vs GOLD_SANCTUARY=#D4AF37 (Memorial 3D only); intentional distinction, not a bug.
 - [Memorial Sanctuary — no fabricated data](memorial-no-fake-data.md) — all fake counts/names/activity removed in SPR-035; real data or honest empty state only.
 - [Mobile production build verification](mobile-build-verify.md) — run `node scripts/build.js` in artifacts/menashe-mobile to verify prod build; port conflict with dev workflow is harmless.
+- [SPR-M012 Sacred Wisdom](spr-m012-sacred-wisdom.md) — Rav Menashe chat screen; expo/fetch required for streaming; entry via Torah tab; conversations in AsyncStorage.

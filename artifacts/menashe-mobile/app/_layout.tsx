@@ -63,6 +63,7 @@ export default function RootLayout() {
                       <Stack.Screen name="yahrzeit-calc" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="prayer-board" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="translation-editor" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="sacred-wisdom" options={{ headerShown: false, animation: "slide_from_right" }} />
                     </Stack>
                   </LanguageProvider>
                 </AppProvider>
