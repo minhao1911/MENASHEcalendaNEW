@@ -5,7 +5,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useColors } from "@/hooks/useColors";
 import { fetchBooks, type Book } from "@/lib/siddurApi";
@@ -16,10 +16,13 @@ export default function SiddurScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
+  const params = useLocalSearchParams<{ category?: string }>();
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState("All");
+  const [category, setCategory] = useState(() =>
+    params.category && CATEGORIES.includes(params.category) ? params.category : "All",
+  );
   const [search, setSearch] = useState("");
 
   useEffect(() => {

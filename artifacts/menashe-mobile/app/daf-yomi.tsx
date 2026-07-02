@@ -10,67 +10,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useColors } from "@/hooks/useColors";
 import { HDate } from "@hebcal/core";
 import { formatHebrewDate } from "@/lib/hebrewCalendar";
-
-const TRACTATES = [
-  { name: "Berakhot", pages: 64 },
-  { name: "Shabbat", pages: 157 },
-  { name: "Eruvin", pages: 105 },
-  { name: "Pesachim", pages: 121 },
-  { name: "Yoma", pages: 88 },
-  { name: "Sukkah", pages: 56 },
-  { name: "Beitzah", pages: 40 },
-  { name: "Rosh Hashana", pages: 35 },
-  { name: "Ta'anit", pages: 31 },
-  { name: "Megillah", pages: 32 },
-  { name: "Moed Katan", pages: 29 },
-  { name: "Chagigah", pages: 27 },
-  { name: "Yevamot", pages: 122 },
-  { name: "Ketubot", pages: 112 },
-  { name: "Nedarim", pages: 91 },
-  { name: "Nazir", pages: 66 },
-  { name: "Sotah", pages: 49 },
-  { name: "Gittin", pages: 90 },
-  { name: "Kiddushin", pages: 82 },
-  { name: "Bava Kamma", pages: 119 },
-  { name: "Bava Metzia", pages: 119 },
-  { name: "Bava Batra", pages: 176 },
-  { name: "Sanhedrin", pages: 113 },
-  { name: "Makkot", pages: 24 },
-  { name: "Shevuot", pages: 49 },
-  { name: "Avodah Zarah", pages: 76 },
-  { name: "Horayot", pages: 14 },
-  { name: "Zevachim", pages: 120 },
-  { name: "Menachot", pages: 110 },
-  { name: "Chullin", pages: 142 },
-  { name: "Bekhorot", pages: 61 },
-  { name: "Arakhin", pages: 34 },
-  { name: "Temurah", pages: 34 },
-  { name: "Keritot", pages: 28 },
-  { name: "Meilah", pages: 22 },
-  { name: "Niddah", pages: 73 },
-];
-
-const TOTAL_PAGES = TRACTATES.reduce((a, t) => a + t.pages, 0);
-const CYCLE_START = new Date(2020, 0, 5);
-
-function getTodayDaf(offsetDays = 0): { tractate: string; daf: number; cycle: number; total: number } {
-  const target = new Date();
-  target.setDate(target.getDate() + offsetDays);
-  const daysSince = Math.floor((target.getTime() - CYCLE_START.getTime()) / 86400000);
-  const dayInCycle = ((daysSince % TOTAL_PAGES) + TOTAL_PAGES) % TOTAL_PAGES;
-  const cycle = Math.floor(daysSince / TOTAL_PAGES) + 14;
-  let remaining = dayInCycle;
-  for (const t of TRACTATES) {
-    if (remaining < t.pages) return { tractate: t.name, daf: remaining + 2, cycle, total: TOTAL_PAGES };
-    remaining -= t.pages;
-  }
-  return { tractate: TRACTATES[0].name, daf: 2, cycle, total: TOTAL_PAGES };
-}
-
-function getSefariaUrl(tractate: string, daf: number): string {
-  const slug = tractate.replace(/[' ]/g, "_");
-  return `https://www.sefaria.org/${slug}.${daf}a`;
-}
+import { TRACTATES, DAF_TOTAL_PAGES as TOTAL_PAGES, getTodayDaf, getSefariaDafUrl as getSefariaUrl } from "@/lib/dafYomi";
 
 export default function DafYomiScreen() {
   const colors = useColors();

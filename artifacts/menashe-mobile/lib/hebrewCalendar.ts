@@ -14,3 +14,8 @@ export {
   getHebrewMonthsBetween,
   type CalendarDay,
 } from "@workspace/shared-core";
+
+export {
+  getCurrentParashaInfo,
+  type ParashaInfo,
+} from "@workspace/shared-core/parasha";
