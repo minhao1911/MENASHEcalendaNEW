@@ -53,11 +53,12 @@ async function dbUpsert(
   );
 }
 
+/** Returns true if all sends succeeded (or only expired 410/404 subscriptions were cleaned up). */
 export async function sendPushToUser(
   userId: string,
   payload: { title: string; body: string; tag: string; icon?: string },
-): Promise<void> {
-  if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
+): Promise<boolean> {
+  if (!VAPID_PUBLIC || !VAPID_PRIVATE) return true;
   let rows: Array<{ endpoint: string; p256dh: string; auth: string }>;
   try {
     const result = await pool.query(
@@ -65,7 +66,8 @@ export async function sendPushToUser(
       [userId],
     );
     rows = result.rows;
-  } catch { return; }
+  } catch { return false; }
+  let hasTransientFailure = false;
   for (const row of rows) {
     try {
       await webpush.sendNotification(
@@ -75,9 +77,13 @@ export async function sendPushToUser(
     } catch (err: any) {
       if (err?.statusCode === 410 || err?.statusCode === 404) {
         await pool.query("DELETE FROM push_subscriptions WHERE endpoint = $1", [row.endpoint]).catch(() => {});
+      } else {
+        hasTransientFailure = true;
+        logger.warn({ err, userId }, "sendPushToUser: transient send failure");
       }
     }
   }
+  return !hasTransientFailure;
 }
 
 async function dbRemove(id: string): Promise<void> {
@@ -564,7 +570,6 @@ export function startHolidayWebPushScheduler() {
 
     const dateKey = now.toDateString();
     if (_holidayPushLastFiredDate === dateKey) return;
-    _holidayPushLastFiredDate = dateKey;
 
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -606,6 +611,7 @@ export function startHolidayWebPushScheduler() {
         icon: "/favicon.svg",
       });
 
+      let hasTransientFailure = false;
       for (const row of webRows) {
         try {
           await webpush.sendNotification(
@@ -615,11 +621,16 @@ export function startHolidayWebPushScheduler() {
         } catch (err: any) {
           if (err?.statusCode === 410 || err?.statusCode === 404) {
             await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [row.id]).catch(() => {});
+          } else {
+            hasTransientFailure = true;
+            logger.warn({ err, endpoint: row.endpoint }, "holiday-web-push: transient send failure");
           }
         }
       }
       logger.info({ name, subscribers: webRows.length }, "holiday-web-push: sent");
+      if (hasTransientFailure) return; // allow retry next minute
     }
+    _holidayPushLastFiredDate = dateKey;
   }, 60_000); // check every minute
 }
 
@@ -665,7 +676,6 @@ export function startHolidayHourReminderScheduler() {
         const name    = ev.render("en");
         const dedupKey = `${name}-${candidate.toDateString()}`;
         if (_holidayHourReminderFired.has(dedupKey)) continue;
-        _holidayHourReminderFired.add(dedupKey);
 
         const dateStr = candidate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
         const payload = JSON.stringify({
@@ -686,6 +696,7 @@ export function startHolidayHourReminderScheduler() {
           continue;
         }
 
+        let hasTransientFailure = false;
         for (const row of webRows) {
           try {
             await webpush.sendNotification(
@@ -695,10 +706,14 @@ export function startHolidayHourReminderScheduler() {
           } catch (err: any) {
             if (err?.statusCode === 410 || err?.statusCode === 404) {
               await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [row.id]).catch(() => {});
+            } else {
+              hasTransientFailure = true;
+              logger.warn({ err, endpoint: row.endpoint }, "holiday-hour-reminder: transient send failure");
             }
           }
         }
-        logger.info({ name, subscribers: webRows.length }, "holiday-hour-reminder: sent");
+        if (!hasTransientFailure) _holidayHourReminderFired.add(dedupKey);
+        logger.info({ name, subscribers: webRows.length, retryable: hasTransientFailure }, "holiday-hour-reminder: sent");
       }
     }
   }, 60_000); // check every minute
@@ -717,7 +732,6 @@ export function startYahrzeitPushScheduler() {
 
     const dateKey = now.toDateString();
     if (_yahrzeitPushLastFiredDate === dateKey) return;
-    _yahrzeitPushLastFiredDate = dateKey;
 
     const hToday = new HDate(now);
     const hDay = hToday.getDate();
@@ -737,19 +751,23 @@ export function startYahrzeitPushScheduler() {
 
     if (entries.length === 0) return;
 
+    let hasTransientFailure = false;
     for (const entry of entries) {
       try {
-        await sendPushToUser(entry.user_id, {
+        const ok = await sendPushToUser(entry.user_id, {
           title: `🕯 Yahrzeit Today: ${entry.name}`,
           body: `Today is the Yahrzeit of ${entry.name}. May their memory be a blessing. Light a candle and recite Kaddish.`,
           tag: `yahrzeit-${entry.user_id}-${dateKey}`,
           icon: "/favicon.svg",
         });
+        if (!ok) hasTransientFailure = true;
       } catch (err) {
+        hasTransientFailure = true;
         logger.error({ err, name: entry.name }, "yahrzeit-push: failed to send notification");
       }
     }
 
+    if (!hasTransientFailure) _yahrzeitPushLastFiredDate = dateKey;
     logger.info({ count: entries.length, hDay, hMonth }, "yahrzeit-push: sent reminders");
   }, 60_000);
 }
@@ -776,7 +794,6 @@ export function startWeeklyYahrzeitDigestScheduler() {
 
     const dateKey = now.toDateString();
     if (_weeklyDigestLastFiredDate === dateKey) return;
-    _weeklyDigestLastFiredDate = dateKey;
 
     // Build the 7 Hebrew (day, month) pairs for Sun–Sat
     type DaySpec = { hDay: number; hMonth: number; gregDate: Date };
@@ -860,6 +877,7 @@ export function startWeeklyYahrzeitDigestScheduler() {
     }
 
     let webSent = 0;
+    let hasTransientFailure = false;
     for (const row of webRows) {
       try {
         await webpush.sendNotification(
@@ -870,6 +888,9 @@ export function startWeeklyYahrzeitDigestScheduler() {
       } catch (err: any) {
         if (err?.statusCode === 410 || err?.statusCode === 404) {
           await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [row.id]).catch(() => {});
+        } else {
+          hasTransientFailure = true;
+          logger.warn({ err, endpoint: row.endpoint }, "weekly-yahrzeit-digest: transient send failure");
         }
       }
     }
@@ -896,12 +917,14 @@ export function startWeeklyYahrzeitDigestScheduler() {
         const chunks = expo.chunkPushNotifications(msgs);
         for (const chunk of chunks) await expo.sendPushNotificationsAsync(chunk);
       } catch (err) {
+        hasTransientFailure = true;
         logger.error({ err }, "weekly-yahrzeit-digest: expo send failed");
       }
     }
 
+    if (!hasTransientFailure) _weeklyDigestLastFiredDate = dateKey;
     logger.info(
-      { yahrzeits: rows.length, webSubscribers: webSent, expoSubscribers: msgs.length },
+      { yahrzeits: rows.length, webSubscribers: webSent, expoSubscribers: msgs.length, retryable: hasTransientFailure },
       "weekly-yahrzeit-digest: broadcast sent",
     );
   }, 60_000); // check every minute
