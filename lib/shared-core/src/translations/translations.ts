@@ -261,6 +261,37 @@ export interface SharedTranslations {
   commLearningComingSoonHint: string;
   commOrgShaveiDesc: string;
   commOrgFedDesc: string;
+  /* events deep screen */
+  commEventsSeeAll: string;
+  commEventsEmpty: string;
+  commEventsScreenTitle: string;
+  commEventsToday: string;
+  commEventsTomorrow: string;
+  commEventsWeekly: string;
+  commEventsMonthly: string;
+  /* learning groups deep screen */
+  commLearningSeeAll: string;
+  commLearningScreenDesc: string;
+  commLearningNewGroupTitle: string;
+  commLearningNewGroupDesc: string;
+  commLearningOpenToAll: string;
+  commLearningWomenOnly: string;
+  /* synagogue deep screen */
+  commSynagogueSeeAll: string;
+  commSynagogueScreenDesc: string;
+  commSynagogueRegisterTitle: string;
+  commSynagogueRegisterDesc: string;
+  commSynagogueStatLocations: string;
+  commSynagogueStatCountries: string;
+  commSynagogueStatMembers: string;
+  commSynagogueTypeBK: string;
+  commSynagogueTypePG: string;
+  commSynagogueTypeCC: string;
+  /* shared action labels */
+  commBack: string;
+  commContact: string;
+  commMap: string;
+  commMembersCount: string;
 
   /* ── Translation Editor ── */
   txEditorTitle: string;
@@ -529,6 +560,33 @@ export const sharedEn: SharedTranslations = {
   commLearningComingSoonHint: "Explore Torah study in the Torah tab, or share a request on the Prayer Board.",
   commOrgShaveiDesc: "Connecting and supporting Bnei Menashe worldwide, facilitating aliyah to Israel.",
   commOrgFedDesc: "Community coordination — events, education, cultural preservation, and family support.",
+  commEventsSeeAll: "See all events",
+  commEventsEmpty: "No upcoming events found. Check back soon.",
+  commEventsScreenTitle: "Upcoming Events",
+  commEventsToday: "Today",
+  commEventsTomorrow: "Tomorrow",
+  commEventsWeekly: "Weekly",
+  commEventsMonthly: "Monthly",
+  commLearningSeeAll: "See all groups",
+  commLearningScreenDesc: "Structured Torah study for the Bnei Menashe community — all levels, all ages.",
+  commLearningNewGroupTitle: "Start a Learning Group",
+  commLearningNewGroupDesc: "Want to lead a study circle in your city? Contact us to get listed here.",
+  commLearningOpenToAll: "Open to all",
+  commLearningWomenOnly: "Women only",
+  commSynagogueSeeAll: "View directory",
+  commSynagogueScreenDesc: "Bnei Menashe prayer houses and community centers around the world.",
+  commSynagogueRegisterTitle: "Register Your Synagogue",
+  commSynagogueRegisterDesc: "Contact your community admin to add a new location to this directory.",
+  commSynagogueStatLocations: "LOCATIONS",
+  commSynagogueStatCountries: "COUNTRIES",
+  commSynagogueStatMembers: "MEMBERS",
+  commSynagogueTypeBK: "Beit Knesset",
+  commSynagogueTypePG: "Prayer Group",
+  commSynagogueTypeCC: "Community Center",
+  commBack: "Back",
+  commContact: "Contact",
+  commMap: "Map",
+  commMembersCount: "members",
 
   txEditorTitle: "Edit Thadou Kuki Labels",
   txEditorSubtitle: "Correct any translation below. Changes are saved on your device.",
@@ -796,6 +854,33 @@ export const sharedTk: SharedTranslations = {
   commLearningComingSoonHint: "Torah tab-ah kihilna zawng rawh, emaw Prayer Board-ah thu dawt siam rawh.",
   commOrgShaveiDesc: "Bnei Menashe mipil khawvel zawng zawng in intlun leh aliyah Israel-ah pui.",
   commOrgFedDesc: "Mipil inkhawm, kihilna, nunpui dan siamna leh chhungkua tanpui.",
+  commEventsSeeAll: "Zawng En",
+  commEventsEmpty: "Lawmman a awm lo. Hla in chhawn rawh.",
+  commEventsScreenTitle: "Lawmman Hla",
+  commEventsToday: "Tuna",
+  commEventsTomorrow: "Thar",
+  commEventsWeekly: "Sunthal",
+  commEventsMonthly: "Thla Tin",
+  commLearningSeeAll: "Pawl zawng en",
+  commLearningScreenDesc: "Bnei Menashe mipil tan Torah kihilna — kumpi zawng, nu leh pa zawng tan.",
+  commLearningNewGroupTitle: "Kihilna Pawl Siam",
+  commLearningNewGroupDesc: "Na khua ah kihilna la zawn duh em? Na list-ah thlan nan contact rawh.",
+  commLearningOpenToAll: "Thu zawng tan",
+  commLearningWomenOnly: "Nu-te tan",
+  commSynagogueSeeAll: "List en rawh",
+  commSynagogueScreenDesc: "Bnei Menashe thu dawt inn leh mipil hmun khawvel zawng zawng.",
+  commSynagogueRegisterTitle: "Na Thu Dawt Inn Register",
+  commSynagogueRegisterDesc: "Hmun thar list-ah thlan nan na mipil admin-ah contact rawh.",
+  commSynagogueStatLocations: "HMUN",
+  commSynagogueStatCountries: "RAMRI",
+  commSynagogueStatMembers: "MIPIL",
+  commSynagogueTypeBK: "Beit Knesset",
+  commSynagogueTypePG: "Thupui Pawl",
+  commSynagogueTypeCC: "Mipil Inn",
+  commBack: "Chhawn",
+  commContact: "Contact",
+  commMap: "Hmun En",
+  commMembersCount: "mipil",
 
   txEditorTitle: "Thadou Kuki Label Siam",
   txEditorSubtitle: "Label dang tak chu hnuaiah siam rawh. Na device-ah chhuang a ni.",

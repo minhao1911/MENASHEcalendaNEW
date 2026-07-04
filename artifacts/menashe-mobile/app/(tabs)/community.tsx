@@ -24,6 +24,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
 import { fetchPrayerRequests, type PrayerRequest } from "@/lib/prayerBoardApi";
 import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "@/lib/communityApi";
+import { fetchCommunityEvents, type CommunityEvent } from "@/lib/eventsApi";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -134,24 +135,27 @@ function ComingSoonCard({ icon, title, hint, colors }: {
 
 export default function CommunityScreen() {
   const colors = useColors();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
   const [announcements, setAnnouncements] = useState<MobileAnnouncement[]>([]);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [memorials, setMemorials] = useState<CommunityYahrzeitEntry[]>([]);
+  const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [anns, prays, mems] = await Promise.allSettled([
+    const [anns, prays, mems, evs] = await Promise.allSettled([
       fetchAnnouncements(),
       fetchPrayerRequests(),
       fetchCommunityYahrzeit(),
+      fetchCommunityEvents(),
     ]);
     if (anns.status === "fulfilled") setAnnouncements(anns.value);
     if (prays.status === "fulfilled") setPrayers(prays.value);
     if (mems.status === "fulfilled") setMemorials(mems.value);
+    if (evs.status === "fulfilled") setEvents(evs.value);
     setLoading(false);
   }, []);
 
@@ -373,14 +377,98 @@ export default function CommunityScreen() {
             <SectionHeader
               emoji="📅"
               title={t.commEventsTitle}
+              action={events.length > 0 ? t.commEventsSeeAll : undefined}
+              onAction={() => navigate("/community/events")}
               colors={colors}
             />
-            <ComingSoonCard
-              icon="calendar"
-              title={t.commEventsSoon}
-              hint={t.commEventsComingSoonHint}
-              colors={colors}
-            />
+            {events.length === 0 ? (
+              <TouchableOpacity
+                onPress={() => navigate("/community/events")}
+                activeOpacity={0.82}
+                accessibilityRole="button"
+                accessibilityLabel="View upcoming events"
+                style={[styles.comingSoonCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={[styles.comingSoonIcon, { backgroundColor: colors.primary + "16" }]}>
+                  <Feather name="calendar" size={22} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.comingSoonTitle, { color: colors.foreground }]}>
+                    {t.commEventsTitle}
+                  </Text>
+                  <Text style={[styles.comingSoonHint, { color: colors.mutedForeground }]}>
+                    {t.commEventsComingSoonHint}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            ) : (
+              <>
+                {events.slice(0, 3).map((ev) => {
+                  const EVENT_COLORS: Record<string, string> = {
+                    shabbat: "#d4a843", holiday: "#818cf8",
+                    community: "#fb923c", learning: "#4ade80",
+                  };
+                  const accentColor = EVENT_COLORS[ev.type] ?? colors.primary;
+                  const [y, m, d] = ev.date.split("-").map(Number);
+                  const dateObj = new Date(y, m - 1, d);
+                  const dayNum  = dateObj.toLocaleDateString("en-US", { day: "numeric" });
+                  const month   = dateObj.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+                  const weekday = dateObj.toLocaleDateString("en-US", { weekday: "short" });
+
+                  return (
+                    <TouchableOpacity
+                      key={ev.id}
+                      activeOpacity={0.82}
+                      onPress={() => navigate("/community/events")}
+                      accessibilityRole="button"
+                      accessibilityLabel={ev.title}
+                      style={[styles.eventCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    >
+                      {/* Date column */}
+                      <View style={[styles.eventDateBox, { backgroundColor: accentColor + "18" }]}>
+                        <Text style={[styles.eventMonth, { color: accentColor }]}>{month}</Text>
+                        <Text style={[styles.eventDay, { color: colors.foreground }]}>{dayNum}</Text>
+                        <Text style={[styles.eventWeekday, { color: colors.mutedForeground }]}>{weekday}</Text>
+                      </View>
+                      {/* Content */}
+                      <View style={{ flex: 1, gap: 3 }}>
+                        <Text style={[styles.eventEmoji]}>{ev.emoji}</Text>
+                        <Text style={[styles.eventTitle, { color: colors.foreground }]} numberOfLines={1}>
+                          {ev.title}
+                        </Text>
+                        {ev.location ? (
+                          <View style={styles.eventLocRow}>
+                            <Feather name={ev.virtual ? "video" : "map-pin"} size={11} color={colors.mutedForeground} />
+                            <Text style={[styles.eventLoc, { color: colors.mutedForeground }]} numberOfLines={1}>
+                              {ev.location}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {ev.time ? (
+                          <Text style={[styles.eventTime, { color: accentColor }]}>{ev.time}</Text>
+                        ) : null}
+                      </View>
+                      {ev.recurring && (
+                        <View style={[styles.recBadge, { backgroundColor: accentColor + "16", borderColor: accentColor + "44" }]}>
+                          <Feather name="repeat" size={10} color={accentColor} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity
+                  style={[styles.dashedCta, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0C" }]}
+                  onPress={() => navigate("/community/events")}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.commEventsSeeAll}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="calendar" size={16} color={colors.primary} />
+                  <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.commEventsSeeAll}</Text>
+                </TouchableOpacity>
+              </>
+            )}
 
             {/* ═══ 5. ORGANIZATIONS ═══ */}
             <SectionHeader
@@ -412,32 +500,101 @@ export default function CommunityScreen() {
             <SectionHeader
               emoji="📚"
               title={t.commLearningTitle}
+              action={t.commLearningSeeAll}
+              onAction={() => navigate("/community/learning-groups")}
               colors={colors}
             />
-            <ComingSoonCard
-              icon="book-open"
-              title={t.commLearningSoon}
-              hint={t.commLearningComingSoonHint}
-              colors={colors}
-            />
+            {/* Preview: 3 featured groups */}
+            {[
+              { emoji: "📖", name: "Daf Yomi Circle", nameTK: "Daf Yomi Kihilna", schedule: "Daily", scheduleTK: "Zingkhan", virtual: true },
+              { emoji: "📜", name: "Weekly Parasha Study", nameTK: "Parasha Kihilna", schedule: "Shabbat · 09:30", scheduleTK: "Shabbat · 09:30", virtual: false },
+              { emoji: "🕍", name: "Halacha for Bnei Menashe", nameTK: "Bnei Menashe Halacha", schedule: "Thu · 20:00", scheduleTK: "Kir · 20:00", virtual: true },
+            ].map((g) => (
+              <TouchableOpacity
+                key={g.name}
+                activeOpacity={0.82}
+                onPress={() => navigate("/community/learning-groups")}
+                accessibilityRole="button"
+                accessibilityLabel={lang === "tk" ? g.nameTK : g.name}
+                style={[styles.learnCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={[styles.learnEmoji, { backgroundColor: colors.primary + "16" }]}>
+                  <Text style={{ fontSize: TEXT.xl }}>{g.emoji}</Text>
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.learnName, { color: colors.foreground }]} numberOfLines={1}>
+                    {lang === "tk" ? g.nameTK : g.name}
+                  </Text>
+                  <View style={styles.learnMeta}>
+                    <Feather name={g.virtual ? "video" : "map-pin"} size={11} color={colors.mutedForeground} />
+                    <Text style={[styles.learnSchedule, { color: colors.mutedForeground }]}>
+                      {lang === "tk" ? g.scheduleTK : g.schedule}
+                    </Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={16} color={colors.mutedForeground} style={{ alignSelf: "center" }} />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.dashedCta, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0C" }]}
+              onPress={() => navigate("/community/learning-groups")}
+              accessibilityRole="button"
+              accessibilityLabel={t.commLearningSeeAll}
+              activeOpacity={0.75}
+            >
+              <Feather name="book-open" size={16} color={colors.primary} />
+              <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.commLearningSeeAll}</Text>
+            </TouchableOpacity>
 
             {/* ═══ 7. SYNAGOGUE ═══ */}
             <SectionHeader
               emoji="🕍"
               title={t.commSynagogueTitle}
+              action={t.commSynagogueSeeAll}
+              onAction={() => navigate("/community/synagogues")}
               colors={colors}
             />
-            <View
-              style={[styles.synCard, {
-                backgroundColor: colors.primary + "0A",
-                borderColor: colors.primary + "33",
-              }]}
-              accessibilityLabel="Synagogue directory"
+            {/* Preview: top 3 synagogues by country priority */}
+            {[
+              { id: "churachandpur", flag: "🇮🇳", name: "Beit Knesset Bnei Menashe", nameTK: "Beit Knesset Bnei Menashe", city: "Churachandpur, India", members: 220, type: "Beit Knesset" },
+              { id: "jerusalem",     flag: "🇮🇱", name: "Bnei Menashe Olim Community", nameTK: "Jerusalem Bnei Menashe Olim", city: "Jerusalem, Israel", members: 310, type: "Community Center" },
+              { id: "aizawl",        flag: "🇮🇳", name: "Bnei Menashe Community — Aizawl", nameTK: "Aizawl Bnei Menashe Mipil", city: "Aizawl, India", members: 140, type: "Prayer Group" },
+            ].map((syn) => (
+              <TouchableOpacity
+                key={syn.id}
+                activeOpacity={0.82}
+                onPress={() => navigate("/community/synagogues")}
+                accessibilityRole="button"
+                accessibilityLabel={lang === "tk" ? syn.nameTK : syn.name}
+                style={[styles.synPreviewCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={[styles.synFlagBox, { backgroundColor: colors.primary + "12" }]}>
+                  <Text style={{ fontSize: TEXT.xl }}>{syn.flag}</Text>
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.synPreviewName, { color: colors.foreground }]} numberOfLines={1}>
+                    {lang === "tk" ? syn.nameTK : syn.name}
+                  </Text>
+                  <Text style={[styles.synPreviewCity, { color: colors.mutedForeground }]}>{syn.city}</Text>
+                  <View style={styles.synMeta}>
+                    <Feather name="users" size={11} color={colors.mutedForeground} />
+                    <Text style={[styles.synMetaText, { color: colors.mutedForeground }]}>{syn.members} {t.commMembersCount}</Text>
+                    <Text style={[styles.synType, { color: colors.primary }]}>· {syn.type}</Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={16} color={colors.mutedForeground} style={{ alignSelf: "center" }} />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.dashedCta, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0C" }]}
+              onPress={() => navigate("/community/synagogues")}
+              accessibilityRole="button"
+              accessibilityLabel={t.commSynagogueSeeAll}
+              activeOpacity={0.75}
             >
-              <Text style={{ fontSize: 40, marginBottom: SPACE[2] }}>🕍</Text>
-              <Text style={[styles.synTitle, { color: colors.foreground }]}>{t.commSynagogueDirectoryTitle}</Text>
-              <Text style={[styles.synBody, { color: colors.mutedForeground }]}>{t.commSynagogueDirectoryDesc}</Text>
-            </View>
+              <Text style={{ fontSize: TEXT.sm }}>🕍</Text>
+              <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.commSynagogueSeeAll}</Text>
+            </TouchableOpacity>
 
           </View>
         )}
@@ -740,22 +897,135 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  // Synagogue
-  synCard: {
+  // Event cards
+  eventCard: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[6],
+    padding: SPACE[3],
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: SPACE[3],
+    marginBottom: SPACE[2],
+  },
+  eventDateBox: {
+    width: 52,
+    borderRadius: RADIUS.md,
     alignItems: "center",
-    marginBottom: SPACE[2],
+    justifyContent: "center",
+    paddingVertical: SPACE[2],
+    flexShrink: 0,
   },
-  synTitle: {
-    fontSize: TEXT.md,
+  eventMonth: {
+    fontSize: TEXT.xs,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  eventDay: {
+    fontSize: TEXT["2xl"],
+    fontWeight: "900",
+    lineHeight: 28,
+  },
+  eventWeekday: {
+    fontSize: TEXT.xs,
+    fontWeight: "600",
+  },
+  eventEmoji: {
+    fontSize: TEXT.base,
+  },
+  eventTitle: {
+    fontSize: TEXT.base,
     fontWeight: "700",
+  },
+  eventLocRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  eventLoc: {
+    fontSize: TEXT.xs,
+    flex: 1,
+  },
+  eventTime: {
+    fontSize: TEXT.xs,
+    fontWeight: "700",
+  },
+  recBadge: {
+    borderWidth: 1,
+    borderRadius: RADIUS.full,
+    width: 26,
+    height: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    flexShrink: 0,
+  },
+
+  // Learning group preview cards
+  learnCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACE[3],
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE[3],
     marginBottom: SPACE[2],
   },
-  synBody: {
+  learnEmoji: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.md,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  learnName: {
+    fontSize: TEXT.base,
+    fontWeight: "700",
+  },
+  learnMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  learnSchedule: {
     fontSize: TEXT.sm,
-    lineHeight: 20,
-    textAlign: "center",
+  },
+
+  // Synagogue preview cards
+  synPreviewCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACE[3],
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE[3],
+    marginBottom: SPACE[2],
+  },
+  synFlagBox: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.md,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  synPreviewName: {
+    fontSize: TEXT.base,
+    fontWeight: "700",
+  },
+  synPreviewCity: {
+    fontSize: TEXT.sm,
+  },
+  synMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  synMetaText: {
+    fontSize: TEXT.xs,
+  },
+  synType: {
+    fontSize: TEXT.xs,
+    fontWeight: "700",
   },
 });

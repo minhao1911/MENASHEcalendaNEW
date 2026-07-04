@@ -66,6 +66,9 @@ export default function RootLayout() {
                       <Stack.Screen name="sacred-wisdom" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/announcements" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/memorials" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="community/events" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="community/learning-groups" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="community/synagogues" options={{ headerShown: false, animation: "slide_from_right" }} />
                     </Stack>
                   </LanguageProvider>
                 </AppProvider>
