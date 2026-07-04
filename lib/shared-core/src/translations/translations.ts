@@ -231,6 +231,14 @@ export interface SharedTranslations {
   commEventsTitle: string;
   commEventsSoon: string;
   commOrgsTitle: string;
+  commOrgsSeeAll: string;
+  commOrgsScreenDesc: string;
+  commOrgsStatOrgs: string;
+  commOrgVisitSite: string;
+  commOrgHotlineDesc: string;
+  commOrgNewsletterDesc: string;
+  commOrgTorahClassesDesc: string;
+  commOrgConnectDesc: string;
   commLearningTitle: string;
   commLearningSoon: string;
   commSynagogueTitle: string;
@@ -531,6 +539,14 @@ export const sharedEn: SharedTranslations = {
   commEventsTitle: "Upcoming Events",
   commEventsSoon: "Events calendar coming soon",
   commOrgsTitle: "Organizations",
+  commOrgsSeeAll: "See all",
+  commOrgsScreenDesc: "Organizations and resources supporting the Bnei Menashe community worldwide.",
+  commOrgsStatOrgs: "Organizations",
+  commOrgVisitSite: "Visit Site",
+  commOrgHotlineDesc: "For halachic and community questions.",
+  commOrgNewsletterDesc: "Monthly community updates.",
+  commOrgTorahClassesDesc: "Online shiurim for Bnei Menashe communities.",
+  commOrgConnectDesc: "Find community members near you.",
   commLearningTitle: "Learning Groups",
   commLearningSoon: "Learning groups coming soon",
   commSynagogueTitle: "Synagogue",
@@ -825,6 +841,14 @@ export const sharedTk: SharedTranslations = {
   commEventsTitle: "Lawmman Hla",
   commEventsSoon: "Lawmman list a hla mek",
   commOrgsTitle: "Mipil Pawl",
+  commOrgsSeeAll: "Zawng zawng en",
+  commOrgsScreenDesc: "Bnei Menashe mipil khawvel zawng zawng tanpui pawl leh thilkeu te.",
+  commOrgsStatOrgs: "Pawl",
+  commOrgVisitSite: "Website En",
+  commOrgHotlineDesc: "Halacha leh mipil dotna tur ahi.",
+  commOrgNewsletterDesc: "Kha khat hin mipil thu update.",
+  commOrgTorahClassesDesc: "Bnei Menashe mipil tan online shiur.",
+  commOrgConnectDesc: "Na kilkung mipil member te hmuh.",
   commLearningTitle: "Kihilna Pawl",
   commLearningSoon: "Kihilna pawl a hla mek",
   commSynagogueTitle: "Thu Dawt Inn",

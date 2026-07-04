@@ -474,9 +474,17 @@ export default function CommunityScreen() {
             <SectionHeader
               emoji="🏛"
               title={t.commOrgsTitle}
+              action={t.commOrgsSeeAll}
+              onAction={() => navigate("/community/organizations")}
               colors={colors}
             />
-            <View style={[styles.orgCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              onPress={() => navigate("/community/organizations")}
+              accessibilityRole="button"
+              accessibilityLabel="Shavei Israel"
+              style={[styles.orgCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
               <View style={[styles.orgBadge, { backgroundColor: "#1a3a22" }]}>
                 <Text style={{ fontSize: TEXT.xl }}>✡</Text>
               </View>
@@ -485,8 +493,14 @@ export default function CommunityScreen() {
                 <Text style={[styles.orgDesc, { color: colors.mutedForeground }]}>{t.commOrgShaveiDesc}</Text>
                 <Text style={[styles.orgLink, { color: colors.primary }]}>shavei.org</Text>
               </View>
-            </View>
-            <View style={[styles.orgCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              onPress={() => navigate("/community/organizations")}
+              accessibilityRole="button"
+              accessibilityLabel="Bnei Menashe Federation"
+              style={[styles.orgCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
               <View style={[styles.orgBadge, { backgroundColor: "#1a2e4a" }]}>
                 <Text style={{ fontSize: TEXT.xl }}>🫂</Text>
               </View>
@@ -494,7 +508,17 @@ export default function CommunityScreen() {
                 <Text style={[styles.orgName, { color: colors.foreground }]}>Bnei Menashe Federation</Text>
                 <Text style={[styles.orgDesc, { color: colors.mutedForeground }]}>{t.commOrgFedDesc}</Text>
               </View>
-            </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.dashedCta, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0C" }]}
+              onPress={() => navigate("/community/organizations")}
+              accessibilityRole="button"
+              accessibilityLabel={t.commOrgsSeeAll}
+              activeOpacity={0.75}
+            >
+              <Feather name="external-link" size={16} color={colors.primary} />
+              <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.commOrgsSeeAll}</Text>
+            </TouchableOpacity>
 
             {/* ═══ 6. LEARNING GROUPS ═══ */}
             <SectionHeader
