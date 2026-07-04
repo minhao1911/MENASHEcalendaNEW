@@ -211,6 +211,57 @@ export interface SharedTranslations {
   sacredMemoryEntryLabel: string;
   sacredMemoryEntrySub: string;
 
+  /* ── Community Hub (SPR-M009) ── */
+  commHubTitle: string;
+  commHubSubtitle: string;
+  commAnnouncementsTitle: string;
+  commAnnouncementsSeeAll: string;
+  commAnnouncementsPinned: string;
+  commAnnouncementsEmpty: string;
+  commPrayerTitle: string;
+  commPrayerSeeAll: string;
+  commPrayerAmen: string;
+  commPrayerEmpty: string;
+  commPrayerSubmit: string;
+  commMemorialsTitle: string;
+  commMemorialsSeeAll: string;
+  commMemorialsEmpty: string;
+  commMemorialsCandlesLit: string;
+  commMemorialsLearning: string;
+  commEventsTitle: string;
+  commEventsSoon: string;
+  commOrgsTitle: string;
+  commLearningTitle: string;
+  commLearningSoon: string;
+  commSynagogueTitle: string;
+  commLightCandle: string;
+  commSeeAll: string;
+  /* extra UI strings for community sub-screens */
+  commAnnouncementsNoneTitle: string;
+  commAnnouncementsNoneDesc: string;
+  commAnnouncementsPinnedSection: string;
+  commAnnouncementsRecentSection: string;
+  commMemorialsInLovingMemory: string;
+  commMemorialsAddFirst: string;
+  commMemorialsLightTitle: string;
+  commMemorialsLightDesc: string;
+  commMemorialsSubmitBtn: string;
+  commMemorialsAddedBanner: string;
+  commMemorialsDedicateTitle: string;
+  commMemorialsDedicateDesc: string;
+  commMemorialsDedicateBtn: string;
+  commPrayerNone: string;
+  commPrayerNoneFirst: string;
+  commPrayerSubmitTitle: string;
+  commPrayerPendingNotice: string;
+  commPrayerSubmittedNotice: string;
+  commSynagogueDirectoryTitle: string;
+  commSynagogueDirectoryDesc: string;
+  commEventsComingSoonHint: string;
+  commLearningComingSoonHint: string;
+  commOrgShaveiDesc: string;
+  commOrgFedDesc: string;
+
   /* ── Translation Editor ── */
   txEditorTitle: string;
   txEditorSubtitle: string;
@@ -430,6 +481,55 @@ export const sharedEn: SharedTranslations = {
   sacredMemoryEntryLabel: "Sacred Memory",
   sacredMemoryEntrySub: "Remember & reflect",
 
+  commHubTitle: "Community",
+  commHubSubtitle: "Your Bnei Menashe community hub",
+  commAnnouncementsTitle: "Announcements",
+  commAnnouncementsSeeAll: "See all",
+  commAnnouncementsPinned: "Pinned",
+  commAnnouncementsEmpty: "No announcements yet",
+  commPrayerTitle: "Prayer Requests",
+  commPrayerSeeAll: "See all",
+  commPrayerAmen: "Amen",
+  commPrayerEmpty: "No prayer requests yet",
+  commPrayerSubmit: "Add a Request",
+  commMemorialsTitle: "Community Memorials",
+  commMemorialsSeeAll: "See all",
+  commMemorialsEmpty: "No memorials yet",
+  commMemorialsCandlesLit: "Candles Lit",
+  commMemorialsLearning: "Learning Now",
+  commEventsTitle: "Upcoming Events",
+  commEventsSoon: "Events calendar coming soon",
+  commOrgsTitle: "Organizations",
+  commLearningTitle: "Learning Groups",
+  commLearningSoon: "Learning groups coming soon",
+  commSynagogueTitle: "Synagogue",
+  commLightCandle: "Light a Candle",
+  commSeeAll: "See all",
+  commAnnouncementsNoneTitle: "No Announcements",
+  commAnnouncementsNoneDesc: "Community announcements will appear here when they are sent.",
+  commAnnouncementsPinnedSection: "PINNED",
+  commAnnouncementsRecentSection: "RECENT",
+  commMemorialsInLovingMemory: "In loving memory",
+  commMemorialsAddFirst: "Be the first to light a memorial candle for a loved one.",
+  commMemorialsLightTitle: "Light a Candle",
+  commMemorialsLightDesc: "Light a virtual yahrzeit candle to honour a loved one in the community.",
+  commMemorialsSubmitBtn: "Light the Candle",
+  commMemorialsAddedBanner: "Candle lit — your memorial has been added",
+  commMemorialsDedicateTitle: "Dedicate Learning",
+  commMemorialsDedicateDesc: "Dedicate your Torah learning in honour of",
+  commMemorialsDedicateBtn: "Dedicate My Learning",
+  commPrayerNone: "No requests yet",
+  commPrayerNoneFirst: "Be the first to share a prayer request.",
+  commPrayerSubmitTitle: "New Prayer Request",
+  commPrayerPendingNotice: "Requests are reviewed before appearing publicly.",
+  commPrayerSubmittedNotice: "Your request has been submitted — it will appear after review.",
+  commSynagogueDirectoryTitle: "Synagogue Directory",
+  commSynagogueDirectoryDesc: "A directory of Bnei Menashe synagogues and prayer houses is being compiled. Contact your community admin to register.",
+  commEventsComingSoonHint: "Check Announcements for the latest community events and gatherings.",
+  commLearningComingSoonHint: "Explore Torah study in the Torah tab, or share a request on the Prayer Board.",
+  commOrgShaveiDesc: "Connecting and supporting Bnei Menashe worldwide, facilitating aliyah to Israel.",
+  commOrgFedDesc: "Community coordination — events, education, cultural preservation, and family support.",
+
   txEditorTitle: "Edit Thadou Kuki Labels",
   txEditorSubtitle: "Correct any translation below. Changes are saved on your device.",
   txEditorSave: "Save Changes",
@@ -647,6 +747,55 @@ export const sharedTk: SharedTranslations = {
   sacredMemoryEnterSanctuaryDesc: "Hriatna Inn Thianghlim thu chu senkhat hmangin lut rawh — mite hriatna eng zawng zawng vak lai zin theihna hmun thianghlim.",
   sacredMemoryEntryLabel: "Hriatna Thianghlim",
   sacredMemoryEntrySub: "Hriat leh Ngaihtuah",
+
+  commHubTitle: "Mipil Inn",
+  commHubSubtitle: "Na Bnei Menashe mipil inn",
+  commAnnouncementsTitle: "Thupek",
+  commAnnouncementsSeeAll: "Zawng En",
+  commAnnouncementsPinned: "Pin",
+  commAnnouncementsEmpty: "Thupek a awm lo",
+  commPrayerTitle: "Thu Dawt",
+  commPrayerSeeAll: "Zawng En",
+  commPrayerAmen: "Amen",
+  commPrayerEmpty: "Thu dawt a awm lo",
+  commPrayerSubmit: "Thu Dawt Siam",
+  commMemorialsTitle: "Mipil Hriatna",
+  commMemorialsSeeAll: "Zawng En",
+  commMemorialsEmpty: "Hriatna a awm lo",
+  commMemorialsCandlesLit: "Mei Kat Zat",
+  commMemorialsLearning: "Tuna Kihilna",
+  commEventsTitle: "Lawmman Hla",
+  commEventsSoon: "Lawmman list a hla mek",
+  commOrgsTitle: "Mipil Pawl",
+  commLearningTitle: "Kihilna Pawl",
+  commLearningSoon: "Kihilna pawl a hla mek",
+  commSynagogueTitle: "Thu Dawt Inn",
+  commLightCandle: "Mei Kat",
+  commSeeAll: "Zawng En",
+  commAnnouncementsNoneTitle: "Thupek a awm lo",
+  commAnnouncementsNoneDesc: "Mipil thupek te hi kan thawn hunah hin hetah lang ding ahi.",
+  commAnnouncementsPinnedSection: "PIN",
+  commAnnouncementsRecentSection: "CHANGKHAT",
+  commMemorialsInLovingMemory: "Hmangaihna leh hriatna hnuah",
+  commMemorialsAddFirst: "Na hmangaih i hriatna tan mei hmasa ber kat rawh.",
+  commMemorialsLightTitle: "Mei Kat",
+  commMemorialsLightDesc: "Mipil ah i hmangaih i hriatna tan yahrzeit mei virtual kat rawh.",
+  commMemorialsSubmitBtn: "Mei Kat Ta",
+  commMemorialsAddedBanner: "Mei a kat — na hriatna a rawn lo ta",
+  commMemorialsDedicateTitle: "Kihilna Hlantir",
+  commMemorialsDedicateDesc: "Na Torah kihilna hi zahawm na sak tur tan hlantir rawh",
+  commMemorialsDedicateBtn: "Ka Kihilna Hlantir",
+  commPrayerNone: "Thu dawt a awm lo",
+  commPrayerNoneFirst: "Thu dawt thlawhna chuan hmasa ber ni rawh.",
+  commPrayerSubmitTitle: "Thu Dawt Thar",
+  commPrayerPendingNotice: "Thu dawt te hi a lang hmaa admin-in en a ni.",
+  commPrayerSubmittedNotice: "Na thu dawt a kalpui ta — en zo chuan a lang ding ahi.",
+  commSynagogueDirectoryTitle: "Thu Dawt Inn List",
+  commSynagogueDirectoryDesc: "Bnei Menashe thu dawt inn list a buatsaih mek. Na mipil admin-ah contact la na thu dawt inn register rawh.",
+  commEventsComingSoonHint: "Mipil event leh intlunna hla tan Thupek en rawh.",
+  commLearningComingSoonHint: "Torah tab-ah kihilna zawng rawh, emaw Prayer Board-ah thu dawt siam rawh.",
+  commOrgShaveiDesc: "Bnei Menashe mipil khawvel zawng zawng in intlun leh aliyah Israel-ah pui.",
+  commOrgFedDesc: "Mipil inkhawm, kihilna, nunpui dan siamna leh chhungkua tanpui.",
 
   txEditorTitle: "Thadou Kuki Label Siam",
   txEditorSubtitle: "Label dang tak chu hnuaiah siam rawh. Na device-ah chhuang a ni.",

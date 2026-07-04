@@ -1,584 +1,761 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+/**
+ * Community Hub — SPR-M009
+ * Central hub for all Bnei Menashe community features:
+ *   Announcements · Prayer Requests · Memorials · Events · Organizations · Learning · Synagogue
+ *
+ * Design: warm, organised, peaceful — large cards, generous whitespace, premium typography.
+ * Reuses: existing community APIs, MMDL color tokens, bilingual t.* strings.
+ * Does NOT: duplicate web logic, create social features, add likes/feeds.
+ */
+
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator, Modal, Platform, KeyboardAvoidingView,
-  Animated, Easing,
+  View, Text, ScrollView, TouchableOpacity, Platform,
+  ActivityIndicator, StyleSheet,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+
 import { useColors } from "@/hooks/useColors";
-import BurningCandleRN from "@/components/BurningCandleRN";
-import {
-  fetchCommunityYahrzeit,
-  createCommunityYahrzeit,
-  dedicateLearning,
-  type CommunityYahrzeitEntry,
-} from "@/lib/communityApi";
+import { SPACE, TEXT, RADIUS } from "@/constants/colors";
+import { useLanguage } from "@/context/LanguageContext";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
+import { fetchPrayerRequests, type PrayerRequest } from "@/lib/prayerBoardApi";
+import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "@/lib/communityApi";
 
-const DONATION_TIERS = [
-  { label: "Free / Donate later", amount: 0 },
-  { label: "₹108 — Tikkun Olam", amount: 108, tag: "💛" },
-  { label: "₹360 — Zecher L'vracha", amount: 360, tag: "✡" },
-  { label: "₹1080 — Eternal Light", amount: 1080, tag: "🕯" },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const CURRENT_YEAR = new Date().getFullYear();
+/** Prayer category colour + emoji mapping (mirrors prayer-board.tsx) */
+const PRAYER_CAT: Record<string, { color: string; emoji: string }> = {
+  Healing:    { color: "#4ade80", emoji: "💚" },
+  Blessing:   { color: "#d4a843", emoji: "✨" },
+  Aliyah:     { color: "#4ade80", emoji: "🇮🇱" },
+  Family:     { color: "#f472b6", emoji: "👨‍👩‍👧‍👦" },
+  Livelihood: { color: "#818cf8", emoji: "🌾" },
+  Community:  { color: "#fb923c", emoji: "🫂" },
+  Gratitude:  { color: "#fbbf24", emoji: "🙏" },
+  Protection: { color: "#a78bfa", emoji: "🛡️" },
+  Other:      { color: "#94a3b8", emoji: "✡" },
+};
 
-function ordinalStr(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+function fmtAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(ms / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(ms / 3_600_000);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(ms / 86_400_000);
+  if (d < 30) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function yahrzeitNumber(passingYear: number | null): number | undefined {
-  if (!passingYear || passingYear >= CURRENT_YEAR) return undefined;
-  return CURRENT_YEAR - passingYear;
+function haptic() {
+  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
 
-type Screen = "board" | "form";
+function navigate(path: string) {
+  haptic();
+  router.push(path as any);
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+type Colors = ReturnType<typeof useColors>;
+
+function SectionHeader({
+  emoji, title, action, onAction, colors,
+}: {
+  emoji?: string;
+  title: string;
+  action?: string;
+  onAction?: () => void;
+  colors: Colors;
+}) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionTitleRow}>
+        <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+          {emoji ? `${emoji}  ` : ""}{title}
+        </Text>
+      </View>
+      {action && onAction && (
+        <TouchableOpacity
+          onPress={onAction}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={action}
+        >
+          <Text style={[styles.seeAll, { color: colors.primary }]}>{action} →</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+function EmptyCard({ icon, message, colors }: {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  message: string;
+  colors: Colors;
+}) {
+  return (
+    <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      accessibilityLabel={message}
+    >
+      <Feather name={icon} size={28} color={colors.mutedForeground} />
+      <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{message}</Text>
+    </View>
+  );
+}
+
+function ComingSoonCard({ icon, title, hint, colors }: {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  title: string;
+  hint: string;
+  colors: Colors;
+}) {
+  return (
+    <View style={[styles.comingSoonCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.comingSoonIcon, { backgroundColor: colors.primary + "16" }]}>
+        <Feather name={icon} size={22} color={colors.primary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.comingSoonTitle, { color: colors.foreground }]}>{title}</Text>
+        <Text style={[styles.comingSoonHint, { color: colors.mutedForeground }]}>{hint}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function CommunityScreen() {
   const colors = useColors();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
-  const params = useLocalSearchParams<{ form?: string }>();
-
-  const [entries, setEntries] = useState<CommunityYahrzeitEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [screen, setScreen] = useState<Screen>(params.form ? "form" : "board");
 
   const [announcements, setAnnouncements] = useState<MobileAnnouncement[]>([]);
-  const [announcementsExpanded, setAnnouncementsExpanded] = useState(true);
+  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [memorials, setMemorials] = useState<CommunityYahrzeitEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Form state
-  const [deceasedName, setDeceasedName] = useState("");
-  const [passYear, setPassYear] = useState("");
-  const [passMonth, setPassMonth] = useState("");
-  const [passDay, setPassDay] = useState("");
-  const [donorName, setDonorName] = useState("");
-  const [message, setMessage] = useState("");
-  const [donationIdx, setDonationIdx] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [savedSuccess, setSavedSuccess] = useState(false);
-
-  // Dedicate state
-  const [dedicateEntryId, setDedicateEntryId] = useState<string | null>(null);
-  const [dedicateName, setDedicateName] = useState("");
-  const [dedicateSubject, setDedicateSubject] = useState("Torah");
-  const [dedicateSaving, setDedicateSaving] = useState(false);
-  const [dedicateDone, setDedicateDone] = useState(false);
-
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  const load = useCallback(async () => {
-    const data = await fetchCommunityYahrzeit();
-    setEntries(data);
+  const refresh = useCallback(async () => {
+    const [anns, prays, mems] = await Promise.allSettled([
+      fetchAnnouncements(),
+      fetchPrayerRequests(),
+      fetchCommunityYahrzeit(),
+    ]);
+    if (anns.status === "fulfilled") setAnnouncements(anns.value);
+    if (prays.status === "fulfilled") setPrayers(prays.value);
+    if (mems.status === "fulfilled") setMemorials(mems.value);
     setLoading(false);
   }, []);
 
-  const loadAnnouncements = useCallback(async () => {
-    const data = await fetchAnnouncements();
-    setAnnouncements(data);
-  }, []);
-
   useEffect(() => {
-    load();
-    loadAnnouncements();
-    const iv = setInterval(load, 20000);
-    const ivA = setInterval(loadAnnouncements, 60000);
-    return () => { clearInterval(iv); clearInterval(ivA); };
-  }, [load, loadAnnouncements]);
+    refresh();
+    const iv = setInterval(refresh, 60_000);
+    return () => clearInterval(iv);
+  }, [refresh]);
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1, duration: 350, easing: Easing.out(Easing.ease), useNativeDriver: true,
-    }).start();
-  }, [screen]);
-
-  const candleCount = entries.length;
-  const learnerCount = entries.reduce((s, e) => s + e.learners.length, 0);
-
-  function goToForm() {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    fadeAnim.setValue(0);
-    setScreen("form");
-  }
-
-  function goToBoard() {
-    fadeAnim.setValue(0);
-    setScreen("board");
-  }
-
-  async function handleSubmit() {
-    if (!deceasedName.trim() || !passYear || !donorName.trim()) return;
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSaving(true);
-    try {
-      const y = parseInt(passYear, 10) || CURRENT_YEAR;
-      const m = parseInt(passMonth, 10) || 1;
-      const d = parseInt(passDay, 10) || 1;
-      const passDate = new Date(y, m - 1, d, 12, 0, 0);
-      const id = `cy-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-      let hebrewDay = 1;
-      let hebrewMonth = 1;
-      try {
-        const { HDate } = await import("@hebcal/core");
-        const hd = new HDate(passDate);
-        hebrewDay = hd.getDate();
-        hebrewMonth = hd.getMonth();
-      } catch {}
-
-      await createCommunityYahrzeit({
-        id,
-        deceasedName: deceasedName.trim(),
-        hebrewDay,
-        hebrewMonth,
-        displayDate: passDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-        passingYear: y,
-        message: message.trim(),
-        donorDisplayName: donorName.trim(),
-      });
-      setSavedSuccess(true);
-      await load();
-      setTimeout(() => {
-        setSavedSuccess(false);
-        setDeceasedName(""); setPassYear(""); setPassMonth(""); setPassDay("");
-        setMessage(""); setDonationIdx(0);
-        goToBoard();
-      }, 2200);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDedicate() {
-    if (!dedicateEntryId || !dedicateName.trim()) return;
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setDedicateSaving(true);
-    try {
-      await dedicateLearning(dedicateEntryId, dedicateName.trim(), dedicateSubject.trim() || "Torah");
-      setDedicateDone(true);
-      await load();
-      setTimeout(() => {
-        setDedicateEntryId(null);
-        setDedicateDone(false);
-        setDedicateName("");
-        setDedicateSubject("Torah");
-      }, 2200);
-    } finally {
-      setDedicateSaving(false);
-    }
-  }
-
-  const canSubmit = deceasedName.trim().length > 0 && passYear.length === 4 && donorName.trim().length > 0;
+  const topAnnouncements = announcements.slice(0, 3);
+  const approvedPrayers = prayers.filter((p) => p.status === "approved").slice(0, 3);
+  const candleCount = memorials.length;
+  const learnerCount = memorials.reduce((s, e) => s + e.learners.length, 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+        accessibilityLabel="Community hub"
       >
-        <View style={{ paddingTop: topPad + 16, paddingHorizontal: 16 }}>
-          {/* Header */}
-          <View style={styles.header}>
-            {screen === "form" && (
-              <TouchableOpacity onPress={goToBoard} style={styles.backBtn}>
-                <Feather name="arrow-left" size={20} color={colors.mutedForeground} />
-              </TouchableOpacity>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.title, { color: colors.foreground }]}>
-                🕯 {screen === "board" ? "Community Memorial" : "Light a Candle"}
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-                {screen === "board"
-                  ? "The community prays together"
-                  : "Add a memorial in memory of the departed"}
-              </Text>
-            </View>
-          </View>
-
-          {/* Stats */}
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: colors.primary + "14", borderColor: colors.primary + "33" }]}>
-              <Text style={[styles.statNum, { color: colors.primary }]}>{candleCount}</Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>CANDLES LIT</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: colors.success + "12", borderColor: colors.success + "2E" }]}>
-              <Text style={[styles.statNum, { color: colors.success }]}>{learnerCount}</Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>LEARNING NOW</Text>
-            </View>
-          </View>
+        {/* ── Screen header ── */}
+        <View style={[styles.header, { paddingTop: topPad + SPACE[3] }]}>
+          <Text style={[styles.eyebrow, { color: colors.primary }]}>BNEI MENASHE</Text>
+          <Text style={[styles.hubTitle, { color: colors.foreground }]}>{t.commHubTitle}</Text>
+          <View style={[styles.goldBar, { backgroundColor: colors.primary }]} />
+          <Text style={[styles.hubSubtitle, { color: colors.mutedForeground }]}>{t.commHubSubtitle}</Text>
         </View>
 
-        <Animated.View style={{ opacity: fadeAnim, paddingHorizontal: 16 }}>
-          {/* ── BOARD ── */}
-          {screen === "board" && (
-            <>
-              {/* ── Announcements section ── */}
-              {announcements.length > 0 && (
-                <View style={{ marginBottom: 18 }}>
-                  <TouchableOpacity
-                    onPress={() => setAnnouncementsExpanded(e => !e)}
-                    activeOpacity={0.75}
-                    style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary, letterSpacing: 0.6 }}>
-                      📢 ANNOUNCEMENTS
-                    </Text>
-                    <Feather name={announcementsExpanded ? "chevron-up" : "chevron-down"} size={16} color={colors.primary} />
-                  </TouchableOpacity>
-                  {announcementsExpanded && announcements.map(ann => (
-                    <View key={ann.id} style={{
-                      borderRadius: 14, marginBottom: 10, overflow: "hidden",
-                      borderWidth: ann.pinned ? 1 : 1,
-                      borderColor: ann.pinned ? colors.primary + "66" : colors.border,
-                      backgroundColor: ann.pinned ? colors.primary + "0F" : colors.card,
-                    }}>
-                      <View style={{ padding: 14, flexDirection: "row", gap: 12 }}>
-                        <View style={{
-                          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                          backgroundColor: ann.pinned ? colors.primary + "1F" : "rgba(255,255,255,0.06)",
-                          borderWidth: 1, borderColor: ann.pinned ? colors.primary + "40" : colors.border,
-                          alignItems: "center", justifyContent: "center",
-                        }}>
-                          <Text style={{ fontSize: 22 }}>{ann.emoji}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          {ann.pinned && (
-                            <Text style={{ fontSize: 10, color: colors.primary, fontWeight: "700", marginBottom: 2 }}>📌 Pinned</Text>
-                          )}
-                          <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground, marginBottom: 3 }}>
-                            {ann.title}
-                          </Text>
-                          {!!ann.body && (
-                            <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 18 }}>
-                              {ann.body}
-                            </Text>
-                          )}
-                          {ann.sentAt && (
-                            <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 5 }}>
-                              {(() => {
-                                const diff = Date.now() - new Date(ann.sentAt).getTime();
-                                const mins = Math.floor(diff / 60000);
-                                if (mins < 60) return `${mins}m ago`;
-                                const hrs = Math.floor(diff / 3600000);
-                                if (hrs < 24) return `${hrs}h ago`;
-                                const days = Math.floor(diff / 86400000);
-                                return `${days}d ago`;
-                              })()}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
+        {loading ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator color={colors.primary} size="large" />
+          </View>
+        ) : (
+          <View style={{ paddingHorizontal: SPACE[4] }}>
 
-              {/* Light a candle CTA */}
+            {/* ═══ 1. ANNOUNCEMENTS ═══ */}
+            <SectionHeader
+              emoji="📢"
+              title={t.commAnnouncementsTitle}
+              action={announcements.length > 0 ? t.commSeeAll : undefined}
+              onAction={() => navigate("/community/announcements")}
+              colors={colors}
+            />
+            {topAnnouncements.length === 0 ? (
+              <EmptyCard icon="bell" message={t.commAnnouncementsEmpty} colors={colors} />
+            ) : topAnnouncements.map((ann) => (
               <TouchableOpacity
-                style={[styles.ctaBtn, { borderColor: colors.primary + "66", backgroundColor: colors.primary + "0D" }]}
-                onPress={goToForm}
-                activeOpacity={0.75}
+                key={ann.id}
+                activeOpacity={0.82}
+                onPress={() => navigate("/community/announcements")}
+                accessibilityRole="button"
+                accessibilityLabel={ann.title}
+                style={[
+                  styles.annCard,
+                  {
+                    backgroundColor: ann.pinned ? colors.primary + "0F" : colors.card,
+                    borderColor: ann.pinned ? colors.primary + "55" : colors.border,
+                  },
+                ]}
               >
-                <Text style={{ fontSize: 20 }}>🕯</Text>
-                <Text style={[styles.ctaBtnText, { color: colors.primary }]}>Light a Memorial Candle</Text>
+                <View style={[styles.annIconBox, {
+                  backgroundColor: ann.pinned ? colors.primary + "22" : colors.muted,
+                  borderColor: ann.pinned ? colors.primary + "44" : colors.border,
+                }]}>
+                  <Text style={{ fontSize: TEXT.xl }}>{ann.emoji}</Text>
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  {ann.pinned && (
+                    <Text style={[styles.pinnedLabel, { color: colors.primary }]}>
+                      📌 {t.commAnnouncementsPinned}
+                    </Text>
+                  )}
+                  <Text style={[styles.annTitle, { color: colors.foreground }]} numberOfLines={1}>
+                    {ann.title}
+                  </Text>
+                  {!!ann.body && (
+                    <Text style={[styles.annBody, { color: colors.mutedForeground }]} numberOfLines={2}>
+                      {ann.body}
+                    </Text>
+                  )}
+                  {!!ann.sentAt && (
+                    <Text style={[styles.timeLabel, { color: colors.mutedForeground }]}>
+                      {fmtAgo(ann.sentAt)}
+                    </Text>
+                  )}
+                </View>
+                <Feather name="chevron-right" size={16} color={colors.mutedForeground} style={{ alignSelf: "center" }} />
               </TouchableOpacity>
+            ))}
 
-              {loading && (
-                <View style={styles.centerMsg}>
-                  <ActivityIndicator color={colors.primary} />
-                  <Text style={[styles.emptyText, { color: colors.mutedForeground, marginTop: 10 }]}>
-                    Loading memorial candles…
-                  </Text>
-                </View>
-              )}
-
-              {!loading && entries.length === 0 && (
-                <View style={styles.centerMsg}>
-                  <Text style={{ fontSize: 44, marginBottom: 12 }}>🕯</Text>
-                  <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                    No memorial candles yet.{"\n"}Be the first to light one.
-                  </Text>
-                </View>
-              )}
-
-              {!loading && entries.length > 0 && (
-                <View style={styles.candleGrid}>
-                  {entries.map((entry) => {
-                    const yNum = yahrzeitNumber(entry.passingYear);
-                    const isDedicating = dedicateEntryId === entry.id;
-
-                    return (
-                      <View
-                        key={entry.id}
-                        style={[styles.candleCard, { backgroundColor: colors.primary + "0A", borderColor: colors.primary + "2E" }]}
-                      >
-                        <BurningCandleRN
-                          deceasedName={entry.deceasedName}
-                          yahrzeitNumber={yNum}
-                          donorName={entry.donorDisplayName || undefined}
-                          learners={entry.learners}
-                          isLit={entry.candleLit}
-                          compact
-                        />
-
-                        {entry.message ? (
-                          <Text numberOfLines={2} style={[styles.candleMessage, { color: colors.mutedForeground }]}>
-                            "{entry.message}"
-                          </Text>
-                        ) : null}
-
-                        {/* Dedicate Learning */}
-                        {!isDedicating && (
-                          <TouchableOpacity
-                            style={[styles.dedicateBtn, { backgroundColor: colors.primary + "14", borderColor: colors.primary + "33" }]}
-                            onPress={() => {
-                              setDedicateEntryId(entry.id);
-                              setDedicateDone(false);
-                              setDedicateName("");
-                              setDedicateSubject("Torah");
-                              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={{ fontSize: 9, color: colors.primary, fontWeight: "700" }}>
-                              📖 Dedicate Learning
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-
-                        {isDedicating && !dedicateDone && (
-                          <View style={{ width: "100%", gap: 5, marginTop: 8 }}>
-                            <TextInput
-                              style={[styles.miniInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                              placeholder="Your name"
-                              placeholderTextColor={colors.mutedForeground}
-                              value={dedicateName}
-                              onChangeText={setDedicateName}
-                            />
-                            <TextInput
-                              style={[styles.miniInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                              placeholder="What are you studying?"
-                              placeholderTextColor={colors.mutedForeground}
-                              value={dedicateSubject}
-                              onChangeText={setDedicateSubject}
-                            />
-                            <View style={{ flexDirection: "row", gap: 5 }}>
-                              <TouchableOpacity
-                                style={[styles.miniBtn, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}
-                                onPress={() => setDedicateEntryId(null)}
-                              >
-                                <Text style={{ fontSize: 9, color: colors.mutedForeground }}>Cancel</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.miniBtn, { flex: 2, backgroundColor: colors.primary + "26", borderColor: colors.primary + "59", opacity: (!dedicateName.trim() || dedicateSaving) ? 0.5 : 1 }]}
-                                onPress={handleDedicate}
-                                disabled={dedicateSaving || !dedicateName.trim()}
-                              >
-                                <Text style={{ fontSize: 9, color: colors.primary, fontWeight: "700" }}>
-                                  {dedicateSaving ? "…" : "🕯 Dedicate"}
-                                </Text>
-                              </TouchableOpacity>
-                            </View>
-                          </View>
-                        )}
-
-                        {isDedicating && dedicateDone && (
-                          <Text style={{ marginTop: 8, fontSize: 10, color: colors.success, fontWeight: "700", textAlign: "center" }}>
-                            ✓ Your learning glows in the flame
-                          </Text>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-            </>
-          )}
-
-          {/* ── FORM ── */}
-          {screen === "form" && (
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-              <View style={{ gap: 14 }}>
-                {/* Deceased name */}
-                <View>
-                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>NAME OF THE DEPARTED *</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                    placeholder="e.g. Miriam bat Avraham"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={deceasedName}
-                    onChangeText={setDeceasedName}
-                  />
-                </View>
-
-                {/* Date of passing */}
-                <View>
-                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>DATE OF PASSING *</Text>
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    <TextInput
-                      style={[styles.input, { flex: 2, backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                      placeholder="Year (e.g. 2018)"
-                      placeholderTextColor={colors.mutedForeground}
-                      keyboardType="number-pad"
-                      maxLength={4}
-                      value={passYear}
-                      onChangeText={setPassYear}
-                    />
-                    <TextInput
-                      style={[styles.input, { flex: 1, backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                      placeholder="Mo."
-                      placeholderTextColor={colors.mutedForeground}
-                      keyboardType="number-pad"
-                      maxLength={2}
-                      value={passMonth}
-                      onChangeText={setPassMonth}
-                    />
-                    <TextInput
-                      style={[styles.input, { flex: 1, backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                      placeholder="Day"
-                      placeholderTextColor={colors.mutedForeground}
-                      keyboardType="number-pad"
-                      maxLength={2}
-                      value={passDay}
-                      onChangeText={setPassDay}
-                    />
-                  </View>
-                  {passYear.length === 4 && (
-                    <Text style={{ fontSize: 11, color: colors.primary, marginTop: 5 }}>
-                      ✡  {ordinalStr(CURRENT_YEAR - parseInt(passYear, 10))} Yahrzeit this year
-                    </Text>
-                  )}
-                </View>
-
-                {/* Donor name */}
-                <View>
-                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>YOUR NAME (as donor) *</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                    placeholder="Your name"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={donorName}
-                    onChangeText={setDonorName}
-                  />
-                </View>
-
-                {/* Message */}
-                <View>
-                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>MESSAGE (optional)</Text>
-                  <TextInput
-                    style={[styles.input, styles.textarea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                    placeholder="A few words in their memory…"
-                    placeholderTextColor={colors.mutedForeground}
-                    multiline
-                    numberOfLines={3}
-                    value={message}
-                    onChangeText={setMessage}
-                  />
-                </View>
-
-                {/* Donation tiers */}
-                <View>
-                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>DONATION</Text>
-                  {DONATION_TIERS.map((tier, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      style={[
-                        styles.tierRow,
-                        {
-                          borderColor: donationIdx === i ? colors.primary + "99" : colors.border,
-                          backgroundColor: donationIdx === i ? colors.primary + "12" : colors.card,
-                        },
-                      ]}
-                      onPress={() => setDonationIdx(i)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.radio, { borderColor: donationIdx === i ? colors.primary : colors.mutedForeground }]}>
-                        {donationIdx === i && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
-                      </View>
-                      <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground, flex: 1 }}>
-                        {tier.tag ? `${tier.tag}  ` : ""}{tier.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                  {DONATION_TIERS[donationIdx].amount > 0 && (
-                    <View style={[styles.donationNote, { backgroundColor: colors.primary + "0D", borderColor: colors.primary + "26" }]}>
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground, lineHeight: 17 }}>
-                        💳 Donation of ₹{DONATION_TIERS[donationIdx].amount} will be processed by community admin.
-                      </Text>
+            {/* ═══ 2. PRAYER REQUESTS ═══ */}
+            <SectionHeader
+              emoji="🙏"
+              title={t.commPrayerTitle}
+              action={t.commPrayerSeeAll}
+              onAction={() => navigate("/prayer-board")}
+              colors={colors}
+            />
+            {approvedPrayers.length === 0 ? (
+              <EmptyCard icon="heart" message={t.commPrayerEmpty} colors={colors} />
+            ) : approvedPrayers.map((pr) => {
+              const meta = PRAYER_CAT[pr.category] ?? PRAYER_CAT.Other;
+              return (
+                <TouchableOpacity
+                  key={pr.id}
+                  activeOpacity={0.82}
+                  onPress={() => navigate("/prayer-board")}
+                  accessibilityRole="button"
+                  accessibilityLabel={pr.text}
+                  style={[styles.prayCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                >
+                  <View style={styles.prayCardHeader}>
+                    <View style={[styles.catBadge, {
+                      backgroundColor: meta.color + "1A",
+                      borderColor: meta.color + "44",
+                    }]}>
+                      <Text style={{ fontSize: TEXT.xs }}>{meta.emoji} </Text>
+                      <Text style={[styles.catText, { color: meta.color }]}>{pr.category}</Text>
                     </View>
-                  )}
-                </View>
-
-                {/* Submit */}
-                {savedSuccess ? (
-                  <View style={[styles.successBox, { backgroundColor: colors.success + "1A", borderColor: colors.success + "4D" }]}>
-                    <Text style={{ fontSize: 32, marginBottom: 6 }}>🕯</Text>
-                    <Text style={{ fontSize: 15, fontWeight: "800", color: colors.success, textAlign: "center" }}>
-                      Candle lit! May their memory be a blessing.
+                    <Text style={[styles.timeLabel, { color: colors.mutedForeground }]}>
+                      {fmtAgo(pr.submittedAt)}
                     </Text>
                   </View>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: (!canSubmit || saving) ? 0.45 : 1 }]}
-                    onPress={handleSubmit}
-                    disabled={!canSubmit || saving}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.submitBtnText, { color: colors.primaryForeground }]}>
-                      {saving ? "Lighting candle…" : "🕯 Light Memorial Candle"}
+                  <Text style={[styles.prayName, { color: colors.foreground }]}>
+                    {pr.isAnonymous ? "Anonymous" : pr.name}
+                  </Text>
+                  <Text style={[styles.prayText, { color: colors.mutedForeground }]} numberOfLines={2}>
+                    {pr.text}
+                  </Text>
+                  <View style={[styles.amenRow, { borderTopColor: colors.border }]}>
+                    <Text style={{ fontSize: TEXT.sm }}>🤲</Text>
+                    <Text style={[styles.amenText, { color: colors.mutedForeground }]}>
+                      {t.commPrayerAmen} · {pr.amens}
                     </Text>
-                  </TouchableOpacity>
-                )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              style={[styles.dashedCta, {
+                borderColor: colors.primary + "55",
+                backgroundColor: colors.primary + "0C",
+              }]}
+              onPress={() => navigate("/prayer-board")}
+              accessibilityRole="button"
+              accessibilityLabel={t.commPrayerSubmit}
+              activeOpacity={0.75}
+            >
+              <Feather name="plus-circle" size={16} color={colors.primary} />
+              <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.commPrayerSubmit}</Text>
+            </TouchableOpacity>
+
+            {/* ═══ 3. COMMUNITY MEMORIALS ═══ */}
+            <SectionHeader
+              emoji="🕯"
+              title={t.commMemorialsTitle}
+              action={t.commMemorialsSeeAll}
+              onAction={() => navigate("/community/memorials")}
+              colors={colors}
+            />
+            <TouchableOpacity
+              activeOpacity={0.88}
+              onPress={() => navigate("/community/memorials")}
+              accessibilityRole="button"
+              accessibilityLabel={t.commMemorialsTitle}
+              style={[styles.memSummary, {
+                backgroundColor: colors.primary + "0A",
+                borderColor: colors.primary + "33",
+              }]}
+            >
+              {/* Stats row */}
+              <View style={styles.memStatsRow}>
+                <View style={styles.memStat} accessibilityLabel={`${candleCount} ${t.commMemorialsCandlesLit}`}>
+                  <Text style={[styles.memStatNum, { color: colors.primary }]}>{candleCount}</Text>
+                  <Text style={[styles.memStatLabel, { color: colors.mutedForeground }]}>
+                    {t.commMemorialsCandlesLit.toUpperCase()}
+                  </Text>
+                </View>
+                <View style={[styles.memStatDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.memStat} accessibilityLabel={`${learnerCount} ${t.commMemorialsLearning}`}>
+                  <Text style={[styles.memStatNum, { color: colors.success }]}>{learnerCount}</Text>
+                  <Text style={[styles.memStatLabel, { color: colors.mutedForeground }]}>
+                    {t.commMemorialsLearning.toUpperCase()}
+                  </Text>
+                </View>
               </View>
-            </KeyboardAvoidingView>
-          )}
-        </Animated.View>
+
+              {/* Recent names */}
+              {memorials.length > 0 ? (
+                <View style={[styles.memNames, { borderTopColor: colors.primary + "22" }]}>
+                  {memorials.slice(0, 4).map((m) => (
+                    <Text key={m.id} style={[styles.memName, { color: colors.foreground }]} numberOfLines={1}>
+                      🕯 {m.deceasedName}
+                    </Text>
+                  ))}
+                  {memorials.length > 4 && (
+                    <Text style={[styles.memMore, { color: colors.mutedForeground }]}>
+                      +{memorials.length - 4} more
+                    </Text>
+                  )}
+                </View>
+              ) : (
+                <Text style={[styles.memEmpty, { color: colors.mutedForeground }]}>
+                  {t.commMemorialsEmpty}
+                </Text>
+              )}
+
+              {/* CTA */}
+              <View style={[styles.memCta, { backgroundColor: colors.primary }]}>
+                <Text style={{ fontSize: TEXT.sm }}>🕯</Text>
+                <Text style={[styles.memCtaText, { color: colors.primaryForeground }]}>
+                  {t.commLightCandle}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* ═══ 4. UPCOMING EVENTS ═══ */}
+            <SectionHeader
+              emoji="📅"
+              title={t.commEventsTitle}
+              colors={colors}
+            />
+            <ComingSoonCard
+              icon="calendar"
+              title={t.commEventsSoon}
+              hint={t.commEventsComingSoonHint}
+              colors={colors}
+            />
+
+            {/* ═══ 5. ORGANIZATIONS ═══ */}
+            <SectionHeader
+              emoji="🏛"
+              title={t.commOrgsTitle}
+              colors={colors}
+            />
+            <View style={[styles.orgCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.orgBadge, { backgroundColor: "#1a3a22" }]}>
+                <Text style={{ fontSize: TEXT.xl }}>✡</Text>
+              </View>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={[styles.orgName, { color: colors.foreground }]}>Shavei Israel</Text>
+                <Text style={[styles.orgDesc, { color: colors.mutedForeground }]}>{t.commOrgShaveiDesc}</Text>
+                <Text style={[styles.orgLink, { color: colors.primary }]}>shavei.org</Text>
+              </View>
+            </View>
+            <View style={[styles.orgCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.orgBadge, { backgroundColor: "#1a2e4a" }]}>
+                <Text style={{ fontSize: TEXT.xl }}>🫂</Text>
+              </View>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={[styles.orgName, { color: colors.foreground }]}>Bnei Menashe Federation</Text>
+                <Text style={[styles.orgDesc, { color: colors.mutedForeground }]}>{t.commOrgFedDesc}</Text>
+              </View>
+            </View>
+
+            {/* ═══ 6. LEARNING GROUPS ═══ */}
+            <SectionHeader
+              emoji="📚"
+              title={t.commLearningTitle}
+              colors={colors}
+            />
+            <ComingSoonCard
+              icon="book-open"
+              title={t.commLearningSoon}
+              hint={t.commLearningComingSoonHint}
+              colors={colors}
+            />
+
+            {/* ═══ 7. SYNAGOGUE ═══ */}
+            <SectionHeader
+              emoji="🕍"
+              title={t.commSynagogueTitle}
+              colors={colors}
+            />
+            <View
+              style={[styles.synCard, {
+                backgroundColor: colors.primary + "0A",
+                borderColor: colors.primary + "33",
+              }]}
+              accessibilityLabel="Synagogue directory"
+            >
+              <Text style={{ fontSize: 40, marginBottom: SPACE[2] }}>🕍</Text>
+              <Text style={[styles.synTitle, { color: colors.foreground }]}>{t.commSynagogueDirectoryTitle}</Text>
+              <Text style={[styles.synBody, { color: colors.mutedForeground }]}>{t.commSynagogueDirectoryDesc}</Text>
+            </View>
+
+          </View>
+        )}
       </ScrollView>
     </View>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 16 },
-  backBtn: { paddingTop: 3, paddingRight: 4 },
-  title: { fontSize: 20, fontWeight: "800", lineHeight: 24 },
-  subtitle: { fontSize: 12, marginTop: 3 },
-  statsRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
-  statCard: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, alignItems: "center" },
-  statNum: { fontSize: 22, fontWeight: "900" },
-  statLabel: { fontSize: 9, fontWeight: "700", letterSpacing: 0.8, marginTop: 2 },
-  ctaBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    paddingVertical: 14, borderRadius: 13, borderWidth: 1.5, borderStyle: "dashed",
-    marginBottom: 18,
+  // Header
+  header: {
+    paddingHorizontal: SPACE[4],
+    paddingBottom: SPACE[4],
   },
-  ctaBtnText: { fontSize: 14, fontWeight: "800" },
-  centerMsg: { alignItems: "center", paddingVertical: 40 },
-  emptyText: { fontSize: 14, lineHeight: 22, textAlign: "center" },
-  candleGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "center" },
-  candleCard: { borderRadius: 16, padding: 12, borderWidth: 1, alignItems: "center", width: 150 },
-  candleMessage: { fontSize: 9, fontStyle: "italic", textAlign: "center", marginTop: 5, lineHeight: 13 },
-  dedicateBtn: {
-    marginTop: 8, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1,
+  eyebrow: {
+    fontSize: TEXT.xs,
+    fontWeight: "700",
+    letterSpacing: 1.4,
+    marginBottom: SPACE[1],
   },
-  miniInput: { borderWidth: 1, borderRadius: 7, padding: 6, fontSize: 10 },
-  miniBtn: { borderWidth: 1, borderRadius: 7, padding: 5, alignItems: "center" },
-  fieldLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.9, marginBottom: 6, textTransform: "uppercase" },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14 },
-  textarea: { minHeight: 72, textAlignVertical: "top", paddingTop: 11 },
-  tierRow: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1.5, borderRadius: 10, padding: 12, marginBottom: 8 },
-  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, alignItems: "center", justifyContent: "center" },
-  radioDot: { width: 8, height: 8, borderRadius: 4 },
-  donationNote: { borderWidth: 1, borderRadius: 8, padding: 10, marginTop: 4 },
-  successBox: { borderWidth: 1, borderRadius: 14, padding: 20, alignItems: "center", marginTop: 8 },
-  submitBtn: { borderRadius: 13, paddingVertical: 15, alignItems: "center", marginTop: 8 },
-  submitBtnText: { fontSize: 15, fontWeight: "800" },
+  hubTitle: {
+    fontSize: TEXT["3xl"],
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    lineHeight: 38,
+  },
+  goldBar: {
+    width: 40,
+    height: 3,
+    borderRadius: 2,
+    marginTop: SPACE[2],
+    marginBottom: SPACE[2],
+  },
+  hubSubtitle: {
+    fontSize: TEXT.base,
+    lineHeight: 20,
+  },
+  loadingBox: {
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+
+  // Section headers
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: SPACE[8],
+    marginBottom: SPACE[3],
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE[2],
+  },
+  sectionAccent: {
+    width: 3,
+    height: 18,
+    borderRadius: 2,
+  },
+  sectionTitle: {
+    fontSize: TEXT.md,
+    fontWeight: "700",
+  },
+  seeAll: {
+    fontSize: TEXT.sm,
+    fontWeight: "600",
+  },
+
+  // Empty / Coming-soon
+  emptyCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACE[5],
+    alignItems: "center",
+    gap: SPACE[2],
+    marginBottom: SPACE[2],
+  },
+  emptyText: {
+    fontSize: TEXT.sm,
+    textAlign: "center",
+  },
+  comingSoonCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACE[4],
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE[3],
+    marginBottom: SPACE[2],
+  },
+  comingSoonIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.md,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  comingSoonTitle: {
+    fontSize: TEXT.base,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  comingSoonHint: {
+    fontSize: TEXT.sm,
+    lineHeight: 18,
+  },
+
+  // Announcement cards
+  annCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACE[3],
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: SPACE[3],
+    marginBottom: SPACE[2],
+  },
+  annIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  pinnedLabel: {
+    fontSize: TEXT.xs,
+    fontWeight: "700",
+  },
+  annTitle: {
+    fontSize: TEXT.base,
+    fontWeight: "700",
+  },
+  annBody: {
+    fontSize: TEXT.sm,
+    lineHeight: 18,
+  },
+  timeLabel: {
+    fontSize: TEXT.xs,
+  },
+
+  // Prayer cards
+  prayCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACE[4],
+    marginBottom: SPACE[2],
+  },
+  prayCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: SPACE[2],
+  },
+  catBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    paddingHorizontal: SPACE[2],
+    paddingVertical: 3,
+  },
+  catText: {
+    fontSize: TEXT.xs,
+    fontWeight: "700",
+  },
+  prayName: {
+    fontSize: TEXT.sm,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  prayText: {
+    fontSize: TEXT.sm,
+    lineHeight: 18,
+    marginBottom: SPACE[3],
+  },
+  amenRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE[2],
+    borderTopWidth: 1,
+    paddingTop: SPACE[2],
+  },
+  amenText: {
+    fontSize: TEXT.sm,
+    fontWeight: "600",
+  },
+  dashedCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE[2],
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderRadius: RADIUS.lg,
+    paddingVertical: SPACE[3],
+    marginBottom: SPACE[2],
+  },
+  dashedCtaText: {
+    fontSize: TEXT.sm,
+    fontWeight: "700",
+  },
+
+  // Memorials summary card
+  memSummary: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACE[4],
+    marginBottom: SPACE[2],
+  },
+  memStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE[8],
+    marginBottom: SPACE[4],
+  },
+  memStat: {
+    alignItems: "center",
+    gap: 2,
+  },
+  memStatNum: {
+    fontSize: TEXT["2xl"],
+    fontWeight: "900",
+  },
+  memStatLabel: {
+    fontSize: TEXT.xs,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  memStatDivider: {
+    width: 1,
+    height: 36,
+  },
+  memNames: {
+    borderTopWidth: 1,
+    paddingTop: SPACE[3],
+    marginBottom: SPACE[3],
+    gap: SPACE[1],
+  },
+  memName: {
+    fontSize: TEXT.sm,
+    lineHeight: 22,
+  },
+  memMore: {
+    fontSize: TEXT.xs,
+    fontStyle: "italic",
+  },
+  memEmpty: {
+    fontSize: TEXT.sm,
+    textAlign: "center",
+    marginBottom: SPACE[3],
+  },
+  memCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE[2],
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACE[3],
+  },
+  memCtaText: {
+    fontSize: TEXT.sm,
+    fontWeight: "700",
+  },
+
+  // Organizations
+  orgCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACE[4],
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: SPACE[3],
+    marginBottom: SPACE[2],
+  },
+  orgBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.md,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  orgName: {
+    fontSize: TEXT.base,
+    fontWeight: "700",
+  },
+  orgDesc: {
+    fontSize: TEXT.sm,
+    lineHeight: 18,
+  },
+  orgLink: {
+    fontSize: TEXT.xs,
+    fontWeight: "700",
+  },
+
+  // Synagogue
+  synCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACE[6],
+    alignItems: "center",
+    marginBottom: SPACE[2],
+  },
+  synTitle: {
+    fontSize: TEXT.md,
+    fontWeight: "700",
+    marginBottom: SPACE[2],
+  },
+  synBody: {
+    fontSize: TEXT.sm,
+    lineHeight: 20,
+    textAlign: "center",
+  },
 });
