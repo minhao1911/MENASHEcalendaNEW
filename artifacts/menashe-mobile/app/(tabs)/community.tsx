@@ -197,7 +197,7 @@ export default function CommunityScreen() {
           </View>
 
           {/* Hebrew title */}
-          <Text style={styles.heroHebrew}>בְּנֵי מְנַשֶּׁה</Text>
+          <Text style={styles.heroHebrew} accessibilityLabel="Bnei Menashe">בְּנֵי מְנַשֶּׁה</Text>
 
           {/* English title */}
           <Text style={[styles.hubTitle, { color: colors.foreground }]}>{t.commHubTitle}</Text>
@@ -339,6 +339,8 @@ export default function CommunityScreen() {
                     activeOpacity={0.7}
                     accessibilityRole="button"
                     accessibilityLabel={`${t.commPrayerAmen} ${pr.amens}`}
+                    accessibilityState={{ selected: hubAmens.has(pr.id) }}
+                    hitSlop={{ top: 11, bottom: 11, left: 8, right: 8 }}
                     style={[
                       styles.amenRow,
                       {
@@ -1043,6 +1045,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     paddingVertical: SPACE[3],
     borderWidth: 1,
+    minHeight: 44,
   },
   memCtaText: {
     fontSize: TEXT.sm,
