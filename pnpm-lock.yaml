@@ -114,6 +114,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/shared-core':
+        specifier: workspace:*
+        version: link:../../lib/shared-core
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -890,6 +893,9 @@ importers:
       suncalc:
         specifier: ^1.9.0
         version: 1.9.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@types/suncalc':
         specifier: ^1.9.2

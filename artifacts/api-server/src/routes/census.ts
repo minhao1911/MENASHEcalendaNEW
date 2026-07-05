@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { z } from "zod";
 import { pool } from "@workspace/db";
+import { branchSchema, memberSubmissionSchema } from "@workspace/shared-core/census";
 import { requireAuth } from "../lib/requireAuth";
 import { requireAdmin } from "../lib/requireAdmin";
 import { apiError } from "../lib/apiError";
@@ -9,31 +9,8 @@ import { logger } from "../lib/logger";
 const router = Router();
 
 // ── Validation schemas ────────────────────────────────────────────────────────
-
-const familyMemberSchema = z.object({
-  name: z.string().min(1).max(200),
-  relation: z.string().max(100).optional(),
-  age: z.number().int().min(0).max(150).optional(),
-}).passthrough();
-
-const branchSchema = z.object({
-  id: z.string().max(100).optional(),
-  name: z.string().min(1).max(200),
-  cityId: z.string().max(100).optional(),
-  cityName: z.string().max(200).optional(),
-  adminName: z.string().max(200).optional(),
-  established: z.string().max(50).optional().nullable(),
-  families: z.array(z.record(z.unknown())).max(500).optional(),
-});
-
-const memberSubmissionSchema = z.object({
-  branchId: z.string().max(100).optional(),
-  branchName: z.string().max(200).optional(),
-  submitterName: z.string().min(1).max(200),
-  submitterNote: z.string().max(1000).optional().nullable(),
-  headCensus: z.record(z.unknown()).optional(),
-  members: z.array(z.record(z.unknown())).max(100).optional(),
-});
+// Canonical Census schemas now live in @workspace/shared-core/census.
+// See SPR-P005B — there must be ONE Census model.
 
 // ── Row mappers ───────────────────────────────────────────────────────────────
 
