@@ -22,7 +22,7 @@ import { useColors } from "@/hooks/useColors";
 import { SPACE, TEXT, RADIUS } from "@/constants/colors";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
-import { fetchPrayerRequests, type PrayerRequest } from "@/lib/prayerBoardApi";
+import { fetchPrayerRequests, amenPrayerRequest, type PrayerRequest } from "@/lib/prayerBoardApi";
 import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "@/lib/communityApi";
 import { fetchCommunityEvents, type CommunityEvent } from "@/lib/eventsApi";
 
@@ -144,6 +144,17 @@ export default function CommunityScreen() {
   const [memorials, setMemorials] = useState<CommunityYahrzeitEntry[]>([]);
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hubAmens, setHubAmens] = useState<Set<string>>(new Set());
+
+  function handleHubAmen(id: string) {
+    if (hubAmens.has(id)) return;
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setHubAmens((prev) => new Set(prev).add(id));
+    setPrayers((prev) =>
+      prev.map((r) => r.id === id ? { ...r, amens: r.amens + 1 } : r)
+    );
+    amenPrayerRequest(id).catch(() => {});
+  }
 
   const refresh = useCallback(async () => {
     const [anns, prays, mems, evs] = await Promise.allSettled([
@@ -177,12 +188,49 @@ export default function CommunityScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
         accessibilityLabel="Community hub"
       >
-        {/* ── Screen header ── */}
-        <View style={[styles.header, { paddingTop: topPad + SPACE[3] }]}>
-          <Text style={[styles.eyebrow, { color: colors.primary }]}>BNEI MENASHE</Text>
+        {/* ── Community Hero ── */}
+        <View style={[styles.hero, { paddingTop: topPad + SPACE[3] }]}>
+          {/* Eyebrow */}
+          <View style={[styles.heroBadge, { backgroundColor: colors.primary + "14", borderColor: colors.primary + "35" }]}>
+            <Text style={{ fontSize: 12 }}>✡</Text>
+            <Text style={[styles.heroBadgeText, { color: colors.primary }]}>BNEI MENASHE WORLDWIDE</Text>
+          </View>
+
+          {/* Hebrew title */}
+          <Text style={styles.heroHebrew}>בְּנֵי מְנַשֶּׁה</Text>
+
+          {/* English title */}
           <Text style={[styles.hubTitle, { color: colors.foreground }]}>{t.commHubTitle}</Text>
           <View style={[styles.goldBar, { backgroundColor: colors.primary }]} />
           <Text style={[styles.hubSubtitle, { color: colors.mutedForeground }]}>{t.commHubSubtitle}</Text>
+
+          {/* Community stats */}
+          <View style={[styles.heroStats, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {[
+              { val: "10,000+", labelKey: "commStatPopulation" as const },
+              { val: "5,000+",  labelKey: "commStatAliyah" as const },
+              { val: "54",      labelKey: "commStatParshiyot" as const },
+            ].map((s, i) => (
+              <View
+                key={s.labelKey}
+                style={[
+                  styles.heroStatItem,
+                  i < 2 && { borderRightWidth: 1, borderRightColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.heroStatVal, { color: colors.primary }]}>{s.val}</Text>
+                <Text style={[styles.heroStatLabel, { color: colors.mutedForeground }]}>{t[s.labelKey]}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Isaiah quote */}
+          <View style={[styles.heroQuote, { borderLeftColor: colors.primary + "55" }]}>
+            <Text style={[styles.heroQuoteText, { color: colors.mutedForeground }]}>
+              "{t.commIsaiahQuote}"
+            </Text>
+            <Text style={[styles.heroQuoteRef, { color: colors.primary }]}>— {t.commIsaiahRef}</Text>
+          </View>
         </View>
 
         {loading ? (
@@ -286,12 +334,29 @@ export default function CommunityScreen() {
                   <Text style={[styles.prayText, { color: colors.mutedForeground }]} numberOfLines={2}>
                     {pr.text}
                   </Text>
-                  <View style={[styles.amenRow, { borderTopColor: colors.border }]}>
-                    <Text style={{ fontSize: TEXT.sm }}>🤲</Text>
-                    <Text style={[styles.amenText, { color: colors.mutedForeground }]}>
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation?.(); handleHubAmen(pr.id); }}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t.commPrayerAmen} ${pr.amens}`}
+                    style={[
+                      styles.amenRow,
+                      {
+                        borderTopColor: colors.border,
+                        borderRadius: RADIUS.md,
+                        paddingHorizontal: SPACE[2],
+                        paddingVertical: SPACE[1],
+                        backgroundColor: hubAmens.has(pr.id) ? (meta.color + "12") : "transparent",
+                      },
+                    ]}
+                  >
+                    <Text style={{ fontSize: TEXT.sm }}>{hubAmens.has(pr.id) ? "🙏" : "🤲"}</Text>
+                    <Text style={[styles.amenText, {
+                      color: hubAmens.has(pr.id) ? meta.color : colors.mutedForeground,
+                    }]}>
                       {t.commPrayerAmen} · {pr.amens}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </TouchableOpacity>
               );
             })}
@@ -364,12 +429,26 @@ export default function CommunityScreen() {
                 </Text>
               )}
 
-              {/* CTA */}
-              <View style={[styles.memCta, { backgroundColor: colors.primary }]}>
-                <Text style={{ fontSize: TEXT.sm }}>🕯</Text>
-                <Text style={[styles.memCtaText, { color: colors.primaryForeground }]}>
-                  {t.commLightCandle}
-                </Text>
+              {/* CTAs row */}
+              <View style={styles.memCtaRow}>
+                <View style={[styles.memCta, { backgroundColor: colors.primary, flex: 1 }]}>
+                  <Text style={{ fontSize: TEXT.sm }}>🕯</Text>
+                  <Text style={[styles.memCtaText, { color: colors.primaryForeground }]}>
+                    {t.commLightCandle}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={(e) => { e.stopPropagation?.(); navigate("/sacred-memory"); }}
+                  activeOpacity={0.82}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.commEnterSanctuary}
+                  style={[styles.memSanctuaryCta, { borderColor: colors.primary + "55" }]}
+                >
+                  <Text style={{ fontSize: TEXT.sm }}>✨</Text>
+                  <Text style={[styles.memCtaText, { color: colors.primary }]}>
+                    {t.commEnterSanctuary}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </TouchableOpacity>
 
@@ -631,9 +710,74 @@ export default function CommunityScreen() {
 
 const styles = StyleSheet.create({
   // Header
-  header: {
+  hero: {
     paddingHorizontal: SPACE[4],
-    paddingBottom: SPACE[4],
+    paddingBottom: SPACE[5],
+    alignItems: "flex-start",
+  },
+  heroBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE[1],
+    borderWidth: 1,
+    borderRadius: 99,
+    paddingHorizontal: SPACE[3],
+    paddingVertical: SPACE[1],
+    marginBottom: SPACE[3],
+  },
+  heroBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+  },
+  heroHebrew: {
+    fontSize: 28,
+    fontWeight: "700",
+    letterSpacing: 1,
+    color: "#D4AF37",
+    marginBottom: SPACE[1],
+    textAlign: "left",
+  },
+  heroStats: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    marginTop: SPACE[4],
+    overflow: "hidden",
+    alignSelf: "stretch",
+  },
+  heroStatItem: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: SPACE[3],
+    gap: 2,
+  },
+  heroStatVal: {
+    fontSize: TEXT.xl,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  heroStatLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textAlign: "center",
+  },
+  heroQuote: {
+    marginTop: SPACE[4],
+    borderLeftWidth: 3,
+    paddingLeft: SPACE[3],
+    gap: SPACE[1],
+  },
+  heroQuoteText: {
+    fontSize: TEXT.sm,
+    lineHeight: 20,
+    fontStyle: "italic",
+  },
+  heroQuoteRef: {
+    fontSize: TEXT.xs,
+    fontWeight: "700",
+    letterSpacing: 0.4,
   },
   eyebrow: {
     fontSize: TEXT.xs,
@@ -877,6 +1021,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: SPACE[3],
   },
+  memCtaRow: {
+    flexDirection: "row",
+    gap: SPACE[2],
+    marginTop: SPACE[2],
+  },
   memCta: {
     flexDirection: "row",
     alignItems: "center",
@@ -884,6 +1033,16 @@ const styles = StyleSheet.create({
     gap: SPACE[2],
     borderRadius: RADIUS.md,
     paddingVertical: SPACE[3],
+  },
+  memSanctuaryCta: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE[2],
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACE[3],
+    borderWidth: 1,
   },
   memCtaText: {
     fontSize: TEXT.sm,

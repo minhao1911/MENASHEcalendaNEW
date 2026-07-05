@@ -214,6 +214,12 @@ export interface SharedTranslations {
   /* ── Community Hub (SPR-M009) ── */
   commHubTitle: string;
   commHubSubtitle: string;
+  commStatPopulation: string;
+  commStatAliyah: string;
+  commStatParshiyot: string;
+  commIsaiahQuote: string;
+  commIsaiahRef: string;
+  commEnterSanctuary: string;
   commAnnouncementsTitle: string;
   commAnnouncementsSeeAll: string;
   commAnnouncementsPinned: string;
@@ -522,6 +528,12 @@ export const sharedEn: SharedTranslations = {
 
   commHubTitle: "Community",
   commHubSubtitle: "Your Bnei Menashe community hub",
+  commStatPopulation: "TOTAL POPULATION",
+  commStatAliyah: "MADE ALIYAH",
+  commStatParshiyot: "PARSHIYOT",
+  commIsaiahQuote: "I will bring the remnant of my people from the East, and gather them from the West.",
+  commIsaiahRef: "Isaiah 43:5",
+  commEnterSanctuary: "Enter Sanctuary",
   commAnnouncementsTitle: "Announcements",
   commAnnouncementsSeeAll: "See all",
   commAnnouncementsPinned: "Pinned",
@@ -824,6 +836,12 @@ export const sharedTk: SharedTranslations = {
 
   commHubTitle: "Mipil Inn",
   commHubSubtitle: "Na Bnei Menashe mipil inn",
+  commStatPopulation: "MIPIL HLAWM",
+  commStatAliyah: "ALIYAH TUAK",
+  commStatParshiyot: "PARSHIYOT",
+  commIsaiahQuote: "Ka mi sunna bangzah chu A Sung lam pan ka kai zel ang, A Thlang lam pan ka khen zel ang.",
+  commIsaiahRef: "Isaiah 43:5",
+  commEnterSanctuary: "Inn Thianghlim Lut",
   commAnnouncementsTitle: "Thupek",
   commAnnouncementsSeeAll: "Zawng En",
   commAnnouncementsPinned: "Pin",
