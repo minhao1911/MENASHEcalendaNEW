@@ -41,6 +41,9 @@ import {
   getUpcomingHolidays,
 } from "@/lib/hebrewCalendar";
 import { calculateZmanim, type ZmanimTimes } from "@/lib/zmanim";
+import type { Branch } from "@workspace/shared-core/census";
+import { getBranch, branchStats } from "@workspace/shared-core/census";
+import { SkeletonCard } from "@/src/mobile/components/feedback/LoadingState";
 
 // ── Daf Yomi (mirrors index.tsx) ──────────────────────────────────────────────
 
@@ -345,6 +348,22 @@ export default function JourneyScreen() {
 
   const firstName: string | null = null;
 
+  // ── Census integration (SPR-P006A) ────────────────────────────────────────
+  // undefined = loading, null = confirmed no record, Branch = has record
+  const [branch, setBranch] = React.useState<Branch | null | undefined>(undefined);
+  const [censusError, setCensusError] = React.useState(false);
+
+  React.useEffect(() => {
+    const baseUrl = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+    getBranch({ baseUrl })
+      .then((b) => setBranch(b ?? null))
+      .catch(() => { setBranch(null); setCensusError(true); });
+  }, []);
+
+  const censusStats  = React.useMemo(() => branch ? branchStats(branch) : null, [branch]);
+  const censusLoading   = branch === undefined && !censusError;
+  const aliyahAwaiting  = (censusStats?.aliyahBreakdown.awaiting ?? 0) > 0;
+
   // Holiday context from live calendar data
   const todayStr = today.toDateString();
   const todayHoliday = useMemo(
@@ -587,6 +606,114 @@ export default function JourneyScreen() {
             </TouchableOpacity>
 
           </View>
+
+          {/* ══ §3.5  CENSUS — community data surface (SPR-P006A) ══════════════ */}
+          <SectionLabel title={t.journeyCensusSectionTitle} GOLD={GOLD} foreground={colors.foreground} />
+
+          {censusLoading ? (
+            // Loading — MMDL skeleton
+            <SkeletonCard lines={3} />
+
+          ) : censusError ? (
+            // API unavailable — premium empty state
+            <View
+              style={[styles.censusCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              accessible
+              accessibilityLabel={t.journeyCensusUnavailable}
+            >
+              <View style={[styles.censusIconBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
+                <Feather name="cloud-off" size={24} color={GOLD} />
+              </View>
+              <Text style={[styles.censusTitle, { color: colors.foreground }]}>
+                {t.journeyCensusUnavailable}
+              </Text>
+            </View>
+
+          ) : !branch ? (
+            // No census record — milestone card
+            <TouchableOpacity
+              onPress={() => go("/(tabs)/community")}
+              activeOpacity={0.88}
+              accessibilityRole="button"
+              accessibilityLabel={`${t.journeyCensusMilestoneTitle}. ${t.journeyCensusMilestoneSubtitle}`}
+              style={[styles.censusMilestoneWrap, { backgroundColor: colors.card, borderColor: GOLD + "55" }]}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE[3] }}>
+                <View style={[styles.censusIconBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
+                  <Feather name="users" size={22} color={GOLD} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.censusOverline, { color: GOLD }]}>
+                    MILESTONE
+                  </Text>
+                  <Text style={[styles.censusTitle, { color: colors.foreground }]} numberOfLines={2}>
+                    {t.journeyCensusMilestoneTitle}
+                  </Text>
+                  <Text style={[styles.censusSub, { color: colors.mutedForeground }]} numberOfLines={2}>
+                    {t.journeyCensusMilestoneSubtitle}
+                  </Text>
+                </View>
+              </View>
+              <View style={[styles.censusPill, { backgroundColor: GOLD + "18", borderColor: GOLD + "44" }]}>
+                <Text style={[styles.censusPillText, { color: GOLD }]}>
+                  {t.journeyCensusStartCta}
+                </Text>
+                <Feather name="arrow-right" size={12} color={GOLD} />
+              </View>
+            </TouchableOpacity>
+
+          ) : (
+            // Has census record — status + optional aliyah card
+            <View style={{ gap: SPACE[3] }}>
+              {/* Status card */}
+              <View style={[styles.censusCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE[3] }}>
+                  <View style={[styles.censusIconBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
+                    <Feather name="check-circle" size={20} color={GOLD} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.censusOverline, { color: GOLD }]}>
+                      {t.journeyCensusStatusTitle.toUpperCase()}
+                    </Text>
+                    <Text style={[styles.censusTitle, { color: colors.foreground }]} numberOfLines={1}>
+                      {branch.name}
+                    </Text>
+                    <Text style={[styles.censusSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                      {branch.cityName}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={[styles.censusCount, { color: GOLD }]}>
+                      {censusStats!.familyCount}
+                    </Text>
+                    <Text style={[styles.censusCountLabel, { color: colors.mutedForeground }]}>
+                      {t.journeyCensusFamiliesLabel}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Aliyah priority card — only shown when headAliyah === "awaiting" */}
+              {aliyahAwaiting && (
+                <View style={[styles.censusAliyahCard, { backgroundColor: GOLD + "0f", borderColor: GOLD + "66" }]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE[3] }}>
+                    <View style={[styles.censusIconBox, { backgroundColor: GOLD + "22", borderColor: GOLD + "44" }]}>
+                      <Feather name="star" size={20} color={GOLD} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.censusOverline, { color: GOLD }]}>PRIORITY</Text>
+                      <Text style={[styles.censusTitle, { color: colors.foreground }]}>
+                        {t.journeyCensusAliyahTitle}
+                      </Text>
+                      <Text style={[styles.censusSub, { color: colors.mutedForeground }]} numberOfLines={2}>
+                        {t.journeyCensusAliyahSubtitle}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* ══ §4  BOOKMARKS ════════════════════════════════════════════════════ */}
           <SectionLabel title={t.journeyBookmarksTitle} GOLD={GOLD} foreground={colors.foreground} />
@@ -916,5 +1043,72 @@ const styles = StyleSheet.create({
     fontSize: TEXT.sm,          // 13dp
     fontWeight: "700",
     letterSpacing: 0.3,
+  },
+
+  // §3.5 Census styles (SPR-P006A)
+  censusMilestoneWrap: {
+    borderRadius: RADIUS.xl,
+    borderWidth: 1.5,
+    padding: SPACE[4],
+    gap: SPACE[3],
+  },
+  censusCard: {
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
+    padding: SPACE[4],
+    gap: SPACE[2],
+  },
+  censusAliyahCard: {
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
+    padding: SPACE[4],
+  },
+  censusIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  censusOverline: {
+    fontSize: TEXT.xs,
+    fontWeight: "700",
+    letterSpacing: 2.0,
+  },
+  censusTitle: {
+    fontSize: TEXT.md,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  censusSub: {
+    fontSize: TEXT.sm,
+    fontWeight: "400",
+    lineHeight: 19,
+    marginTop: 2,
+  },
+  censusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE[1],
+    borderWidth: 1,
+    borderRadius: 99,
+    paddingHorizontal: SPACE[3],
+    paddingVertical: SPACE[2],
+    alignSelf: "flex-start",
+  },
+  censusPillText: {
+    fontSize: TEXT.sm,
+    fontWeight: "700",
+  },
+  censusCount: {
+    fontSize: TEXT["2xl"],
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  censusCountLabel: {
+    fontSize: TEXT.xs,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
 });

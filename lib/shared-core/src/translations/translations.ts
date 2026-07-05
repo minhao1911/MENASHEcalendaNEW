@@ -29,6 +29,17 @@ export interface SharedTranslations {
   journeyBookmarksEmptySub: string;
   journeyReflectionTitle: string;
 
+  /* ── Journey × Census (SPR-P006A) ── */
+  journeyCensusSectionTitle: string;
+  journeyCensusMilestoneTitle: string;
+  journeyCensusMilestoneSubtitle: string;
+  journeyCensusStartCta: string;
+  journeyCensusStatusTitle: string;
+  journeyCensusFamiliesLabel: string;
+  journeyCensusAliyahTitle: string;
+  journeyCensusAliyahSubtitle: string;
+  journeyCensusUnavailable: string;
+
   /* ── Home ── */
   homeToday: string;
   homeHebrewDate: string;
@@ -368,6 +379,16 @@ export const sharedEn: SharedTranslations = {
   journeyBookmarksEmpty: "No bookmarks yet",
   journeyBookmarksEmptySub: "Bookmark prayers, parshiyot, and sacred texts — find them here.",
   journeyReflectionTitle: "Today's Reflection",
+
+  journeyCensusSectionTitle: "Community Census",
+  journeyCensusMilestoneTitle: "Complete Community Census",
+  journeyCensusMilestoneSubtitle: "Help strengthen the Bnei Menashe community by completing your family census.",
+  journeyCensusStartCta: "Start Census",
+  journeyCensusStatusTitle: "Census Record",
+  journeyCensusFamiliesLabel: "Families",
+  journeyCensusAliyahTitle: "Prepare for Aliyah",
+  journeyCensusAliyahSubtitle: "Your family is registered and awaiting Aliyah.",
+  journeyCensusUnavailable: "Census data unavailable",
   navSiddur: "Siddur",
 
   homeToday: "TODAY",
@@ -694,6 +715,16 @@ export const sharedTk: SharedTranslations = {
   journeyBookmarksEmpty: "Bookmark awm lo",
   journeyBookmarksEmptySub: "Thu dawt, parshiyot, leh thu thianghlim bookmark siam la, khi hian i hmu ang.",
   journeyReflectionTitle: "Tun Ni Ngaihtuah",
+
+  journeyCensusSectionTitle: "Mipil Census",
+  journeyCensusMilestoneTitle: "Mipil Census Zawh Zel",
+  journeyCensusMilestoneSubtitle: "Bnei Menashe mipil khawngaih turin in tanan census zawh pek rawh.",
+  journeyCensusStartCta: "Census Tan",
+  journeyCensusStatusTitle: "Census Thu",
+  journeyCensusFamiliesLabel: "Inpui",
+  journeyCensusAliyahTitle: "Aliyah Tana Beisei",
+  journeyCensusAliyahSubtitle: "In inpui a record ah a awm tawh, Aliyah duhna i nei.",
+  journeyCensusUnavailable: "Census thu siamna awm lo",
   navSiddur: "Thu Ziak",
 
   homeToday: "NIZAN",
