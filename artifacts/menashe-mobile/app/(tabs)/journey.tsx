@@ -320,7 +320,7 @@ export default function JourneyScreen() {
   const topPad   = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
   // Theme context
-  const isLight  = (colors.background as string) === "#f5efe0";
+  const isLight  = (colors.background as string).toLowerCase() === "#f5efe0";
   const GOLD     = colors.primary as string;
 
   const today     = useMemo(() => new Date(), []);
@@ -418,7 +418,11 @@ export default function JourneyScreen() {
 
         {/* ══ §1  GREETING ════════════════════════════════════════════════════ */}
         <View style={[styles.greetingSection, { paddingTop: topPad + SPACE[4] }]}>
-          <View style={[styles.starAccent, { backgroundColor: GOLD + "18", borderColor: GOLD + "38" }]}>
+          <View
+            style={[styles.starAccent, { backgroundColor: GOLD + "18", borderColor: GOLD + "38" }]}
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
+          >
             <Text style={{ fontSize: 11 }}>✡</Text>
             <Text style={[styles.starLabel, { color: GOLD }]}>MENASHE JOURNEY</Text>
           </View>
@@ -587,7 +591,11 @@ export default function JourneyScreen() {
           {/* ══ §4  BOOKMARKS ════════════════════════════════════════════════════ */}
           <SectionLabel title={t.journeyBookmarksTitle} GOLD={GOLD} foreground={colors.foreground} />
 
-          <View style={[styles.bookmarksEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View
+            style={[styles.bookmarksEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}
+            accessible={true}
+            accessibilityLabel={`${t.journeyBookmarksEmpty}. ${t.journeyBookmarksEmptySub}`}
+          >
             <View style={[styles.bookmarkIcon, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
               <Feather name="bookmark" size={26} color={GOLD} />
             </View>
@@ -602,7 +610,11 @@ export default function JourneyScreen() {
           {/* ══ §5  REFLECTION — day-context aware ══════════════════════════════ */}
           <SectionLabel title={t.journeyReflectionTitle} GOLD={GOLD} foreground={colors.foreground} />
 
-          <View style={[styles.reflectionCard, { backgroundColor: colors.card, borderColor: GOLD + "44" }]}>
+          <View
+            style={[styles.reflectionCard, { backgroundColor: colors.card, borderColor: GOLD + "44" }]}
+            accessible={true}
+            accessibilityLabel={`${reflection.context}: "${reflection.quote}" — ${reflection.source}`}
+          >
             <View style={[styles.reflectionBar, { backgroundColor: GOLD }]} />
             {/* Day context badge */}
             <View style={[styles.reflectionBadge, { backgroundColor: GOLD + "18", borderColor: GOLD + "30" }]}>
@@ -631,8 +643,17 @@ function SectionLabel({
 }) {
   return (
     <View style={styles.sectionLabel}>
-      <View style={[styles.sectionAccent, { backgroundColor: GOLD }]} />
-      <Text style={[styles.sectionText, { color: foreground }]}>{title}</Text>
+      <View
+        style={[styles.sectionAccent, { backgroundColor: GOLD }]}
+        accessible={false}
+        importantForAccessibility="no"
+      />
+      <Text
+        style={[styles.sectionText, { color: foreground }]}
+        accessibilityRole="header"
+      >
+        {title}
+      </Text>
     </View>
   );
 }
@@ -658,7 +679,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACE[4],
   },
   starLabel: {
-    fontSize: 10,
+    fontSize: TEXT.xs,
     fontWeight: "700",
     letterSpacing: 1.2,
   },
@@ -736,7 +757,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACE[1],
   },
   continueOverline: {
-    fontSize: 10,
+    fontSize: TEXT.xs,
     fontWeight: "700",
     letterSpacing: 2.0,
   },
@@ -765,7 +786,7 @@ const styles = StyleSheet.create({
     marginTop: SPACE[2],
   },
   continuePillText: {
-    fontSize: 12,
+    fontSize: TEXT.sm,
     fontWeight: "700",
   },
 
@@ -793,7 +814,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACE[1],
   },
   cardOverline: {
-    fontSize: 9,
+    fontSize: 9,   // intentionally sub-xs — tighter than token for overline label
     fontWeight: "700",
     letterSpacing: 1.8,
   },
@@ -881,7 +902,7 @@ const styles = StyleSheet.create({
     marginTop: SPACE[2],
   },
   reflectionBadgeText: {
-    fontSize: 10,
+    fontSize: TEXT.xs,
     fontWeight: "700",
     letterSpacing: 0.8,
   },
