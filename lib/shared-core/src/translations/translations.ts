@@ -9,6 +9,25 @@ export interface SharedTranslations {
   navTorah: string;
   navSettings: string;
   navSiddur: string;
+  navJourney: string;
+
+  /* ── Journey ── */
+  journeyGreeting: string;
+  journeySummaryTitle: string;
+  journeyStudyCard: string;
+  journeyMemorialCard: string;
+  journeyCommunityCard: string;
+  journeyCalendarCard: string;
+  journeyStartYourJourney: string;
+  journeyContinueTitle: string;
+  journeyContinueStudy: string;
+  journeyContinueCalendar: string;
+  journeyContinueMemorial: string;
+  journeyContinueAI: string;
+  journeyBookmarksTitle: string;
+  journeyBookmarksEmpty: string;
+  journeyBookmarksEmptySub: string;
+  journeyReflectionTitle: string;
 
   /* ── Home ── */
   homeToday: string;
@@ -331,6 +350,24 @@ export const sharedEn: SharedTranslations = {
   navCommunity: "Community",
   navTorah: "Torah",
   navSettings: "Settings",
+  navJourney: "Journey",
+
+  journeyGreeting: "Shalom",
+  journeySummaryTitle: "Your Journey",
+  journeyStudyCard: "Study Journey",
+  journeyMemorialCard: "Memorial Journey",
+  journeyCommunityCard: "Community",
+  journeyCalendarCard: "Calendar",
+  journeyStartYourJourney: "Start Your Journey",
+  journeyContinueTitle: "Continue",
+  journeyContinueStudy: "Continue Study",
+  journeyContinueCalendar: "Continue Calendar",
+  journeyContinueMemorial: "Continue Memorial",
+  journeyContinueAI: "Continue AI",
+  journeyBookmarksTitle: "Bookmarks",
+  journeyBookmarksEmpty: "No bookmarks yet",
+  journeyBookmarksEmptySub: "Bookmark prayers, parshiyot, and sacred texts — find them here.",
+  journeyReflectionTitle: "Today's Reflection",
   navSiddur: "Siddur",
 
   homeToday: "TODAY",
@@ -639,6 +676,24 @@ export const sharedTk: SharedTranslations = {
   navCommunity: "Mipil",
   navTorah: "Torah",
   navSettings: "Siam Dan",
+  navJourney: "Zuangthu",
+
+  journeyGreeting: "Shalom",
+  journeySummaryTitle: "Na Zuangthu",
+  journeyStudyCard: "Zir Zuangthu",
+  journeyMemorialCard: "Hriatna Zuangthu",
+  journeyCommunityCard: "Mipil",
+  journeyCalendarCard: "Ni Thu",
+  journeyStartYourJourney: "Na Zuangthu Tan",
+  journeyContinueTitle: "Zai Zel",
+  journeyContinueStudy: "Zir Zel",
+  journeyContinueCalendar: "Ni Thu En Zel",
+  journeyContinueMemorial: "Hriatna Zel",
+  journeyContinueAI: "AI Zel",
+  journeyBookmarksTitle: "Bookmark",
+  journeyBookmarksEmpty: "Bookmark awm lo",
+  journeyBookmarksEmptySub: "Thu dawt, parshiyot, leh thu thianghlim bookmark siam la, khi hian i hmu ang.",
+  journeyReflectionTitle: "Tun Ni Ngaihtuah",
   navSiddur: "Thu Ziak",
 
   homeToday: "NIZAN",

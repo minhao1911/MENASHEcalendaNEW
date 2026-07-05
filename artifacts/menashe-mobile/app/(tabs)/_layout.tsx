@@ -73,6 +73,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="journey"
+        options={{
+          title: t.navJourney,
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name="compass" size={focused ? 23 : 21} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="calendar"
         options={{
           title: t.navCalendar,
