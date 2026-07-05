@@ -703,6 +703,47 @@ export default function CommunityScreen() {
 
           </View>
         )}
+
+        {/* ── §8  Community Census ── */}
+        <View style={[styles.section, { paddingBottom: SPACE[4] }]}>
+          <SectionHeader
+            emoji="📋"
+            title="Community Census"
+            action={t.commSeeAll}
+            onAction={() => navigate("/census")}
+            colors={colors}
+          />
+          <TouchableOpacity
+            style={[styles.censusEntryCard, {
+              backgroundColor: "#d4a84310",
+              borderColor: "#d4a84340",
+            }]}
+            onPress={() => navigate("/census")}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Community Census — register your family"
+          >
+            <View style={[styles.censusEntryIconBox, {
+              backgroundColor: "#d4a84318",
+              borderColor: "#d4a84338",
+            }]}>
+              <Feather name="users" size={26} color="#d4a843" />
+            </View>
+            <View style={{ flex: 1, gap: 3 }}>
+              <Text style={[styles.censusEntryOverline, { color: "#d4a843" }]}>
+                BNEI MENASHE
+              </Text>
+              <Text style={[styles.censusEntryTitle, { color: colors.foreground }]}>
+                Community Census
+              </Text>
+              <Text style={[styles.censusEntryDesc, { color: colors.mutedForeground }]}>
+                Register your family and help build an accurate picture of our global community.
+              </Text>
+            </View>
+            <Feather name="arrow-right" size={18} color="#d4a843" style={{ alignSelf: "center", marginLeft: SPACE[2] }} />
+          </TouchableOpacity>
+        </View>
+
       </ScrollView>
     </View>
   );
@@ -1213,5 +1254,38 @@ const styles = StyleSheet.create({
   synType: {
     fontSize: TEXT.xs,
     fontWeight: "700",
+  },
+
+  // Community Census entry card (§8)
+  censusEntryCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    borderRadius: RADIUS.xl,
+    borderWidth: 1.5,
+    padding: SPACE[4],
+    gap: SPACE[3],
+  },
+  censusEntryIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  censusEntryOverline: {
+    fontSize: TEXT.xs,
+    fontWeight: "800",
+    letterSpacing: 2,
+  },
+  censusEntryTitle: {
+    fontSize: TEXT.md,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  censusEntryDesc: {
+    fontSize: TEXT.sm,
+    lineHeight: 19,
   },
 });

@@ -64,6 +64,7 @@ export default function RootLayout() {
                       <Stack.Screen name="prayer-board" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="translation-editor" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="sacred-wisdom" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="census" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/announcements" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/memorials" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/events" options={{ headerShown: false, animation: "slide_from_right" }} />

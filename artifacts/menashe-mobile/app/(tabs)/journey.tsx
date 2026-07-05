@@ -630,9 +630,9 @@ export default function JourneyScreen() {
             </View>
 
           ) : !branch ? (
-            // No census record — milestone card
+            // No census record — milestone card (navigates to /census — SPR-P006B)
             <TouchableOpacity
-              onPress={() => go("/(tabs)/community")}
+              onPress={() => go("/census")}
               activeOpacity={0.88}
               accessibilityRole="button"
               accessibilityLabel={`${t.journeyCensusMilestoneTitle}. ${t.journeyCensusMilestoneSubtitle}`}
