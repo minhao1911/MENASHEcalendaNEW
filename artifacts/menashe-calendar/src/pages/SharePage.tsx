@@ -1,29 +1,10 @@
 import { useState } from "react";
+import type { CensusRow, FamilyMember } from "@workspace/shared-core/census";
+import { RELATION_LABELS } from "@workspace/shared-core/census";
 
-/* ── Shared types (mirrors CensusModal) ───────────────────── */
-type Relation = "spouse" | "son" | "daughter" | "grandson" | "granddaughter" | "daughter_in_law" | "son_in_law" | "other";
-type AliyahStatus = "in_israel" | "awaiting" | "unknown";
-
-interface CensusRow {
-  surname?: string;
-  namePerPassport?: string;
-  hebrewName?: string;
-  maritalStatus?: string;
-  sex?: string;
-  dob?: string;
-  fatherName?: string;
-  motherName?: string;
-  dateOfJudaismPractice?: string;
-  passportNo?: string;
-  passportIssueDate?: string;
-  passportExpiryDate?: string;
-}
-
-interface FamilyMember extends CensusRow {
-  id: string;
-  relation: Relation;
-  aliyahStatus: AliyahStatus;
-}
+/* Canonical CensusRow/FamilyMember/Relation/AliyahStatus now live in
+   @workspace/shared-core/census — imported above. There must be ONE
+   Census model; this file only consumes it. */
 
 interface SharePayload {
   v: 1;
@@ -44,11 +25,7 @@ interface ReturnPayload {
   submittedAt: string;
 }
 
-const RELATION_LABELS: Record<Relation, string> = {
-  spouse: "Spouse", son: "Son", daughter: "Daughter",
-  grandson: "Grandson", granddaughter: "Granddaughter",
-  daughter_in_law: "Daughter-in-Law", son_in_law: "Son-in-Law", other: "Other",
-};
+/* RELATION_LABELS now imported from @workspace/shared-core/census. */
 
 /* ── Codec ────────────────────────────────────────────────── */
 function encodePayload(data: object): string {

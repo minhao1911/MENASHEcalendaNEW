@@ -4,6 +4,11 @@ import {
   fetchCensusSubmissions, submitCensusBranchForReview, reviewCensusSubmission,
   fetchCensusMemberSubmissions, submitCensusMemberEntry, reviewCensusMemberSubmission,
 } from "../lib/userApi";
+import type {
+  AliyahStatus, Relation,
+  CensusRow, FamilyMember, Family, Branch,
+} from "@workspace/shared-core/census";
+import { RELATION_LABELS, ALIYAH_LABELS } from "@workspace/shared-core/census";
 
 interface Props { onClose: () => void; isAdmin?: boolean; }
 
@@ -23,50 +28,9 @@ interface CityEntry {
   country: "israel" | "india"; region: string;
 }
 
-type AliyahStatus = "in_israel" | "awaiting" | "unknown";
-type Relation = "spouse" | "son" | "daughter" | "grandson" | "granddaughter" | "daughter_in_law" | "son_in_law" | "other";
-type MaritalStatus = "Single" | "Married" | "Divorced" | "Widowed" | "";
-type Sex = "M" | "F" | "";
-
-/* Official BMC Census Form fields — mirrors form columns exactly */
-interface CensusRow {
-  surname?: string;
-  namePerPassport?: string;       /* Name According to Adhaar / Passport */
-  hebrewName?: string;
-  maritalStatus?: MaritalStatus;
-  sex?: Sex;
-  dob?: string;
-  fatherName?: string;
-  motherName?: string;
-  dateOfJudaismPractice?: string;
-  passportNo?: string;
-  passportIssueDate?: string;
-  passportExpiryDate?: string;
-}
-
-interface FamilyMember extends CensusRow {
-  id: string;
-  relation: Relation;
-  aliyahStatus: AliyahStatus;
-}
-
-interface Family {
-  id: string;
-  headName: string;         /* display name for the app */
-  headAliyah: AliyahStatus;
-  headCensus: CensusRow;    /* official census data for the head (row 1) */
-  members: FamilyMember[];  /* rows 2-10 */
-}
-
-interface Branch {
-  id: string;
-  name: string;
-  cityId: string;
-  cityName: string;
-  established?: string;
-  adminName?: string;
-  families: Family[];
-}
+/* Canonical CensusRow/FamilyMember/Family/Branch/enums now live in
+   @workspace/shared-core/census — imported above. There must be ONE
+   Census model; this file only consumes it. */
 
 type SubmissionStatus = "pending" | "approved" | "rejected";
 
@@ -119,17 +83,7 @@ const DEFAULT_CITIES: CityEntry[] = [
   { id: "c9", name: "Churachandpur", pop: 650,  country: "india",  region: "Manipur" },
 ];
 
-const RELATION_LABELS: Record<Relation, string> = {
-  spouse: "Spouse", son: "Son", daughter: "Daughter",
-  grandson: "Grandson", granddaughter: "Granddaughter",
-  daughter_in_law: "Daughter-in-Law", son_in_law: "Son-in-Law", other: "Other",
-};
-
-const ALIYAH_LABELS: Record<AliyahStatus, { label: string; color: string; dot: string }> = {
-  in_israel: { label: "In Israel",       color: "#4ade80", dot: "🇮🇱" },
-  awaiting:  { label: "Awaiting Aliyah", color: "#facc15", dot: "🕊️" },
-  unknown:   { label: "Unknown",         color: "#94a3b8", dot: "❓" },
-};
+/* RELATION_LABELS / ALIYAH_LABELS now imported from @workspace/shared-core/census. */
 
 /* ══════════════════════════════════════════════════════════════
    SHARED HELPERS
