@@ -10,3 +10,4 @@ export * from "./types";
 export * from "./schemas";
 export * from "./labels";
 export * from "./stats";
+export * from "./client";

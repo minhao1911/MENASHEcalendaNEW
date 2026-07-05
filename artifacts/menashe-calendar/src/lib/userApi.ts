@@ -1,3 +1,14 @@
+import {
+  getBranch, saveBranch, submitBranch,
+  getSubmissions, approveSubmission,
+  getMemberSubmissions, submitMember, approveMember,
+} from "@workspace/shared-core/census";
+import type {
+  Branch as CensusBranchApi,
+  CensusSubmission as CensusSubmissionApi,
+  CensusMemberSubmission as CensusMemberSubmissionApi,
+} from "@workspace/shared-core/census";
+
 const API_BASE = "/api";
 
 async function apiFetch(path: string, options: RequestInit = {}) {
@@ -214,86 +225,45 @@ export async function verifyRazorpayPayment(params: {
 }
 
 // ── Census ─────────────────────────────────────────────────────────────────
+// The canonical Census client now lives in @workspace/shared-core/census.
+// These are thin wrappers that supply the web app's auth-token getter so
+// existing call sites (CensusModal.tsx) don't need to change. There must be
+// ONE Census client — Web consumes it, it does not own it.
 
-export interface CensusBranchApi {
-  id: string;
-  name: string;
-  cityId: string;
-  cityName: string;
-  adminName?: string;
-  established?: string;
-  families: any[];
-}
+export type { CensusBranchApi, CensusSubmissionApi, CensusMemberSubmissionApi };
 
-export interface CensusSubmissionApi {
-  id: string;
-  branch: CensusBranchApi;
-  submittedAt: string;
-  status: "pending" | "approved" | "rejected";
-  reviewNote?: string;
-  reviewedAt?: string;
-}
-
-export interface CensusMemberSubmissionApi {
-  id: string;
-  branchId: string;
-  branchName: string;
-  submitterName: string;
-  submitterNote?: string;
-  headCensus: any;
-  members: any[];
-  status: "pending" | "approved" | "rejected";
-  submittedAt: string;
-  reviewedAt?: string;
-  reviewNote?: string;
-}
+const censusConfig = {
+  getAuthToken: () => (window as any).Clerk?.session?.getToken() ?? null,
+};
 
 export async function fetchCensusBranch(): Promise<CensusBranchApi | null> {
-  try {
-    return await apiFetch("/census/branch");
-  } catch {
-    return null;
-  }
+  return getBranch(censusConfig);
 }
 
 export async function saveCensusBranch(branch: CensusBranchApi): Promise<void> {
-  try {
-    await apiFetch("/census/branch", { method: "PUT", body: JSON.stringify(branch) });
-  } catch {}
+  return saveBranch(branch, censusConfig);
 }
 
 export async function fetchCensusSubmissions(): Promise<CensusSubmissionApi[]> {
-  try {
-    return await apiFetch("/census/submissions");
-  } catch {
-    return [];
-  }
+  return getSubmissions(censusConfig);
 }
 
 export async function submitCensusBranchForReview(branch: CensusBranchApi): Promise<CensusSubmissionApi> {
-  return await apiFetch("/census/submissions", { method: "POST", body: JSON.stringify({ branch }) });
+  return submitBranch(branch, censusConfig);
 }
 
 export async function reviewCensusSubmission(id: string, status: "approved" | "rejected", reviewNote?: string): Promise<void> {
-  try {
-    await apiFetch(`/census/submissions/${id}`, { method: "PATCH", body: JSON.stringify({ status, reviewNote }) });
-  } catch {}
+  return approveSubmission(id, status, reviewNote, censusConfig);
 }
 
 export async function fetchCensusMemberSubmissions(): Promise<CensusMemberSubmissionApi[]> {
-  try {
-    return await apiFetch("/census/member-submissions");
-  } catch {
-    return [];
-  }
+  return getMemberSubmissions(censusConfig);
 }
 
 export async function submitCensusMemberEntry(entry: Omit<CensusMemberSubmissionApi, "id" | "submittedAt" | "status">): Promise<CensusMemberSubmissionApi> {
-  return await apiFetch("/census/member-submissions", { method: "POST", body: JSON.stringify(entry) });
+  return submitMember(entry, censusConfig);
 }
 
 export async function reviewCensusMemberSubmission(id: string, status: "approved" | "rejected" | "pending", reviewNote?: string): Promise<void> {
-  try {
-    await apiFetch(`/census/member-submissions/${id}`, { method: "PATCH", body: JSON.stringify({ status, reviewNote }) });
-  } catch {}
+  return approveMember(id, status, reviewNote, censusConfig);
 }
