@@ -26,8 +26,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useUser } from "@clerk/expo";
-
 import { useColors } from "@/hooks/useColors";
 import { SPACE, TEXT, RADIUS } from "@/constants/colors";
 import { useLanguage } from "@/context/LanguageContext";
@@ -319,7 +317,6 @@ export default function JourneyScreen() {
   const { t }    = useLanguage();
   const { location } = useApp();
   const insets   = useSafeAreaInsets();
-  const { user } = useUser();
   const topPad   = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
   // Theme context
@@ -346,7 +343,7 @@ export default function JourneyScreen() {
     (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86_400_000,
   ), []);
 
-  const firstName = user?.firstName ?? user?.fullName?.split(" ")[0] ?? null;
+  const firstName: string | null = null;
 
   // Holiday context from live calendar data
   const todayStr = today.toDateString();
