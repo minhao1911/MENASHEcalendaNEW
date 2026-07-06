@@ -33,7 +33,6 @@ import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { SPACE, TEXT, RADIUS } from "@/constants/colors";
 import { useLanguage } from "@/context/LanguageContext";
-import { saveBranch } from "@workspace/shared-core/census";
 import type { CensusRow } from "@workspace/shared-core/census";
 import {
   ALIYAH_STATUSES,
@@ -41,6 +40,7 @@ import {
   SEXES,
 } from "@workspace/shared-core/census";
 import type { AliyahStatus, MaritalStatus, Sex } from "@workspace/shared-core/census";
+import { setHead } from "@/lib/censusStore";
 
 const GOLD = "#d4a843";
 
@@ -197,10 +197,7 @@ export default function FamilyHeadScreen() {
   // Aliyah status (required — surfaced on Family level)
   const [aliyahStatus, setAliyahStatus] = useState<AliyahStatus>("unknown");
 
-  const [saving,     setSaving]     = useState(false);
-  const [saveDone,   setSaveDone]   = useState(false);
-
-  const baseUrl = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+  const [saveDone, setSaveDone] = useState(false);
 
   function buildCensusRow(): CensusRow {
     return {
@@ -219,80 +216,43 @@ export default function FamilyHeadScreen() {
     };
   }
 
-  async function handleSaveDraft() {
-    if (!namePerPassport.trim()) {
-      Alert.alert(t.censusValidationTitle, t.censusNameRequired);
-      return;
-    }
-    haptic();
-    setSaving(true);
-    try {
-      await saveBranch(
-        {
-          id: "",
-          name: "",
-          cityId: "",
-          cityName: "",
-          families: [
-            {
-              id: "",
-              headName: namePerPassport.trim(),
-              headAliyah: aliyahStatus,
-              headCensus: buildCensusRow(),
-              members: [],
-            },
-          ],
-        },
-        { baseUrl },
-      );
-      setSaveDone(true);
-      Alert.alert(t.censusSaveDraftTitle, t.censusSaveDraftBody, [
-        { text: "OK", style: "default" },
-      ]);
-    } catch {
-      Alert.alert(t.censusErrorTitle, t.censusErrorBody);
-    } finally {
-      setSaving(false);
-    }
+  function persistToStore() {
+    const row = buildCensusRow();
+    setHead({
+      surname:               surname.trim(),
+      namePerPassport:       namePerPassport.trim(),
+      hebrewName:            hebrewName.trim(),
+      sex:                   sex as Sex,
+      maritalStatus:         maritalStatus as MaritalStatus,
+      dob:                   dob.trim(),
+      fatherName:            fatherName.trim(),
+      motherName:            motherName.trim(),
+      dateOfJudaismPractice: dateOfJudaismPractice.trim(),
+      passportNo:            passportNo.trim(),
+      passportIssueDate:     passportIssueDate.trim(),
+      passportExpiryDate:    passportExpiryDate.trim(),
+      aliyahStatus,
+    });
   }
 
-  async function handleSubmit() {
+  function handleSaveDraft() {
     if (!namePerPassport.trim()) {
       Alert.alert(t.censusValidationTitle, t.censusNameRequired);
       return;
     }
     haptic();
-    setSaving(true);
-    try {
-      await saveBranch(
-        {
-          id: "",
-          name: "",
-          cityId: "",
-          cityName: "",
-          families: [
-            {
-              id: "",
-              headName: namePerPassport.trim(),
-              headAliyah: aliyahStatus,
-              headCensus: buildCensusRow(),
-              members: [],
-            },
-          ],
-        },
-        { baseUrl },
-      );
-      Alert.alert(t.censusSubmitTitle, t.censusSubmitBody, [
-        {
-          text: "OK",
-          onPress: () => { router.back(); router.back(); },
-        },
-      ]);
-    } catch {
-      Alert.alert(t.censusErrorTitle, t.censusErrorBody);
-    } finally {
-      setSaving(false);
+    persistToStore();
+    setSaveDone(true);
+  }
+
+  function handleSubmit() {
+    if (!namePerPassport.trim()) {
+      Alert.alert(t.censusValidationTitle, t.censusNameRequired);
+      return;
     }
+    haptic();
+    persistToStore();
+    router.push("/census/family-members");
   }
 
   return (
@@ -326,25 +286,20 @@ export default function FamilyHeadScreen() {
           {/* Save draft shortcut */}
           <TouchableOpacity
             onPress={handleSaveDraft}
-            disabled={saving}
             style={styles.saveDraftBtn}
             accessibilityRole="button"
             accessibilityLabel={t.censusSaveDraft}
           >
-            {saving ? (
-              <ActivityIndicator size="small" color={GOLD} />
-            ) : (
-              <Feather name="save" size={20} color={saveDone ? GOLD : colors.mutedForeground} />
-            )}
+            <Feather name="save" size={20} color={saveDone ? GOLD : colors.mutedForeground} />
           </TouchableOpacity>
         </View>
 
         {/* ── Progress indicator ── */}
         <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
-          <View style={[styles.progressFill, { backgroundColor: GOLD, width: "33%" }]} />
+          <View style={[styles.progressFill, { backgroundColor: GOLD, width: "25%" }]} />
         </View>
         <Text style={[styles.progressLabel, { color: colors.mutedForeground }]}>
-          {t.censusStep1of3}
+          Step 1 of 4
         </Text>
 
         <ScrollView

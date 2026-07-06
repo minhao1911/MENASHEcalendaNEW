@@ -35,6 +35,7 @@ import type {
   MaritalStatus,
   Sex,
 } from "@workspace/shared-core/census";
+import { setMembers } from "@/lib/censusStore";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -451,7 +452,21 @@ export default function FamilyMembersScreen() {
 
           <TouchableOpacity
             style={[styles.nextBtn, { backgroundColor: GOLD }]}
-            onPress={() => { haptic(); router.push("/census/review" as never); }}
+            onPress={() => {
+              haptic();
+              setMembers(members.map((m) => ({
+                id:              m.id,
+                relation:        m.relation,
+                surname:         m.surname,
+                namePerPassport: m.namePerPassport,
+                hebrewName:      m.hebrewName,
+                sex:             m.sex,
+                maritalStatus:   m.maritalStatus,
+                dob:             m.dob,
+                aliyahStatus:    m.aliyahStatus,
+              })));
+              router.push("/census/review" as never);
+            }}
             activeOpacity={0.82}
             accessibilityRole="button"
             accessibilityLabel="Continue to Review"
