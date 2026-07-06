@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { spawn } = require("child_process");
+const { spawn, execSync } = require("child_process");
 const { Readable } = require("stream");
 const { pipeline } = require("stream/promises");
 
@@ -513,6 +513,19 @@ function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
 }
 
 async function main() {
+  // ── Lint gate (MMDL StyleSheet guard) ────────────────────────────────────
+  // Fails the build immediately if any hook token (sp, rd, type) is used
+  // inside StyleSheet.create() — catching the "sp is not defined" crash class
+  // before Metro ever starts.
+  console.log("► Linting...");
+  try {
+    execSync("pnpm run lint:mmdl", { cwd: projectRoot, stdio: "inherit" });
+    console.log("✓ Lint passed\n");
+  } catch {
+    console.error("\n✖ Lint failed — fix the errors above before building.");
+    process.exit(1);
+  }
+
   console.log("Building static Expo Go deployment...");
 
   setupSignalHandlers();

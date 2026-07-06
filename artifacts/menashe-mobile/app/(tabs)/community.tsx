@@ -902,7 +902,7 @@ const styles = StyleSheet.create({
   comingSoonIcon: {
     width: 44,
     height: 44,
-    borderRadius: rd.md,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
   annIconBox: {
     width: 48,
     height: 48,
-    borderRadius: rd.md,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1074,7 +1074,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    borderRadius: rd.md,
+    borderRadius: 12,
     paddingVertical: 12,
   },
   memSanctuaryCta: {
@@ -1083,7 +1083,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    borderRadius: rd.md,
+    borderRadius: 12,
     paddingVertical: 12,
     borderWidth: 1,
     minHeight: 44,
@@ -1106,7 +1106,7 @@ const styles = StyleSheet.create({
   orgBadge: {
     width: 48,
     height: 48,
-    borderRadius: rd.md,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1136,7 +1136,7 @@ const styles = StyleSheet.create({
   },
   eventDateBox: {
     width: 52,
-    borderRadius: rd.md,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
@@ -1200,7 +1200,7 @@ const styles = StyleSheet.create({
   learnEmoji: {
     width: 48,
     height: 48,
-    borderRadius: rd.md,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1231,7 +1231,7 @@ const styles = StyleSheet.create({
   synFlagBox: {
     width: 48,
     height: 48,
-    borderRadius: rd.md,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1268,7 +1268,7 @@ const styles = StyleSheet.create({
   censusEntryIconBox: {
     width: 52,
     height: 52,
-    borderRadius: rd.md,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",

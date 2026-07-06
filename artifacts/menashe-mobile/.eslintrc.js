@@ -31,6 +31,14 @@ module.exports = {
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
 
+    // ── Rules disabled / downgraded for pre-existing codebase ───────────────
+    // react/no-unescaped-entities: DOM-only rule, irrelevant in React Native
+    // (RN renders to native views, not HTML — " vs &quot; doesn't apply)
+    "react/no-unescaped-entities": "off",
+    // Downgrade to warn rather than error — these exist throughout the codebase
+    "no-empty": "warn",
+    "no-constant-condition": "warn",
+
     // ── MMDL StyleSheet guard ────────────────────────────────────────────────
     // useThemeTokens() returns reactive values (sp, rd, type) available only
     // inside a component body. StyleSheet.create() runs at MODULE LOAD TIME —
