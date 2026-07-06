@@ -790,19 +790,19 @@ const styles = StyleSheet.create({
 
   // §1 Greeting
   greetingSection: {
-    paddingHorizontal: sp[4],
-    paddingBottom: sp[5],
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   starAccent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: sp[1],
+    gap: 4,
     alignSelf: "flex-start",
     borderWidth: 1,
     borderRadius: 99,
-    paddingHorizontal: sp[3],
-    paddingVertical: sp[1],
-    marginBottom: sp[4],
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 16,
   },
   starLabel: {
     fontSize: TEXT.xs,
@@ -814,7 +814,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.5,
     lineHeight: 42,
-    marginBottom: sp[2],
+    marginBottom: 8,
   },
   hebrewDateText: {
     fontSize: TEXT.lg,          // 20dp
@@ -825,12 +825,12 @@ const styles = StyleSheet.create({
   hebrewNumText: {
     fontSize: TEXT.sm,          // 13dp
     fontWeight: "600",
-    marginBottom: sp[1],
+    marginBottom: 4,
     letterSpacing: 0.4,
   },
   gregDateText: {
     fontSize: TEXT.base,        // 15dp
-    marginBottom: sp[4],
+    marginBottom: 16,
   },
   greetingDivider: {
     height: 3,
@@ -842,9 +842,9 @@ const styles = StyleSheet.create({
   sectionLabel: {
     flexDirection: "row",
     alignItems: "center",
-    gap: sp[2],
-    marginTop: sp[8],        // 32dp — MEL section gap
-    marginBottom: sp[3],     // 12dp
+    gap: 8,
+    marginTop: 32,        // 32dp — MEL section gap
+    marginBottom: 12,     // 12dp
   },
   sectionAccent: {
     width: 3,
@@ -869,9 +869,9 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   continueCard: {
-    padding: sp[5],          // 20dp
+    padding: 20,          // 20dp
     borderRadius: RADIUS.xl,
-    gap: sp[2],              // 8dp
+    gap: 8,              // 8dp
     minHeight: 178,
   },
   continueIcon: {
@@ -880,7 +880,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: sp[1],
+    marginBottom: 4,
   },
   continueOverline: {
     fontSize: TEXT.xs,
@@ -903,13 +903,13 @@ const styles = StyleSheet.create({
   continuePill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: sp[1],
+    gap: 4,
     borderWidth: 1,
     borderRadius: 99,
-    paddingHorizontal: sp[3],
-    paddingVertical: sp[2],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     alignSelf: "flex-start",
-    marginTop: sp[2],
+    marginTop: 8,
   },
   continuePillText: {
     fontSize: TEXT.sm,
@@ -920,15 +920,15 @@ const styles = StyleSheet.create({
   cardGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: sp[3],              // 12dp
+    gap: 12,              // 12dp
   },
   summaryCard: {
     flex: 1,
     minWidth: "46%",
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: sp[4],          // 16dp
-    gap: sp[1],
+    padding: 16,          // 16dp
+    gap: 4,
     minHeight: 164,
   },
   cardIconBox: {
@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: sp[1],
+    marginBottom: 4,
   },
   cardOverline: {
     fontSize: 9,   // intentionally sub-xs — tighter than token for overline label
@@ -960,7 +960,7 @@ const styles = StyleSheet.create({
     height: 2,
     borderRadius: 1,
     overflow: "hidden",
-    marginTop: sp[2],
+    marginTop: 8,
     marginBottom: 2,
   },
   progressFill: {
@@ -970,7 +970,7 @@ const styles = StyleSheet.create({
   cardCTA: {
     fontSize: 11,
     fontWeight: "700",
-    marginTop: sp[2],
+    marginTop: 8,
     letterSpacing: 0.1,
   },
 
@@ -979,9 +979,9 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     borderWidth: 1,
     borderStyle: "dashed",
-    padding: sp[6],
+    padding: 24,
     alignItems: "center",
-    gap: sp[3],
+    gap: 12,
   },
   bookmarkIcon: {
     width: 60,
@@ -1007,10 +1007,10 @@ const styles = StyleSheet.create({
   reflectionCard: {
     borderRadius: RADIUS.xl,
     borderWidth: 1,
-    padding: sp[5],
-    gap: sp[3],
+    padding: 20,
+    gap: 12,
     overflow: "hidden",
-    marginBottom: sp[4],
+    marginBottom: 16,
   },
   reflectionBar: {
     position: "absolute",
@@ -1023,9 +1023,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderWidth: 1,
     borderRadius: 99,
-    paddingHorizontal: sp[3],
+    paddingHorizontal: 12,
     paddingVertical: 3,
-    marginTop: sp[2],
+    marginTop: 8,
   },
   reflectionBadgeText: {
     fontSize: TEXT.xs,
@@ -1048,19 +1048,19 @@ const styles = StyleSheet.create({
   censusMilestoneWrap: {
     borderRadius: RADIUS.xl,
     borderWidth: 1.5,
-    padding: sp[4],
-    gap: sp[3],
+    padding: 16,
+    gap: 12,
   },
   censusCard: {
     borderRadius: RADIUS.xl,
     borderWidth: 1,
-    padding: sp[4],
-    gap: sp[2],
+    padding: 16,
+    gap: 8,
   },
   censusAliyahCard: {
     borderRadius: RADIUS.xl,
     borderWidth: 1,
-    padding: sp[4],
+    padding: 16,
   },
   censusIconBox: {
     width: 44,
@@ -1089,11 +1089,11 @@ const styles = StyleSheet.create({
   censusPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: sp[1],
+    gap: 4,
     borderWidth: 1,
     borderRadius: 99,
-    paddingHorizontal: sp[3],
-    paddingVertical: sp[2],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     alignSelf: "flex-start",
   },
   censusPillText: {
