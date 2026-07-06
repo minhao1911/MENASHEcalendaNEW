@@ -777,14 +777,13 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     letterSpacing: 1,
-    color: "#D4AF37",
     marginBottom: 4,
     textAlign: "left",
   },
   heroStats: {
     flexDirection: "row",
     borderWidth: 1,
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     marginTop: 16,
     overflow: "hidden",
     alignSelf: "stretch",
@@ -796,7 +795,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   heroStatVal: {
-    fontSize: ty.subtitle.fontSize,
+    fontSize: 18,
     fontWeight: "800",
     letterSpacing: -0.5,
   },
@@ -813,23 +812,23 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   heroQuoteText: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     lineHeight: 20,
     fontStyle: "italic",
   },
   heroQuoteRef: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.4,
   },
   eyebrow: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 1.4,
     marginBottom: 4,
   },
   hubTitle: {
-    fontSize: TEXT["3xl"],
+    fontSize: 30,
     fontWeight: "800",
     letterSpacing: -0.5,
     lineHeight: 38,
@@ -842,7 +841,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   hubSubtitle: {
-    fontSize: TEXT.base,
+    fontSize: 15,
     lineHeight: 20,
   },
   loadingBox: {

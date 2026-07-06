@@ -5,7 +5,7 @@
  * Navigates to census/family-head for the registration form.
  *
  * Design: large illustration header · premium typography · generous whitespace
- *         warm neutral palette · gold accents (#d4a843)
+ *         warm neutral palette · MMDL token-driven colours
  */
 
 import React from "react";
@@ -22,10 +22,8 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
-import { useColors } from "@/hooks/useColors";
-import { SPACE, TEXT, RADIUS } from "@/constants/colors";
-
-const GOLD = "#d4a843";
+import { useThemeTokens } from "@/src/mobile/design-system";
+import type { ColorTokens } from "@/src/mobile/design-system";
 
 function haptic() {
   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -37,7 +35,7 @@ function InfoCard({
   icon: React.ComponentProps<typeof Feather>["name"];
   title: string;
   body: string;
-  colors: ReturnType<typeof useColors>;
+  colors: ColorTokens;
 }) {
   return (
     <View
@@ -45,8 +43,11 @@ function InfoCard({
       accessible
       accessibilityLabel={`${title}. ${body}`}
     >
-      <View style={[styles.iconBox, { backgroundColor: GOLD + "18", borderColor: GOLD + "38" }]}>
-        <Feather name={icon} size={22} color={GOLD} />
+      <View style={[styles.iconBox, {
+        backgroundColor: (colors.primary as string) + "18",
+        borderColor: (colors.primary as string) + "38",
+      }]}>
+        <Feather name={icon} size={22} color={colors.primary as string} />
       </View>
       <View style={{ flex: 1, gap: 3 }}>
         <Text style={[styles.infoTitle, { color: colors.foreground }]}>{title}</Text>
@@ -57,7 +58,7 @@ function InfoCard({
 }
 
 export default function CensusScreen() {
-  const colors = useColors();
+  const { colors, sp } = useThemeTokens();
   const insets = useSafeAreaInsets();
 
   function handleBegin() {
@@ -72,7 +73,7 @@ export default function CensusScreen() {
       <View
         style={[
           styles.nav,
-          { paddingTop: insets.top + SPACE[2], borderBottomColor: colors.border },
+          { paddingTop: insets.top + sp[2], borderBottomColor: colors.border },
         ]}
       >
         <TouchableOpacity
@@ -82,7 +83,7 @@ export default function CensusScreen() {
           accessibilityLabel="Go back"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Feather name="arrow-left" size={22} color={colors.foreground} />
+          <Feather name="arrow-left" size={22} color={colors.foreground as string} />
         </TouchableOpacity>
 
         <Text style={[styles.navTitle, { color: colors.foreground }]}>
@@ -95,22 +96,25 @@ export default function CensusScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingBottom: insets.bottom + SPACE[10] },
+          { paddingBottom: insets.bottom + sp[10] },
         ]}
         showsVerticalScrollIndicator={false}
       >
 
         {/* ── Hero illustration header ── */}
-        <View style={[styles.hero, { backgroundColor: GOLD + "0D" }]}>
+        <View style={[styles.hero, { backgroundColor: (colors.primary as string) + "0D" }]}>
           <View style={styles.illustRow}>
             <Text style={styles.illustSide}>🏘️</Text>
-            <View style={[styles.illustCenter, { borderColor: GOLD + "44", backgroundColor: GOLD + "16" }]}>
+            <View style={[styles.illustCenter, {
+              borderColor: (colors.primary as string) + "44",
+              backgroundColor: (colors.primary as string) + "16",
+            }]}>
               <Text style={styles.illustCenterEmoji}>📋</Text>
             </View>
             <Text style={styles.illustSide}>👥</Text>
           </View>
 
-          <Text style={[styles.overline, { color: GOLD }]}>BNEI MENASHE PLATFORM</Text>
+          <Text style={[styles.overline, { color: colors.primary }]}>BNEI MENASHE PLATFORM</Text>
 
           <Text style={[styles.heroTitle, { color: colors.foreground }]}>
             Community Census
@@ -123,16 +127,19 @@ export default function CensusScreen() {
 
         {/* ── Stat chips ── */}
         <View style={styles.chipRow}>
-          <View style={[styles.chip, { backgroundColor: GOLD + "14", borderColor: GOLD + "3A" }]}>
-            <Feather name="clock" size={13} color={GOLD} />
-            <Text style={[styles.chipText, { color: GOLD }]}>~10 minutes</Text>
+          <View style={[styles.chip, {
+            backgroundColor: (colors.primary as string) + "14",
+            borderColor: (colors.primary as string) + "3A",
+          }]}>
+            <Feather name="clock" size={13} color={colors.primary as string} />
+            <Text style={[styles.chipText, { color: colors.primary }]}>~10 minutes</Text>
           </View>
           <View style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Feather name="shield" size={13} color={colors.mutedForeground} />
+            <Feather name="shield" size={13} color={colors.mutedForeground as string} />
             <Text style={[styles.chipText, { color: colors.mutedForeground }]}>Private &amp; secure</Text>
           </View>
           <View style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Feather name="users" size={13} color={colors.mutedForeground} />
+            <Feather name="users" size={13} color={colors.mutedForeground as string} />
             <Text style={[styles.chipText, { color: colors.mutedForeground }]}>Every family</Text>
           </View>
         </View>
@@ -168,18 +175,18 @@ export default function CensusScreen() {
         {/* ── Begin Census CTA ── */}
         <View style={styles.ctaWrap}>
           <TouchableOpacity
-            style={[styles.beginBtn, { backgroundColor: GOLD }]}
+            style={[styles.beginBtn, { backgroundColor: colors.primary }]}
             onPress={handleBegin}
             activeOpacity={0.82}
             accessibilityRole="button"
             accessibilityLabel="Begin Census — register as family head"
           >
-            <Feather name="edit-3" size={18} color="#1a1100" />
-            <Text style={styles.beginBtnText}>Begin Census</Text>
+            <Feather name="edit-3" size={18} color={colors.primaryForeground as string} />
+            <Text style={[styles.beginBtnText, { color: colors.primaryForeground }]}>Begin Census</Text>
           </TouchableOpacity>
 
           <View style={styles.hintRow}>
-            <Feather name="info" size={13} color={colors.mutedForeground} />
+            <Feather name="info" size={13} color={colors.mutedForeground as string} />
             <Text style={[styles.hintText, { color: colors.mutedForeground }]}>
               You will register as the family head
             </Text>
@@ -198,13 +205,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: SPACE[4],
-    paddingBottom: SPACE[3],
+    paddingHorizontal: 16,
+    paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   backBtn: { width: 40, height: 40, justifyContent: "center" },
   navTitle: {
-    fontSize: TEXT.md,
+    fontSize: 15,
     fontWeight: "700",
     letterSpacing: -0.3,
   },
@@ -212,129 +219,128 @@ const styles = StyleSheet.create({
   scroll: { gap: 0 },
 
   hero: {
-    paddingTop: SPACE[8],
-    paddingBottom: SPACE[6],
-    paddingHorizontal: SPACE[6],
+    paddingTop: 32,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
     alignItems: "center",
-    gap: SPACE[2],
+    gap: 8,
   },
   illustRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[4],
-    marginBottom: SPACE[4],
+    gap: 16,
+    marginBottom: 16,
   },
   illustSide: { fontSize: 44, opacity: 0.85 },
   illustCenter: {
     width: 88,
     height: 88,
-    borderRadius: RADIUS.xl,
+    borderRadius: 20,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
   },
   illustCenterEmoji: { fontSize: 52 },
   overline: {
-    fontSize: TEXT.xs,
+    fontSize: 11,
     fontWeight: "800",
     letterSpacing: 2.5,
-    marginBottom: SPACE[1],
+    marginBottom: 4,
   },
   heroTitle: {
-    fontSize: TEXT["3xl"],
+    fontSize: 30,
     fontWeight: "800",
     letterSpacing: -0.8,
     textAlign: "center",
   },
   heroTagline: {
-    fontSize: TEXT.lg,
+    fontSize: 18,
     fontWeight: "400",
     textAlign: "center",
     lineHeight: 27,
-    marginTop: SPACE[2],
+    marginTop: 8,
   },
 
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: SPACE[2],
-    paddingHorizontal: SPACE[5],
-    paddingVertical: SPACE[4],
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     justifyContent: "center",
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[1],
+    gap: 4,
     borderWidth: 1,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: SPACE[3],
+    borderRadius: 9999,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  chipText: { fontSize: TEXT.xs, fontWeight: "700", letterSpacing: 0.2 },
+  chipText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.2 },
 
   cards: {
-    paddingHorizontal: SPACE[4],
-    gap: SPACE[3],
-    marginTop: SPACE[1],
+    paddingHorizontal: 16,
+    gap: 12,
+    marginTop: 4,
   },
   infoCard: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: SPACE[4],
-    borderRadius: RADIUS.xl,
+    gap: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: SPACE[4],
+    padding: 16,
   },
   iconBox: {
     width: 46,
     height: 46,
-    borderRadius: RADIUS.md,
+    borderRadius: 10,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   infoTitle: {
-    fontSize: TEXT.md,
+    fontSize: 15,
     fontWeight: "700",
     letterSpacing: -0.2,
     marginBottom: 3,
   },
   infoBody: {
-    fontSize: TEXT.sm,
+    fontSize: 13,
     lineHeight: 20,
   },
 
   ctaWrap: {
     alignItems: "center",
-    paddingHorizontal: SPACE[5],
-    paddingTop: SPACE[6],
-    gap: SPACE[3],
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    gap: 12,
   },
   beginBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: SPACE[2],
+    gap: 8,
     width: "100%",
-    borderRadius: RADIUS.full,
-    paddingVertical: SPACE[4],
-    paddingHorizontal: SPACE[8],
+    borderRadius: 9999,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
   },
   beginBtnText: {
-    fontSize: TEXT.md,
+    fontSize: 15,
     fontWeight: "800",
-    color: "#1a1100",
     letterSpacing: -0.3,
   },
   hintRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[1],
+    gap: 4,
   },
   hintText: {
-    fontSize: TEXT.sm,
+    fontSize: 13,
     fontWeight: "500",
   },
 });

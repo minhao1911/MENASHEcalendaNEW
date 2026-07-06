@@ -1028,60 +1028,60 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   reflectionBadgeText: {
-    fontSize: TEXT.xs,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.8,
   },
   reflectionQuote: {
-    fontSize: TEXT.lg,          // 20dp
+    fontSize: 20,
     fontWeight: "500",
     fontStyle: "italic",
     lineHeight: 29,
   },
   reflectionSource: {
-    fontSize: TEXT.sm,          // 13dp
+    fontSize: 13,
     fontWeight: "700",
     letterSpacing: 0.3,
   },
 
   // §3.5 Census styles (SPR-P006A)
   censusMilestoneWrap: {
-    borderRadius: RADIUS.xl,
+    borderRadius: 20,
     borderWidth: 1.5,
     padding: 16,
     gap: 12,
   },
   censusCard: {
-    borderRadius: RADIUS.xl,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 16,
     gap: 8,
   },
   censusAliyahCard: {
-    borderRadius: RADIUS.xl,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 16,
   },
   censusIconBox: {
     width: 44,
     height: 44,
-    borderRadius: RADIUS.md,
+    borderRadius: 10,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
   censusOverline: {
-    fontSize: TEXT.xs,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 2.0,
   },
   censusTitle: {
-    fontSize: TEXT.md,
+    fontSize: 15,
     fontWeight: "700",
     letterSpacing: -0.2,
   },
   censusSub: {
-    fontSize: TEXT.sm,
+    fontSize: 13,
     fontWeight: "400",
     lineHeight: 19,
     marginTop: 2,
@@ -1097,16 +1097,16 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   censusPillText: {
-    fontSize: TEXT.sm,
+    fontSize: 13,
     fontWeight: "700",
   },
   censusCount: {
-    fontSize: TEXT["2xl"],
+    fontSize: 24,
     fontWeight: "800",
     letterSpacing: -0.5,
   },
   censusCountLabel: {
-    fontSize: TEXT.xs,
+    fontSize: 11,
     fontWeight: "600",
     letterSpacing: 0.5,
   },
