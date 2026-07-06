@@ -805,31 +805,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   starLabel: {
-    fontSize: TEXT.xs,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 1.2,
   },
   shalomText: {
-    fontSize: TEXT["3xl"],      // 34dp
+    fontSize: 34,
     fontWeight: "800",
     letterSpacing: -0.5,
     lineHeight: 42,
     marginBottom: 8,
   },
   hebrewDateText: {
-    fontSize: TEXT.lg,          // 20dp
+    fontSize: 20,
     fontWeight: "700",
     letterSpacing: 0.2,
     marginBottom: 2,
   },
   hebrewNumText: {
-    fontSize: TEXT.sm,          // 13dp
+    fontSize: 13,
     fontWeight: "600",
     marginBottom: 4,
     letterSpacing: 0.4,
   },
   gregDateText: {
-    fontSize: TEXT.base,        // 15dp
+    fontSize: 15,
     marginBottom: 16,
   },
   greetingDivider: {
@@ -843,8 +843,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginTop: 32,        // 32dp — MEL section gap
-    marginBottom: 12,     // 12dp
+    marginTop: 32,
+    marginBottom: 12,
   },
   sectionAccent: {
     width: 3,
@@ -852,16 +852,15 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   sectionText: {
-    fontSize: TEXT.md,          // 17dp
+    fontSize: 17,
     fontWeight: "700",
     letterSpacing: 0.1,
   },
 
   // §2 Continue Journey card
   continueWrap: {
-    borderRadius: RADIUS.xl,
+    borderRadius: 20,
     overflow: "hidden",
-    // Shadow
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
@@ -869,33 +868,33 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   continueCard: {
-    padding: 20,          // 20dp
-    borderRadius: RADIUS.xl,
-    gap: 8,              // 8dp
+    padding: 20,
+    borderRadius: 20,
+    gap: 8,
     minHeight: 178,
   },
   continueIcon: {
     width: 44,
     height: 44,
-    borderRadius: RADIUS.md,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   continueOverline: {
-    fontSize: TEXT.xs,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 2.0,
   },
   continueTitle: {
-    fontSize: TEXT["2xl"],      // 24dp
+    fontSize: 24,
     fontWeight: "800",
     color: "#ffffff",
     letterSpacing: -0.3,
     lineHeight: 30,
   },
   continueSubtitle: {
-    fontSize: TEXT.sm,          // 13dp
+    fontSize: 13,
     fontWeight: "400",
     color: "rgba(255,255,255,0.72)",
     lineHeight: 19,
@@ -912,7 +911,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   continuePillText: {
-    fontSize: TEXT.sm,
+    fontSize: 13,
     fontWeight: "700",
   },
 
@@ -920,39 +919,39 @@ const styles = StyleSheet.create({
   cardGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,              // 12dp
+    gap: 12,
   },
   summaryCard: {
     flex: 1,
     minWidth: "46%",
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 16,          // 16dp
+    padding: 16,
     gap: 4,
     minHeight: 164,
   },
   cardIconBox: {
     width: 38,
     height: 38,
-    borderRadius: RADIUS.md,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   cardOverline: {
-    fontSize: 9,   // intentionally sub-xs — tighter than token for overline label
+    fontSize: 9,
     fontWeight: "700",
     letterSpacing: 1.8,
   },
   cardValue: {
-    fontSize: TEXT.md,          // 17dp
+    fontSize: 17,
     fontWeight: "800",
     letterSpacing: -0.2,
     lineHeight: 22,
     marginTop: 2,
   },
   cardSub: {
-    fontSize: TEXT.xs,          // 10dp — small secondary
+    fontSize: 11,
     lineHeight: 14,
     marginTop: 1,
   },
@@ -976,7 +975,7 @@ const styles = StyleSheet.create({
 
   // §4 Bookmarks
   bookmarksEmpty: {
-    borderRadius: RADIUS.xl,
+    borderRadius: 20,
     borderWidth: 1,
     borderStyle: "dashed",
     padding: 24,
@@ -986,18 +985,18 @@ const styles = StyleSheet.create({
   bookmarkIcon: {
     width: 60,
     height: 60,
-    borderRadius: RADIUS.xl,
+    borderRadius: 20,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
   bookmarksTitle: {
-    fontSize: TEXT.md,
+    fontSize: 17,
     fontWeight: "700",
     textAlign: "center",
   },
   bookmarksSub: {
-    fontSize: TEXT.sm,
+    fontSize: 13,
     textAlign: "center",
     lineHeight: 20,
     maxWidth: 280,
@@ -1005,7 +1004,7 @@ const styles = StyleSheet.create({
 
   // §5 Reflection
   reflectionCard: {
-    borderRadius: RADIUS.xl,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 20,
     gap: 12,
