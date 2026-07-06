@@ -68,6 +68,8 @@ export default function RootLayout() {
                       <Stack.Screen name="census/family-head" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="census/family-members" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="census/review" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="census/submit" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="census/success" options={{ headerShown: false, animation: "fade" }} />
                       <Stack.Screen name="community/announcements" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/memorials" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/events" options={{ headerShown: false, animation: "slide_from_right" }} />
