@@ -14,7 +14,8 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useColors } from "@/hooks/useColors";
+import { useThemeTokens } from "@/src/mobile/design-system";
+
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchPrayerRequests, submitPrayerRequest, amenPrayerRequest, type PrayerRequest } from "@/lib/prayerBoardApi";
 
@@ -48,7 +49,7 @@ function fmtRelative(iso: string): string {
 }
 
 export default function PrayerBoardScreen() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);

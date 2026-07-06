@@ -6,14 +6,15 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useThemeTokens } from "@/src/mobile/design-system";
 import * as WebBrowser from "expo-web-browser";
-import { useColors } from "@/hooks/useColors";
+
 import { HDate } from "@hebcal/core";
 import { formatHebrewDate } from "@/lib/hebrewCalendar";
 import { TRACTATES, DAF_TOTAL_PAGES as TOTAL_PAGES, getTodayDaf, getSefariaDafUrl as getSefariaUrl } from "@/lib/dafYomi";
 
 export default function DafYomiScreen() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 

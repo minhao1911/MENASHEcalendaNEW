@@ -7,8 +7,9 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useThemeTokens } from "@/src/mobile/design-system";
 import { HDate } from "@hebcal/core";
-import { useColors } from "@/hooks/useColors";
+
 import { useApp } from "@/context/AppContext";
 import { calculateZmanim } from "@/lib/zmanim";
 import { hebrewDayNumeral } from "@/lib/hebrewCalendar";
@@ -72,7 +73,7 @@ function formatTime12(date: Date | null, tz: string): string {
 }
 
 export default function YahrzeitCalcScreen() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const { location } = useApp();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);

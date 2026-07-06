@@ -6,14 +6,15 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import { useThemeTokens } from "@/src/mobile/design-system";
 import * as WebBrowser from "expo-web-browser";
-import { useColors } from "@/hooks/useColors";
+
 import { fetchBooks, type Book } from "@/lib/siddurApi";
 
 const CATEGORIES = ["All", "Siddur", "Tehillim", "Torah Portions", "Hebrew Learning", "Prayer Books", "Daily Study", "Kuki Christian Books", "Custom Community Books"];
 
 export default function SiddurScreen() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
   const params = useLocalSearchParams<{ category?: string }>();

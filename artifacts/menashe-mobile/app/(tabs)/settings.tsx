@@ -8,7 +8,7 @@ import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth, useUser } from "@clerk/expo";
-import { useColors } from "@/hooks/useColors";
+import { useThemeTokens } from "@/src/mobile/design-system";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import type { ThemeKey } from "@/constants/colors";
@@ -25,7 +25,7 @@ import * as Notifications from "expo-notifications";
 const LEAD_OPTIONS = [5, 10, 15, 30];
 
 export default function SettingsScreen() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const { signOut, getToken } = useAuth();
   const { user } = useUser();

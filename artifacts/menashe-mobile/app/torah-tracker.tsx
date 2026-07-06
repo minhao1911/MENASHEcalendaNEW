@@ -7,7 +7,8 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useColors } from "@/hooks/useColors";
+import { useThemeTokens } from "@/src/mobile/design-system";
+
 import { storageGet, storageSet } from "@/lib/storageUtils";
 
 const STORAGE_KEY = "menashe-torah-tracker-v2";
@@ -63,7 +64,7 @@ function computeStreak(entries: StudyEntry[]): number {
 }
 
 export default function TorahTrackerScreen() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 

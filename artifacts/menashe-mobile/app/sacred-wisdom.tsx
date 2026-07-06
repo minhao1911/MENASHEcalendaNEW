@@ -39,7 +39,6 @@ import { useAuth } from "@clerk/expo";
 import * as Haptics from "expo-haptics";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
-import { useColors } from "@/hooks/useColors";
 import { storageGet, storageSet } from "@/lib/storageUtils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1082,13 +1081,13 @@ function ChatView({
 
 export default function SacredWisdomScreen() {
   const { colors, sp, rd, shadow } = useThemeTokens();
-  const rawColors = useColors();
+
   const insets = useSafeAreaInsets();
   const { getToken } = useAuth();
   const reducedMotion = useReducedMotion();
 
   // Derive accent colors — sapphire primary (#6382FF) or theme primary, always gold accent
-  const accentPrimary = rawColors.primary;   // #6382FF in sapphire, #d4a843 in dark
+  const accentPrimary = colors.primary as string;   // #6382FF in sapphire, #d4a843 in dark
   const accentGold    = colors.accentGold;   // #d4a843 always
 
   // Screen state

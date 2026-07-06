@@ -12,7 +12,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useColors } from "@/hooks/useColors";
+import { useThemeTokens } from "@/src/mobile/design-system";
+
 import { useLanguage } from "@/context/LanguageContext";
 import { Translations, en as defaultEn, tk as defaultTk } from "@/lib/translations";
 
@@ -104,7 +105,7 @@ type Row =
   | { type: "label"; key: TKey; en: string; tk: string };
 
 export default function TranslationEditorScreen() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const { t, tkOverrides, saveTkOverrides, resetTkOverrides } = useLanguage();
 

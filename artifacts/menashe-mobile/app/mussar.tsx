@@ -7,7 +7,8 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useColors } from "@/hooks/useColors";
+import { useThemeTokens } from "@/src/mobile/design-system";
+
 import { storageGet, storageSet } from "@/lib/storageUtils";
 
 const NOTES_KEY = "menashe-mussar-notes-v1";
@@ -173,7 +174,7 @@ function getDailyIndex(): number {
 }
 
 export default function MussarScreen() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 

@@ -3,13 +3,13 @@ import { Tabs, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import React, { useEffect } from "react";
 import { Platform, StyleSheet, View } from "react-native";
-import { useColors } from "@/hooks/useColors";
+import { useThemeTokens } from "@/src/mobile/design-system";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@clerk/expo";
 
 export default function TabLayout() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const { theme } = useApp();
   const { t } = useLanguage();
   const isDark = theme !== "light";
