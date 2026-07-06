@@ -18,8 +18,8 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
-import { useColors } from "@/hooks/useColors";
-import { SPACE, TEXT, RADIUS } from "@/constants/colors";
+import { useThemeTokens } from "@/src/mobile/design-system";
+import type { ColorTokens } from "@/src/mobile/design-system";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
 import { fetchPrayerRequests, amenPrayerRequest, type PrayerRequest } from "@/lib/prayerBoardApi";
@@ -64,7 +64,7 @@ function navigate(path: string) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-type Colors = ReturnType<typeof useColors>;
+type Colors = ColorTokens;
 
 function SectionHeader({
   emoji, title, action, onAction, colors,
@@ -134,7 +134,7 @@ function ComingSoonCard({ icon, title, hint, colors }: {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function CommunityScreen() {
-  const colors = useColors();
+  const { colors, sp, type: ty, rd } = useThemeTokens();
   const { t, lang } = useLanguage();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
@@ -189,7 +189,7 @@ export default function CommunityScreen() {
         accessibilityLabel="Community hub"
       >
         {/* ── Community Hero ── */}
-        <View style={[styles.hero, { paddingTop: topPad + SPACE[3] }]}>
+        <View style={[styles.hero, { paddingTop: topPad + sp[3] }]}>
           {/* Eyebrow */}
           <View style={[styles.heroBadge, { backgroundColor: colors.primary + "14", borderColor: colors.primary + "35" }]}>
             <Text style={{ fontSize: 12 }}>✡</Text>
@@ -238,7 +238,7 @@ export default function CommunityScreen() {
             <ActivityIndicator color={colors.primary} size="large" />
           </View>
         ) : (
-          <View style={{ paddingHorizontal: SPACE[4] }}>
+          <View style={{ paddingHorizontal: sp[4] }}>
 
             {/* ═══ 1. ANNOUNCEMENTS ═══ */}
             <SectionHeader
@@ -269,7 +269,7 @@ export default function CommunityScreen() {
                   backgroundColor: ann.pinned ? colors.primary + "22" : colors.muted,
                   borderColor: ann.pinned ? colors.primary + "44" : colors.border,
                 }]}>
-                  <Text style={{ fontSize: TEXT.xl }}>{ann.emoji}</Text>
+                  <Text style={{ fontSize: ty.subtitle.fontSize }}>{ann.emoji}</Text>
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   {ann.pinned && (
@@ -321,7 +321,7 @@ export default function CommunityScreen() {
                       backgroundColor: meta.color + "1A",
                       borderColor: meta.color + "44",
                     }]}>
-                      <Text style={{ fontSize: TEXT.xs }}>{meta.emoji} </Text>
+                      <Text style={{ fontSize: ty.caption.fontSize }}>{meta.emoji} </Text>
                       <Text style={[styles.catText, { color: meta.color }]}>{pr.category}</Text>
                     </View>
                     <Text style={[styles.timeLabel, { color: colors.mutedForeground }]}>
@@ -345,14 +345,14 @@ export default function CommunityScreen() {
                       styles.amenRow,
                       {
                         borderTopColor: colors.border,
-                        borderRadius: RADIUS.md,
-                        paddingHorizontal: SPACE[2],
-                        paddingVertical: SPACE[1],
+                        borderRadius: rd.md,
+                        paddingHorizontal: sp[2],
+                        paddingVertical: sp[1],
                         backgroundColor: hubAmens.has(pr.id) ? (meta.color + "12") : "transparent",
                       },
                     ]}
                   >
-                    <Text style={{ fontSize: TEXT.sm }}>{hubAmens.has(pr.id) ? "🙏" : "🤲"}</Text>
+                    <Text style={{ fontSize: ty.bodySm.fontSize }}>{hubAmens.has(pr.id) ? "🙏" : "🤲"}</Text>
                     <Text style={[styles.amenText, {
                       color: hubAmens.has(pr.id) ? meta.color : colors.mutedForeground,
                     }]}>
@@ -434,7 +434,7 @@ export default function CommunityScreen() {
               {/* CTAs row */}
               <View style={styles.memCtaRow}>
                 <View style={[styles.memCta, { backgroundColor: colors.primary, flex: 1 }]}>
-                  <Text style={{ fontSize: TEXT.sm }}>🕯</Text>
+                  <Text style={{ fontSize: ty.bodySm.fontSize }}>🕯</Text>
                   <Text style={[styles.memCtaText, { color: colors.primaryForeground }]}>
                     {t.commLightCandle}
                   </Text>
@@ -446,7 +446,7 @@ export default function CommunityScreen() {
                   accessibilityLabel={t.commEnterSanctuary}
                   style={[styles.memSanctuaryCta, { borderColor: colors.primary + "55" }]}
                 >
-                  <Text style={{ fontSize: TEXT.sm }}>✨</Text>
+                  <Text style={{ fontSize: ty.bodySm.fontSize }}>✨</Text>
                   <Text style={[styles.memCtaText, { color: colors.primary }]}>
                     {t.commEnterSanctuary}
                   </Text>
@@ -567,7 +567,7 @@ export default function CommunityScreen() {
               style={[styles.orgCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
               <View style={[styles.orgBadge, { backgroundColor: "#1a3a22" }]}>
-                <Text style={{ fontSize: TEXT.xl }}>✡</Text>
+                <Text style={{ fontSize: ty.subtitle.fontSize }}>✡</Text>
               </View>
               <View style={{ flex: 1, gap: 3 }}>
                 <Text style={[styles.orgName, { color: colors.foreground }]}>Shavei Israel</Text>
@@ -583,7 +583,7 @@ export default function CommunityScreen() {
               style={[styles.orgCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
               <View style={[styles.orgBadge, { backgroundColor: "#1a2e4a" }]}>
-                <Text style={{ fontSize: TEXT.xl }}>🫂</Text>
+                <Text style={{ fontSize: ty.subtitle.fontSize }}>🫂</Text>
               </View>
               <View style={{ flex: 1, gap: 3 }}>
                 <Text style={[styles.orgName, { color: colors.foreground }]}>Bnei Menashe Federation</Text>
@@ -624,7 +624,7 @@ export default function CommunityScreen() {
                 style={[styles.learnCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={[styles.learnEmoji, { backgroundColor: colors.primary + "16" }]}>
-                  <Text style={{ fontSize: TEXT.xl }}>{g.emoji}</Text>
+                  <Text style={{ fontSize: ty.subtitle.fontSize }}>{g.emoji}</Text>
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[styles.learnName, { color: colors.foreground }]} numberOfLines={1}>
@@ -674,7 +674,7 @@ export default function CommunityScreen() {
                 style={[styles.synPreviewCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={[styles.synFlagBox, { backgroundColor: colors.primary + "12" }]}>
-                  <Text style={{ fontSize: TEXT.xl }}>{syn.flag}</Text>
+                  <Text style={{ fontSize: ty.subtitle.fontSize }}>{syn.flag}</Text>
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[styles.synPreviewName, { color: colors.foreground }]} numberOfLines={1}>
@@ -697,7 +697,7 @@ export default function CommunityScreen() {
               accessibilityLabel={t.commSynagogueSeeAll}
               activeOpacity={0.75}
             >
-              <Text style={{ fontSize: TEXT.sm }}>🕍</Text>
+              <Text style={{ fontSize: ty.bodySm.fontSize }}>🕍</Text>
               <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.commSynagogueSeeAll}</Text>
             </TouchableOpacity>
 
@@ -705,7 +705,7 @@ export default function CommunityScreen() {
         )}
 
         {/* ── §8  Community Census ── */}
-        <View style={[styles.section, { paddingBottom: SPACE[4] }]}>
+        <View style={[styles.section, { paddingBottom: sp[4] }]}>
           <SectionHeader
             emoji="📋"
             title="Community Census"
@@ -740,7 +740,7 @@ export default function CommunityScreen() {
                 Register your family and help build an accurate picture of our global community.
               </Text>
             </View>
-            <Feather name="arrow-right" size={18} color="#d4a843" style={{ alignSelf: "center", marginLeft: SPACE[2] }} />
+            <Feather name="arrow-right" size={18} color="#d4a843" style={{ alignSelf: "center", marginLeft: sp[2] }} />
           </TouchableOpacity>
         </View>
 
@@ -754,19 +754,19 @@ export default function CommunityScreen() {
 const styles = StyleSheet.create({
   // Header
   hero: {
-    paddingHorizontal: SPACE[4],
-    paddingBottom: SPACE[5],
+    paddingHorizontal: sp[4],
+    paddingBottom: sp[5],
     alignItems: "flex-start",
   },
   heroBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[1],
+    gap: sp[1],
     borderWidth: 1,
     borderRadius: 99,
-    paddingHorizontal: SPACE[3],
-    paddingVertical: SPACE[1],
-    marginBottom: SPACE[3],
+    paddingHorizontal: sp[3],
+    paddingVertical: sp[1],
+    marginBottom: sp[3],
   },
   heroBadgeText: {
     fontSize: 10,
@@ -778,25 +778,25 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1,
     color: "#D4AF37",
-    marginBottom: SPACE[1],
+    marginBottom: sp[1],
     textAlign: "left",
   },
   heroStats: {
     flexDirection: "row",
     borderWidth: 1,
     borderRadius: RADIUS.lg,
-    marginTop: SPACE[4],
+    marginTop: sp[4],
     overflow: "hidden",
     alignSelf: "stretch",
   },
   heroStatItem: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: SPACE[3],
+    paddingVertical: sp[3],
     gap: 2,
   },
   heroStatVal: {
-    fontSize: TEXT.xl,
+    fontSize: ty.subtitle.fontSize,
     fontWeight: "800",
     letterSpacing: -0.5,
   },
@@ -807,26 +807,26 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   heroQuote: {
-    marginTop: SPACE[4],
+    marginTop: sp[4],
     borderLeftWidth: 3,
-    paddingLeft: SPACE[3],
-    gap: SPACE[1],
+    paddingLeft: sp[3],
+    gap: sp[1],
   },
   heroQuoteText: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     lineHeight: 20,
     fontStyle: "italic",
   },
   heroQuoteRef: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "700",
     letterSpacing: 0.4,
   },
   eyebrow: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "700",
     letterSpacing: 1.4,
-    marginBottom: SPACE[1],
+    marginBottom: sp[1],
   },
   hubTitle: {
     fontSize: TEXT["3xl"],
@@ -838,8 +838,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 3,
     borderRadius: 2,
-    marginTop: SPACE[2],
-    marginBottom: SPACE[2],
+    marginTop: sp[2],
+    marginBottom: sp[2],
   },
   hubSubtitle: {
     fontSize: TEXT.base,
@@ -855,13 +855,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: SPACE[8],
-    marginBottom: SPACE[3],
+    marginTop: sp[8],
+    marginBottom: sp[3],
   },
   sectionTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[2],
+    gap: sp[2],
   },
   sectionAccent: {
     width: 3,
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   seeAll: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     fontWeight: "600",
   },
 
@@ -881,28 +881,28 @@ const styles = StyleSheet.create({
   emptyCard: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[5],
+    padding: sp[5],
     alignItems: "center",
-    gap: SPACE[2],
-    marginBottom: SPACE[2],
+    gap: sp[2],
+    marginBottom: sp[2],
   },
   emptyText: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     textAlign: "center",
   },
   comingSoonCard: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[4],
+    padding: sp[4],
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[3],
-    marginBottom: SPACE[2],
+    gap: sp[3],
+    marginBottom: sp[2],
   },
   comingSoonIcon: {
     width: 44,
     height: 44,
-    borderRadius: RADIUS.md,
+    borderRadius: rd.md,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -913,7 +913,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   comingSoonHint: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     lineHeight: 18,
   },
 
@@ -921,23 +921,23 @@ const styles = StyleSheet.create({
   annCard: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[3],
+    padding: sp[3],
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: SPACE[3],
-    marginBottom: SPACE[2],
+    gap: sp[3],
+    marginBottom: sp[2],
   },
   annIconBox: {
     width: 48,
     height: 48,
-    borderRadius: RADIUS.md,
+    borderRadius: rd.md,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   pinnedLabel: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "700",
   },
   annTitle: {
@@ -945,72 +945,72 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   annBody: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     lineHeight: 18,
   },
   timeLabel: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
   },
 
   // Prayer cards
   prayCard: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[4],
-    marginBottom: SPACE[2],
+    padding: sp[4],
+    marginBottom: sp[2],
   },
   prayCardHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: SPACE[2],
+    marginBottom: sp[2],
   },
   catBadge: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: RADIUS.full,
     borderWidth: 1,
-    paddingHorizontal: SPACE[2],
+    paddingHorizontal: sp[2],
     paddingVertical: 3,
   },
   catText: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "700",
   },
   prayName: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     fontWeight: "700",
     marginBottom: 4,
   },
   prayText: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     lineHeight: 18,
-    marginBottom: SPACE[3],
+    marginBottom: sp[3],
   },
   amenRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[2],
+    gap: sp[2],
     borderTopWidth: 1,
-    paddingTop: SPACE[2],
+    paddingTop: sp[2],
   },
   amenText: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     fontWeight: "600",
   },
   dashedCta: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: SPACE[2],
+    gap: sp[2],
     borderWidth: 1.5,
     borderStyle: "dashed",
     borderRadius: RADIUS.lg,
-    paddingVertical: SPACE[3],
-    marginBottom: SPACE[2],
+    paddingVertical: sp[3],
+    marginBottom: sp[2],
   },
   dashedCtaText: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     fontWeight: "700",
   },
 
@@ -1018,15 +1018,15 @@ const styles = StyleSheet.create({
   memSummary: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[4],
-    marginBottom: SPACE[2],
+    padding: sp[4],
+    marginBottom: sp[2],
   },
   memStatsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: SPACE[8],
-    marginBottom: SPACE[4],
+    gap: sp[8],
+    marginBottom: sp[4],
   },
   memStat: {
     alignItems: "center",
@@ -1037,7 +1037,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   memStatLabel: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
@@ -1047,49 +1047,49 @@ const styles = StyleSheet.create({
   },
   memNames: {
     borderTopWidth: 1,
-    paddingTop: SPACE[3],
-    marginBottom: SPACE[3],
-    gap: SPACE[1],
+    paddingTop: sp[3],
+    marginBottom: sp[3],
+    gap: sp[1],
   },
   memName: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     lineHeight: 22,
   },
   memMore: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontStyle: "italic",
   },
   memEmpty: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     textAlign: "center",
-    marginBottom: SPACE[3],
+    marginBottom: sp[3],
   },
   memCtaRow: {
     flexDirection: "row",
-    gap: SPACE[2],
-    marginTop: SPACE[2],
+    gap: sp[2],
+    marginTop: sp[2],
   },
   memCta: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: SPACE[2],
-    borderRadius: RADIUS.md,
-    paddingVertical: SPACE[3],
+    gap: sp[2],
+    borderRadius: rd.md,
+    paddingVertical: sp[3],
   },
   memSanctuaryCta: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: SPACE[2],
-    borderRadius: RADIUS.md,
-    paddingVertical: SPACE[3],
+    gap: sp[2],
+    borderRadius: rd.md,
+    paddingVertical: sp[3],
     borderWidth: 1,
     minHeight: 44,
   },
   memCtaText: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     fontWeight: "700",
   },
 
@@ -1097,16 +1097,16 @@ const styles = StyleSheet.create({
   orgCard: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[4],
+    padding: sp[4],
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: SPACE[3],
-    marginBottom: SPACE[2],
+    gap: sp[3],
+    marginBottom: sp[2],
   },
   orgBadge: {
     width: 48,
     height: 48,
-    borderRadius: RADIUS.md,
+    borderRadius: rd.md,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1116,11 +1116,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   orgDesc: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     lineHeight: 18,
   },
   orgLink: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "700",
   },
 
@@ -1128,22 +1128,22 @@ const styles = StyleSheet.create({
   eventCard: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[3],
+    padding: sp[3],
     flexDirection: "row",
     alignItems: "stretch",
-    gap: SPACE[3],
-    marginBottom: SPACE[2],
+    gap: sp[3],
+    marginBottom: sp[2],
   },
   eventDateBox: {
     width: 52,
-    borderRadius: RADIUS.md,
+    borderRadius: rd.md,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACE[2],
+    paddingVertical: sp[2],
     flexShrink: 0,
   },
   eventMonth: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "800",
     letterSpacing: 0.5,
   },
@@ -1153,7 +1153,7 @@ const styles = StyleSheet.create({
     lineHeight: 28,
   },
   eventWeekday: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "600",
   },
   eventEmoji: {
@@ -1169,11 +1169,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   eventLoc: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     flex: 1,
   },
   eventTime: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "700",
   },
   recBadge: {
@@ -1191,16 +1191,16 @@ const styles = StyleSheet.create({
   learnCard: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[3],
+    padding: sp[3],
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[3],
-    marginBottom: SPACE[2],
+    gap: sp[3],
+    marginBottom: sp[2],
   },
   learnEmoji: {
     width: 48,
     height: 48,
-    borderRadius: RADIUS.md,
+    borderRadius: rd.md,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1215,23 +1215,23 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   learnSchedule: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
   },
 
   // Synagogue preview cards
   synPreviewCard: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[3],
+    padding: sp[3],
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[3],
-    marginBottom: SPACE[2],
+    gap: sp[3],
+    marginBottom: sp[2],
   },
   synFlagBox: {
     width: 48,
     height: 48,
-    borderRadius: RADIUS.md,
+    borderRadius: rd.md,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1241,7 +1241,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   synPreviewCity: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
   },
   synMeta: {
     flexDirection: "row",
@@ -1249,10 +1249,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   synMetaText: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
   },
   synType: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "700",
   },
 
@@ -1262,20 +1262,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     borderRadius: RADIUS.xl,
     borderWidth: 1.5,
-    padding: SPACE[4],
-    gap: SPACE[3],
+    padding: sp[4],
+    gap: sp[3],
   },
   censusEntryIconBox: {
     width: 52,
     height: 52,
-    borderRadius: RADIUS.md,
+    borderRadius: rd.md,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   censusEntryOverline: {
-    fontSize: TEXT.xs,
+    fontSize: ty.caption.fontSize,
     fontWeight: "800",
     letterSpacing: 2,
   },
@@ -1285,7 +1285,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   censusEntryDesc: {
-    fontSize: TEXT.sm,
+    fontSize: ty.bodySm.fontSize,
     lineHeight: 19,
   },
 });

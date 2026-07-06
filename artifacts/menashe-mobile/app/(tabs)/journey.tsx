@@ -26,8 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useColors } from "@/hooks/useColors";
-import { SPACE, TEXT, RADIUS } from "@/constants/colors";
+import { useThemeTokens } from "@/src/mobile/design-system";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
 import {
@@ -316,7 +315,7 @@ function daysBetween(a: Date, b: Date): number {
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function JourneyScreen() {
-  const colors   = useColors();
+  const { colors, sp } = useThemeTokens();
   const { t }    = useLanguage();
   const { location } = useApp();
   const insets   = useSafeAreaInsets();
@@ -436,7 +435,7 @@ export default function JourneyScreen() {
       >
 
         {/* ══ §1  GREETING ════════════════════════════════════════════════════ */}
-        <View style={[styles.greetingSection, { paddingTop: topPad + SPACE[4] }]}>
+        <View style={[styles.greetingSection, { paddingTop: topPad + sp[4] }]}>
           <View
             style={[styles.starAccent, { backgroundColor: GOLD + "18", borderColor: GOLD + "38" }]}
             accessible={false}
@@ -461,7 +460,7 @@ export default function JourneyScreen() {
           <View style={[styles.greetingDivider, { backgroundColor: GOLD }]} />
         </View>
 
-        <View style={{ paddingHorizontal: SPACE[4] }}>
+        <View style={{ paddingHorizontal: sp[4] }}>
 
           {/* ══ §2  CONTINUE JOURNEY — single priority action ════════════════ */}
           <SectionLabel title="Continue Journey" GOLD={GOLD} foreground={colors.foreground} />
@@ -638,7 +637,7 @@ export default function JourneyScreen() {
               accessibilityLabel={`${t.journeyCensusMilestoneTitle}. ${t.journeyCensusMilestoneSubtitle}`}
               style={[styles.censusMilestoneWrap, { backgroundColor: colors.card, borderColor: GOLD + "55" }]}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE[3] }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: sp[3] }}>
                 <View style={[styles.censusIconBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
                   <Feather name="users" size={22} color={GOLD} />
                 </View>
@@ -664,10 +663,10 @@ export default function JourneyScreen() {
 
           ) : (
             // Has census record — status + optional aliyah card
-            <View style={{ gap: SPACE[3] }}>
+            <View style={{ gap: sp[3] }}>
               {/* Status card */}
               <View style={[styles.censusCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE[3] }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: sp[3] }}>
                   <View style={[styles.censusIconBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
                     <Feather name="check-circle" size={20} color={GOLD} />
                   </View>
@@ -696,7 +695,7 @@ export default function JourneyScreen() {
               {/* Aliyah priority card — only shown when headAliyah === "awaiting" */}
               {aliyahAwaiting && (
                 <View style={[styles.censusAliyahCard, { backgroundColor: GOLD + "0f", borderColor: GOLD + "66" }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE[3] }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: sp[3] }}>
                     <View style={[styles.censusIconBox, { backgroundColor: GOLD + "22", borderColor: GOLD + "44" }]}>
                       <Feather name="star" size={20} color={GOLD} />
                     </View>
@@ -791,19 +790,19 @@ const styles = StyleSheet.create({
 
   // §1 Greeting
   greetingSection: {
-    paddingHorizontal: SPACE[4],
-    paddingBottom: SPACE[5],
+    paddingHorizontal: sp[4],
+    paddingBottom: sp[5],
   },
   starAccent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[1],
+    gap: sp[1],
     alignSelf: "flex-start",
     borderWidth: 1,
     borderRadius: 99,
-    paddingHorizontal: SPACE[3],
-    paddingVertical: SPACE[1],
-    marginBottom: SPACE[4],
+    paddingHorizontal: sp[3],
+    paddingVertical: sp[1],
+    marginBottom: sp[4],
   },
   starLabel: {
     fontSize: TEXT.xs,
@@ -815,7 +814,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.5,
     lineHeight: 42,
-    marginBottom: SPACE[2],
+    marginBottom: sp[2],
   },
   hebrewDateText: {
     fontSize: TEXT.lg,          // 20dp
@@ -826,12 +825,12 @@ const styles = StyleSheet.create({
   hebrewNumText: {
     fontSize: TEXT.sm,          // 13dp
     fontWeight: "600",
-    marginBottom: SPACE[1],
+    marginBottom: sp[1],
     letterSpacing: 0.4,
   },
   gregDateText: {
     fontSize: TEXT.base,        // 15dp
-    marginBottom: SPACE[4],
+    marginBottom: sp[4],
   },
   greetingDivider: {
     height: 3,
@@ -843,9 +842,9 @@ const styles = StyleSheet.create({
   sectionLabel: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[2],
-    marginTop: SPACE[8],        // 32dp — MEL section gap
-    marginBottom: SPACE[3],     // 12dp
+    gap: sp[2],
+    marginTop: sp[8],        // 32dp — MEL section gap
+    marginBottom: sp[3],     // 12dp
   },
   sectionAccent: {
     width: 3,
@@ -870,9 +869,9 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   continueCard: {
-    padding: SPACE[5],          // 20dp
+    padding: sp[5],          // 20dp
     borderRadius: RADIUS.xl,
-    gap: SPACE[2],              // 8dp
+    gap: sp[2],              // 8dp
     minHeight: 178,
   },
   continueIcon: {
@@ -881,7 +880,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: SPACE[1],
+    marginBottom: sp[1],
   },
   continueOverline: {
     fontSize: TEXT.xs,
@@ -904,13 +903,13 @@ const styles = StyleSheet.create({
   continuePill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[1],
+    gap: sp[1],
     borderWidth: 1,
     borderRadius: 99,
-    paddingHorizontal: SPACE[3],
-    paddingVertical: SPACE[2],
+    paddingHorizontal: sp[3],
+    paddingVertical: sp[2],
     alignSelf: "flex-start",
-    marginTop: SPACE[2],
+    marginTop: sp[2],
   },
   continuePillText: {
     fontSize: TEXT.sm,
@@ -921,15 +920,15 @@ const styles = StyleSheet.create({
   cardGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: SPACE[3],              // 12dp
+    gap: sp[3],              // 12dp
   },
   summaryCard: {
     flex: 1,
     minWidth: "46%",
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACE[4],          // 16dp
-    gap: SPACE[1],
+    padding: sp[4],          // 16dp
+    gap: sp[1],
     minHeight: 164,
   },
   cardIconBox: {
@@ -938,7 +937,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: SPACE[1],
+    marginBottom: sp[1],
   },
   cardOverline: {
     fontSize: 9,   // intentionally sub-xs — tighter than token for overline label
@@ -961,7 +960,7 @@ const styles = StyleSheet.create({
     height: 2,
     borderRadius: 1,
     overflow: "hidden",
-    marginTop: SPACE[2],
+    marginTop: sp[2],
     marginBottom: 2,
   },
   progressFill: {
@@ -971,7 +970,7 @@ const styles = StyleSheet.create({
   cardCTA: {
     fontSize: 11,
     fontWeight: "700",
-    marginTop: SPACE[2],
+    marginTop: sp[2],
     letterSpacing: 0.1,
   },
 
@@ -980,9 +979,9 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     borderWidth: 1,
     borderStyle: "dashed",
-    padding: SPACE[6],
+    padding: sp[6],
     alignItems: "center",
-    gap: SPACE[3],
+    gap: sp[3],
   },
   bookmarkIcon: {
     width: 60,
@@ -1008,10 +1007,10 @@ const styles = StyleSheet.create({
   reflectionCard: {
     borderRadius: RADIUS.xl,
     borderWidth: 1,
-    padding: SPACE[5],
-    gap: SPACE[3],
+    padding: sp[5],
+    gap: sp[3],
     overflow: "hidden",
-    marginBottom: SPACE[4],
+    marginBottom: sp[4],
   },
   reflectionBar: {
     position: "absolute",
@@ -1024,9 +1023,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderWidth: 1,
     borderRadius: 99,
-    paddingHorizontal: SPACE[3],
+    paddingHorizontal: sp[3],
     paddingVertical: 3,
-    marginTop: SPACE[2],
+    marginTop: sp[2],
   },
   reflectionBadgeText: {
     fontSize: TEXT.xs,
@@ -1049,19 +1048,19 @@ const styles = StyleSheet.create({
   censusMilestoneWrap: {
     borderRadius: RADIUS.xl,
     borderWidth: 1.5,
-    padding: SPACE[4],
-    gap: SPACE[3],
+    padding: sp[4],
+    gap: sp[3],
   },
   censusCard: {
     borderRadius: RADIUS.xl,
     borderWidth: 1,
-    padding: SPACE[4],
-    gap: SPACE[2],
+    padding: sp[4],
+    gap: sp[2],
   },
   censusAliyahCard: {
     borderRadius: RADIUS.xl,
     borderWidth: 1,
-    padding: SPACE[4],
+    padding: sp[4],
   },
   censusIconBox: {
     width: 44,
@@ -1090,11 +1089,11 @@ const styles = StyleSheet.create({
   censusPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE[1],
+    gap: sp[1],
     borderWidth: 1,
     borderRadius: 99,
-    paddingHorizontal: SPACE[3],
-    paddingVertical: SPACE[2],
+    paddingHorizontal: sp[3],
+    paddingVertical: sp[2],
     alignSelf: "flex-start",
   },
   censusPillText: {

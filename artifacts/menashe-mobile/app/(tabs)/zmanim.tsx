@@ -4,7 +4,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColors } from "@/hooks/useColors";
+import { useThemeTokens } from "@/src/mobile/design-system";
 import { useApp } from "@/context/AppContext";
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
 import { getHebrewDate, formatHebrewDate } from "@/lib/hebrewCalendar";
@@ -25,7 +25,7 @@ const ZMANIM_LIST = [
 ];
 
 export default function ZmanimScreen() {
-  const colors = useColors();
+  const { colors } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const { location } = useApp();
   const [offset, setOffset] = useState(0);
