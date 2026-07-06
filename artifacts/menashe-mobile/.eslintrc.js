@@ -30,6 +30,33 @@ module.exports = {
     "react-native/no-inline-styles": "warn",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
+
+    // ── MMDL StyleSheet guard ────────────────────────────────────────────────
+    // useThemeTokens() returns reactive values (sp, rd, type) available only
+    // inside a component body. StyleSheet.create() runs at MODULE LOAD TIME —
+    // before any hook executes — so using hook tokens there crashes with
+    // "sp is not defined". Flag all three MMDL token families.
+    "no-restricted-syntax": [
+      "error",
+      {
+        selector:
+          "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create'] MemberExpression[object.name='sp']",
+        message:
+          "MMDL guard: sp[n] cannot be used in StyleSheet.create() — it is a hook value. Use the numeric literal instead (sp[1]=4, sp[2]=8, sp[3]=12, sp[4]=16, sp[5]=20, sp[6]=24, sp[8]=32).",
+      },
+      {
+        selector:
+          "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create'] MemberExpression[object.name='rd']",
+        message:
+          "MMDL guard: rd[n] cannot be used in StyleSheet.create() — it is a hook value. Use a numeric literal or move the style to an inline prop.",
+      },
+      {
+        selector:
+          "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create'] MemberExpression[object.name='type']",
+        message:
+          "MMDL guard: type.* cannot be used in StyleSheet.create() — it is a hook value. Spread type tokens in inline JSX styles instead.",
+      },
+    ],
   },
   ignorePatterns: ["node_modules/", "dist/", ".expo/", "scripts/", "server/", "*.config.js", "babel.config.js", "metro.config.js"],
 };

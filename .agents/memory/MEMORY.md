@@ -24,3 +24,4 @@
 - [Mobile production build verification](mobile-build-verify.md) — run `node scripts/build.js` in artifacts/menashe-mobile to verify prod build; port conflict with dev workflow is harmless.
 - [SPR-M012 Sacred Wisdom](spr-m012-sacred-wisdom.md) — Rav Menashe chat screen; expo/fetch required for streaming; entry via Torah tab; conversations in AsyncStorage.
 - [Community Hub architecture (SPR-M009)](community-hub-spr-m009.md) — 7-section hub in app/(tabs)/community.tsx; deep screens at app/community/announcements.tsx + memorials.tsx; real API via lib/prayerBoardApi.ts; amen is increment-only (no un-amen); memorials screen keeps dark CANDLE_BG (#0e0b1e) for atmosphere but uses useColors() for modals/forms.
+- [MMDL hook tokens in StyleSheet](mmdl-stylesheet-guard.md) — sp/rd/type from useThemeTokens() crash in StyleSheet.create() (module-level); use numeric literals there; ESLint no-restricted-syntax rule guards this in artifacts/menashe-mobile/.eslintrc.js.
