@@ -2,7 +2,7 @@
  * Census Experience Entry — SPR-P006B
  *
  * Introduction screen for the Community Census workflow.
- * This is the doorway — it does NOT contain any form or submission logic.
+ * Navigates to census/family-head for the registration form.
  *
  * Design: large illustration header · premium typography · generous whitespace
  *         warm neutral palette · gold accents (#d4a843)
@@ -10,7 +10,6 @@
 
 import React from "react";
 import {
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -26,15 +25,11 @@ import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { SPACE, TEXT, RADIUS } from "@/constants/colors";
 
-// Gold is intentionally hardcoded — it is the Census brand accent,
-// independent of the user's selected theme (dark / light / sapphire).
 const GOLD = "#d4a843";
 
 function haptic() {
   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
-
-// ── Info card ─────────────────────────────────────────────────────────────────
 
 function InfoCard({
   icon, title, body, colors,
@@ -61,19 +56,13 @@ function InfoCard({
   );
 }
 
-// ── Screen ────────────────────────────────────────────────────────────────────
-
 export default function CensusScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
   function handleBegin() {
     haptic();
-    Alert.alert(
-      "Coming Soon",
-      "The Community Census workflow will be available in the next update.",
-      [{ text: "OK", style: "default" }]
-    );
+    router.push("/census/family-head");
   }
 
   return (
@@ -100,7 +89,6 @@ export default function CensusScreen() {
           Community Census
         </Text>
 
-        {/* Right spacer — keeps title centred */}
         <View style={{ width: 40 }} />
       </View>
 
@@ -114,7 +102,6 @@ export default function CensusScreen() {
 
         {/* ── Hero illustration header ── */}
         <View style={[styles.hero, { backgroundColor: GOLD + "0D" }]}>
-          {/* Three-emoji illustration */}
           <View style={styles.illustRow}>
             <Text style={styles.illustSide}>🏘️</Text>
             <View style={[styles.illustCenter, { borderColor: GOLD + "44", backgroundColor: GOLD + "16" }]}>
@@ -150,7 +137,7 @@ export default function CensusScreen() {
           </View>
         </View>
 
-        {/* ── Four information cards ── */}
+        {/* ── Info cards ── */}
         <View style={styles.cards}>
           <InfoCard
             icon="help-circle"
@@ -185,7 +172,7 @@ export default function CensusScreen() {
             onPress={handleBegin}
             activeOpacity={0.82}
             accessibilityRole="button"
-            accessibilityLabel="Begin Census — coming in the next update"
+            accessibilityLabel="Begin Census — register as family head"
           >
             <Feather name="edit-3" size={18} color="#1a1100" />
             <Text style={styles.beginBtnText}>Begin Census</Text>
@@ -194,7 +181,7 @@ export default function CensusScreen() {
           <View style={styles.hintRow}>
             <Feather name="info" size={13} color={colors.mutedForeground} />
             <Text style={[styles.hintText, { color: colors.mutedForeground }]}>
-              Coming in the next update
+              You will register as the family head
             </Text>
           </View>
         </View>
@@ -204,12 +191,9 @@ export default function CensusScreen() {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   root: { flex: 1 },
 
-  // Nav bar
   nav: {
     flexDirection: "row",
     alignItems: "center",
@@ -225,10 +209,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
 
-  // Scroll
   scroll: { gap: 0 },
 
-  // Hero
   hero: {
     paddingTop: SPACE[8],
     paddingBottom: SPACE[6],
@@ -272,7 +254,6 @@ const styles = StyleSheet.create({
     marginTop: SPACE[2],
   },
 
-  // Chips
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -292,7 +273,6 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: TEXT.xs, fontWeight: "700", letterSpacing: 0.2 },
 
-  // Info cards
   cards: {
     paddingHorizontal: SPACE[4],
     gap: SPACE[3],
@@ -326,7 +306,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // CTA
   ctaWrap: {
     alignItems: "center",
     paddingHorizontal: SPACE[5],

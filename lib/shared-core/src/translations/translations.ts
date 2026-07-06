@@ -40,6 +40,39 @@ export interface SharedTranslations {
   journeyCensusAliyahSubtitle: string;
   journeyCensusUnavailable: string;
 
+  /* ── Census — Family Head screen ── */
+  censusFamilyHeadTitle: string;
+  censusGoBack: string;
+  censusSaveDraft: string;
+  censusStep1of3: string;
+  censusSectionIdentity: string;
+  censusSectionFamily: string;
+  censusSectionAliyah: string;
+  censusSectionPassport: string;
+  censusFieldSurname: string;
+  censusFieldNamePassport: string;
+  censusFieldHebrewName: string;
+  censusFieldSex: string;
+  censusFieldMaritalStatus: string;
+  censusFieldDob: string;
+  censusFieldFatherName: string;
+  censusFieldMotherName: string;
+  censusFieldJudaismDate: string;
+  censusFieldAliyahStatus: string;
+  censusFieldPassportNo: string;
+  censusFieldPassportIssue: string;
+  censusFieldPassportExpiry: string;
+  censusPrivacyNote: string;
+  censusSubmitCta: string;
+  censusSubmitTitle: string;
+  censusSubmitBody: string;
+  censusSaveDraftTitle: string;
+  censusSaveDraftBody: string;
+  censusValidationTitle: string;
+  censusNameRequired: string;
+  censusErrorTitle: string;
+  censusErrorBody: string;
+
   /* ── Home ── */
   homeToday: string;
   homeHebrewDate: string;
@@ -389,6 +422,39 @@ export const sharedEn: SharedTranslations = {
   journeyCensusAliyahTitle: "Prepare for Aliyah",
   journeyCensusAliyahSubtitle: "Your family is registered and awaiting Aliyah.",
   journeyCensusUnavailable: "Census data unavailable",
+
+  censusFamilyHeadTitle: "Family Head Registration",
+  censusGoBack: "Go back",
+  censusSaveDraft: "Save Draft",
+  censusStep1of3: "Step 1 of 3 — Family Head",
+  censusSectionIdentity: "Identity",
+  censusSectionFamily: "Family Background",
+  censusSectionAliyah: "Aliyah Status",
+  censusSectionPassport: "Passport Details",
+  censusFieldSurname: "Surname",
+  censusFieldNamePassport: "Name (as per passport)",
+  censusFieldHebrewName: "Hebrew Name",
+  censusFieldSex: "Sex",
+  censusFieldMaritalStatus: "Marital Status",
+  censusFieldDob: "Date of Birth",
+  censusFieldFatherName: "Father's Name",
+  censusFieldMotherName: "Mother's Name",
+  censusFieldJudaismDate: "Year of Judaism Practice",
+  censusFieldAliyahStatus: "Aliyah Status",
+  censusFieldPassportNo: "Passport Number",
+  censusFieldPassportIssue: "Passport Issue Date",
+  censusFieldPassportExpiry: "Passport Expiry Date",
+  censusPrivacyNote: "Your data is held securely by community administrators and is never shared publicly without your consent.",
+  censusSubmitCta: "Submit Registration",
+  censusSubmitTitle: "Registration Submitted",
+  censusSubmitBody: "Your family head record has been saved. You can add family members in the next step.",
+  censusSaveDraftTitle: "Draft Saved",
+  censusSaveDraftBody: "Your progress has been saved. You can return to complete this form at any time.",
+  censusValidationTitle: "Required Field",
+  censusNameRequired: "Please enter your full name as it appears on your passport.",
+  censusErrorTitle: "Could Not Save",
+  censusErrorBody: "Please check your connection and try again.",
+
   navSiddur: "Siddur",
 
   homeToday: "TODAY",
@@ -725,6 +791,39 @@ export const sharedTk: SharedTranslations = {
   journeyCensusAliyahTitle: "Aliyah Tana Beisei",
   journeyCensusAliyahSubtitle: "In inpui a record ah a awm tawh, Aliyah duhna i nei.",
   journeyCensusUnavailable: "Census thu siamna awm lo",
+
+  censusFamilyHeadTitle: "Inpui Bawipa Ziak",
+  censusGoBack: "Zin chhuak",
+  censusSaveDraft: "Draft Siamthei",
+  censusStep1of3: "Step 1/3 — Inpui Bawipa",
+  censusSectionIdentity: "Hming leh Thu",
+  censusSectionFamily: "Inpui Mahni Thu",
+  censusSectionAliyah: "Aliyah Thu",
+  censusSectionPassport: "Passport Thu",
+  censusFieldSurname: "Mei hming",
+  censusFieldNamePassport: "Hming (Passport ang ziakin)",
+  censusFieldHebrewName: "Hebrew Hming",
+  censusFieldSex: "Naupang dik",
+  censusFieldMaritalStatus: "Innei Thu",
+  censusFieldDob: "Nisuah Ni",
+  censusFieldFatherName: "Paa Hming",
+  censusFieldMotherName: "Pi Hming",
+  censusFieldJudaismDate: "Judaism Tan Kum",
+  censusFieldAliyahStatus: "Aliyah Thu",
+  censusFieldPassportNo: "Passport Nambiar",
+  censusFieldPassportIssue: "Passport Chhuahna Ni",
+  censusFieldPassportExpiry: "Passport Tawpna Ni",
+  censusPrivacyNote: "I data hi mipil admin-te in phat takin an giamkhawm a, i duhna lo chuan an hrilh lo.",
+  censusSubmitCta: "Ziak Pek",
+  censusSubmitTitle: "Ziak Hmasa Zawh",
+  censusSubmitBody: "In bawipa record siamsak tawh. Step hmasa chhunga member dang thiam.",
+  censusSaveDraftTitle: "Draft Siamsak",
+  censusSaveDraftBody: "I ziakna siamsak tawh. Hnuah zawh zel theih.",
+  censusValidationTitle: "Dah Ngai Field",
+  censusNameRequired: "Hming passport ang ziakin dah rawh.",
+  censusErrorTitle: "Siamsak Theilo",
+  censusErrorBody: "Internet connect khawia, tih leh rawh.",
+
   navSiddur: "Thu Ziak",
 
   homeToday: "NIZAN",
