@@ -44,6 +44,10 @@ module.exports = {
     // inside a component body. StyleSheet.create() runs at MODULE LOAD TIME —
     // before any hook executes — so using hook tokens there crashes with
     // "sp is not defined". Flag all three MMDL token families.
+    //
+    // Also ban legacy design constants (RADIUS, TEXT, SPACE) inside
+    // StyleSheet.create() — these were the pre-MMDL constants replaced by
+    // numeric literals during the MEP-002/003 migration.
     "no-restricted-syntax": [
       "error",
       {
@@ -63,6 +67,40 @@ module.exports = {
           "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create'] MemberExpression[object.name='type']",
         message:
           "MMDL guard: type.* cannot be used in StyleSheet.create() — it is a hook value. Spread type tokens in inline JSX styles instead.",
+      },
+      {
+        selector:
+          "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create'] MemberExpression[object.name='RADIUS']",
+        message:
+          "Legacy token: RADIUS.* is banned inside StyleSheet.create(). Use a numeric literal (RADIUS.sm=6, RADIUS.md=10, RADIUS.lg=14, RADIUS.xl=20, RADIUS.full=9999).",
+      },
+      {
+        selector:
+          "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create'] MemberExpression[object.name='TEXT']",
+        message:
+          "Legacy token: TEXT.* is banned inside StyleSheet.create(). Use a numeric literal (TEXT.xs=11, TEXT.sm=13, TEXT.base=15, TEXT.md=17, TEXT.lg=20, TEXT['2xl']=24, TEXT['3xl']=34).",
+      },
+      {
+        selector:
+          "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create'] MemberExpression[object.name='SPACE']",
+        message:
+          "Legacy token: SPACE[n] is banned inside StyleSheet.create(). Use a numeric literal or sp[n] in an inline JSX style.",
+      },
+    ],
+
+    // ── Ban legacy useColors() hook ──────────────────────────────────────────
+    // useColors() is replaced by useThemeTokens(). Any new file importing it
+    // will cause a lint error pointing to the correct replacement.
+    "no-restricted-imports": [
+      "error",
+      {
+        paths: [
+          {
+            name: "@/src/mobile/design-system",
+            importNames: ["useColors"],
+            message: "useColors() is deprecated. Use useThemeTokens() instead: const { colors } = useThemeTokens().",
+          },
+        ],
       },
     ],
   },
