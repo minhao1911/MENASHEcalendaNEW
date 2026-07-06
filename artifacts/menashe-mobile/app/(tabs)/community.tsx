@@ -189,7 +189,7 @@ export default function CommunityScreen() {
         accessibilityLabel="Community hub"
       >
         {/* ── Community Hero ── */}
-        <View style={[styles.hero, { paddingTop: topPad + sp[3] }]}>
+        <View style={[styles.hero, { paddingTop: topPad + sp[4] }]}>
           {/* Eyebrow */}
           <View style={[styles.heroBadge, { backgroundColor: colors.primary + "14", borderColor: colors.primary + "35" }]}>
             <Text style={{ fontSize: 12 }}>✡</Text>

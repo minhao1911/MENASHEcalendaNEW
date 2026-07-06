@@ -452,7 +452,7 @@ export default function HomeScreen() {
     return TORAH_INSIGHTS[idx];
   }, [today]);
 
-  const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 48 : 20);
+  const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
   const isLight    = theme === "light";
   const isSapphire = theme === "sapphire";

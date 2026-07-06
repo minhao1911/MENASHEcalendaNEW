@@ -25,7 +25,7 @@ const ZMANIM_LIST = [
 ];
 
 export default function ZmanimScreen() {
-  const { colors } = useThemeTokens();
+  const { colors, sp } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const { location } = useApp();
   const [offset, setOffset] = useState(0);
@@ -63,7 +63,7 @@ export default function ZmanimScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 12 }]}>
+      <View style={[styles.header, { paddingTop: topPad + sp[4] }]}>
         <View>
           <Text style={[styles.screenTitle, { color: colors.foreground }]}>Zmanim</Text>
           <View style={styles.locationRow}>

@@ -172,7 +172,7 @@ export default function SacredMemoryScreen() {
   const isSapphire = theme === "sapphire";
   const gold = colors.accentGold;
   const HX = sp[4];
-  const topPad = insets.top > 0 ? insets.top : Platform.OS === "web" ? 48 : 20;
+  const topPad = insets.top > 0 ? insets.top : Platform.OS === "web" ? 60 : 20;
 
   const [entries, setEntries] = useState<CommunityYahrzeitEntry[]>([]);
   const [loading, setLoading] = useState(true);
