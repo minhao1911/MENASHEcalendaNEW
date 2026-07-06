@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform,
+  AccessibilityInfo, ScrollView, StyleSheet, Text,
+  TouchableOpacity, View, Platform,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useThemeTokens } from "@/src/mobile/design-system";
@@ -25,10 +27,17 @@ const ZMANIM_LIST = [
 ];
 
 export default function ZmanimScreen() {
-  const { colors, sp } = useThemeTokens();
+  const { colors, sp, rd, shadow } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const { location } = useApp();
   const [offset, setOffset] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduceMotion);
+    return () => sub.remove();
+  }, []);
 
   const selectedDate = useMemo(() => {
     const d = new Date();
@@ -56,30 +65,95 @@ export default function ZmanimScreen() {
   const mins = Math.floor(zmanim.shaahZmanitGra);
   const secs = Math.round((zmanim.shaahZmanitGra % 1) * 60);
 
+  const hebrewDateStr = formatHebrewDate(hdate);
+
+  const heroTitle = offset === 0
+    ? "Today's Zmanim"
+    : selectedDate.toLocaleDateString("en-US", { weekday: "long" }) + "'s Zmanim";
+
+  const heroGradient: readonly [string, string, string] = reduceMotion
+    ? [colors.card, colors.card, colors.card]
+    : ["#1A1208", "#100D04", "#0D0B03"];
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + sp[4] }]}>
-        <View>
-          <Text style={[styles.screenTitle, { color: colors.foreground }]}>Zmanim</Text>
-          <View style={styles.locationRow}>
-            <Feather name="map-pin" size={11} color={colors.mutedForeground} />
-            <Text style={[styles.locationName, { color: colors.mutedForeground }]}>{location.name}</Text>
-          </View>
+      {/* ── Premium Sacred Time Hero ── */}
+      <LinearGradient
+        colors={heroGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[
+          styles.hero,
+          {
+            paddingTop: topPad + sp[5],
+            paddingHorizontal: sp[5],
+            paddingBottom: sp[6],
+            borderRadius: rd.xl,
+            marginHorizontal: sp[4],
+            marginTop: sp[3],
+            marginBottom: sp[4],
+            borderColor: colors.primary + "28",
+            ...shadow.level2,
+          },
+        ]}
+      >
+        {/* Gold overline */}
+        <View style={styles.overlineRow}>
+          <View style={[styles.overlinePip, { backgroundColor: colors.primary }]} />
+          <Text style={[styles.overline, { color: colors.primary }]}>SACRED TIME</Text>
+          <View style={[styles.overlinePip, { backgroundColor: colors.primary }]} />
         </View>
+
+        {/* Large screen title */}
+        <Text style={[styles.heroTitle, { color: "#F5EDD4", marginTop: sp[2] }]}>
+          {heroTitle}
+        </Text>
+
+        {/* Subtitle — location row */}
+        <View style={[styles.metaRow, { marginTop: sp[3] }]}>
+          <View style={[styles.metaIcon, { backgroundColor: colors.primary + "18" }]}>
+            <Feather name="map-pin" size={12} color={colors.primary} />
+          </View>
+          <Text style={[styles.metaText, { color: "#C8B878" }]} numberOfLines={1}>
+            {location.name}
+          </Text>
+        </View>
+
+        {/* Subtitle — Hebrew date row */}
+        <View style={[styles.metaRow, { marginTop: sp[1] }]}>
+          <View style={[styles.metaIcon, { backgroundColor: colors.primary + "18" }]}>
+            <Feather name="star" size={12} color={colors.primary} />
+          </View>
+          <Text style={[styles.metaText, { color: "#C8B878" }]}>
+            {hebrewDateStr}
+          </Text>
+        </View>
+
+        {/* "Return to Today" chip — inline in hero when browsing other days */}
         {offset !== 0 && (
           <TouchableOpacity
             onPress={() => setOffset(0)}
-            style={[styles.todayBtn, { borderColor: colors.primary, backgroundColor: colors.primary + "15" }]}
+            style={[
+              styles.todayChip,
+              {
+                borderColor: colors.primary + "55",
+                backgroundColor: colors.primary + "18",
+                marginTop: sp[4],
+                borderRadius: rd.pill,
+              },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Return to today"
           >
-            <Text style={[styles.todayBtnText, { color: colors.primary }]}>Today</Text>
+            <Feather name="calendar" size={12} color={colors.primary} style={{ marginRight: 5 }} />
+            <Text style={[styles.todayChipText, { color: colors.primary }]}>Return to Today</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </LinearGradient>
 
       {/* Date Picker */}
       <View style={[styles.datePicker, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -91,7 +165,7 @@ export default function ZmanimScreen() {
             {offset === 0 ? "Today — " : ""}
             {selectedDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
           </Text>
-          <Text style={[styles.dateHebrew, { color: colors.primary }]}>{formatHebrewDate(hdate)}</Text>
+          <Text style={[styles.dateHebrew, { color: colors.primary }]}>{hebrewDateStr}</Text>
         </View>
         <TouchableOpacity onPress={() => setOffset(o => o + 1)} style={styles.dateArrow} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Feather name="chevron-right" size={22} color={colors.foreground} />
@@ -150,15 +224,69 @@ export default function ZmanimScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 16, marginBottom: 14,
-    flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between",
+  /* ── Hero ──────────────────────────────────────────────────── */
+  hero: {
+    borderWidth: 1,
+    overflow: "hidden",
   },
-  screenTitle: { fontSize: 28, fontWeight: "700" as const, letterSpacing: -0.5, marginBottom: 4 },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  locationName: { fontSize: 12, fontWeight: "500" as const },
-  todayBtn: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 6 },
-  todayBtnText: { fontSize: 13, fontWeight: "600" as const },
+  overlineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    alignSelf: "flex-start",
+  },
+  overlinePip: {
+    width: 18,
+    height: 1.5,
+    borderRadius: 2,
+    opacity: 0.75,
+  },
+  overline: {
+    fontSize: 10,
+    fontWeight: "700" as const,
+    letterSpacing: 2.8,
+    textTransform: "uppercase",
+    opacity: 0.90,
+  },
+  heroTitle: {
+    fontSize: 30,
+    fontWeight: "700" as const,
+    letterSpacing: -0.6,
+    lineHeight: 36,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  metaIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  metaText: {
+    fontSize: 13,
+    fontWeight: "500" as const,
+    letterSpacing: 0.1,
+    flexShrink: 1,
+  },
+  todayChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  todayChipText: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+    letterSpacing: 0.2,
+  },
+
+  /* ── Date picker ───────────────────────────────────────────── */
   datePicker: {
     flexDirection: "row", alignItems: "center",
     marginHorizontal: 16, marginBottom: 12,
@@ -168,6 +296,8 @@ const styles = StyleSheet.create({
   dateCenter: { flex: 1, alignItems: "center" },
   dateFull: { fontSize: 15, fontWeight: "600" as const },
   dateHebrew: { fontSize: 13, marginTop: 3, fontWeight: "500" as const },
+
+  /* ── Shaah Zmanit card ─────────────────────────────────────── */
   shaahCard: {
     marginHorizontal: 16, marginBottom: 12,
     borderRadius: 14, borderWidth: 1, padding: 14,
@@ -177,6 +307,8 @@ const styles = StyleSheet.create({
   shaahIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   shaahLabel: { fontSize: 12, fontWeight: "500" as const },
   shaahValue: { fontSize: 16, fontWeight: "700" as const },
+
+  /* ── Zmanim list card ──────────────────────────────────────── */
   listCard: { marginHorizontal: 16, borderRadius: 14, borderWidth: 1, overflow: "hidden" },
   zmRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
   zmIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", marginRight: 14 },
