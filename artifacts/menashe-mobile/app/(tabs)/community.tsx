@@ -197,7 +197,7 @@ export default function CommunityScreen() {
           </View>
 
           {/* Hebrew title */}
-          <Text style={styles.heroHebrew} accessibilityLabel="Bnei Menashe">בְּנֵי מְנַשֶּׁה</Text>
+          <Text style={[styles.heroHebrew, { color: colors.primary }]} accessibilityLabel="Bnei Menashe">בְּנֵי מְנַשֶּׁה</Text>
 
           {/* English title */}
           <Text style={[styles.hubTitle, { color: colors.foreground }]}>{t.commHubTitle}</Text>
@@ -715,8 +715,8 @@ export default function CommunityScreen() {
           />
           <TouchableOpacity
             style={[styles.censusEntryCard, {
-              backgroundColor: "#d4a84310",
-              borderColor: "#d4a84340",
+              backgroundColor: (colors.primary as string) + "10",
+              borderColor: (colors.primary as string) + "40",
             }]}
             onPress={() => navigate("/census")}
             activeOpacity={0.85}
@@ -724,13 +724,13 @@ export default function CommunityScreen() {
             accessibilityLabel="Community Census — register your family"
           >
             <View style={[styles.censusEntryIconBox, {
-              backgroundColor: "#d4a84318",
-              borderColor: "#d4a84338",
+              backgroundColor: (colors.primary as string) + "18",
+              borderColor: (colors.primary as string) + "38",
             }]}>
-              <Feather name="users" size={26} color="#d4a843" />
+              <Feather name="users" size={26} color={colors.primary as string} />
             </View>
             <View style={{ flex: 1, gap: 3 }}>
-              <Text style={[styles.censusEntryOverline, { color: "#d4a843" }]}>
+              <Text style={[styles.censusEntryOverline, { color: colors.primary }]}>
                 BNEI MENASHE
               </Text>
               <Text style={[styles.censusEntryTitle, { color: colors.foreground }]}>
@@ -740,7 +740,7 @@ export default function CommunityScreen() {
                 Register your family and help build an accurate picture of our global community.
               </Text>
             </View>
-            <Feather name="arrow-right" size={18} color="#d4a843" style={{ alignSelf: "center", marginLeft: sp[2] }} />
+            <Feather name="arrow-right" size={18} color={colors.primary as string} style={{ alignSelf: "center", marginLeft: sp[2] }} />
           </TouchableOpacity>
         </View>
 
@@ -868,17 +868,17 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   sectionTitle: {
-    fontSize: TEXT.md,
+    fontSize: 15,
     fontWeight: "700",
   },
   seeAll: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     fontWeight: "600",
   },
 
   // Empty / Coming-soon
   emptyCard: {
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 20,
     alignItems: "center",
@@ -886,11 +886,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     textAlign: "center",
   },
   comingSoonCard: {
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 16,
     flexDirection: "row",
@@ -907,18 +907,18 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   comingSoonTitle: {
-    fontSize: TEXT.base,
+    fontSize: 15,
     fontWeight: "600",
     marginBottom: 2,
   },
   comingSoonHint: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     lineHeight: 18,
   },
 
   // Announcement cards
   annCard: {
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 12,
     flexDirection: "row",
@@ -936,24 +936,24 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   pinnedLabel: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "700",
   },
   annTitle: {
-    fontSize: TEXT.base,
+    fontSize: 15,
     fontWeight: "700",
   },
   annBody: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     lineHeight: 18,
   },
   timeLabel: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
   },
 
   // Prayer cards
   prayCard: {
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 16,
     marginBottom: 8,
@@ -967,22 +967,22 @@ const styles = StyleSheet.create({
   catBadge: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: RADIUS.full,
+    borderRadius: 9999,
     borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   catText: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "700",
   },
   prayName: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     fontWeight: "700",
     marginBottom: 4,
   },
   prayText: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     lineHeight: 18,
     marginBottom: 12,
   },
@@ -994,7 +994,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   amenText: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     fontWeight: "600",
   },
   dashedCta: {
@@ -1004,18 +1004,18 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     paddingVertical: 12,
     marginBottom: 8,
   },
   dashedCtaText: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     fontWeight: "700",
   },
 
   // Memorials summary card
   memSummary: {
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 16,
     marginBottom: 8,
@@ -1032,11 +1032,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   memStatNum: {
-    fontSize: TEXT["2xl"],
+    fontSize: 24,
     fontWeight: "900",
   },
   memStatLabel: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
@@ -1051,15 +1051,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   memName: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     lineHeight: 22,
   },
   memMore: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontStyle: "italic",
   },
   memEmpty: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     textAlign: "center",
     marginBottom: 12,
   },
@@ -1088,13 +1088,13 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   memCtaText: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     fontWeight: "700",
   },
 
   // Organizations
   orgCard: {
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 16,
     flexDirection: "row",
@@ -1111,21 +1111,21 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   orgName: {
-    fontSize: TEXT.base,
+    fontSize: 15,
     fontWeight: "700",
   },
   orgDesc: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     lineHeight: 18,
   },
   orgLink: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "700",
   },
 
   // Event cards
   eventCard: {
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 12,
     flexDirection: "row",
@@ -1142,24 +1142,24 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   eventMonth: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "800",
     letterSpacing: 0.5,
   },
   eventDay: {
-    fontSize: TEXT["2xl"],
+    fontSize: 24,
     fontWeight: "900",
     lineHeight: 28,
   },
   eventWeekday: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "600",
   },
   eventEmoji: {
-    fontSize: TEXT.base,
+    fontSize: 15,
   },
   eventTitle: {
-    fontSize: TEXT.base,
+    fontSize: 15,
     fontWeight: "700",
   },
   eventLocRow: {
@@ -1168,16 +1168,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   eventLoc: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     flex: 1,
   },
   eventTime: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "700",
   },
   recBadge: {
     borderWidth: 1,
-    borderRadius: RADIUS.full,
+    borderRadius: 9999,
     width: 26,
     height: 26,
     alignItems: "center",
@@ -1188,7 +1188,7 @@ const styles = StyleSheet.create({
 
   // Learning group preview cards
   learnCard: {
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 12,
     flexDirection: "row",
@@ -1205,7 +1205,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   learnName: {
-    fontSize: TEXT.base,
+    fontSize: 15,
     fontWeight: "700",
   },
   learnMeta: {
@@ -1214,12 +1214,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   learnSchedule: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
   },
 
   // Synagogue preview cards
   synPreviewCard: {
-    borderRadius: RADIUS.lg,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 12,
     flexDirection: "row",
@@ -1236,11 +1236,11 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   synPreviewName: {
-    fontSize: TEXT.base,
+    fontSize: 15,
     fontWeight: "700",
   },
   synPreviewCity: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
   },
   synMeta: {
     flexDirection: "row",
@@ -1248,10 +1248,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   synMetaText: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
   },
   synType: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "700",
   },
 
@@ -1259,7 +1259,7 @@ const styles = StyleSheet.create({
   censusEntryCard: {
     flexDirection: "row",
     alignItems: "flex-start",
-    borderRadius: RADIUS.xl,
+    borderRadius: 20,
     borderWidth: 1.5,
     padding: 16,
     gap: 12,
@@ -1274,17 +1274,17 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   censusEntryOverline: {
-    fontSize: ty.caption.fontSize,
+    fontSize: 11,
     fontWeight: "800",
     letterSpacing: 2,
   },
   censusEntryTitle: {
-    fontSize: TEXT.md,
+    fontSize: 15,
     fontWeight: "700",
     letterSpacing: -0.2,
   },
   censusEntryDesc: {
-    fontSize: ty.bodySm.fontSize,
+    fontSize: 13,
     lineHeight: 19,
   },
 });
