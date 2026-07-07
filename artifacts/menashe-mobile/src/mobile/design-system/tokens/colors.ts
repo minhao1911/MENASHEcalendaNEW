@@ -138,6 +138,12 @@ export interface ColorTokens {
   tabActive:         string;
   tabInactive:       string;
   tabBackground:     string;
+
+  // ── Backward-compatible aliases (match constants/colors.ts palette shape) ──
+  // Many screen components use these names from the older palette API.
+  foreground:        string;  // alias → textPrimary
+  mutedForeground:   string;  // alias → textSecondary
+  muted:             string;  // alias → surface
 }
 
 // ─── Theme definitions ────────────────────────────────────────────────────────
@@ -145,16 +151,16 @@ export interface ColorTokens {
 const DARK_TOKENS: ColorTokens = {
   background:          RAW.deepNavy,
   backgroundSubtle:    "#0a1020",
-  surface:             RAW.navyMid,
-  surfaceRaised:       "#151f35",
+  surface:             "#141e32",
+  surfaceRaised:       "#1a2745",
 
-  card:                RAW.navyMid,
-  cardHover:           "#182036",
-  cardBorder:          RAW.navyMuted,
+  card:                "#14203a",
+  cardHover:           "#1c2d4e",
+  cardBorder:          "#253558",
 
-  border:              RAW.navyMuted,
-  borderStrong:        "#2a3a60",
-  divider:             "rgba(30, 45, 74, 0.6)",
+  border:              "#243050",
+  borderStrong:        "#2e4070",
+  divider:             "rgba(36, 48, 80, 0.7)",
 
   primary:             RAW.goldWarm,
   primaryForeground:   RAW.goldOnDark,
@@ -170,8 +176,8 @@ const DARK_TOKENS: ColorTokens = {
   accentStone:         "#64748b",
 
   textPrimary:         RAW.offWhite,
-  textSecondary:       "#94a3b8",
-  textMuted:           "#64748b",
+  textSecondary:       "#a8b8cc",
+  textMuted:           "#7a8fa8",
   textDisabled:        "#3a4a62",
   textInverse:         RAW.deepNavy,
   textOnPrimary:       RAW.goldOnDark,
@@ -199,13 +205,18 @@ const DARK_TOKENS: ColorTokens = {
   shadow:              "rgba(0, 0, 0, 0.35)",
   shadowStrong:        "rgba(0, 0, 0, 0.60)",
 
-  input:               RAW.navyLight,
-  inputBorder:         RAW.navyMuted,
+  input:               "#1a2745",
+  inputBorder:         "#243050",
   inputFocusBorder:    RAW.goldWarm,
 
   tabActive:           RAW.goldWarm,
-  tabInactive:         "#64748b",
-  tabBackground:       RAW.navyMid,
+  tabInactive:         "#7a8fa8",
+  tabBackground:       "#14203a",
+
+  // Backward-compatible aliases
+  foreground:          RAW.offWhite,
+  mutedForeground:     "#a8b8cc",
+  muted:               "#141e32",
 };
 
 const LIGHT_TOKENS: ColorTokens = {
@@ -272,6 +283,11 @@ const LIGHT_TOKENS: ColorTokens = {
   tabActive:           RAW.goldDeep,
   tabInactive:         RAW.stoneDeep,
   tabBackground:       RAW.warmCream,
+
+  // Backward-compatible aliases
+  foreground:          RAW.charcoal,
+  mutedForeground:     RAW.stoneDeep,
+  muted:               RAW.ivory,
 };
 
 const SAPPHIRE_TOKENS: ColorTokens = {
@@ -338,6 +354,11 @@ const SAPPHIRE_TOKENS: ColorTokens = {
   tabActive:           RAW.sapphireBlue,
   tabInactive:         RAW.sapphireDim,
   tabBackground:       RAW.sapphireMid,
+
+  // Backward-compatible aliases
+  foreground:          RAW.sapphireText,
+  mutedForeground:     "#a0b4d8",
+  muted:               RAW.sapphireFull,
 };
 
 // ─── Theme map ────────────────────────────────────────────────────────────────
