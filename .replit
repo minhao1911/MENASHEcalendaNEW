@@ -151,7 +151,6 @@ ADMIN_PIN = "1948"
 VITE_ADMIN_PIN = "1948"
 ADMIN_USER_ID = "user_3FPrdIHD0jHZYORFdutfQ4aspal"
 VITE_ADMIN_USER_ID = "user_3FPrdIHD0jHZYORFdutfQ4aspal"
-CLERK_SECRET_KEY = "sk_test_OpoT3oBG3qloOOkl2q537LSUwYJ5NYxVQ3ay5og6I2"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-c5b161bf-7380-4234-b117-63cabc6e63ee"
