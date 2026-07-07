@@ -75,6 +75,15 @@ export default function ZmanimScreen() {
     ? [colors.card, colors.card, colors.card]
     : ["#1A1208", "#100D04", "#0D0B03"];
 
+  /* Shared card style — keeps cards visually identical */
+  const card = {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: rd.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    ...shadow.level1,
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -155,10 +164,18 @@ export default function ZmanimScreen() {
         )}
       </LinearGradient>
 
-      {/* Date Picker */}
-      <View style={[styles.datePicker, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <TouchableOpacity onPress={() => setOffset(o => o - 1)} style={styles.dateArrow} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Feather name="chevron-left" size={22} color={colors.foreground} />
+      {/* ── Section: Date ── */}
+      <Text style={[styles.sectionLabel, { color: colors.primary, marginHorizontal: sp[5], marginBottom: sp[2] }]}>
+        DATE
+      </Text>
+      <View style={[styles.datePicker, card, { marginHorizontal: sp[4], marginBottom: sp[4] }]}>
+        <TouchableOpacity
+          onPress={() => setOffset(o => o - 1)}
+          style={styles.dateArrow}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Previous day"
+        >
+          <Feather name="chevron-left" size={20} color={colors.foreground} />
         </TouchableOpacity>
         <View style={styles.dateCenter}>
           <Text style={[styles.dateFull, { color: colors.foreground }]}>
@@ -167,26 +184,42 @@ export default function ZmanimScreen() {
           </Text>
           <Text style={[styles.dateHebrew, { color: colors.primary }]}>{hebrewDateStr}</Text>
         </View>
-        <TouchableOpacity onPress={() => setOffset(o => o + 1)} style={styles.dateArrow} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Feather name="chevron-right" size={22} color={colors.foreground} />
+        <TouchableOpacity
+          onPress={() => setOffset(o => o + 1)}
+          style={styles.dateArrow}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Next day"
+        >
+          <Feather name="chevron-right" size={20} color={colors.foreground} />
         </TouchableOpacity>
       </View>
 
-      {/* Shaah Zmanit */}
-      <View style={[styles.shaahCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      {/* ── Section: Halachic Hour ── */}
+      <Text style={[styles.sectionLabel, { color: colors.primary, marginHorizontal: sp[5], marginBottom: sp[2] }]}>
+        HALACHIC HOUR
+      </Text>
+      <View style={[styles.shaahCard, card, { marginHorizontal: sp[4], marginBottom: sp[4] }]}>
+        {/* Gold left accent strip */}
+        <View style={[styles.shaahAccent, { backgroundColor: colors.primary }]} />
         <View style={styles.shaahLeft}>
-          <View style={[styles.shaahIcon, { backgroundColor: colors.primary + "15" }]}>
-            <Feather name="clock" size={16} color={colors.primary} />
+          <View style={[styles.shaahIcon, { backgroundColor: colors.primary + "18", borderRadius: rd.sm }]}>
+            <Feather name="clock" size={18} color={colors.primary} />
           </View>
-          <Text style={[styles.shaahLabel, { color: colors.mutedForeground }]}>Halachic Hour (Shaah Zmanit)</Text>
+          <View>
+            <Text style={[styles.shaahLabel, { color: colors.mutedForeground }]}>Shaah Zmanit (GRA)</Text>
+            <Text style={[styles.shaahSub, { color: colors.mutedForeground }]}>Proportional halachic hour</Text>
+          </View>
         </View>
         <Text style={[styles.shaahValue, { color: colors.primary }]}>
           {mins}m {secs}s
         </Text>
       </View>
 
-      {/* Zmanim List */}
-      <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      {/* ── Section: Prayer Times ── */}
+      <Text style={[styles.sectionLabel, { color: colors.primary, marginHorizontal: sp[5], marginBottom: sp[2] }]}>
+        PRAYER TIMES
+      </Text>
+      <View style={[styles.listCard, card, { marginHorizontal: sp[4] }]}>
         {visibleZmanim.map((z, i) => {
           const time = zmanim[z.key as keyof typeof zmanim] as Date | null;
           const isLast = i === visibleZmanim.length - 1;
@@ -202,17 +235,36 @@ export default function ZmanimScreen() {
               style={[
                 styles.zmRow,
                 !isLast && { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-                isNow && { backgroundColor: colors.primary + "08" },
+                isNow && { backgroundColor: colors.primary + "0C" },
               ]}
             >
-              <View style={[styles.zmIcon, { backgroundColor: colors.background }]}>
-                <Feather name={z.icon} size={14} color={isNow ? colors.primary : colors.mutedForeground} />
+              {/* Gold left accent on active row */}
+              {isNow && (
+                <View style={[styles.zmNowAccent, { backgroundColor: colors.primary }]} />
+              )}
+              <View style={[
+                styles.zmIcon,
+                {
+                  backgroundColor: isNow ? colors.primary + "18" : colors.background,
+                  borderRadius: rd.sm,
+                },
+              ]}>
+                <Feather
+                  name={z.icon}
+                  size={15}
+                  color={isNow ? colors.primary : colors.mutedForeground}
+                />
               </View>
               <View style={styles.zmText}>
-                <Text style={[styles.zmLabel, { color: isNow ? colors.primary : colors.foreground }]}>{z.label}</Text>
+                <Text style={[styles.zmLabel, { color: isNow ? colors.primary : colors.foreground }]}>
+                  {z.label}
+                </Text>
                 <Text style={[styles.zmSub, { color: colors.mutedForeground }]}>{z.sub}</Text>
               </View>
-              <Text style={[styles.zmTime, { color: time ? (isNow ? colors.primary : colors.foreground) : colors.mutedForeground }]}>
+              <Text style={[
+                styles.zmTime,
+                { color: time ? (isNow ? colors.primary : colors.foreground) : colors.mutedForeground },
+              ]}>
                 {formatTime(time, location.tz)}
               </Text>
             </View>
@@ -224,7 +276,7 @@ export default function ZmanimScreen() {
 }
 
 const styles = StyleSheet.create({
-  /* ── Hero ──────────────────────────────────────────────────── */
+  /* ── Hero (DO NOT MODIFY) ───────────────────────────────────── */
   hero: {
     borderWidth: 1,
     overflow: "hidden",
@@ -286,34 +338,74 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  /* ── Date picker ───────────────────────────────────────────── */
+  /* ── Section overline label ─────────────────────────────────── */
+  sectionLabel: {
+    fontSize: 9,
+    fontWeight: "700" as const,
+    letterSpacing: 2.2,
+    textTransform: "uppercase",
+    opacity: 0.75,
+  },
+
+  /* ── Date picker ────────────────────────────────────────────── */
   datePicker: {
-    flexDirection: "row", alignItems: "center",
-    marginHorizontal: 16, marginBottom: 12,
-    borderRadius: 14, borderWidth: 1, padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
   },
-  dateArrow: { padding: 4 },
+  dateArrow: { padding: 6 },
   dateCenter: { flex: 1, alignItems: "center" },
-  dateFull: { fontSize: 15, fontWeight: "600" as const },
-  dateHebrew: { fontSize: 13, marginTop: 3, fontWeight: "500" as const },
+  dateFull: { fontSize: 15, fontWeight: "600" as const, letterSpacing: -0.2 },
+  dateHebrew: { fontSize: 13, marginTop: 4, fontWeight: "500" as const, letterSpacing: 0.1 },
 
-  /* ── Shaah Zmanit card ─────────────────────────────────────── */
+  /* ── Shaah Zmanit card ──────────────────────────────────────── */
   shaahCard: {
-    marginHorizontal: 16, marginBottom: 12,
-    borderRadius: 14, borderWidth: 1, padding: 14,
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    overflow: "hidden",
   },
-  shaahLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  shaahIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  shaahLabel: { fontSize: 12, fontWeight: "500" as const },
-  shaahValue: { fontSize: 16, fontWeight: "700" as const },
+  shaahAccent: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  shaahLeft: { flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 6 },
+  shaahIcon: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  shaahLabel: { fontSize: 13, fontWeight: "600" as const, letterSpacing: -0.1 },
+  shaahSub: { fontSize: 11, fontWeight: "400" as const, marginTop: 2, letterSpacing: 0.1, opacity: 0.75 },
+  shaahValue: { fontSize: 18, fontWeight: "700" as const, letterSpacing: -0.3 },
 
-  /* ── Zmanim list card ──────────────────────────────────────── */
-  listCard: { marginHorizontal: 16, borderRadius: 14, borderWidth: 1, overflow: "hidden" },
-  zmRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
-  zmIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", marginRight: 14 },
+  /* ── Zmanim list card ───────────────────────────────────────── */
+  listCard: { overflow: "hidden" },
+  zmRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    position: "relative",
+  },
+  zmNowAccent: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+  },
+  zmIcon: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 13,
+  },
   zmText: { flex: 1 },
-  zmLabel: { fontSize: 14, fontWeight: "600" as const },
-  zmSub: { fontSize: 11, marginTop: 2 },
-  zmTime: { fontSize: 14, fontWeight: "700" as const },
+  zmLabel: { fontSize: 14, fontWeight: "600" as const, letterSpacing: -0.1 },
+  zmSub: { fontSize: 11, marginTop: 2, letterSpacing: 0.1, opacity: 0.85 },
+  zmTime: { fontSize: 15, fontWeight: "700" as const, letterSpacing: -0.3 },
 });
