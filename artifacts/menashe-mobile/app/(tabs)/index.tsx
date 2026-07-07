@@ -32,6 +32,7 @@ import React, {
 import {
   AccessibilityInfo,
   Animated,
+  ImageBackground,
   Platform,
   Pressable,
   ScrollView,
@@ -83,6 +84,18 @@ const TRACTATES = [
 ];
 const TOTAL_PAGES  = TRACTATES.reduce((a, t) => a + t.pages, 0);
 const CYCLE_START  = new Date(2020, 0, 5);
+
+/* ── Hebrew day-number glyph map (days 1–30) ─────────────────────────────── */
+const HEBREW_DAY: Record<number, string> = {
+   1:"א",  2:"ב",  3:"ג",  4:"ד",  5:"ה",
+   6:"ו",  7:"ז",  8:"ח",  9:"ט", 10:"י",
+  11:"יא", 12:"יב", 13:"יג", 14:"יד", 15:"טו",
+  16:"טז", 17:"יז", 18:"יח", 19:"יט", 20:"כ",
+  21:"כא", 22:"כב", 23:"כג", 24:"כד", 25:"כה",
+  26:"כו", 27:"כז", 28:"כח", 29:"כט", 30:"ל",
+};
+
+const HERO_BG = require("../../assets/images/saipikhup-photo.jpg");
 
 function getTodayDaf(): { tractate: string; daf: number } {
   const daysSince   = Math.floor((Date.now() - CYCLE_START.getTime()) / 86_400_000);
@@ -362,6 +375,10 @@ export default function HomeScreen() {
     try { return formatHebrewDateHebrew(hdate); } catch { return ""; }
   }, [hdate]);
 
+  const hebrewDayNum    = parseInt(hebrewDateStr.split(" ")[0] ?? "1", 10);
+  const hebrewGlyph     = HEBREW_DAY[hebrewDayNum] ?? hebrewDateStr.split(" ")[0] ?? "";
+  const hebrewMonthYear = hebrewDateStr.split(" ").slice(1).join(" ");
+
   const parasha     = useMemo(() => getCurrentParasha(), []);
   const holidays    = useMemo(() => getUpcomingHolidays(30), []);
   const nextHoliday = holidays[0] ?? null;
@@ -609,150 +626,107 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 3. HERO — Phase 1 ──────────────────────────────────────────────────── */}
-      {/* 35% of a 680dp average viewport ≈ 238dp; minHeight 264 sits cleanly in range */}
+      {/* Photo-background date card matching the Zmanim reference design */}
       <Animated.View style={[{
         marginHorizontal: HX, marginBottom: 24,
         borderRadius: 28, overflow: "hidden",
         ...shadow.level2,
       }, a1]}>
-        <LinearGradient
-          colors={heroGradientColors}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        <ImageBackground
+          source={HERO_BG}
           style={{ minHeight: 264 }}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
         >
-          {/* Split: text (left) / artwork (right) */}
-          <View style={{ flexDirection: "row", flex: 1 }}>
-            {/* Left — typography hierarchy: date → greeting → Hebrew date → numeral */}
+          <LinearGradient
+            colors={["rgba(10,8,3,0.28)", "rgba(8,6,2,0.74)", "rgba(4,3,1,0.97)"]}
+            locations={[0, 0.50, 1]}
+            style={{ minHeight: 264, paddingTop: 20, paddingHorizontal: 20 }}
+          >
+            {/* Top row: TODAY badge + greeting */}
             <View style={{
-              flex: 1,
-              paddingTop: 24, paddingLeft: 22, paddingRight: 12, paddingBottom: 16,
-              justifyContent: "center",
+              flexDirection: "row", alignItems: "center",
+              justifyContent: "space-between", marginBottom: 14,
             }}>
-              {/* Gregorian date — smallest, most muted */}
-              <Text style={{
-                fontSize: 11, letterSpacing: 0.2, marginBottom: 5,
-                color: isLight ? "#7a5c2e" : textMuted,
-                fontWeight: "500",
+              <View style={{
+                borderRadius: 20, borderWidth: 1,
+                borderColor: gold + "60",
+                backgroundColor: "rgba(30,22,4,0.82)",
+                paddingHorizontal: 11, paddingVertical: 4,
               }}>
-                {gregDate}
-              </Text>
-
-              {/* Greeting — mid-size, warm accent */}
-              <Text style={{ fontSize: 14, fontWeight: "700", marginBottom: 10, lineHeight: 20 }}>
-                <Text style={{ color: heroAccent }}>{greeting}</Text>
-                {firstName ? (
-                  <Text style={{ color: isLight ? "#3d2c0e" : textPrimary }}>{", " + firstName}</Text>
-                ) : null}
-              </Text>
-
-              {/* Hebrew date — largest, dominant */}
-              <Text style={{
-                fontSize: 28, fontWeight: "800",
-                color: isLight ? "#1a0f00" : textPrimary,
-                letterSpacing: -0.4, lineHeight: 34,
-                textShadowColor: isLight ? "rgba(0,0,0,0.07)" : "rgba(0,0,0,0.45)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 4,
-              }}>
-                {hebrewDateStr}
-              </Text>
-
-              {/* Hebrew numeral — accent colour, secondary */}
-              {hebrewNumeralStr ? (
-                <Text style={{
-                  fontSize: 15, fontWeight: "600", letterSpacing: 0.4, marginTop: 6,
-                  color: isLight ? "#8b6914" : gold,
-                }}>
-                  {hebrewNumeralStr}
+                <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: gold }}>
+                  TODAY
                 </Text>
-              ) : null}
+              </View>
+              <Text style={{
+                fontSize: 12, fontWeight: "600",
+                color: "rgba(240,220,160,0.82)", letterSpacing: 0.2,
+              }}>
+                {greeting}{firstName ? `, ${firstName}` : ""}
+              </Text>
             </View>
 
-            {/* Right — golden-hour artwork panel */}
-            <View style={{ width: 140, overflow: "hidden" }}>
-              <LinearGradient
-                colors={isLight
-                  ? (["#fde9b4", "#f5c36a", "#d97008", "#6a2800"] as const)
-                  : (["#251000", "#6a3206", "#cb7a08", "#f5c36a"] as const)}
-                start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
-                style={{ flex: 1, minHeight: 200, alignItems: "center", justifyContent: "flex-end", paddingBottom: 10 }}
+            {/* Hebrew day glyph — large, prominent */}
+            <Text style={{
+              fontSize: 60, fontWeight: "700",
+              color: "#F0E6C0", lineHeight: 66, letterSpacing: -1,
+              textShadowColor: "rgba(0,0,0,0.65)",
+              textShadowOffset: { width: 0, height: 2 },
+              textShadowRadius: 7,
+            }}>
+              {hebrewGlyph}
+            </Text>
+
+            {/* Hebrew month + year */}
+            <Text style={{
+              fontSize: 26, fontWeight: "700",
+              color: "#FFFFFF", letterSpacing: -0.4,
+              marginTop: 4, marginBottom: 5,
+              textShadowColor: "rgba(0,0,0,0.52)",
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 4,
+            }}>
+              {hebrewMonthYear}
+            </Text>
+
+            {/* Gregorian subtitle */}
+            <Text style={{
+              fontSize: 11, fontWeight: "500",
+              color: "rgba(220,200,160,0.78)",
+              letterSpacing: 0.3, marginBottom: 18,
+            }} numberOfLines={1}>
+              {gregDate}  ·  {location.name}
+            </Text>
+
+            {/* Glass Zmanim bar — 3 key times */}
+            {Platform.OS !== "web" ? (
+              <BlurView
+                intensity={55} tint="dark"
+                style={{ marginHorizontal: -6, marginBottom: 14, borderRadius: rd.lg, overflow: "hidden" }}
               >
-                {/* Sun glow — larger, more warmth */}
-                <View style={{ position: "absolute", top: 14, left: 0, right: 0, alignItems: "center" }}>
-                  <View style={{
-                    width: 64, height: 64, borderRadius: 32,
-                    backgroundColor: "rgba(255,210,80,0.20)",
-                  }} />
-                  <View style={{
-                    position: "absolute",
-                    width: 40, height: 40, borderRadius: 20,
-                    backgroundColor: "rgba(255,200,60,0.28)",
-                    top: 12, alignSelf: "center",
-                  }} />
-                </View>
+                <ZmanimBar todayZm={todayZm} location={location} textPrimary="#FFFFFF" textMuted="rgba(220,200,160,0.72)" isLight={false} />
+              </BlurView>
+            ) : (
+              <View style={{
+                marginHorizontal: -6, marginBottom: 14, borderRadius: rd.lg, overflow: "hidden",
+                backgroundColor: "rgba(0,0,0,0.55)",
+                borderWidth: 1, borderColor: "rgba(255,255,255,0.10)",
+              }}>
+                <ZmanimBar todayZm={todayZm} location={location} textPrimary="#FFFFFF" textMuted="rgba(220,200,160,0.72)" isLight={false} />
+              </View>
+            )}
 
-                {/* Birds — layered depth */}
-                <Text style={{ position: "absolute", top: 18, left: 10,  fontSize: 8, opacity: 0.72 }}>🐦</Text>
-                <Text style={{ position: "absolute", top: 26, left: 28,  fontSize: 6, opacity: 0.55 }}>🐦</Text>
-                <Text style={{ position: "absolute", top: 14, right: 18, fontSize: 7, opacity: 0.62 }}>🐦</Text>
-                <Text style={{ position: "absolute", top: 31, right: 32, fontSize: 5, opacity: 0.45 }}>🐦</Text>
-
-                {/* Temple — with layered shadow for depth */}
-                <Text style={{
-                  fontSize: 74, lineHeight: 84, marginBottom: -4,
-                  textShadowColor: "rgba(0,0,0,0.50)",
-                  textShadowOffset: { width: 0, height: 6 },
-                  textShadowRadius: 12,
-                }}>
-                  ⛩
-                </Text>
-
-                {/* Horizon glow */}
-                <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 56, backgroundColor: "rgba(190,90,0,0.30)" }} />
-
-                {/* Left edge blend */}
-                <LinearGradient
-                  colors={isLight
-                    ? (["#F5EDD8", "transparent"] as const)
-                    : isSapphire
-                      ? (["#0c1830", "transparent"] as const)
-                      : (["#090f1d", "transparent"] as const)}
-                  start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-                  style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 44 }}
-                  pointerEvents="none"
-                />
-              </LinearGradient>
-            </View>
-          </View>
-
-          {/* Glass Zmanim bar — 3 key times, immediately scannable */}
-          {Platform.OS !== "web" ? (
-            <BlurView
-              intensity={60} tint={isLight ? "light" : "dark"}
-              style={{ marginHorizontal: 14, marginBottom: 14, borderRadius: rd.lg, overflow: "hidden" }}
-            >
-              <ZmanimBar todayZm={todayZm} location={location} textPrimary={textPrimary} textMuted={textMuted} isLight={isLight} />
-            </BlurView>
-          ) : (
-            <View style={{
-              marginHorizontal: 14, marginBottom: 14, borderRadius: rd.lg, overflow: "hidden",
-              backgroundColor: isLight ? "rgba(255,248,238,0.90)" : "rgba(0,0,0,0.58)",
-              borderWidth: 1, borderColor: isLight ? "rgba(200,133,42,0.20)" : "rgba(255,255,255,0.09)",
-            }}>
-              <ZmanimBar todayZm={todayZm} location={location} textPrimary={textPrimary} textMuted={textMuted} isLight={isLight} />
-            </View>
-          )}
-
-          {/* Phase 1: elegant loading shimmer, fades out on mount */}
-          <Animated.View
-            pointerEvents="none"
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              backgroundColor: isLight ? "rgba(240,230,206,0.55)" : "rgba(9,15,29,0.55)",
-              opacity: shimmerOpacity,
-            }}
-          />
-        </LinearGradient>
+            {/* Phase 1: elegant loading shimmer */}
+            <Animated.View
+              pointerEvents="none"
+              style={{
+                ...StyleSheet.absoluteFillObject,
+                backgroundColor: "rgba(9,15,29,0.55)",
+                opacity: shimmerOpacity,
+              }}
+            />
+          </LinearGradient>
+        </ImageBackground>
       </Animated.View>
 
       {/* ─── 4. TODAY'S FOCUS — Phase 2 ────────────────────────────────────────── */}
