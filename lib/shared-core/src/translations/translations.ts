@@ -364,6 +364,28 @@ export interface SharedTranslations {
   commSynagogueTypeBK: string;
   commSynagogueTypePG: string;
   commSynagogueTypeCC: string;
+  /* synagogue registration form */
+  commSynagogueFormTitle: string;
+  commSynagogueFormSubtitle: string;
+  commSynagogueFormName: string;
+  commSynagogueFormNamePlaceholder: string;
+  commSynagogueFormCity: string;
+  commSynagogueFormCityPlaceholder: string;
+  commSynagogueFormCountry: string;
+  commSynagogueFormCountryPlaceholder: string;
+  commSynagogueFormType: string;
+  commSynagogueFormContact: string;
+  commSynagogueFormContactPlaceholder: string;
+  commSynagogueFormDescription: string;
+  commSynagogueFormDescriptionPlaceholder: string;
+  commSynagogueFormSubmit: string;
+  commSynagogueFormCancel: string;
+  commSynagogueFormDone: string;
+  commSynagogueFormSuccess: string;
+  commSynagogueFormSuccessDesc: string;
+  commSynagogueFormError: string;
+  commSynagogueFormRequired: string;
+  commSynagogueFormEmailInvalid: string;
   /* shared action labels */
   commBack: string;
   commContact: string;
@@ -728,13 +750,34 @@ export const sharedEn: SharedTranslations = {
   commSynagogueSeeAll: "View directory",
   commSynagogueScreenDesc: "Bnei Menashe prayer houses and community centers around the world.",
   commSynagogueRegisterTitle: "Register Your Synagogue",
-  commSynagogueRegisterDesc: "Contact your community admin to add a new location to this directory.",
+  commSynagogueRegisterDesc: "Submit your details and we'll add your location to the directory.",
   commSynagogueStatLocations: "LOCATIONS",
   commSynagogueStatCountries: "COUNTRIES",
   commSynagogueStatMembers: "MEMBERS",
   commSynagogueTypeBK: "Beit Knesset",
   commSynagogueTypePG: "Prayer Group",
   commSynagogueTypeCC: "Community Center",
+  commSynagogueFormTitle: "Register Your Synagogue",
+  commSynagogueFormSubtitle: "Submit your details below and we'll review and add your location to the directory.",
+  commSynagogueFormName: "Synagogue Name",
+  commSynagogueFormNamePlaceholder: "e.g. Beit Knesset Bnei Menashe",
+  commSynagogueFormCity: "City",
+  commSynagogueFormCityPlaceholder: "e.g. Churachandpur",
+  commSynagogueFormCountry: "Country",
+  commSynagogueFormCountryPlaceholder: "e.g. India",
+  commSynagogueFormType: "Type",
+  commSynagogueFormContact: "Contact Email",
+  commSynagogueFormContactPlaceholder: "e.g. rabbi@synagogue.org",
+  commSynagogueFormDescription: "Description",
+  commSynagogueFormDescriptionPlaceholder: "Brief description of services, community, and activities…",
+  commSynagogueFormSubmit: "Submit Request",
+  commSynagogueFormCancel: "Cancel",
+  commSynagogueFormDone: "Done",
+  commSynagogueFormSuccess: "Request Submitted!",
+  commSynagogueFormSuccessDesc: "Thank you. Our team will review your submission and add your synagogue to the directory soon.",
+  commSynagogueFormError: "Submission failed. Please try again.",
+  commSynagogueFormRequired: "Name, city, and country are required.",
+  commSynagogueFormEmailInvalid: "Please enter a valid email address.",
   commBack: "Back",
   commContact: "Contact",
   commMap: "Map",
@@ -1097,13 +1140,34 @@ export const sharedTk: SharedTranslations = {
   commSynagogueSeeAll: "List en rawh",
   commSynagogueScreenDesc: "Bnei Menashe thu dawt inn leh mipil hmun khawvel zawng zawng.",
   commSynagogueRegisterTitle: "Na Thu Dawt Inn Register",
-  commSynagogueRegisterDesc: "Hmun thar list-ah thlan nan na mipil admin-ah contact rawh.",
+  commSynagogueRegisterDesc: "Na detail submit la, list-ah thlan a ni ang.",
   commSynagogueStatLocations: "HMUN",
   commSynagogueStatCountries: "RAMRI",
   commSynagogueStatMembers: "MIPIL",
   commSynagogueTypeBK: "Beit Knesset",
   commSynagogueTypePG: "Thupui Pawl",
   commSynagogueTypeCC: "Mipil Inn",
+  commSynagogueFormTitle: "Na Thu Dawt Inn Register",
+  commSynagogueFormSubtitle: "Hnuai ah na detail submit la, hmu tir zing ang che.",
+  commSynagogueFormName: "Thu Dawt Inn Hming",
+  commSynagogueFormNamePlaceholder: "eg. Beit Knesset Bnei Menashe",
+  commSynagogueFormCity: "Khua",
+  commSynagogueFormCityPlaceholder: "eg. Churachandpur",
+  commSynagogueFormCountry: "Ramri",
+  commSynagogueFormCountryPlaceholder: "eg. India",
+  commSynagogueFormType: "Lokal",
+  commSynagogueFormContact: "Contact Email",
+  commSynagogueFormContactPlaceholder: "eg. rabbi@synagogue.org",
+  commSynagogueFormDescription: "Describe",
+  commSynagogueFormDescriptionPlaceholder: "Thupui, mipil leh zirna thu siam rawh…",
+  commSynagogueFormSubmit: "Submit",
+  commSynagogueFormCancel: "Cancel",
+  commSynagogueFormDone: "Zo Tawh",
+  commSynagogueFormSuccess: "Submit In Zo!",
+  commSynagogueFormSuccessDesc: "Lawmthu. A review a ni ang leh list-ah zet a ni ang.",
+  commSynagogueFormError: "Submit a tling lo. Lo chhawn rawh.",
+  commSynagogueFormRequired: "Hming, khua leh ramri a ngai.",
+  commSynagogueFormEmailInvalid: "Email dik tak siam rawh.",
   commBack: "Chhawn",
   commContact: "Contact",
   commMap: "Hmun En",
