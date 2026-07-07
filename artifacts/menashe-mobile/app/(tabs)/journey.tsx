@@ -43,6 +43,7 @@ import { calculateZmanim, type ZmanimTimes } from "@/lib/zmanim";
 import type { Branch } from "@workspace/shared-core/census";
 import { getBranch, branchStats } from "@workspace/shared-core/census";
 import { SkeletonCard } from "@/src/mobile/components/feedback/LoadingState";
+import { SectionTitle } from "@/src/mobile/components/display";
 
 // ── Daf Yomi (mirrors index.tsx) ──────────────────────────────────────────────
 
@@ -463,7 +464,7 @@ export default function JourneyScreen() {
         <View style={{ paddingHorizontal: sp[4] }}>
 
           {/* ══ §2  CONTINUE JOURNEY — single priority action ════════════════ */}
-          <SectionLabel title="Continue Journey" GOLD={GOLD} foreground={colors.foreground} />
+          <SectionTitle title="Continue Journey" />
 
           <TouchableOpacity
             onPress={() => go(action.path)}
@@ -512,7 +513,7 @@ export default function JourneyScreen() {
           </TouchableOpacity>
 
           {/* ══ §3  JOURNEY CARDS — live data, no placeholders ════════════════ */}
-          <SectionLabel title={t.journeySummaryTitle} GOLD={GOLD} foreground={colors.foreground} />
+          <SectionTitle title={t.journeySummaryTitle} />
 
           <View style={styles.cardGrid}>
 
@@ -607,7 +608,7 @@ export default function JourneyScreen() {
           </View>
 
           {/* ══ §3.5  CENSUS — community data surface (SPR-P006A) ══════════════ */}
-          <SectionLabel title={t.journeyCensusSectionTitle} GOLD={GOLD} foreground={colors.foreground} />
+          <SectionTitle title={t.journeyCensusSectionTitle} />
 
           {censusLoading ? (
             // Loading — MMDL skeleton
@@ -715,7 +716,7 @@ export default function JourneyScreen() {
           )}
 
           {/* ══ §4  BOOKMARKS ════════════════════════════════════════════════════ */}
-          <SectionLabel title={t.journeyBookmarksTitle} GOLD={GOLD} foreground={colors.foreground} />
+          <SectionTitle title={t.journeyBookmarksTitle} />
 
           <View
             style={[styles.bookmarksEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -734,7 +735,7 @@ export default function JourneyScreen() {
           </View>
 
           {/* ══ §5  REFLECTION — day-context aware ══════════════════════════════ */}
-          <SectionLabel title={t.journeyReflectionTitle} GOLD={GOLD} foreground={colors.foreground} />
+          <SectionTitle title={t.journeyReflectionTitle} />
 
           <View
             style={[styles.reflectionCard, { backgroundColor: colors.card, borderColor: GOLD + "44" }]}
@@ -756,30 +757,6 @@ export default function JourneyScreen() {
 
         </View>
       </ScrollView>
-    </View>
-  );
-}
-
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-function SectionLabel({
-  title, GOLD, foreground,
-}: {
-  title: string; GOLD: string; foreground: string;
-}) {
-  return (
-    <View style={styles.sectionLabel}>
-      <View
-        style={[styles.sectionAccent, { backgroundColor: GOLD }]}
-        accessible={false}
-        importantForAccessibility="no"
-      />
-      <Text
-        style={[styles.sectionText, { color: foreground }]}
-        accessibilityRole="header"
-      >
-        {title}
-      </Text>
     </View>
   );
 }
@@ -836,25 +813,6 @@ const styles = StyleSheet.create({
     height: 3,
     width: 48,
     borderRadius: 2,
-  },
-
-  // Section label
-  sectionLabel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 32,
-    marginBottom: 12,
-  },
-  sectionAccent: {
-    width: 3,
-    height: 18,
-    borderRadius: 2,
-  },
-  sectionText: {
-    fontSize: 17,
-    fontWeight: "700",
-    letterSpacing: 0.1,
   },
 
   // §2 Continue Journey card

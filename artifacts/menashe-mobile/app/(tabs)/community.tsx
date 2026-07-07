@@ -19,6 +19,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
+import { SectionTitle } from "@/src/mobile/components/display";
 import type { ColorTokens } from "@/src/mobile/design-system";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
@@ -65,37 +66,6 @@ function navigate(path: string) {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 type Colors = ColorTokens;
-
-function SectionHeader({
-  emoji, title, action, onAction, colors,
-}: {
-  emoji?: string;
-  title: string;
-  action?: string;
-  onAction?: () => void;
-  colors: Colors;
-}) {
-  return (
-    <View style={styles.sectionHeader}>
-      <View style={styles.sectionTitleRow}>
-        <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          {emoji ? `${emoji}  ` : ""}{title}
-        </Text>
-      </View>
-      {action && onAction && (
-        <TouchableOpacity
-          onPress={onAction}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel={action}
-        >
-          <Text style={[styles.seeAll, { color: colors.primary }]}>{action} →</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-}
 
 function EmptyCard({ icon, message, colors }: {
   icon: React.ComponentProps<typeof Feather>["name"];
@@ -241,12 +211,11 @@ export default function CommunityScreen() {
           <View style={{ paddingHorizontal: sp[4] }}>
 
             {/* ═══ 1. ANNOUNCEMENTS ═══ */}
-            <SectionHeader
-              emoji="📢"
+            <SectionTitle
+              leadingIcon={<Text style={{ fontSize: 16 }}>📢</Text>}
               title={t.commAnnouncementsTitle}
-              action={announcements.length > 0 ? t.commSeeAll : undefined}
+              actionLabel={announcements.length > 0 ? t.commSeeAll : undefined}
               onAction={() => navigate("/community/announcements")}
-              colors={colors}
             />
             {topAnnouncements.length === 0 ? (
               <EmptyCard icon="bell" message={t.commAnnouncementsEmpty} colors={colors} />
@@ -296,12 +265,11 @@ export default function CommunityScreen() {
             ))}
 
             {/* ═══ 2. PRAYER REQUESTS ═══ */}
-            <SectionHeader
-              emoji="🙏"
+            <SectionTitle
+              leadingIcon={<Text style={{ fontSize: 16 }}>🙏</Text>}
               title={t.commPrayerTitle}
-              action={t.commPrayerSeeAll}
+              actionLabel={t.commPrayerSeeAll}
               onAction={() => navigate("/prayer-board")}
-              colors={colors}
             />
             {approvedPrayers.length === 0 ? (
               <EmptyCard icon="heart" message={t.commPrayerEmpty} colors={colors} />
@@ -377,12 +345,11 @@ export default function CommunityScreen() {
             </TouchableOpacity>
 
             {/* ═══ 3. COMMUNITY MEMORIALS ═══ */}
-            <SectionHeader
-              emoji="🕯"
+            <SectionTitle
+              leadingIcon={<Text style={{ fontSize: 16 }}>🕯</Text>}
               title={t.commMemorialsTitle}
-              action={t.commMemorialsSeeAll}
+              actionLabel={t.commMemorialsSeeAll}
               onAction={() => navigate("/community/memorials")}
-              colors={colors}
             />
             <TouchableOpacity
               activeOpacity={0.88}
@@ -455,12 +422,11 @@ export default function CommunityScreen() {
             </TouchableOpacity>
 
             {/* ═══ 4. UPCOMING EVENTS ═══ */}
-            <SectionHeader
-              emoji="📅"
+            <SectionTitle
+              leadingIcon={<Text style={{ fontSize: 16 }}>📅</Text>}
               title={t.commEventsTitle}
-              action={events.length > 0 ? t.commEventsSeeAll : undefined}
+              actionLabel={events.length > 0 ? t.commEventsSeeAll : undefined}
               onAction={() => navigate("/community/events")}
-              colors={colors}
             />
             {events.length === 0 ? (
               <TouchableOpacity
@@ -552,12 +518,11 @@ export default function CommunityScreen() {
             )}
 
             {/* ═══ 5. ORGANIZATIONS ═══ */}
-            <SectionHeader
-              emoji="🏛"
+            <SectionTitle
+              leadingIcon={<Text style={{ fontSize: 16 }}>🏛</Text>}
               title={t.commOrgsTitle}
-              action={t.commOrgsSeeAll}
+              actionLabel={t.commOrgsSeeAll}
               onAction={() => navigate("/community/organizations")}
-              colors={colors}
             />
             <TouchableOpacity
               activeOpacity={0.82}
@@ -602,12 +567,11 @@ export default function CommunityScreen() {
             </TouchableOpacity>
 
             {/* ═══ 6. LEARNING GROUPS ═══ */}
-            <SectionHeader
-              emoji="📚"
+            <SectionTitle
+              leadingIcon={<Text style={{ fontSize: 16 }}>📚</Text>}
               title={t.commLearningTitle}
-              action={t.commLearningSeeAll}
+              actionLabel={t.commLearningSeeAll}
               onAction={() => navigate("/community/learning-groups")}
-              colors={colors}
             />
             {/* Preview: 3 featured groups */}
             {[
@@ -652,12 +616,11 @@ export default function CommunityScreen() {
             </TouchableOpacity>
 
             {/* ═══ 7. SYNAGOGUE ═══ */}
-            <SectionHeader
-              emoji="🕍"
+            <SectionTitle
+              leadingIcon={<Text style={{ fontSize: 16 }}>🕍</Text>}
               title={t.commSynagogueTitle}
-              action={t.commSynagogueSeeAll}
+              actionLabel={t.commSynagogueSeeAll}
               onAction={() => navigate("/community/synagogues")}
-              colors={colors}
             />
             {/* Preview: top 3 synagogues by country priority */}
             {[
@@ -706,12 +669,11 @@ export default function CommunityScreen() {
 
         {/* ── §8  Community Census ── */}
         <View style={[styles.section, { paddingBottom: sp[4] }]}>
-          <SectionHeader
-            emoji="📋"
+          <SectionTitle
+            leadingIcon={<Text style={{ fontSize: 16 }}>📋</Text>}
             title="Community Census"
-            action={t.commSeeAll}
+            actionLabel={t.commSeeAll}
             onAction={() => navigate("/census")}
-            colors={colors}
           />
           <TouchableOpacity
             style={[styles.censusEntryCard, {
@@ -847,33 +809,6 @@ const styles = StyleSheet.create({
   loadingBox: {
     alignItems: "center",
     paddingVertical: 60,
-  },
-
-  // Section headers
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 32,
-    marginBottom: 12,
-  },
-  sectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  sectionAccent: {
-    width: 3,
-    height: 18,
-    borderRadius: 2,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  seeAll: {
-    fontSize: 13,
-    fontWeight: "600",
   },
 
   // Empty / Coming-soon

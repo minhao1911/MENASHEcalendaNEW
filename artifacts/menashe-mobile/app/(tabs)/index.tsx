@@ -57,6 +57,7 @@ import {
   getUpcomingHolidays,
 } from "@/lib/hebrewCalendar";
 import { useThemeTokens } from "@/src/mobile/design-system";
+import { SectionTitle } from "@/src/mobile/components/display";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -261,39 +262,7 @@ const PillButton = memo(function PillButton({
   );
 });
 
-// ─── Section header label ──────────────────────────────────────────────────────
 
-const SectionHeader = memo(function SectionHeader({
-  icon, label, onPress, ctaLabel, HX,
-}: {
-  icon: string; label: string; onPress?: () => void; ctaLabel?: string; HX: number;
-}) {
-  return (
-    <View style={{
-      paddingHorizontal: HX,
-      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-      marginBottom: 14,
-    }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-        <Feather name={icon as any} size={13} color="#d4a843" />
-        <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: "#888", textTransform: "uppercase" }}>
-          {label}
-        </Text>
-      </View>
-      {onPress && ctaLabel ? (
-        <Pressable
-          onPress={onPress}
-          accessibilityRole="link"
-          accessibilityLabel={ctaLabel}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, flexDirection: "row", alignItems: "center", gap: 4 })}
-        >
-          <Text style={{ fontSize: 11, color: "#d4a843", fontWeight: "600" }}>{ctaLabel}</Text>
-          <Feather name="chevron-right" size={11} color="#d4a843" />
-        </Pressable>
-      ) : null}
-    </View>
-  );
-});
 
 // ─── Phase 5: Quick Action items ──────────────────────────────────────────────
 
@@ -775,12 +744,12 @@ export default function HomeScreen() {
 
       {/* ─── 6. SACRED TIME — Phase 3 ───────────────────────────────────────────── */}
       <Animated.View style={[{ marginBottom: 24 }, a3]}>
-        <SectionHeader
-          icon="clock"
-          label={t.homeSacredTimeLabel}
-          onPress={() => router.push("/(tabs)/zmanim")}
-          ctaLabel={t.homeAllTimesLocal}
-          HX={HX}
+        <SectionTitle
+          eyebrow={t.homeSacredTimeLabel}
+          leadingIcon={<Feather name="clock" size={13} color={gold} />}
+          actionLabel={t.homeAllTimesLocal}
+          onAction={() => router.push("/(tabs)/zmanim")}
+          style={{ paddingHorizontal: HX, marginTop: 0 }}
         />
 
         <ScrollView
@@ -863,10 +832,10 @@ export default function HomeScreen() {
       {/* ─── 8. LEARNING EXPERIENCE — Phase 6 ──────────────────────────────────── */}
       {/* All 3 cards: one visual family — same overline · illustration · CTA style */}
       <Animated.View style={[{ marginBottom: 24 }, a5]}>
-        <SectionHeader
-          icon="book-open"
-          label={t.homeLearningLabel}
-          HX={HX}
+        <SectionTitle
+          eyebrow={t.homeLearningLabel}
+          leadingIcon={<Feather name="book-open" size={13} color={gold} />}
+          style={{ paddingHorizontal: HX, marginTop: 0 }}
         />
         <ScrollView
           horizontal

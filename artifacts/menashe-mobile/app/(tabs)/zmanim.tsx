@@ -7,6 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useThemeTokens } from "@/src/mobile/design-system";
+import { SectionTitle } from "@/src/mobile/components/display";
 import { useApp } from "@/context/AppContext";
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
 import { getHebrewDate, formatHebrewDate } from "@/lib/hebrewCalendar";
@@ -177,9 +178,7 @@ export default function ZmanimScreen() {
       </LinearGradient>
 
       {/* ── DATE CARD — reference image style ── */}
-      <Text style={[styles.sectionLabel, { color: colors.primary, marginHorizontal: sp[5], marginBottom: sp[2] }]}>
-        DATE
-      </Text>
+      <SectionTitle eyebrow="DATE" style={{ marginHorizontal: sp[4], marginTop: sp[4] }} />
 
       <View style={[{ marginHorizontal: sp[4], marginBottom: sp[4], borderRadius: rd.lg, overflow: "hidden" }, shadow.level1]}>
         <ImageBackground
@@ -250,9 +249,7 @@ export default function ZmanimScreen() {
       </View>
 
       {/* ── Section: Halachic Hour ── */}
-      <Text style={[styles.sectionLabel, { color: colors.primary, marginHorizontal: sp[5], marginBottom: sp[2] }]}>
-        HALACHIC HOUR
-      </Text>
+      <SectionTitle eyebrow="HALACHIC HOUR" style={{ marginHorizontal: sp[4] }} />
       <View style={[styles.shaahCard, card, { marginHorizontal: sp[4], marginBottom: sp[4] }]}>
         <View style={[styles.shaahAccent, { backgroundColor: colors.primary }]} />
         <View style={styles.shaahLeft}>
@@ -270,9 +267,7 @@ export default function ZmanimScreen() {
       </View>
 
       {/* ── Section: Prayer Times ── */}
-      <Text style={[styles.sectionLabel, { color: colors.primary, marginHorizontal: sp[5], marginBottom: sp[2] }]}>
-        PRAYER TIMES
-      </Text>
+      <SectionTitle eyebrow="PRAYER TIMES" style={{ marginHorizontal: sp[4] }} />
       <View style={[styles.listCard, card, { marginHorizontal: sp[4] }]}>
         {visibleZmanim.map((z, i) => {
           const time   = zmanim[z.key as keyof typeof zmanim] as Date | null;
@@ -323,9 +318,6 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 13, fontWeight: "500" as const, letterSpacing: 0.1, flexShrink: 1 },
   todayChip:     { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
   todayChipText: { fontSize: 12, fontWeight: "600" as const, letterSpacing: 0.2 },
-
-  /* ── Section label ──────────────────────────────────────────── */
-  sectionLabel: { fontSize: 9, fontWeight: "700" as const, letterSpacing: 2.2, textTransform: "uppercase", opacity: 0.75 },
 
   /* ── Date card (reference-image style) ─────────────────────── */
   dateCard: { width: "100%" },

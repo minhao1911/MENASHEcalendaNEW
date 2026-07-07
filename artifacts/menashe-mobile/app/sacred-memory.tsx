@@ -35,6 +35,7 @@ import { HDate } from "@hebcal/core";
 import { useUser } from "@clerk/expo";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
+import { SectionTitle } from "@/src/mobile/components/display";
 import { useReducedMotion } from "@/src/mobile/design-system/accessibility";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "@/lib/communityApi";
@@ -110,21 +111,6 @@ function usePressScale(reducedMotion: boolean, toValue = 0.96) {
   );
   return { scale, onPressIn, onPressOut };
 }
-
-// ─── Section header ───────────────────────────────────────────────────────
-
-const SectionHeader = memo(function SectionHeader({
-  icon, label, gold, muted,
-}: { icon: React.ComponentProps<typeof Feather>["name"]; label: string; gold: string; muted: string }) {
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 12 }}>
-      <Feather name={icon} size={13} color={gold} />
-      <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: muted, textTransform: "uppercase" }}>
-        {label}
-      </Text>
-    </View>
-  );
-});
 
 // ─── Memorial card (memoized — galleries never re-render idle cards) ────────
 
@@ -306,7 +292,7 @@ export default function SacredMemoryScreen() {
 
         {/* ─── 2. TODAY'S REMEMBRANCE ─────────────────────────────────────── */}
         <Animated.View style={[{ marginHorizontal: HX, marginTop: 20, marginBottom: 22 }, a0]}>
-          <SectionHeader icon="sun" label={t.sacredMemoryTodaysRemembrance} gold={gold} muted={colors.textMuted} />
+          <SectionTitle eyebrow={t.sacredMemoryTodaysRemembrance} leadingIcon={<Feather name="sun" size={13} color={colors.primary} />} style={{ marginTop: 0 }} />
           {todaysRemembrances.length === 0 ? (
             <View style={{
               backgroundColor: colors.card, borderRadius: rd.lg, padding: sp[4],
@@ -328,7 +314,7 @@ export default function SacredMemoryScreen() {
 
         {/* ─── 3. MY FAMILY MEMORIALS ─────────────────────────────────────── */}
         <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a1]}>
-          <SectionHeader icon="heart" label={t.sacredMemoryMyFamilyMemorials} gold={gold} muted={colors.textMuted} />
+          <SectionTitle eyebrow={t.sacredMemoryMyFamilyMemorials} leadingIcon={<Feather name="heart" size={13} color={colors.primary} />} style={{ marginTop: 0 }} />
           {myFamilyMemorials.length === 0 ? (
             <View style={{
               backgroundColor: colors.card, borderRadius: rd.lg, padding: sp[4],
@@ -394,7 +380,7 @@ export default function SacredMemoryScreen() {
         {/* ─── 5. RECENT CANDLES ──────────────────────────────────────────── */}
         <Animated.View style={[{ marginBottom: 22 }, a3]}>
           <View style={{ marginHorizontal: HX }}>
-            <SectionHeader icon="clock" label={t.sacredMemoryRecentCandles} gold={gold} muted={colors.textMuted} />
+            <SectionTitle eyebrow={t.sacredMemoryRecentCandles} leadingIcon={<Feather name="clock" size={13} color={colors.primary} />} style={{ marginTop: 0 }} />
           </View>
           {!loading && recentCandles.length === 0 ? (
             <View style={{
@@ -416,7 +402,7 @@ export default function SacredMemoryScreen() {
 
         {/* ─── 6. PRAYER & REFLECTION ─────────────────────────────────────── */}
         <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a4]}>
-          <SectionHeader icon="feather" label={t.sacredMemoryPrayerReflection} gold={gold} muted={colors.textMuted} />
+          <SectionTitle eyebrow={t.sacredMemoryPrayerReflection} leadingIcon={<Feather name="feather" size={13} color={colors.primary} />} style={{ marginTop: 0 }} />
           <Pressable
             onPress={toggleReflection}
             accessibilityRole="button"
@@ -440,7 +426,7 @@ export default function SacredMemoryScreen() {
 
         {/* ─── 7. COMMUNITY MEMORIAL ──────────────────────────────────────── */}
         <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a5]}>
-          <SectionHeader icon="users" label={t.sacredMemoryCommunityMemorial} gold={gold} muted={colors.textMuted} />
+          <SectionTitle eyebrow={t.sacredMemoryCommunityMemorial} leadingIcon={<Feather name="users" size={13} color={colors.primary} />} style={{ marginTop: 0 }} />
           <Pressable
             onPress={goCommunity}
             accessibilityRole="button"
