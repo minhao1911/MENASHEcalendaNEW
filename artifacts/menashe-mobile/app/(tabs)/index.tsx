@@ -32,6 +32,7 @@ import React, {
 import {
   AccessibilityInfo,
   Animated,
+  Dimensions,
   ImageBackground,
   Platform,
   Pressable,
@@ -265,23 +266,48 @@ const PillButton = memo(function PillButton({
 
 
 // ─── Phase 5: Quick Action items ──────────────────────────────────────────────
+// Each item carries gradient stops + neon icon colour for the premium
+// glassmorphic card design (neon-icon-grid, reference: uploaded mockup).
 
 const QA_ITEMS = [
-  { id: "calendar",     label: "Calendar",     icon: "calendar"   as const, bg: "#4A90D9", route: "/(tabs)/calendar" },
-  { id: "zmanim",       label: "Zmanim",       icon: "clock"      as const, bg: "#9B59B6", route: "/(tabs)/zmanim"   },
-  { id: "sanctuary",    label: "Sanctuary",    icon: "home"       as const, bg: "#E67E22", route: "/sacred-memory"},
-  { id: "study",        label: "Study",        icon: "book-open"  as const, bg: "#27AE60", route: "/(tabs)/torah"    },
-  { id: "daf-yomi",     label: "Daf Yomi",     icon: "award"      as const, bg: "#E67E22", route: "/daf-yomi"        },
-  { id: "library",      label: "Library",      icon: "book"       as const, bg: "#8E44AD", route: "/siddur"          },
-  { id: "prayer-board", label: "Prayer Board", icon: "users"      as const, bg: "#16A085", route: "/prayer-board"    },
-  { id: "48-ways",      label: "48 Ways",      icon: "star"       as const, bg: "#D4A843", route: "/mussar"          },
+  { id: "calendar",     label: "Calendar",     icon: "calendar"  as const,
+    gradientStart: "#0d2456", gradientEnd: "#1d5bbf", iconColor: "#60a5fa",
+    route: "/(tabs)/calendar" },
+  { id: "zmanim",       label: "Zmanim",       icon: "clock"     as const,
+    gradientStart: "#251050", gradientEnd: "#6d28d9", iconColor: "#c084fc",
+    route: "/(tabs)/zmanim"   },
+  { id: "sanctuary",    label: "Sanctuary",    icon: "home"      as const,
+    gradientStart: "#5c1f0a", gradientEnd: "#c2570a", iconColor: "#fb923c",
+    route: "/sacred-memory"   },
+  { id: "study",        label: "Study",        icon: "book-open" as const,
+    gradientStart: "#092b1c", gradientEnd: "#047857", iconColor: "#34d399",
+    route: "/(tabs)/torah"    },
+  { id: "daf-yomi",     label: "Daf Yomi",     icon: "award"     as const,
+    gradientStart: "#5a2d08", gradientEnd: "#b45309", iconColor: "#fbbf24",
+    route: "/daf-yomi"        },
+  { id: "library",      label: "Library",      icon: "book"      as const,
+    gradientStart: "#2a0e52", gradientEnd: "#7c3aed", iconColor: "#a78bfa",
+    route: "/siddur"          },
+  { id: "prayer-board", label: "Prayer Board", icon: "users"     as const,
+    gradientStart: "#082928", gradientEnd: "#0d9488", iconColor: "#2dd4bf",
+    route: "/prayer-board"    },
+  { id: "48-ways",      label: "48 Ways",      icon: "star"      as const,
+    gradientStart: "#3d2005", gradientEnd: "#92400e", iconColor: "#f59e0b",
+    route: "/mussar"          },
 ];
 
+// Card geometry — computed once at module level (never changes on re-render).
+const _SW        = Dimensions.get("window").width;
+const QA_GAP     = 10;
+const QA_H_PAD   = 16;                                          // matches HX
+const QA_CARD_W  = Math.floor((_SW - QA_H_PAD * 2 - QA_GAP * 3) / 4);
+const QA_TILE_S  = Math.floor(QA_CARD_W * 0.76);               // inner gradient square
+const QA_CARD_H  = QA_CARD_W + 26;                             // extra room for label
+
 const QuickActionCard = memo(function QuickActionCard({
-  item, cardBg, borderColor, textSecondary, rd,
+  item,
 }: {
   item: typeof QA_ITEMS[number];
-  cardBg: string; borderColor: string; textSecondary: string; rd: any;
 }) {
   const { scale, onPressIn, onPressOut } = usePressScale(0.93);
   return (
@@ -292,27 +318,60 @@ const QuickActionCard = memo(function QuickActionCard({
       accessibilityLabel={item.label}
       accessibilityRole="button"
       style={{
-        width: "22%",
-        alignItems: "center",
-        minHeight: 92,
-        justifyContent: "center",
-        gap: 9,
-        paddingVertical: 18,
-        borderRadius: rd.lg,
-        backgroundColor: cardBg,
-        borderWidth: 1, borderColor,
+        width:           QA_CARD_W,
+        height:          QA_CARD_H,
+        borderRadius:    22,
+        // Glassmorphic dark shell
+        backgroundColor: "rgba(10, 11, 22, 0.82)",
+        borderWidth:     1,
+        borderColor:     "rgba(255, 255, 255, 0.09)",
+        alignItems:      "center",
+        justifyContent:  "center",
+        gap:             8,
+        // Ambient drop shadow
+        shadowColor:     "#000",
+        shadowOffset:    { width: 0, height: 6 },
+        shadowOpacity:   0.55,
+        shadowRadius:    14,
+        elevation:       10,
       }}
     >
-      <Animated.View style={{ transform: [{ scale }], alignItems: "center", gap: 9 }}>
-        <View style={{
-          width: 50, height: 50,
-          borderRadius: rd.md,
-          backgroundColor: item.bg + "1e",
-          alignItems: "center", justifyContent: "center",
+      <Animated.View style={{ transform: [{ scale }], alignItems: "center", gap: 8 }}>
+        {/* Gradient icon tile — iOS-app-icon aesthetic */}
+        <LinearGradient
+          colors={[item.gradientStart, item.gradientEnd]}
+          start={{ x: 0.1, y: 0.1 }}
+          end={{ x: 0.9, y: 0.9 }}
+          style={{
+            width:          QA_TILE_S,
+            height:         QA_TILE_S,
+            borderRadius:   16,
+            alignItems:     "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* Neon glow via iOS shadow on the icon wrapper */}
+          <View style={{
+            alignItems:     "center",
+            justifyContent: "center",
+            shadowColor:    item.iconColor,
+            shadowOffset:   { width: 0, height: 0 },
+            shadowOpacity:  1,
+            shadowRadius:   10,
+          }}>
+            <Feather name={item.icon} size={28} color={item.iconColor} />
+          </View>
+        </LinearGradient>
+
+        {/* Label */}
+        <Text style={{
+          fontSize:      11,
+          fontWeight:    "600",
+          color:         "rgba(255, 255, 255, 0.82)",
+          textAlign:     "center",
+          lineHeight:    14,
+          letterSpacing: 0.1,
         }}>
-          <Feather name={item.icon} size={22} color={item.bg} />
-        </View>
-        <Text style={{ fontSize: 11, fontWeight: "600", textAlign: "center", color: textSecondary, lineHeight: 14 }}>
           {item.label}
         </Text>
       </Animated.View>
@@ -814,17 +873,10 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 7. QUICK ACTIONS 2×4 — Phase 5 ──────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a4]}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+      <Animated.View style={[{ marginHorizontal: QA_H_PAD, marginBottom: 24 }, a4]}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: QA_GAP }}>
           {QA_ITEMS.map((item) => (
-            <QuickActionCard
-              key={item.id}
-              item={item}
-              cardBg={cardBg}
-              borderColor={borderColor}
-              textSecondary={textSecondary}
-              rd={rd}
-            />
+            <QuickActionCard key={item.id} item={item} />
           ))}
         </View>
       </Animated.View>
