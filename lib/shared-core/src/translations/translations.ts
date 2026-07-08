@@ -40,6 +40,35 @@ export interface SharedTranslations {
   journeyCensusAliyahSubtitle: string;
   journeyCensusUnavailable: string;
 
+  /* ── Journey × Intelligent Integration (SPR-X001) ── */
+  journeyTodaysLearning: string;
+  journeyLearningGroupLabel: string;
+  journeyNextSession: string;
+  journeyContinueLearning: string;
+  journeyNoLearningToday: string;
+  journeyTodaysSacredTime: string;
+  journeyNextPrayer: string;
+  journeyOpenZmanim: string;
+  journeyNoZmanim: string;
+  journeyCommunityToday: string;
+  journeyNextEvent: string;
+  journeyPrayerRequests: string;
+  journeyLatestAnnouncement: string;
+  journeyNoEvents: string;
+  journeyOpenCommunity: string;
+  journeyFamilyJourney: string;
+  journeyMemorialReminder: string;
+  journeyVisitSanctuary: string;
+  journeyNoMemorials: string;
+  journeyMemorialsLearning: string;
+  journeyTodaysRecommendation: string;
+  journeyAllPrayersDone: string;
+  journeyAnonymous: string;
+  journeyNoPrayerRequests: string;
+  journeyNoAnnouncements: string;
+  journeyMemorialSingular: string;
+  journeyMemorialPlural: string;
+
   /* ── Census — Family Head screen ── */
   censusFamilyHeadTitle: string;
   censusGoBack: string;
@@ -423,6 +452,34 @@ export const sharedEn: SharedTranslations = {
   journeyCensusAliyahSubtitle: "Your family is registered and awaiting Aliyah.",
   journeyCensusUnavailable: "Census data unavailable",
 
+  journeyTodaysLearning: "Today's Learning",
+  journeyLearningGroupLabel: "LEARNING GROUP",
+  journeyNextSession: "Next Session",
+  journeyContinueLearning: "Continue Learning →",
+  journeyNoLearningToday: "No study session scheduled today",
+  journeyTodaysSacredTime: "Today's Sacred Time",
+  journeyNextPrayer: "Next Prayer",
+  journeyOpenZmanim: "Open Zmanim →",
+  journeyNoZmanim: "Location not set",
+  journeyCommunityToday: "Community Today",
+  journeyNextEvent: "Upcoming Event",
+  journeyPrayerRequests: "Prayer Requests",
+  journeyLatestAnnouncement: "Announcement",
+  journeyNoEvents: "No upcoming events",
+  journeyOpenCommunity: "Open Community →",
+  journeyFamilyJourney: "Family Journey",
+  journeyMemorialReminder: "Community Memorials",
+  journeyVisitSanctuary: "Visit Sanctuary →",
+  journeyNoMemorials: "No memorials yet",
+  journeyMemorialsLearning: "Active Dedications",
+  journeyTodaysRecommendation: "Today's Recommendation",
+  journeyAllPrayersDone: "All Prayers Complete",
+  journeyAnonymous: "Anonymous",
+  journeyNoPrayerRequests: "No requests yet",
+  journeyNoAnnouncements: "No announcements yet",
+  journeyMemorialSingular: "Memorial",
+  journeyMemorialPlural: "Memorials",
+
   censusFamilyHeadTitle: "Family Head Registration",
   censusGoBack: "Go back",
   censusSaveDraft: "Save Draft",
@@ -791,6 +848,34 @@ export const sharedTk: SharedTranslations = {
   journeyCensusAliyahTitle: "Aliyah Tana Beisei",
   journeyCensusAliyahSubtitle: "In inpui a record ah a awm tawh, Aliyah duhna i nei.",
   journeyCensusUnavailable: "Census thu siamna awm lo",
+
+  journeyTodaysLearning: "Tun Ni Zir",
+  journeyLearningGroupLabel: "ZIR KIHILNA",
+  journeyNextSession: "Thleng Kim",
+  journeyContinueLearning: "Zir Zel →",
+  journeyNoLearningToday: "Tun ni zirna awm lo",
+  journeyTodaysSacredTime: "Tun Ni Thu Thianghlim",
+  journeyNextPrayer: "Thu Dawt Kim",
+  journeyOpenZmanim: "Zmanim En →",
+  journeyNoZmanim: "Hmun siamsak lo",
+  journeyCommunityToday: "Mipil Tun Ni",
+  journeyNextEvent: "Lawmman Kim",
+  journeyPrayerRequests: "Thu Dawt Duhna",
+  journeyLatestAnnouncement: "Thuchhuah",
+  journeyNoEvents: "Lawmman awm lo",
+  journeyOpenCommunity: "Mipil En →",
+  journeyFamilyJourney: "Inpui Zuangthu",
+  journeyMemorialReminder: "Mipil Hriatna",
+  journeyVisitSanctuary: "Sanctuary En →",
+  journeyNoMemorials: "Hriatna awm lo",
+  journeyMemorialsLearning: "Zirna Pet",
+  journeyTodaysRecommendation: "Tun Ni Pawimawh",
+  journeyAllPrayersDone: "Thu Dawt Zawng Zawh",
+  journeyAnonymous: "Hming Lo",
+  journeyNoPrayerRequests: "Duhna awm lo",
+  journeyNoAnnouncements: "Thuchhuah awm lo",
+  journeyMemorialSingular: "Hriatna",
+  journeyMemorialPlural: "Hriatna",
 
   censusFamilyHeadTitle: "Inpui Bawipa Ziak",
   censusGoBack: "Zin chhuak",

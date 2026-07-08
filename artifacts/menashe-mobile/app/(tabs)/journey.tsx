@@ -1,15 +1,21 @@
 /**
- * Menashe Journey — SPR-P004B · Journey Intelligence
+ * Menashe Journey — SPR-X001 · Intelligent Journey Integration
  *
- * Improvements over SPR-P004A:
- *   1. Continue Journey — live priority engine: prayer → Shabbat → holiday → parasha → daf
- *   2. Journey Cards    — real current status, next step, CTA — no placeholder copy
- *   3. Reflection       — day-context aware: Shabbat / Erev Shabbat / holiday / weekday
- *   4. Visual Polish    — improved hierarchy, spacing, typography scale
+ * The Journey screen is the user's daily dashboard.
+ * Surfaces existing information from existing modules — no new APIs, no AI, no duplicated logic.
+ *
+ * Sections:
+ *   1. Today's Recommendation — priority engine (prayer → census → learning → holiday → memorial → parasha → daf)
+ *   2. Today's Learning       — active learning group, next session, deep-link to Learning Detail
+ *   3. Today's Sacred Time    — next prayer, countdown, open Zmanim
+ *   4. Community Today        — next event, prayer request, announcement
+ *   5. Family Journey         — census status + community memorials
+ *   6. Today's Reflection     — day-context aware quote
  *
  * Rules:
- *   ✓ No AsyncStorage   ✓ No new APIs   ✓ Web untouched   ✓ Existing data only
- *   ✓ No new backend logic   ✓ No storage / tracking / history / analytics
+ *   ✓ No new APIs        ✓ No AI              ✓ No duplicate logic
+ *   ✓ No new data models ✓ Existing APIs only  ✓ Bilingual (EN + TK)
+ *   ✓ No AsyncStorage    ✓ Web untouched
  */
 
 import React, { useMemo } from "react";
@@ -39,11 +45,17 @@ import {
   getCurrentParashaInfo,
   getUpcomingHolidays,
 } from "@/lib/hebrewCalendar";
-import { calculateZmanim, type ZmanimTimes } from "@/lib/zmanim";
+import { calculateZmanim, formatTime, type ZmanimTimes } from "@/lib/zmanim";
 import type { Branch } from "@workspace/shared-core/census";
 import { getBranch, branchStats } from "@workspace/shared-core/census";
 import { SkeletonCard } from "@/src/mobile/components/feedback/LoadingState";
 import { SectionTitle } from "@/src/mobile/components/display";
+
+// Existing API clients — no new APIs
+import { fetchCommunityEvents, type CommunityEvent } from "@/lib/eventsApi";
+import { fetchPrayerRequests, type PrayerRequest } from "@/lib/prayerBoardApi";
+import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
+import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "@/lib/communityApi";
 
 // ── Daf Yomi (mirrors index.tsx) ──────────────────────────────────────────────
 
@@ -82,13 +94,132 @@ function getTodayDaf(): { tractate: string; daf: number } {
   return { tractate: "Berakhot", daf: 2 };
 }
 
-function getDafProgress(tractate: string, daf: number): number {
-  const t = TRACTATES.find((x) => x.name === tractate);
-  if (!t) return 0;
-  return Math.round(((daf - 2) / t.pages) * 100);
+// ── Today's Learning — minimal display summary (full data in learning-groups.tsx) ──
+
+interface LearningSlot {
+  id: string;
+  emoji: string;
+  name: string;
+  nameTK: string;
+  subject: string;
+  subjectTK: string;
+  schedule: "daily" | "weekly";
+  /** UPPERCASE day of week — matches getDayOfWeek() output */
+  day?: string;
+  time?: string;
 }
 
-// ── Priority Engine — Continue Journey ────────────────────────────────────────
+// Mirrors the schedule data from learning-groups.tsx; only display fields needed here.
+const JOURNEY_LEARNING: LearningSlot[] = [
+  {
+    id: "daf-yomi",
+    emoji: "📖",
+    name: "Daf Yomi Circle",
+    nameTK: "Daf Yomi Kihilna",
+    subject: "Talmud Bavli",
+    subjectTK: "Talmud Bavli",
+    schedule: "daily",
+    time: "06:30",
+  },
+  {
+    id: "parasha",
+    emoji: "📜",
+    name: "Weekly Parasha Study",
+    nameTK: "Parasha Kihilna",
+    subject: "Torah · Weekly Portion",
+    subjectTK: "Torah · Sunthal Parasha",
+    schedule: "weekly",
+    day: "SATURDAY",
+    time: "09:30",
+  },
+  {
+    id: "womens-torah",
+    emoji: "🌸",
+    name: "Women's Torah Study",
+    nameTK: "Nu-te Torah Kihilna",
+    subject: "Halacha · Jewish Home",
+    subjectTK: "Halacha · Yudah Inn",
+    schedule: "weekly",
+    day: "WEDNESDAY",
+    time: "17:00",
+  },
+  {
+    id: "halacha-class",
+    emoji: "🕍",
+    name: "Halacha for Bnei Menashe",
+    nameTK: "Bnei Menashe Halacha",
+    subject: "Practical Halacha",
+    subjectTK: "Halacha Ngaihdan",
+    schedule: "weekly",
+    day: "THURSDAY",
+    time: "20:00",
+  },
+  {
+    id: "youth-mishnah",
+    emoji: "⭐",
+    name: "Youth Mishnah Program",
+    nameTK: "Sipai-te Mishnah",
+    subject: "Mishnah · Youth",
+    subjectTK: "Mishnah · Sipai-te",
+    schedule: "weekly",
+    day: "SUNDAY",
+    time: "10:00",
+  },
+  {
+    id: "hebrew",
+    emoji: "🔤",
+    name: "Hebrew Language Class",
+    nameTK: "Hebrew Thu Kihilna",
+    subject: "Modern & Liturgical Hebrew",
+    subjectTK: "Hebrew Thu",
+    schedule: "weekly",
+    day: "TUESDAY",
+    time: "18:30",
+  },
+];
+
+/** Pick the most relevant learning group for today.
+ *  Weekly groups take priority on their day; daf-yomi is always available. */
+function getTodaysLearning(dayOfWeek: string): LearningSlot {
+  const weeklyToday = JOURNEY_LEARNING.find(
+    (g) => g.schedule === "weekly" && g.day === dayOfWeek,
+  );
+  if (weeklyToday) return weeklyToday;
+  return JOURNEY_LEARNING.find((g) => g.id === "daf-yomi")!;
+}
+
+// ── Next Prayer — reuses calculateZmanim result ────────────────────────────────
+
+interface NextPrayer {
+  name: string;
+  nameTK: string;
+  time: Date;
+}
+
+function getNextPrayer(zm: ZmanimTimes | null, nowMs: number): NextPrayer | null {
+  if (!zm) return null;
+  const candidates: [string, string, Date | null][] = [
+    ["Shacharit", "Shacharit", zm.sunrise],
+    ["Mincha",    "Mincha",    zm.minchaGedolah],
+    ["Ma'ariv",   "Ma'ariv",   zm.tzais],
+  ];
+  for (const [name, nameTK, time] of candidates) {
+    if (time && time.getTime() > nowMs) return { name, nameTK, time };
+  }
+  return null; // All prayers passed for today
+}
+
+function formatCountdown(futureMs: number, nowMs: number): string {
+  const diffMs = futureMs - nowMs;
+  if (diffMs <= 0) return "Now";
+  const totalMins = Math.floor(diffMs / 60_000);
+  const hours = Math.floor(totalMins / 60);
+  const mins  = totalMins % 60;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
+// ── Priority Engine — Today's Recommendation ──────────────────────────────────
 
 interface ContinueAction {
   overline: string;
@@ -102,23 +233,18 @@ interface ContinueAction {
   accent: string;
 }
 
-// Returns the name of the prayer window currently active, or null if midday gap.
-function getActivePrayer(zm: ZmanimTimes | null, nowMs: number): string | null {
+function getActivePrayerName(zm: ZmanimTimes | null, nowMs: number): string | null {
   if (!zm) return null;
   const sr = zm.sunrise?.getTime();
   const su = zm.sunset?.getTime();
   if (!sr || !su) return null;
-
-  // Use latestShacharit if available (4 shaot zmaniyot after sunrise)
-  const latestS = (zm as any).latestShacharit?.getTime() ?? (sr + 4 * 3_600_000);
-  // Use minchaGedolah (6.5 shaot after sunrise)
-  const minGed  = zm.minchaGedolah?.getTime() ?? (sr + 6.5 * 3_600_000);
-
-  if (nowMs < sr)      return "Shacharit";   // before sunrise
-  if (nowMs < latestS) return "Shacharit";   // morning window
-  if (nowMs < minGed)  return null;          // midday gap — no featured prayer
-  if (nowMs < su)      return "Mincha";      // afternoon
-  return "Ma'ariv";                          // after sunset
+  const latestS = zm.latestShacharit?.getTime() ?? (sr + 4 * 3_600_000);
+  const minGed  = zm.minchaGedolah?.getTime()   ?? (sr + 6.5 * 3_600_000);
+  if (nowMs < sr)      return "Shacharit";
+  if (nowMs < latestS) return "Shacharit";
+  if (nowMs < minGed)  return null;
+  if (nowMs < su)      return "Mincha";
+  return "Ma'ariv";
 }
 
 function buildContinueAction(
@@ -128,11 +254,17 @@ function buildContinueAction(
   zm: ZmanimTimes | null,
   parasha: string | null,
   daf: { tractate: string; daf: number },
+  // New inputs for SPR-X001
+  hasCensus: boolean | undefined,      // undefined = still loading
+  todaysLearning: LearningSlot,
+  hasUpcomingYahrzeit: boolean,
+  lang: "en" | "tk",
 ): ContinueAction {
+  const isTK = lang === "tk";
   const nowMs = Date.now();
 
   // P1 — Active prayer window
-  const prayer = getActivePrayer(zm, nowMs);
+  const prayer = getActivePrayerName(zm, nowMs);
   if (prayer) {
     const meta: Record<string, { sub: string; icon: string; path: string }> = {
       Shacharit: { sub: "Begin the day with morning prayer",    icon: "sun",  path: "/(tabs)/zmanim" },
@@ -153,7 +285,7 @@ function buildContinueAction(
     };
   }
 
-  // P2 — Shabbat day (Saturday) — getDayOfWeek() returns UPPERCASE
+  // P2 — Shabbat day (Saturday)
   if (dayOfWeek === "SATURDAY") {
     return {
       overline: "SHABBAT SHALOM",
@@ -183,7 +315,24 @@ function buildContinueAction(
     };
   }
 
-  // P4 — Today is a holiday
+  // P4 — No Census registered (high-priority community milestone)
+  if (hasCensus === false) {
+    return {
+      overline: isTK ? "MIPIL MILESTONE" : "COMMUNITY MILESTONE",
+      title: isTK ? "Mipil Census Zawh Zel" : "Complete Your Census",
+      subtitle: isTK
+        ? "Bnei Menashe mipil khawngaih turin in tanan census zawh pek rawh."
+        : "Help strengthen Bnei Menashe — register your family today",
+      cta: isTK ? "Census Tan" : "Start Census",
+      path: "/census",
+      icon: "users",
+      gradientDark:  ["#0a1a0a", "#1a3a1a", "#3a6a3a"],
+      gradientLight: ["#1a3a1a", "#2e6a2e", "#4a8a4a"],
+      accent: "#80d880",
+    };
+  }
+
+  // P5 — Today is a holiday
   if (todayHoliday) {
     return {
       overline: "TODAY'S HOLIDAY",
@@ -198,7 +347,7 @@ function buildContinueAction(
     };
   }
 
-  // P5 — Imminent holiday (within 7 days)
+  // P6 — Imminent holiday (within 7 days)
   if (imminentHoliday) {
     const d = imminentHoliday.daysAway;
     return {
@@ -214,7 +363,24 @@ function buildContinueAction(
     };
   }
 
-  // P6 — Current Parashah study
+  // P7 — Learning group scheduled today (non-Shabbat)
+  if (todaysLearning.schedule === "weekly" && todaysLearning.day === dayOfWeek) {
+    const learningName    = isTK ? todaysLearning.nameTK    : todaysLearning.name;
+    const learningSubject = isTK ? todaysLearning.subjectTK : todaysLearning.subject;
+    return {
+      overline: isTK ? "ZIR TUN NI" : "LEARNING TODAY",
+      title: learningName,
+      subtitle: `${learningSubject}${todaysLearning.time ? ` · ${todaysLearning.time}` : ""}`,
+      cta: isTK ? "Zir Zel →" : "Continue Study →",
+      path: `/community/learning-detail/${todaysLearning.id}` as any,
+      icon: "book-open",
+      gradientDark:  ["#1a0a00", "#3a1a00", "#7a3200"],
+      gradientLight: ["#3a1a00", "#7a3200", "#aa5820"],
+      accent: "#d4a843",
+    };
+  }
+
+  // P8 — Current Parashah study
   if (parasha) {
     return {
       overline: "CURRENT PARASHA",
@@ -229,7 +395,24 @@ function buildContinueAction(
     };
   }
 
-  // P7 — Daf Yomi fallback
+  // P9 — Upcoming memorial / community yahrzeit
+  if (hasUpcomingYahrzeit) {
+    return {
+      overline: isTK ? "THIANGLIM HRIATNA" : "SACRED MEMORY",
+      title: isTK ? "Sanctuary En Rawh" : "Visit the Sanctuary",
+      subtitle: isTK
+        ? "Hriatna katni a mei a lang — an hriatna pawimawh rawh"
+        : "A memorial candle burns — honor those remembered",
+      cta: isTK ? "Sanctuary En →" : "Visit Sanctuary",
+      path: "/sacred-memory",
+      icon: "heart",
+      gradientDark:  ["#1a0a1a", "#3a123a", "#6a2460"],
+      gradientLight: ["#3a123a", "#6a2460", "#9a3a8a"],
+      accent: "#d484c4",
+    };
+  }
+
+  // P10 — Daf Yomi fallback
   return {
     overline: "DAF YOMI",
     title: `${daf.tractate} ${daf.daf}`,
@@ -281,7 +464,6 @@ function getContextualReflection(
   todayHoliday: { name: string } | null,
   dayOfYear: number,
 ): { quote: string; source: string; context: string } {
-  // getDayOfWeek() returns UPPERCASE ("SATURDAY", "FRIDAY", …)
   if (dayOfWeek === "SATURDAY") {
     const r = REFLECTIONS.shabbat[dayOfYear % REFLECTIONS.shabbat.length];
     return { ...r, context: "Shabbat Reflection" };
@@ -313,43 +495,47 @@ function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / 86_400_000);
 }
 
+function formatEventDate(dateStr: string, lang: "en" | "tk"): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const today  = new Date();
+  const diff   = daysBetween(today, d);
+  if (diff === 0) return lang === "tk" ? "Nizan" : "Today";
+  if (diff === 1) return lang === "tk" ? "Zani" : "Tomorrow";
+  if (diff <= 7)  return lang === "tk" ? `Ni ${diff} a kal` : `In ${diff} days`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function JourneyScreen() {
   const { colors, sp } = useThemeTokens();
-  const { t }    = useLanguage();
-  const { location } = useApp();
+  const { t, lang } = useLanguage();
+  const { location }  = useApp();
   const insets   = useSafeAreaInsets();
   const topPad   = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
-  // Theme context
-  const isLight  = (colors.background as string).toLowerCase() === "#f5efe0";
-  const GOLD     = colors.primary as string;
+  const isLight = (colors.background as string).toLowerCase() === "#f5efe0";
+  const GOLD    = colors.primary as string;
 
-  const today     = useMemo(() => new Date(), []);
-  const hdate     = useMemo(() => getHebrewDate(today), [today]);
-  const hebrewStr = useMemo(() => formatHebrewDate(hdate), [hdate]);
-  const hebrewNum = useMemo(() => { try { return formatHebrewDateHebrew(hdate); } catch { return ""; } }, [hdate]);
-  const gregStr   = useMemo(() => formatGregorianDate(today), [today]);
-  const dayOfWeek = useMemo(() => getDayOfWeek(today), [today]);
-  const parasha   = useMemo(() => getCurrentParasha(), []);
-  const parashaInfo = useMemo(() => { try { return getCurrentParashaInfo(); } catch { return null; } }, []);
-  const holidays  = useMemo(() => getUpcomingHolidays(30), []);
-  const daf       = useMemo(() => getTodayDaf(), []);
-  const dafPct    = useMemo(() => getDafProgress(daf.tractate, daf.daf), [daf]);
-  const zm        = useMemo(
+  const today      = useMemo(() => new Date(), []);
+  const hdate      = useMemo(() => getHebrewDate(today), [today]);
+  const hebrewStr  = useMemo(() => formatHebrewDate(hdate), [hdate]);
+  const hebrewNum  = useMemo(() => { try { return formatHebrewDateHebrew(hdate); } catch { return ""; } }, [hdate]);
+  const gregStr    = useMemo(() => formatGregorianDate(today), [today]);
+  const dayOfWeek  = useMemo(() => getDayOfWeek(today), [today]);
+  const parasha    = useMemo(() => getCurrentParasha(), []);
+  const holidays   = useMemo(() => getUpcomingHolidays(30), []);
+  const daf        = useMemo(() => getTodayDaf(), []);
+  const zm         = useMemo(
     () => calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes ?? 18),
     [today, location],
   );
-
   const dayOfYear = useMemo(() => Math.floor(
     (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86_400_000,
   ), []);
 
-  const firstName: string | null = null;
-
   // ── Census integration (SPR-P006A) ────────────────────────────────────────
-  // undefined = loading, null = confirmed no record, Branch = has record
   const [branch, setBranch] = React.useState<Branch | null | undefined>(undefined);
   const [censusError, setCensusError] = React.useState(false);
 
@@ -360,18 +546,69 @@ export default function JourneyScreen() {
       .catch(() => { setBranch(null); setCensusError(true); });
   }, []);
 
-  const censusStats  = React.useMemo(() => branch ? branchStats(branch) : null, [branch]);
+  const censusStats     = React.useMemo(() => branch ? branchStats(branch) : null, [branch]);
   const censusLoading   = branch === undefined && !censusError;
   const aliyahAwaiting  = (censusStats?.aliyahBreakdown.awaiting ?? 0) > 0;
+  // hasCensus: undefined=loading, true=has record, false=no record
+  const hasCensus: boolean | undefined = branch === undefined ? undefined : !!branch;
 
-  // Holiday context from live calendar data
-  const todayStr = today.toDateString();
-  const todayHoliday = useMemo(
+  // ── Community data (SPR-X001) — reuse existing API clients ────────────────
+  const [events, setEvents]               = React.useState<CommunityEvent[]>([]);
+  const [prayerRequests, setPrayerReqs]   = React.useState<PrayerRequest[]>([]);
+  const [announcements, setAnnouncements] = React.useState<MobileAnnouncement[]>([]);
+  const [yahrzeit, setYahrzeit]           = React.useState<CommunityYahrzeitEntry[]>([]);
+  const [communityLoading, setCommunityLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    Promise.allSettled([
+      fetchCommunityEvents(),
+      fetchPrayerRequests(),
+      fetchAnnouncements(),
+      fetchCommunityYahrzeit(),
+    ]).then(([evRes, prRes, anRes, yzRes]) => {
+      if (evRes.status === "fulfilled") setEvents(evRes.value);
+      if (prRes.status === "fulfilled") setPrayerReqs(prRes.value);
+      if (anRes.status === "fulfilled") setAnnouncements(anRes.value);
+      if (yzRes.status === "fulfilled") setYahrzeit(yzRes.value);
+      setCommunityLoading(false);
+    });
+  }, []);
+
+  // ── Derived community values ───────────────────────────────────────────────
+  const todayIso  = today.toISOString().slice(0, 10);
+  const nextEvent = React.useMemo(
+    () => events
+      .filter((e) => e.date >= todayIso)
+      .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null,
+    [events, todayIso],
+  );
+  const topPrayerRequest = React.useMemo(
+    () => prayerRequests.find((r) => r.pinned) ?? prayerRequests[0] ?? null,
+    [prayerRequests],
+  );
+  const latestAnnouncement = React.useMemo(
+    () => announcements.find((a) => a.status === "sent" && a.pinned)
+      ?? announcements.find((a) => a.status === "sent")
+      ?? null,
+    [announcements],
+  );
+  const hasYahrzeit = yahrzeit.length > 0;
+
+  // ── Minute ticker — prayer windows change hourly ───────────────────────────
+  const [nowMs, setNowMs] = React.useState(Date.now);
+  React.useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // ── Holiday context ────────────────────────────────────────────────────────
+  const todayStr    = today.toDateString();
+  const todayHoliday = React.useMemo(
     () => holidays.find((h: { name: string; date: string | Date }) =>
       new Date(h.date).toDateString() === todayStr) ?? null,
     [holidays, todayStr],
   );
-  const imminentHoliday = useMemo(() => {
+  const imminentHoliday = React.useMemo(() => {
     const h = holidays.find((hol: { name: string; date: string | Date }) => {
       const d = daysBetween(today, new Date(hol.date));
       return d >= 1 && d <= 7;
@@ -380,52 +617,34 @@ export default function JourneyScreen() {
     return { name: h.name, daysAway: daysBetween(today, new Date(h.date)) };
   }, [holidays, today]);
 
-  const nextHoliday       = holidays[0] ?? null;
-  const daysToNextHoliday = nextHoliday ? daysBetween(today, new Date(nextHoliday.date)) : null;
+  // ── Today's Learning ───────────────────────────────────────────────────────
+  const todaysLearning = useMemo(() => getTodaysLearning(dayOfWeek), [dayOfWeek]);
 
-  // Minute ticker — makes the priority action time-reactive (prayer windows change hourly)
-  const [, setMinuteTick] = React.useState(0);
-  React.useEffect(() => {
-    const id = setInterval(() => setMinuteTick(n => n + 1), 60_000);
-    return () => clearInterval(id);
-  }, []);
+  // ── Next Prayer + countdown ────────────────────────────────────────────────
+  const nextPrayer  = useMemo(() => getNextPrayer(zm, nowMs), [zm, nowMs]);
+  const countdown   = useMemo(
+    () => nextPrayer ? formatCountdown(nextPrayer.time.getTime(), nowMs) : null,
+    [nextPrayer, nowMs],
+  );
+  const prayerTimeStr = useMemo(
+    () => nextPrayer ? formatTime(nextPrayer.time, location.timezone ?? "Asia/Jerusalem") : null,
+    [nextPrayer, location.timezone],
+  );
 
-  // Priority-ordered "Continue Journey" action — recomputes each minute + on data changes
-  const action = buildContinueAction(dayOfWeek, todayHoliday, imminentHoliday, zm, parasha ?? null, daf);
+  // ── Priority action ────────────────────────────────────────────────────────
+  const action = buildContinueAction(
+    dayOfWeek, todayHoliday, imminentHoliday, zm, parasha ?? null, daf,
+    hasCensus, todaysLearning, hasYahrzeit, lang,
+  );
   const actionGradient = isLight ? action.gradientLight : action.gradientDark;
 
-  // Day-context reflection
+  // ── Reflection ─────────────────────────────────────────────────────────────
   const reflection = useMemo(
     () => getContextualReflection(dayOfWeek, todayHoliday, dayOfYear),
     [dayOfWeek, todayHoliday, dayOfYear],
   );
 
-  // Study card values — use parasha if known, else Daf
-  const studyPrimary = parasha ?? `${daf.tractate} ${daf.daf}`;
-  const studySub     = parasha
-    ? `Daf: ${daf.tractate} ${daf.daf}`
-    : (parashaInfo?.book ?? "Daily Study");
-
-  // Community subtitle is day-context aware — dayOfWeek is UPPERCASE
-  const commSub = dayOfWeek === "SATURDAY"
-    ? "Connect in community on Shabbat"
-    : dayOfWeek === "FRIDAY"
-    ? "Share Shabbat greetings with the community"
-    : todayHoliday
-    ? `Celebrate ${todayHoliday.name} together`
-    : "Connect with Benei Menashe worldwide";
-
-  // Calendar card subtitle shows nearest holiday
-  const calSub = daysToNextHoliday !== null && nextHoliday
-    ? daysToNextHoliday === 0  ? `Today: ${nextHoliday.name}`
-    : daysToNextHoliday === 1  ? `Tomorrow: ${nextHoliday.name}`
-    : `${nextHoliday.name} in ${daysToNextHoliday}d`
-    : gregStr;
-
-  // Memorial subtitle is Shabbat-aware — dayOfWeek is UPPERCASE
-  const memSub = dayOfWeek === "SATURDAY"
-    ? "A candle burns in sacred memory"
-    : "Light a candle for those remembered";
+  const L = lang === "tk" ? "tk" : "en";
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -448,10 +667,8 @@ export default function JourneyScreen() {
 
           <Text style={[styles.shalomText, { color: colors.foreground }]}>
             {t.journeyGreeting}
-            {firstName ? <Text style={{ color: GOLD }}>{", " + firstName}</Text> : null}
           </Text>
 
-          {/* Hebrew date — full hierarchy */}
           <Text style={[styles.hebrewDateText, { color: GOLD }]}>{hebrewStr}</Text>
           {hebrewNum ? (
             <Text style={[styles.hebrewNumText, { color: GOLD + "bb" }]}>{hebrewNum}</Text>
@@ -463,8 +680,8 @@ export default function JourneyScreen() {
 
         <View style={{ paddingHorizontal: sp[4] }}>
 
-          {/* ══ §2  CONTINUE JOURNEY — single priority action ════════════════ */}
-          <SectionTitle title="Continue Journey" />
+          {/* ══ §5  TODAY'S RECOMMENDATION — priority engine ═════════════════ */}
+          <SectionTitle title={t.journeyTodaysRecommendation} />
 
           <TouchableOpacity
             onPress={() => go(action.path)}
@@ -479,27 +696,18 @@ export default function JourneyScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.continueCard}
             >
-              {/* Icon */}
               <View style={[styles.continueIcon, { backgroundColor: action.accent + "22" }]}>
                 <Feather name={action.icon as any} size={20} color={action.accent} />
               </View>
-
-              {/* Overline */}
               <Text style={[styles.continueOverline, { color: action.accent }]}>
                 {action.overline}
               </Text>
-
-              {/* Title */}
               <Text style={styles.continueTitle} numberOfLines={2}>
                 {action.title}
               </Text>
-
-              {/* Subtitle */}
               <Text style={styles.continueSubtitle} numberOfLines={2}>
                 {action.subtitle}
               </Text>
-
-              {/* CTA pill */}
               <View style={[styles.continuePill, {
                 backgroundColor: action.accent + "22",
                 borderColor: action.accent + "55",
@@ -512,173 +720,304 @@ export default function JourneyScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* ══ §3  JOURNEY CARDS — live data, no placeholders ════════════════ */}
-          <SectionTitle title={t.journeySummaryTitle} />
+          {/* ══ §1  TODAY'S LEARNING ═══════════════════════════════════════════ */}
+          <SectionTitle title={t.journeyTodaysLearning} />
 
-          <View style={styles.cardGrid}>
+          <TouchableOpacity
+            onPress={() => go(`/community/learning-detail/${todaysLearning.id}`)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={`${t.journeyTodaysLearning}: ${todaysLearning.name}`}
+            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            {/* Header row */}
+            <View style={styles.cardHeaderRow}>
+              <View style={[styles.emojiBox, { backgroundColor: GOLD + "18" }]}>
+                <Text style={styles.emojiText}>{todaysLearning.emoji}</Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: sp[3] }}>
+                <Text style={[styles.cardOverline, { color: GOLD }]}>
+                  {t.journeyLearningGroupLabel}
+                </Text>
+                <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
+                  {L === "tk" ? todaysLearning.nameTK : todaysLearning.name}
+                </Text>
+                <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  {L === "tk" ? todaysLearning.subjectTK : todaysLearning.subject}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+            </View>
 
-            {/* Study */}
+            {/* Session info row */}
+            {todaysLearning.time ? (
+              <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
+                <View style={styles.infoChip}>
+                  <Feather name="clock" size={11} color={colors.mutedForeground} />
+                  <Text style={[styles.infoChipText, { color: colors.mutedForeground }]}>
+                    {t.journeyNextSession}: {todaysLearning.time}
+                  </Text>
+                </View>
+                <Text style={[styles.cardCTA, { color: GOLD }]}>
+                  {t.journeyContinueLearning}
+                </Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+
+          {/* ══ §2  TODAY'S SACRED TIME ════════════════════════════════════════ */}
+          <SectionTitle title={t.journeyTodaysSacredTime} />
+
+          <TouchableOpacity
+            onPress={() => go("/(tabs)/zmanim")}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t.journeyTodaysSacredTime}
+            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            {nextPrayer ? (
+              <>
+                {/* Prayer name + countdown */}
+                <View style={styles.cardHeaderRow}>
+                  <View style={[styles.emojiBox, { backgroundColor: GOLD + "18" }]}>
+                    <Feather name="moon" size={20} color={GOLD} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: sp[3] }}>
+                    <Text style={[styles.cardOverline, { color: GOLD }]}>
+                      {t.journeyNextPrayer}
+                    </Text>
+                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                      {nextPrayer.name}
+                    </Text>
+                    {prayerTimeStr ? (
+                      <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                        {prayerTimeStr}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {/* Countdown badge */}
+                  <View style={[styles.countdownBadge, { backgroundColor: GOLD + "18", borderColor: GOLD + "44" }]}>
+                    <Text style={[styles.countdownText, { color: GOLD }]}>{countdown}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
+                  <Text style={[styles.cardCTA, { color: GOLD }]}>
+                    {t.journeyOpenZmanim}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              /* All prayers done for today */
+              <View style={styles.cardHeaderRow}>
+                <View style={[styles.emojiBox, { backgroundColor: GOLD + "18" }]}>
+                  <Feather name="star" size={20} color={GOLD} />
+                </View>
+                <View style={{ flex: 1, marginLeft: sp[3] }}>
+                  <Text style={[styles.cardOverline, { color: GOLD }]}>ZMANIM</Text>
+                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                    {zm.sunrise ? t.journeyAllPrayersDone : t.journeyNoZmanim}
+                  </Text>
+                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                    {t.journeyOpenZmanim}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* ══ §3  COMMUNITY TODAY ════════════════════════════════════════════ */}
+          <SectionTitle title={t.journeyCommunityToday} />
+
+          <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, gap: 0 }]}>
+
+            {/* Next event */}
             <TouchableOpacity
-              style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => go("/(tabs)/torah")}
+              onPress={() => go("/community/events")}
               activeOpacity={0.82}
               accessibilityRole="button"
-              accessibilityLabel={`${t.journeyStudyCard}: ${studyPrimary}`}
+              accessibilityLabel={t.journeyNextEvent}
             >
-              <View style={[styles.cardIconBox, { backgroundColor: GOLD + "18" }]}>
-                <Feather name="book-open" size={17} color={GOLD} />
+              <View style={styles.communityRow}>
+                <View style={[styles.communityIconBox, { backgroundColor: GOLD + "14" }]}>
+                  <Feather name="calendar" size={15} color={GOLD} />
+                </View>
+                <View style={{ flex: 1, marginLeft: sp[3] }}>
+                  <Text style={[styles.communityRowLabel, { color: GOLD }]}>
+                    {t.journeyNextEvent}
+                  </Text>
+                  {communityLoading ? (
+                    <Text style={[styles.communityRowValue, { color: colors.mutedForeground }]}>—</Text>
+                  ) : nextEvent ? (
+                    <>
+                      <Text style={[styles.communityRowValue, { color: colors.foreground }]} numberOfLines={1}>
+                        {nextEvent.emoji} {L === "tk" ? nextEvent.titleTK : nextEvent.title}
+                      </Text>
+                      <Text style={[styles.communityRowSub, { color: colors.mutedForeground }]}>
+                        {formatEventDate(nextEvent.date, lang)}
+                        {nextEvent.time ? ` · ${nextEvent.time}` : ""}
+                        {nextEvent.virtual ? " · Virtual" : nextEvent.location ? ` · ${nextEvent.location}` : ""}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={[styles.communityRowValue, { color: colors.mutedForeground }]}>
+                      {t.journeyNoEvents}
+                    </Text>
+                  )}
+                </View>
+                <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
               </View>
-              <Text style={[styles.cardOverline, { color: GOLD }]}>STUDY</Text>
-              <Text style={[styles.cardValue, { color: colors.foreground }]} numberOfLines={2}>
-                {studyPrimary}
-              </Text>
-              <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>
-                {studySub}
-              </Text>
-              {/* Daf progress bar */}
-              <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-                <View style={[styles.progressFill, { backgroundColor: GOLD, width: `${dafPct}%` as any }]} />
-              </View>
-              <Text style={[styles.cardCTA, { color: GOLD }]}>Begin Study →</Text>
             </TouchableOpacity>
 
-            {/* Calendar */}
-            <TouchableOpacity
-              style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => go("/(tabs)/calendar")}
-              activeOpacity={0.82}
-              accessibilityRole="button"
-              accessibilityLabel={`${t.journeyCalendarCard}: ${hebrewStr}`}
-            >
-              <View style={[styles.cardIconBox, { backgroundColor: GOLD + "18" }]}>
-                <Feather name="calendar" size={17} color={GOLD} />
-              </View>
-              <Text style={[styles.cardOverline, { color: GOLD }]}>CALENDAR</Text>
-              <Text style={[styles.cardValue, { color: colors.foreground }]} numberOfLines={2}>
-                {hebrewStr}
-              </Text>
-              <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>
-                {calSub}
-              </Text>
-              <Text style={[styles.cardCTA, { color: GOLD }]}>Open Calendar →</Text>
-            </TouchableOpacity>
+            {/* Divider */}
+            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
 
-            {/* Memorial */}
+            {/* Top prayer request */}
             <TouchableOpacity
-              style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => go("/sacred-memory")}
-              activeOpacity={0.82}
-              accessibilityRole="button"
-              accessibilityLabel={`${t.journeyMemorialCard}: ${memSub}`}
-            >
-              <View style={[styles.cardIconBox, { backgroundColor: GOLD + "18" }]}>
-                <Feather name="heart" size={17} color={GOLD} />
-              </View>
-              <Text style={[styles.cardOverline, { color: GOLD }]}>MEMORY</Text>
-              <Text style={[styles.cardValue, { color: colors.foreground }]} numberOfLines={1}>
-                Sacred Memory
-              </Text>
-              <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>
-                {memSub}
-              </Text>
-              <Text style={[styles.cardCTA, { color: GOLD }]}>Visit Sanctuary →</Text>
-            </TouchableOpacity>
-
-            {/* Community */}
-            <TouchableOpacity
-              style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => go("/(tabs)/community")}
               activeOpacity={0.82}
               accessibilityRole="button"
-              accessibilityLabel={`${t.journeyCommunityCard}: ${commSub}`}
+              accessibilityLabel={t.journeyPrayerRequests}
             >
-              <View style={[styles.cardIconBox, { backgroundColor: GOLD + "18" }]}>
-                <Feather name="users" size={17} color={GOLD} />
+              <View style={styles.communityRow}>
+                <View style={[styles.communityIconBox, { backgroundColor: GOLD + "14" }]}>
+                  <Feather name="heart" size={15} color={GOLD} />
+                </View>
+                <View style={{ flex: 1, marginLeft: sp[3] }}>
+                  <Text style={[styles.communityRowLabel, { color: GOLD }]}>
+                    {t.journeyPrayerRequests}
+                  </Text>
+                  {communityLoading ? (
+                    <Text style={[styles.communityRowValue, { color: colors.mutedForeground }]}>—</Text>
+                  ) : topPrayerRequest ? (
+                    <Text style={[styles.communityRowValue, { color: colors.foreground }]} numberOfLines={2}>
+                      {topPrayerRequest.isAnonymous ? t.journeyAnonymous : topPrayerRequest.name} — "{topPrayerRequest.text}"
+                    </Text>
+                  ) : (
+                    <Text style={[styles.communityRowValue, { color: colors.mutedForeground }]}>
+                      {t.journeyNoPrayerRequests}
+                    </Text>
+                  )}
+                </View>
+                <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
               </View>
-              <Text style={[styles.cardOverline, { color: GOLD }]}>COMMUNITY</Text>
-              <Text style={[styles.cardValue, { color: colors.foreground }]} numberOfLines={1}>
-                Benei Menashe
-              </Text>
-              <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>
-                {commSub}
-              </Text>
-              <Text style={[styles.cardCTA, { color: GOLD }]}>Open Community →</Text>
             </TouchableOpacity>
 
+            {/* Divider */}
+            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+
+            {/* Latest announcement */}
+            <TouchableOpacity
+              onPress={() => go("/community/announcements")}
+              activeOpacity={0.82}
+              accessibilityRole="button"
+              accessibilityLabel={t.journeyLatestAnnouncement}
+            >
+              <View style={styles.communityRow}>
+                <View style={[styles.communityIconBox, { backgroundColor: GOLD + "14" }]}>
+                  <Feather name="bell" size={15} color={GOLD} />
+                </View>
+                <View style={{ flex: 1, marginLeft: sp[3] }}>
+                  <Text style={[styles.communityRowLabel, { color: GOLD }]}>
+                    {t.journeyLatestAnnouncement}
+                  </Text>
+                  {communityLoading ? (
+                    <Text style={[styles.communityRowValue, { color: colors.mutedForeground }]}>—</Text>
+                  ) : latestAnnouncement ? (
+                    <Text style={[styles.communityRowValue, { color: colors.foreground }]} numberOfLines={2}>
+                      {latestAnnouncement.emoji} {latestAnnouncement.title}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.communityRowValue, { color: colors.mutedForeground }]}>
+                      {t.journeyNoAnnouncements}
+                    </Text>
+                  )}
+                </View>
+                <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Open Community CTA */}
+            <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
+              <TouchableOpacity onPress={() => go("/(tabs)/community")} activeOpacity={0.75}>
+                <Text style={[styles.cardCTA, { color: GOLD }]}>{t.journeyOpenCommunity}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* ══ §3.5  CENSUS — community data surface (SPR-P006A) ══════════════ */}
-          <SectionTitle title={t.journeyCensusSectionTitle} />
+          {/* ══ §4  FAMILY JOURNEY — census + memorials ════════════════════════ */}
+          <SectionTitle title={t.journeyFamilyJourney} />
 
           {censusLoading ? (
-            // Loading — MMDL skeleton
             <SkeletonCard lines={3} />
-
           ) : censusError ? (
-            // API unavailable — premium empty state
             <View
-              style={[styles.censusCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               accessible
               accessibilityLabel={t.journeyCensusUnavailable}
             >
-              <View style={[styles.censusIconBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
-                <Feather name="cloud-off" size={24} color={GOLD} />
+              <View style={styles.cardHeaderRow}>
+                <View style={[styles.emojiBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
+                  <Feather name="cloud-off" size={20} color={GOLD} />
+                </View>
+                <View style={{ flex: 1, marginLeft: sp[3] }}>
+                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                    {t.journeyCensusUnavailable}
+                  </Text>
+                </View>
               </View>
-              <Text style={[styles.censusTitle, { color: colors.foreground }]}>
-                {t.journeyCensusUnavailable}
-              </Text>
             </View>
-
           ) : !branch ? (
-            // No census record — milestone card (navigates to /census — SPR-P006B)
+            /* No census — milestone prompt */
             <TouchableOpacity
               onPress={() => go("/census")}
               activeOpacity={0.88}
               accessibilityRole="button"
               accessibilityLabel={`${t.journeyCensusMilestoneTitle}. ${t.journeyCensusMilestoneSubtitle}`}
-              style={[styles.censusMilestoneWrap, { backgroundColor: colors.card, borderColor: GOLD + "55" }]}
+              style={[styles.milestoneCard, { backgroundColor: colors.card, borderColor: GOLD + "55" }]}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: sp[3] }}>
-                <View style={[styles.censusIconBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
-                  <Feather name="users" size={22} color={GOLD} />
+              <View style={styles.cardHeaderRow}>
+                <View style={[styles.emojiBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
+                  <Feather name="users" size={20} color={GOLD} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.censusOverline, { color: GOLD }]}>
-                    MILESTONE
-                  </Text>
-                  <Text style={[styles.censusTitle, { color: colors.foreground }]} numberOfLines={2}>
+                <View style={{ flex: 1, marginLeft: sp[3] }}>
+                  <Text style={[styles.cardOverline, { color: GOLD }]}>MILESTONE</Text>
+                  <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={2}>
                     {t.journeyCensusMilestoneTitle}
                   </Text>
-                  <Text style={[styles.censusSub, { color: colors.mutedForeground }]} numberOfLines={2}>
+                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>
                     {t.journeyCensusMilestoneSubtitle}
                   </Text>
                 </View>
               </View>
-              <View style={[styles.censusPill, { backgroundColor: GOLD + "18", borderColor: GOLD + "44" }]}>
-                <Text style={[styles.censusPillText, { color: GOLD }]}>
+              <View style={[styles.continuePill, {
+                backgroundColor: GOLD + "18",
+                borderColor: GOLD + "44",
+                alignSelf: "flex-start",
+              }]}>
+                <Text style={[styles.continuePillText, { color: GOLD }]}>
                   {t.journeyCensusStartCta}
                 </Text>
                 <Feather name="arrow-right" size={12} color={GOLD} />
               </View>
             </TouchableOpacity>
-
           ) : (
-            // Has census record — status + optional aliyah card
+            /* Has census record */
             <View style={{ gap: sp[3] }}>
-              {/* Status card */}
-              <View style={[styles.censusCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: sp[3] }}>
-                  <View style={[styles.censusIconBox, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
+              <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.cardHeaderRow}>
+                  <View style={[styles.emojiBox, { backgroundColor: GOLD + "16" }]}>
                     <Feather name="check-circle" size={20} color={GOLD} />
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.censusOverline, { color: GOLD }]}>
+                  <View style={{ flex: 1, marginLeft: sp[3] }}>
+                    <Text style={[styles.cardOverline, { color: GOLD }]}>
                       {t.journeyCensusStatusTitle.toUpperCase()}
                     </Text>
-                    <Text style={[styles.censusTitle, { color: colors.foreground }]} numberOfLines={1}>
+                    <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
                       {branch.name}
                     </Text>
-                    <Text style={[styles.censusSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                    <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>
                       {branch.cityName}
                     </Text>
                   </View>
@@ -693,19 +1032,19 @@ export default function JourneyScreen() {
                 </View>
               </View>
 
-              {/* Aliyah priority card — only shown when headAliyah === "awaiting" */}
+              {/* Aliyah priority — only when awaiting */}
               {aliyahAwaiting && (
-                <View style={[styles.censusAliyahCard, { backgroundColor: GOLD + "0f", borderColor: GOLD + "66" }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: sp[3] }}>
-                    <View style={[styles.censusIconBox, { backgroundColor: GOLD + "22", borderColor: GOLD + "44" }]}>
-                      <Feather name="star" size={20} color={GOLD} />
+                <View style={[styles.aliyahCard, { backgroundColor: GOLD + "0f", borderColor: GOLD + "66" }]}>
+                  <View style={styles.cardHeaderRow}>
+                    <View style={[styles.emojiBox, { backgroundColor: GOLD + "22" }]}>
+                      <Feather name="star" size={18} color={GOLD} />
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.censusOverline, { color: GOLD }]}>PRIORITY</Text>
-                      <Text style={[styles.censusTitle, { color: colors.foreground }]}>
+                    <View style={{ flex: 1, marginLeft: sp[3] }}>
+                      <Text style={[styles.cardOverline, { color: GOLD }]}>PRIORITY</Text>
+                      <Text style={[styles.cardTitle, { color: colors.foreground }]}>
                         {t.journeyCensusAliyahTitle}
                       </Text>
-                      <Text style={[styles.censusSub, { color: colors.mutedForeground }]} numberOfLines={2}>
+                      <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>
                         {t.journeyCensusAliyahSubtitle}
                       </Text>
                     </View>
@@ -715,26 +1054,55 @@ export default function JourneyScreen() {
             </View>
           )}
 
-          {/* ══ §4  BOOKMARKS ════════════════════════════════════════════════════ */}
-          <SectionTitle title={t.journeyBookmarksTitle} />
-
-          <View
-            style={[styles.bookmarksEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}
-            accessible={true}
-            accessibilityLabel={`${t.journeyBookmarksEmpty}. ${t.journeyBookmarksEmptySub}`}
+          {/* Memorial reminder */}
+          <TouchableOpacity
+            onPress={() => go("/sacred-memory")}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t.journeyMemorialReminder}
+            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: sp[3] }]}
           >
-            <View style={[styles.bookmarkIcon, { backgroundColor: GOLD + "16", borderColor: GOLD + "30" }]}>
-              <Feather name="bookmark" size={26} color={GOLD} />
+            <View style={styles.cardHeaderRow}>
+              <View style={[styles.emojiBox, { backgroundColor: GOLD + "16" }]}>
+                <Feather name="heart" size={20} color={GOLD} />
+              </View>
+              <View style={{ flex: 1, marginLeft: sp[3] }}>
+                <Text style={[styles.cardOverline, { color: GOLD }]}>
+                  {t.journeyMemorialReminder.toUpperCase()}
+                </Text>
+                {hasYahrzeit ? (
+                  <>
+                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                      {yahrzeit.length} {yahrzeit.length === 1 ? t.journeyMemorialSingular : t.journeyMemorialPlural}
+                    </Text>
+                    {yahrzeit[0] ? (
+                      <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                        {yahrzeit[0].deceasedName}
+                        {yahrzeit[0].learners.length > 0
+                          ? ` · ${yahrzeit[0].learners.length} ${t.journeyMemorialsLearning}`
+                          : ""}
+                      </Text>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                      {lang === "tk" ? "Inn Thianghlim Hriatna" : "Sacred Memory"}
+                    </Text>
+                    <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                      {lang === "tk" ? "Hriatna katni a mei chu rawh" : "Light a candle for those remembered"}
+                    </Text>
+                  </>
+                )}
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
             </View>
-            <Text style={[styles.bookmarksTitle, { color: colors.foreground }]}>
-              {t.journeyBookmarksEmpty}
-            </Text>
-            <Text style={[styles.bookmarksSub, { color: colors.mutedForeground }]}>
-              {t.journeyBookmarksEmptySub}
-            </Text>
-          </View>
+            <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
+              <Text style={[styles.cardCTA, { color: GOLD }]}>{t.journeyVisitSanctuary}</Text>
+            </View>
+          </TouchableOpacity>
 
-          {/* ══ §5  REFLECTION — day-context aware ══════════════════════════════ */}
+          {/* ══ §6  REFLECTION — day-context aware ══════════════════════════════ */}
           <SectionTitle title={t.journeyReflectionTitle} />
 
           <View
@@ -743,7 +1111,6 @@ export default function JourneyScreen() {
             accessibilityLabel={`${reflection.context}: "${reflection.quote}" — ${reflection.source}`}
           >
             <View style={[styles.reflectionBar, { backgroundColor: GOLD }]} />
-            {/* Day context badge */}
             <View style={[styles.reflectionBadge, { backgroundColor: GOLD + "18", borderColor: GOLD + "30" }]}>
               <Text style={[styles.reflectionBadgeText, { color: GOLD }]}>{reflection.context}</Text>
             </View>
@@ -815,7 +1182,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
 
-  // §2 Continue Journey card
+  // §5 Today's Recommendation (Continue Journey)
   continueWrap: {
     borderRadius: 20,
     overflow: "hidden",
@@ -873,94 +1240,145 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  // §3 Journey Cards 2×2
-  cardGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  summaryCard: {
-    flex: 1,
-    minWidth: "46%",
-    borderRadius: 14,
+  // Shared section card
+  sectionCard: {
+    borderRadius: 16,
     borderWidth: 1,
     padding: 16,
-    gap: 4,
-    minHeight: 164,
+    gap: 12,
   },
-  cardIconBox: {
-    width: 38,
-    height: 38,
+  milestoneCard: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 12,
+  },
+  aliyahCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+  },
+
+  // Card internals
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  emojiBox: {
+    width: 42,
+    height: 42,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
+  },
+  emojiText: {
+    fontSize: 20,
   },
   cardOverline: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1.8,
-  },
-  cardValue: {
-    fontSize: 17,
-    fontWeight: "800",
-    letterSpacing: -0.2,
-    lineHeight: 22,
-    marginTop: 2,
-  },
-  cardSub: {
-    fontSize: 11,
-    lineHeight: 14,
-    marginTop: 1,
-  },
-  progressTrack: {
-    height: 2,
-    borderRadius: 1,
-    overflow: "hidden",
-    marginTop: 8,
     marginBottom: 2,
   },
-  progressFill: {
-    height: 2,
-    borderRadius: 1,
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+    lineHeight: 21,
+  },
+  cardSub: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 1,
   },
   cardCTA: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
-    marginTop: 8,
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
   },
 
-  // §4 Bookmarks
-  bookmarksEmpty: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    padding: 24,
+  // Session info row at bottom of card
+  infoRow: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "space-between",
+    paddingTop: 10,
+    marginTop: 2,
+    borderTopWidth: 1,
   },
-  bookmarkIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+  infoChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  infoChipText: {
+    fontSize: 12,
+  },
+
+  // Sacred Time countdown badge
+  countdownBadge: {
+    borderRadius: 10,
     borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minWidth: 52,
+    alignItems: "center",
+  },
+  countdownText: {
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+
+  // Community Today rows
+  communityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  communityIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
-  bookmarksTitle: {
-    fontSize: 17,
+  communityRowLabel: {
+    fontSize: 10,
     fontWeight: "700",
-    textAlign: "center",
+    letterSpacing: 1.4,
+    marginBottom: 2,
   },
-  bookmarksSub: {
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 20,
-    maxWidth: 280,
+  communityRowValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: -0.1,
+    lineHeight: 19,
+  },
+  communityRowSub: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 1,
+  },
+  rowDivider: {
+    height: 1,
+    marginHorizontal: 4,
   },
 
-  // §5 Reflection
+  // Census count display
+  censusCount: {
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  censusCountLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+
+  // §6 Reflection
   reflectionCard: {
     borderRadius: 20,
     borderWidth: 1,
@@ -999,72 +1417,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     letterSpacing: 0.3,
-  },
-
-  // §3.5 Census styles (SPR-P006A)
-  censusMilestoneWrap: {
-    borderRadius: 20,
-    borderWidth: 1.5,
-    padding: 16,
-    gap: 12,
-  },
-  censusCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-    gap: 8,
-  },
-  censusAliyahCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-  },
-  censusIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  censusOverline: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 2.0,
-  },
-  censusTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: -0.2,
-  },
-  censusSub: {
-    fontSize: 13,
-    fontWeight: "400",
-    lineHeight: 19,
-    marginTop: 2,
-  },
-  censusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderWidth: 1,
-    borderRadius: 99,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignSelf: "flex-start",
-  },
-  censusPillText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  censusCount: {
-    fontSize: 24,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
-  censusCountLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.5,
   },
 });
