@@ -198,6 +198,7 @@ export default function FamilyHeadScreen() {
   const [aliyahStatus, setAliyahStatus] = useState<AliyahStatus>("unknown");
 
   const [saveDone, setSaveDone] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   function buildCensusRow(): CensusRow {
     return {
@@ -241,8 +242,13 @@ export default function FamilyHeadScreen() {
       return;
     }
     haptic();
-    persistToStore();
-    setSaveDone(true);
+    setSaving(true);
+    try {
+      persistToStore();
+      setSaveDone(true);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleSubmit() {
@@ -251,8 +257,13 @@ export default function FamilyHeadScreen() {
       return;
     }
     haptic();
-    persistToStore();
-    router.push("/census/family-members");
+    setSaving(true);
+    try {
+      persistToStore();
+      router.push("/census/family-members");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
