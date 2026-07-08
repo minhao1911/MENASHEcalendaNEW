@@ -396,13 +396,13 @@ export default function SacredTimeScreen() {
         <Animated.View style={[{ marginHorizontal: HX, marginTop: -16, marginBottom: 20 }, a0]}>
           <View
             style={{
-              backgroundColor: colors.card, borderRadius: rd.xl, padding: sp[5],
-              alignItems: "center", borderWidth: 1, borderColor: colors.cardBorder,
+              backgroundColor: colors.surfacePrimary, borderRadius: rd.xl, padding: sp[5],
+              alignItems: "center", borderWidth: 1, borderColor: colors.borderDefault,
               ...shadow.level2,
             }}
           >
             <Text style={[type.overline, { color: gold, letterSpacing: 2 }]}>TODAY</Text>
-            <Text style={[type.hebrewLg, { color: colors.textPrimary, marginTop: sp[2], textAlign: "center" }]}>
+            <Text style={[type.hebrewLg, { color: colors.textHigh, marginTop: sp[2], textAlign: "center" }]}>
               {hebrewNumeralStr || hebrewDateStr}
             </Text>
             <View style={{ width: 40, height: 1, backgroundColor: gold, opacity: 0.6, marginVertical: sp[3] }} />
@@ -418,7 +418,7 @@ export default function SacredTimeScreen() {
         {/* ─── 3. MONTHLY CALENDAR ───────────────────────────────────────────── */}
         <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a1]}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <Text style={[type.title, { color: colors.textPrimary }]}>
+            <Text style={[type.title, { color: colors.textHigh }]}>
               {gregMonthName} {year}
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -494,7 +494,7 @@ export default function SacredTimeScreen() {
           </Animated.View>
 
           {selected && (
-            <View style={{ marginTop: 14, backgroundColor: colors.card, borderRadius: rd.lg, borderWidth: 1, borderColor: colors.cardBorder, padding: sp[4] }}>
+            <View style={{ marginTop: 14, backgroundColor: colors.surfacePrimary, borderRadius: rd.lg, borderWidth: 1, borderColor: colors.borderDefault, padding: sp[4] }}>
               <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
                 <View>
                   <Text style={[type.label, { color: colors.textPrimary }]}>

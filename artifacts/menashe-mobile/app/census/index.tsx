@@ -24,6 +24,7 @@ import * as Haptics from "expo-haptics";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
 import type { ColorTokens } from "@/src/mobile/design-system";
+import { MenasheButton } from "@/src/mobile/components/foundation/MenasheButton";
 
 function haptic() {
   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -172,18 +173,17 @@ export default function CensusScreen() {
           />
         </View>
 
-        {/* ── Begin Census CTA ── */}
+        {/* ── Begin Census CTA — MMDS Button System (Primary, POC) ── */}
         <View style={styles.ctaWrap}>
-          <TouchableOpacity
-            style={[styles.beginBtn, { backgroundColor: colors.primary }]}
+          <MenasheButton
+            label="Begin Census"
+            variant="primary"
+            size="lg"
+            icon="edit-3"
+            fullWidth
             onPress={handleBegin}
-            activeOpacity={0.82}
-            accessibilityRole="button"
             accessibilityLabel="Begin Census — register as family head"
-          >
-            <Feather name="edit-3" size={18} color={colors.primaryForeground as string} />
-            <Text style={[styles.beginBtnText, { color: colors.primaryForeground }]}>Begin Census</Text>
-          </TouchableOpacity>
+          />
 
           <View style={styles.hintRow}>
             <Feather name="info" size={13} color={colors.mutedForeground as string} />
@@ -318,21 +318,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 24,
     gap: 12,
-  },
-  beginBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    width: "100%",
-    borderRadius: 9999,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-  },
-  beginBtnText: {
-    fontSize: 15,
-    fontWeight: "800",
-    letterSpacing: -0.3,
   },
   hintRow: {
     flexDirection: "row",

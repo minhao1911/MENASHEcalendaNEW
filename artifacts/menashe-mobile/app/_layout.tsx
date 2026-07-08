@@ -74,6 +74,7 @@ export default function RootLayout() {
                       <Stack.Screen name="community/memorials" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/events" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/learning-groups" options={{ headerShown: false, animation: "slide_from_right" }} />
+                      <Stack.Screen name="community/learning-detail/[id]" options={{ headerShown: false, animation: "slide_from_right" }} />
                       <Stack.Screen name="community/synagogues" options={{ headerShown: false, animation: "slide_from_right" }} />
                     </Stack>
                   </LanguageProvider>

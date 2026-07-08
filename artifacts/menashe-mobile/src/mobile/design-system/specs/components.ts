@@ -35,8 +35,8 @@ type ColorRef = keyof ColorTokens;
 // ═════════════════════════════════════════════════════════════════════════════
 
 export interface MenasheButtonSpec {
-  purpose:      "Primary CTA, secondary action, ghost/text action";
-  variants:     ["primary", "secondary", "ghost", "danger", "gold-outline"];
+  purpose:      "Primary CTA, secondary action, outline, ghost/text action, destructive action";
+  variants:     ["primary", "secondary", "outline", "ghost", "destructive"];
   sizes:        ["sm", "md", "lg", "pill"];
   paddingX:     { sm: SpacingKey; md: SpacingKey; lg: SpacingKey };
   paddingY:     { sm: SpacingKey; md: SpacingKey; lg: SpacingKey };
@@ -44,9 +44,11 @@ export interface MenasheButtonSpec {
   typography:   { label: TypeKey };
   elevation:    ShadowKey;
   colors: {
-    primary:    { bg: ColorRef; text: ColorRef; border: ColorRef };
-    secondary:  { bg: ColorRef; text: ColorRef; border: ColorRef };
-    ghost:      { bg: "transparent"; text: ColorRef; border: "transparent" };
+    primary:     { bg: ColorRef; text: ColorRef; border: ColorRef };
+    secondary:   { bg: ColorRef; text: ColorRef; border: ColorRef };
+    outline:     { bg: "transparent"; text: ColorRef; border: ColorRef };
+    ghost:       { bg: "transparent"; text: ColorRef; border: "transparent" };
+    destructive: { bg: ColorRef; text: ColorRef; border: "transparent" };
   };
   states: {
     pressed:    { scaleDown: 0.96; opacityFactor: 0.9 };
