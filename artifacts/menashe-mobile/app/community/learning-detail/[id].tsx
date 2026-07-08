@@ -131,7 +131,7 @@ const PATH_STEPS: Bi[] = [
   { en: "Talmud",        tk: "Talmud" },
 ];
 
-interface Resource { title: string; note?: string }
+interface Resource { title: string; note?: Bi }
 interface Resources {
   books:  Resource[];
   pdfs:   Resource[];
@@ -167,9 +167,9 @@ const DETAIL: Record<string, LearningDetailContent> = {
     platform:  { en: "WhatsApp Group", tk: "WhatsApp Group" },
     language:  "English / Hebrew",
     resources: {
-      books:  [{ title: "Steinsaltz Talmud Bavli — Tractate Berakhot", note: "Recommended primary text" }],
-      pdfs:   [{ title: "Daily Daf Schedule (this cycle)", note: "Updated monthly" }],
-      audio:  [{ title: "Daf Yomi shiur recordings", note: "20–30 min per daf" }],
+      books:  [{ title: "Steinsaltz Talmud Bavli — Tractate Berakhot", note: { en: "Recommended primary text", tk: "Ṭanchhan bul thupui" } }],
+      pdfs:   [{ title: "Daily Daf Schedule (this cycle)", note: { en: "Updated monthly", tk: "Ṭha tinah siam thar" } }],
+      audio:  [{ title: "Daf Yomi shiur recordings", note: { en: "20–30 min per daf", tk: "Daf khatah min 20–30" } }],
       videos: [{ title: "How to Read a Daf — orientation video" }],
     },
   },
@@ -381,6 +381,13 @@ const UI = {
   difficulty:  { en: "Difficulty", tk: "A Harsatna" },
   close:       { en: "Close", tk: "Khar" },
   joinAlertTitle: { en: "How to Join", tk: "Zawm Dan" },
+  notFound:    { en: "Learning group not found.", tk: "Kihilna hi hmu lo." },
+};
+
+const DIFFICULTY_LABEL: Record<Difficulty, Bi> = {
+  Beginner:     { en: "Beginner",     tk: "Bul" },
+  Intermediate: { en: "Intermediate", tk: "Kipak" },
+  Advanced:     { en: "Advanced",     tk: "Sang" },
 };
 
 // ── Skill sheet ───────────────────────────────────────────────────────────────
@@ -455,7 +462,7 @@ const SkillDetailSheet = memo(function SkillDetailSheet({
               <View style={styles.sheetStat}>
                 <Feather name="bar-chart-2" size={13} color={colors.textMuted} />
                 <Text style={[type.caption, { color: colors.textMuted }]}>{UI.difficulty[lang === "tk" ? "tk" : "en"]}</Text>
-                <Text style={[type.bodySm, { color: accent, fontWeight: "700" }]}>{skill.difficulty}</Text>
+                <Text style={[type.bodySm, { color: accent, fontWeight: "700" }]}>{DIFFICULTY_LABEL[skill.difficulty][lang === "tk" ? "tk" : "en"]}</Text>
               </View>
             </View>
           </ScrollView>
@@ -486,7 +493,7 @@ export default function LearningDetailScreen() {
       <View style={[styles.notFound, { backgroundColor: colors.background }]}>
         <Feather name="alert-circle" size={28} color={colors.textMuted} />
         <Text style={[type.body, { color: colors.textSecondary, marginTop: sp[2] }]}>
-          Learning group not found.
+          {UI.notFound[L]}
         </Text>
         <MenasheButton
           variant="outline"
@@ -560,7 +567,7 @@ export default function LearningDetailScreen() {
             </View>
             <View style={[styles.chip, { backgroundColor: accent + "1A", borderColor: accent + "44" }]}>
               <Feather name="bar-chart-2" size={11} color={accent} />
-              <Text style={[type.caption, { color: accent, fontWeight: "700" }]}>{detail.difficulty}</Text>
+              <Text style={[type.caption, { color: accent, fontWeight: "700" }]}>{DIFFICULTY_LABEL[detail.difficulty][L]}</Text>
             </View>
           </View>
         </View>
@@ -729,7 +736,7 @@ function ResourceGroup({
         items.map((item) => (
           <View key={item.title} style={[styles.resourceItem, { borderColor: colors.borderSoft }]}>
             <Text style={[type.bodySm, { color: colors.textPrimary }]}>{item.title}</Text>
-            {!!item.note && <Text style={[type.caption, { color: colors.textMuted }]}>{item.note}</Text>}
+            {!!item.note && <Text style={[type.caption, { color: colors.textMuted }]}>{item.note[L]}</Text>}
           </View>
         ))
       )}
