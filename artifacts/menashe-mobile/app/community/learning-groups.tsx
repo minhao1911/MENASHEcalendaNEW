@@ -199,10 +199,18 @@ const GroupCard = memo(function GroupCard({
     }
   }
 
+  function handleOpenDetail() {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/community/learning-detail/${group.id}`);
+  }
+
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={handleOpenDetail}
+      accessibilityRole="button"
+      accessibilityLabel={`${name}. ${t.commLearningOpenDetail ?? "View learning details"}`}
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-      accessibilityLabel={name}
     >
       {/* Top */}
       <View style={styles.cardTop}>
@@ -262,7 +270,12 @@ const GroupCard = memo(function GroupCard({
 
         {group.contact && (
           <TouchableOpacity
-            onPress={handleContact}
+            onPress={(e) => {
+              // Prevent the tap from also bubbling to the parent card's
+              // onPress (observed on RN Web, where touch events bubble).
+              e.stopPropagation();
+              handleContact();
+            }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
             accessibilityLabel={`${t.commContact} ${name}`}
@@ -272,8 +285,9 @@ const GroupCard = memo(function GroupCard({
             <Text style={[styles.contactText, { color: colors.primary }]}>{t.commContact}</Text>
           </TouchableOpacity>
         )}
+        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 });
 
