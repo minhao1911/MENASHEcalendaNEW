@@ -20,6 +20,7 @@ import * as Haptics from "expo-haptics";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { SectionTitle } from "@/src/mobile/components/display";
+import { MenasheButton } from "@/src/mobile/components/foundation/MenasheButton";
 import type { ColorTokens } from "@/src/mobile/design-system";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
@@ -330,19 +331,16 @@ export default function CommunityScreen() {
                 </TouchableOpacity>
               );
             })}
-            <TouchableOpacity
-              style={[styles.dashedCta, {
-                borderColor: colors.primary + "55",
-                backgroundColor: colors.primary + "0C",
-              }]}
+            {/* MMDS Button System (Outline, POC) */}
+            <MenasheButton
+              label={t.commPrayerSubmit}
+              variant="outline"
+              size="md"
+              icon="plus-circle"
+              fullWidth
               onPress={() => navigate("/prayer-board")}
-              accessibilityRole="button"
-              accessibilityLabel={t.commPrayerSubmit}
-              activeOpacity={0.75}
-            >
-              <Feather name="plus-circle" size={16} color={colors.primary} />
-              <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.commPrayerSubmit}</Text>
-            </TouchableOpacity>
+              style={styles.dashedCtaSpacing}
+            />
 
             {/* ═══ 3. COMMUNITY MEMORIALS ═══ */}
             <SectionTitle
@@ -947,6 +945,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
+  dashedCtaSpacing: { marginBottom: 8 },
 
   // Memorials summary card
   memSummary: {
