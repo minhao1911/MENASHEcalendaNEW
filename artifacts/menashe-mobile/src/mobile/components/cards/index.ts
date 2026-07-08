@@ -7,3 +7,4 @@ export * from "./HolidayCard";
 export * from "./CountdownCard";
 export * from "./InformationCard";
 export * from "./HeroCard";
+export * from "./DailyPriorityCard";

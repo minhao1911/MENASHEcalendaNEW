@@ -59,6 +59,7 @@ import {
 } from "@/lib/hebrewCalendar";
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { SectionTitle } from "@/src/mobile/components/display";
+import { DailyPriorityCard } from "@/src/mobile/components/cards/DailyPriorityCard";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -757,7 +758,13 @@ export default function HomeScreen() {
         </ImageBackground>
       </Animated.View>
 
-      {/* ─── 4. TODAY'S FOCUS — Phase 2 ────────────────────────────────────────── */}
+      {/* ─── 4. DAILY PRIORITY — SPR-X002 ──────────────────────────────────────── */}
+      {/* One meaningful next step — highest priority wins, nothing else shown.    */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a2]}>
+        <DailyPriorityCard />
+      </Animated.View>
+
+      {/* ─── 5. TODAY'S FOCUS — Phase 2 ────────────────────────────────────────── */}
       <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a2]}>
         <TodaysFocusCard
           mode={countdownMode}
