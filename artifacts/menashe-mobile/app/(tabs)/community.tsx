@@ -77,8 +77,8 @@ function EmptyCard({ icon, message, colors }: {
     <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}
       accessibilityLabel={message}
     >
-      <Feather name={icon} size={28} color={colors.mutedForeground} />
-      <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{message}</Text>
+      <Feather name={icon} size={28} color={colors.textSecondary} />
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{message}</Text>
     </View>
   );
 }
@@ -95,8 +95,8 @@ function ComingSoonCard({ icon, title, hint, colors }: {
         <Feather name={icon} size={22} color={colors.primary} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[styles.comingSoonTitle, { color: colors.foreground }]}>{title}</Text>
-        <Text style={[styles.comingSoonHint, { color: colors.mutedForeground }]}>{hint}</Text>
+        <Text style={[styles.comingSoonTitle, { color: colors.textHigh }]}>{title}</Text>
+        <Text style={[styles.comingSoonHint, { color: colors.textSecondary }]}>{hint}</Text>
       </View>
     </View>
   );
@@ -171,9 +171,9 @@ export default function CommunityScreen() {
           <Text style={[styles.heroHebrew, { color: colors.primary }]} accessibilityLabel="Bnei Menashe">בְּנֵי מְנַשֶּׁה</Text>
 
           {/* English title */}
-          <Text style={[styles.hubTitle, { color: colors.foreground }]}>{t.commHubTitle}</Text>
+          <Text style={[styles.hubTitle, { color: colors.textHigh }]}>{t.commHubTitle}</Text>
           <View style={[styles.goldBar, { backgroundColor: colors.primary }]} />
-          <Text style={[styles.hubSubtitle, { color: colors.mutedForeground }]}>{t.commHubSubtitle}</Text>
+          <Text style={[styles.hubSubtitle, { color: colors.textSecondary }]}>{t.commHubSubtitle}</Text>
 
           {/* Community stats */}
           <View style={[styles.heroStats, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -190,14 +190,14 @@ export default function CommunityScreen() {
                 ]}
               >
                 <Text style={[styles.heroStatVal, { color: colors.primary }]}>{s.val}</Text>
-                <Text style={[styles.heroStatLabel, { color: colors.mutedForeground }]}>{t[s.labelKey]}</Text>
+                <Text style={[styles.heroStatLabel, { color: colors.textMuted }]}>{t[s.labelKey]}</Text>
               </View>
             ))}
           </View>
 
           {/* Isaiah quote */}
           <View style={[styles.heroQuote, { borderLeftColor: colors.primary + "55" }]}>
-            <Text style={[styles.heroQuoteText, { color: colors.mutedForeground }]}>
+            <Text style={[styles.heroQuoteText, { color: colors.textSecondary }]}>
               "{t.commIsaiahQuote}"
             </Text>
             <Text style={[styles.heroQuoteRef, { color: colors.primary }]}>— {t.commIsaiahRef}</Text>
@@ -236,8 +236,8 @@ export default function CommunityScreen() {
                 ]}
               >
                 <View style={[styles.annIconBox, {
-                  backgroundColor: ann.pinned ? colors.primary + "22" : colors.muted,
-                  borderColor: ann.pinned ? colors.primary + "44" : colors.border,
+                  backgroundColor: ann.pinned ? colors.primary + "22" : colors.surfaceSecondary,
+                  borderColor: ann.pinned ? colors.primary + "44" : colors.borderDefault,
                 }]}>
                   <Text style={{ fontSize: ty.subtitle.fontSize }}>{ann.emoji}</Text>
                 </View>
@@ -247,21 +247,21 @@ export default function CommunityScreen() {
                       📌 {t.commAnnouncementsPinned}
                     </Text>
                   )}
-                  <Text style={[styles.annTitle, { color: colors.foreground }]} numberOfLines={1}>
+                  <Text style={[styles.annTitle, { color: colors.textHigh }]} numberOfLines={1}>
                     {ann.title}
                   </Text>
                   {!!ann.body && (
-                    <Text style={[styles.annBody, { color: colors.mutedForeground }]} numberOfLines={2}>
+                    <Text style={[styles.annBody, { color: colors.textSecondary }]} numberOfLines={2}>
                       {ann.body}
                     </Text>
                   )}
                   {!!ann.sentAt && (
-                    <Text style={[styles.timeLabel, { color: colors.mutedForeground }]}>
+                    <Text style={[styles.timeLabel, { color: colors.textMuted }]}>
                       {fmtAgo(ann.sentAt)}
                     </Text>
                   )}
                 </View>
-                <Feather name="chevron-right" size={16} color={colors.mutedForeground} style={{ alignSelf: "center" }} />
+                <Feather name="chevron-right" size={16} color={colors.textMuted} style={{ alignSelf: "center" }} />
               </TouchableOpacity>
             ))}
 

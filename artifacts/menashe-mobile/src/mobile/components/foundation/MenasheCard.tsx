@@ -40,18 +40,21 @@ export const MenasheCard = memo<MenasheCardProps>(function MenasheCard({
   const { colors, rd, shadow, sp } = useThemeTokens();
 
   const baseStyle: ViewStyle = {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surfacePrimary,
     borderRadius:    rd.lg,
     paddingHorizontal: sp[4],
     paddingVertical:   sp[3],
     opacity: disabled ? 0.5 : 1,
   };
 
+  // MMDS-005: semantic roles only — no raw colors, no opacity hacks, no
+  // duplicated card colors. Each variant expresses depth through the
+  // surface/border scale, not through ad-hoc shades.
   const variantStyle: ViewStyle =
-    variant === "bordered"  ? { borderWidth: 1, borderColor: colors.cardBorder } :
-    variant === "elevated"  ? { ...shadow.level2 } :
-    variant === "flat"      ? { backgroundColor: colors.backgroundSubtle } :
-    { ...shadow.level1 };
+    variant === "bordered"  ? { borderWidth: 1, borderColor: colors.borderDefault } :
+    variant === "elevated"  ? { backgroundColor: colors.surfaceTertiary, ...shadow.level2 } :
+    variant === "flat"      ? { backgroundColor: colors.backgroundElevated } :
+    { borderWidth: 1, borderColor: colors.borderSoft, ...shadow.level1 };
 
   const inner = (
     <View style={[baseStyle, variantStyle, contentStyle]}>

@@ -138,6 +138,42 @@ export interface ColorTokens {
   tabActive:         string;
   tabInactive:       string;
   tabBackground:     string;
+
+  // ── MMDS-005 Semantic Theme System ──────────────────────────────────────────
+  // Backgrounds
+  backgroundElevated: string;
+  backgroundOverlay:  string;
+
+  // Surfaces (layered depth — lowest to highest elevation)
+  surfacePrimary:     string;
+  surfaceSecondary:   string;
+  surfaceTertiary:    string;
+  surfaceInteractive: string;
+
+  // Text hierarchy (highest emphasis → lowest)
+  textHigh:           string;
+
+  // Borders (softest → strongest)
+  borderSoft:         string;
+  borderDefault:      string;
+
+  // Accents
+  accentGoldSoft:     string;
+  accentSuccess:      string;
+  accentWarning:      string;
+  accentDanger:       string;
+  accentInfo:         string;
+
+  /**
+   * @deprecated Use `textHigh` instead. Kept as an alias so existing screens
+   * (which reference `colors.foreground`, a name that predates this token
+   * shape) keep working without a repo-wide rewrite.
+   */
+  foreground:         string;
+  /** @deprecated Use `textSecondary` instead. */
+  mutedForeground:    string;
+  /** @deprecated Use `surfaceSecondary` instead. */
+  muted:              string;
 }
 
 // ─── Theme definitions ────────────────────────────────────────────────────────
@@ -206,6 +242,29 @@ const DARK_TOKENS: ColorTokens = {
   tabActive:           RAW.goldWarm,
   tabInactive:         "#64748b",
   tabBackground:       RAW.navyMid,
+
+  backgroundElevated:  "#151f35",
+  backgroundOverlay:   "rgba(0, 0, 0, 0.55)",
+
+  surfacePrimary:      RAW.navyMid,
+  surfaceSecondary:    "#151f35",
+  surfaceTertiary:     "#182036",
+  surfaceInteractive:  "rgba(212, 168, 67, 0.12)",
+
+  textHigh:            RAW.white,
+
+  borderSoft:          "rgba(30, 45, 74, 0.6)",
+  borderDefault:       RAW.navyMuted,
+
+  accentGoldSoft:      "rgba(212, 168, 67, 0.12)",
+  accentSuccess:       RAW.green,
+  accentWarning:       RAW.amber,
+  accentDanger:        RAW.red,
+  accentInfo:          RAW.blue,
+
+  foreground:          RAW.white,
+  mutedForeground:     "#94a3b8",
+  muted:               "#151f35",
 };
 
 const LIGHT_TOKENS: ColorTokens = {
@@ -272,6 +331,29 @@ const LIGHT_TOKENS: ColorTokens = {
   tabActive:           RAW.goldDeep,
   tabInactive:         RAW.stoneDeep,
   tabBackground:       RAW.warmCream,
+
+  backgroundElevated:  "#f0e8d5",
+  backgroundOverlay:   "rgba(15, 24, 41, 0.45)",
+
+  surfacePrimary:      RAW.warmCream,
+  surfaceSecondary:    "#f0e8d5",
+  surfaceTertiary:     "#e6dcca",
+  surfaceInteractive:  "rgba(139, 105, 20, 0.10)",
+
+  textHigh:            "#120d06",
+
+  borderSoft:          "rgba(212, 201, 176, 0.6)",
+  borderDefault:       RAW.stone,
+
+  accentGoldSoft:      "rgba(139, 105, 20, 0.08)",
+  accentSuccess:       RAW.greenDark,
+  accentWarning:       "#92400e",
+  accentDanger:        "#b91c1c",
+  accentInfo:          "#1e40af",
+
+  foreground:          "#120d06",
+  mutedForeground:     "#3d3228",
+  muted:               "#f0e8d5",
 };
 
 const SAPPHIRE_TOKENS: ColorTokens = {
@@ -338,6 +420,29 @@ const SAPPHIRE_TOKENS: ColorTokens = {
   tabActive:           RAW.sapphireBlue,
   tabInactive:         RAW.sapphireDim,
   tabBackground:       RAW.sapphireMid,
+
+  backgroundElevated:  "#101e38",
+  backgroundOverlay:   "rgba(0, 0, 0, 0.60)",
+
+  surfacePrimary:      RAW.sapphireMid,
+  surfaceSecondary:    "#101e38",
+  surfaceTertiary:     "#142040",
+  surfaceInteractive:  "rgba(99, 130, 255, 0.15)",
+
+  textHigh:            RAW.white,
+
+  borderSoft:          "rgba(26, 46, 88, 0.6)",
+  borderDefault:       RAW.sapphireMute,
+
+  accentGoldSoft:      "rgba(212, 168, 67, 0.12)",
+  accentSuccess:       RAW.green,
+  accentWarning:       RAW.amber,
+  accentDanger:        RAW.red,
+  accentInfo:          "#60a5fa",
+
+  foreground:          RAW.white,
+  mutedForeground:     "#a0b4d8",
+  muted:               "#101e38",
 };
 
 // ─── Theme map ────────────────────────────────────────────────────────────────
