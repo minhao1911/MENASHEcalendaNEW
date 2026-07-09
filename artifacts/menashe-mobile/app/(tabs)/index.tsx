@@ -50,6 +50,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { HDate } from "@hebcal/core";
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
+import { getTodayDaf, getDafProgress } from "@/lib/dafYomi";
 import {
   getHebrewDate,
   formatHebrewDate,
@@ -66,31 +67,6 @@ import { usePressScale } from "@/src/mobile/lib/usePressScale";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 
-// ─── Daf Yomi helpers ─────────────────────────────────────────────────────────
-
-const TRACTATES = [
-  { name: "Berakhot",     pages: 64  }, { name: "Shabbat",       pages: 157 },
-  { name: "Eruvin",       pages: 105 }, { name: "Pesachim",      pages: 121 },
-  { name: "Yoma",         pages: 88  }, { name: "Sukkah",        pages: 56  },
-  { name: "Beitzah",      pages: 40  }, { name: "Rosh Hashana",  pages: 35  },
-  { name: "Ta'anit",      pages: 31  }, { name: "Megillah",      pages: 32  },
-  { name: "Moed Katan",   pages: 29  }, { name: "Chagigah",      pages: 27  },
-  { name: "Yevamot",      pages: 122 }, { name: "Ketubot",       pages: 112 },
-  { name: "Nedarim",      pages: 91  }, { name: "Nazir",         pages: 66  },
-  { name: "Sotah",        pages: 49  }, { name: "Gittin",        pages: 90  },
-  { name: "Kiddushin",    pages: 82  }, { name: "Bava Kamma",    pages: 119 },
-  { name: "Bava Metzia",  pages: 119 }, { name: "Bava Batra",    pages: 176 },
-  { name: "Sanhedrin",    pages: 113 }, { name: "Makkot",        pages: 24  },
-  { name: "Shevuot",      pages: 49  }, { name: "Avodah Zarah",  pages: 76  },
-  { name: "Horayot",      pages: 14  }, { name: "Zevachim",      pages: 120 },
-  { name: "Menachot",     pages: 110 }, { name: "Chullin",       pages: 142 },
-  { name: "Bekhorot",     pages: 61  }, { name: "Arakhin",       pages: 34  },
-  { name: "Temurah",      pages: 34  }, { name: "Keritot",       pages: 28  },
-  { name: "Meilah",       pages: 22  }, { name: "Niddah",        pages: 73  },
-];
-const TOTAL_PAGES  = TRACTATES.reduce((a, t) => a + t.pages, 0);
-const CYCLE_START  = new Date(2020, 0, 5);
-
 /* ── Hebrew day-number glyph map (days 1–30) ─────────────────────────────── */
 const HEBREW_DAY: Record<number, string> = {
    1:"א",  2:"ב",  3:"ג",  4:"ד",  5:"ה",
@@ -102,24 +78,6 @@ const HEBREW_DAY: Record<number, string> = {
 };
 
 const HERO_BG = require("../../assets/images/saipikhup-photo.jpg");
-
-function getTodayDaf(): { tractate: string; daf: number } {
-  const daysSince   = Math.floor((Date.now() - CYCLE_START.getTime()) / 86_400_000);
-  const dayInCycle  = ((daysSince % TOTAL_PAGES) + TOTAL_PAGES) % TOTAL_PAGES;
-  let   cumulative  = 0;
-  for (const t of TRACTATES) {
-    if (dayInCycle < cumulative + t.pages)
-      return { tractate: t.name, daf: dayInCycle - cumulative + 2 };
-    cumulative += t.pages;
-  }
-  return { tractate: "Berakhot", daf: 2 };
-}
-
-function getDafProgress(tractate: string, daf: number): number {
-  const t = TRACTATES.find((x) => x.name === tractate);
-  if (!t) return 0;
-  return Math.round(((daf - 2) / t.pages) * 100);
-}
 
 function getOmerDay(): number | null {
   const hd = new HDate(new Date());

@@ -77,3 +77,9 @@ export function getSefariaDafUrl(tractate: string, daf: number): string {
   const slug = tractate.replace(/[' ]/g, "_");
   return `https://www.sefaria.org/${slug}.${daf}a`;
 }
+
+export function getDafProgress(tractate: string, daf: number): number {
+  const t = TRACTATES.find((t) => t.name === tractate);
+  if (!t) return 0;
+  return Math.round(((daf - 2) / t.pages) * 100);
+}

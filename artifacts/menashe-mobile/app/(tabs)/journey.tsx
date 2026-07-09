@@ -58,43 +58,7 @@ import { fetchCommunityEvents, type CommunityEvent } from "@/lib/eventsApi";
 import { fetchPrayerRequests, type PrayerRequest } from "@/lib/prayerBoardApi";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
 import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "@/lib/communityApi";
-
-// ── Daf Yomi (mirrors index.tsx) ──────────────────────────────────────────────
-
-const TRACTATES = [
-  { name: "Berakhot",    pages: 64  }, { name: "Shabbat",      pages: 157 },
-  { name: "Eruvin",      pages: 105 }, { name: "Pesachim",     pages: 121 },
-  { name: "Yoma",        pages: 88  }, { name: "Sukkah",       pages: 56  },
-  { name: "Beitzah",     pages: 40  }, { name: "Rosh Hashana", pages: 35  },
-  { name: "Ta'anit",     pages: 31  }, { name: "Megillah",     pages: 32  },
-  { name: "Moed Katan",  pages: 29  }, { name: "Chagigah",     pages: 27  },
-  { name: "Yevamot",     pages: 122 }, { name: "Ketubot",      pages: 112 },
-  { name: "Nedarim",     pages: 91  }, { name: "Nazir",        pages: 66  },
-  { name: "Sotah",       pages: 49  }, { name: "Gittin",       pages: 90  },
-  { name: "Kiddushin",   pages: 82  }, { name: "Bava Kamma",   pages: 119 },
-  { name: "Bava Metzia", pages: 119 }, { name: "Bava Batra",   pages: 176 },
-  { name: "Sanhedrin",   pages: 113 }, { name: "Makkot",       pages: 24  },
-  { name: "Shevuot",     pages: 49  }, { name: "Avodah Zarah", pages: 76  },
-  { name: "Horayot",     pages: 14  }, { name: "Zevachim",     pages: 120 },
-  { name: "Menachot",    pages: 110 }, { name: "Chullin",      pages: 142 },
-  { name: "Bekhorot",    pages: 61  }, { name: "Arakhin",      pages: 34  },
-  { name: "Temurah",     pages: 34  }, { name: "Keritot",      pages: 28  },
-  { name: "Meilah",      pages: 22  }, { name: "Niddah",       pages: 73  },
-];
-const TOTAL_PAGES = TRACTATES.reduce((a, t) => a + t.pages, 0);
-const CYCLE_START = new Date(2020, 0, 5);
-
-function getTodayDaf(): { tractate: string; daf: number } {
-  const daysSince  = Math.floor((Date.now() - CYCLE_START.getTime()) / 86_400_000);
-  const dayInCycle = ((daysSince % TOTAL_PAGES) + TOTAL_PAGES) % TOTAL_PAGES;
-  let cumulative   = 0;
-  for (const t of TRACTATES) {
-    if (dayInCycle < cumulative + t.pages)
-      return { tractate: t.name, daf: dayInCycle - cumulative + 2 };
-    cumulative += t.pages;
-  }
-  return { tractate: "Berakhot", daf: 2 };
-}
+import { getTodayDaf } from "@/lib/dafYomi";
 
 // ── Today's Learning — minimal display summary (full data in learning-groups.tsx) ──
 

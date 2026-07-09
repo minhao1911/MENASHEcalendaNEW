@@ -18,7 +18,6 @@ import React, {
   memo, useCallback, useEffect, useMemo, useRef, useState,
 } from "react";
 import {
-  AccessibilityInfo,
   Animated,
   FlatList,
   KeyboardAvoidingView,
@@ -36,7 +35,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@clerk/expo";
-import * as Haptics from "expo-haptics";
+import { hapticLight } from "@/src/mobile/lib/haptics";
+import { useEntrance, useReducedMotion } from "@/src/mobile/lib/useEntrance";
+import { usePressScale } from "@/src/mobile/lib/usePressScale";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { storageGet, storageSet } from "@/lib/storageUtils";
@@ -132,45 +133,6 @@ function getConvTitle(messages: Message[]): string {
   if (!first) return "Conversation";
   const text = first.content.trim();
   return text.length > 50 ? text.slice(0, 47) + "…" : text;
-}
-
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduced).catch(() => {});
-    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduced);
-    return () => sub.remove();
-  }, []);
-  return reduced;
-}
-
-function useEntrance(delay: number, reducedMotion: boolean) {
-  const opacity = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
-  const translateY = useRef(new Animated.Value(reducedMotion ? 0 : 14)).current;
-  useEffect(() => {
-    if (reducedMotion) { opacity.setValue(1); translateY.setValue(0); return; }
-    const t = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(opacity,     { toValue: 1, duration: 380, useNativeDriver: true }),
-        Animated.timing(translateY,  { toValue: 0, duration: 380, useNativeDriver: true }),
-      ]).start();
-    }, delay);
-    return () => clearTimeout(t);
-  }, [delay, opacity, translateY, reducedMotion]);
-  return { opacity, transform: [{ translateY }] };
-}
-
-function usePressScale(reducedMotion: boolean, toValue = 0.96) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn = useCallback(() => {
-    if (reducedMotion) return;
-    Animated.spring(scale, { toValue, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
-  }, [reducedMotion, scale, toValue]);
-  const onPressOut = useCallback(() => {
-    if (reducedMotion) return;
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 2 }).start();
-  }, [reducedMotion, scale]);
-  return { scale, onPressIn, onPressOut };
 }
 
 // ─── Streaming ────────────────────────────────────────────────────────────────
@@ -514,16 +476,14 @@ const SuggestedQuestionCard = memo(function SuggestedQuestionCard({
   colors,
   accentPrimary,
   accentGold,
-  reducedMotion,
 }: {
   question: string;
   onPress: () => void;
   colors: ReturnType<typeof useThemeTokens>["colors"];
   accentPrimary: string;
   accentGold: string;
-  reducedMotion: boolean;
 }) {
-  const { scale, onPressIn, onPressOut } = usePressScale(reducedMotion, 0.95);
+  const { scale, onPressIn, onPressOut } = usePressScale(0.95);
   return (
     <Animated.View style={{ transform: [{ scale }], width: 200 }}>
       <Pressable
@@ -564,7 +524,6 @@ const ConversationItem = memo(function ConversationItem({
   colors,
   accentPrimary,
   accentGold,
-  reducedMotion,
 }: {
   conv: Conversation;
   onResume: () => void;
@@ -573,9 +532,8 @@ const ConversationItem = memo(function ConversationItem({
   colors: ReturnType<typeof useThemeTokens>["colors"];
   accentPrimary: string;
   accentGold: string;
-  reducedMotion: boolean;
 }) {
-  const { scale, onPressIn, onPressOut } = usePressScale(reducedMotion, 0.97);
+  const { scale, onPressIn, onPressOut } = usePressScale(0.97);
   const dateStr = useMemo(() => {
     const d = new Date(conv.updatedAt);
     const now = new Date();
@@ -685,12 +643,12 @@ function HomeView({
   reducedMotion,
 }: HomeViewProps) {
   const reflection = useMemo(() => getTodayReflection(), []);
-  const a0 = useEntrance(0,   reducedMotion);
-  const a1 = useEntrance(80,  reducedMotion);
-  const a2 = useEntrance(140, reducedMotion);
-  const a3 = useEntrance(200, reducedMotion);
-  const a4 = useEntrance(260, reducedMotion);
-  const a5 = useEntrance(320, reducedMotion);
+  const a0 = useEntrance(0);
+  const a1 = useEntrance(80);
+  const a2 = useEntrance(140);
+  const a3 = useEntrance(200);
+  const a4 = useEntrance(260);
+  const a5 = useEntrance(320);
 
   const topPad = (insets.top || 0) + 16;
   const bottomPad = (insets.bottom || 0) + 104;
@@ -785,7 +743,6 @@ function HomeView({
               colors={colors}
               accentPrimary={accentPrimary}
               accentGold={accentGold}
-              reducedMotion={reducedMotion}
             />
           ))}
         </ScrollView>
@@ -811,7 +768,6 @@ function HomeView({
                 colors={colors}
                 accentPrimary={accentPrimary}
                 accentGold={accentGold}
-                reducedMotion={reducedMotion}
               />
             ))}
           </View>
@@ -1152,7 +1108,7 @@ export default function SacredWisdomScreen() {
   }, []);
 
   const deleteConversation = useCallback((id: string) => {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    hapticLight();
     setConversations((prev) => {
       const updated = prev.filter((c) => c.id !== id);
       storageSet(CONV_STORAGE_KEY, updated);

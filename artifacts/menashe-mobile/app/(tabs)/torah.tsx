@@ -29,7 +29,8 @@ import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
-import { useReducedMotion } from "@/src/mobile/design-system/accessibility";
+import { useEntrance, useReducedMotion } from "@/src/mobile/lib/useEntrance";
+import { usePressScale } from "@/src/mobile/lib/usePressScale";
 import { useLanguage } from "@/context/LanguageContext";
 import { storageGet, storageSet } from "@/lib/storageUtils";
 import { getCurrentParashaInfo, type ParashaInfo } from "@/lib/hebrewCalendar";
@@ -103,24 +104,6 @@ function slugifyParasha(name: string): string {
   return name.toLowerCase().replace(/[' ]+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
-// ─── Reduced-motion-aware entrance (matches Sacred Time screen pattern) ───────
-
-function useEntrance(delay: number, reducedMotion: boolean) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(reducedMotion ? 0 : 16)).current;
-  useEffect(() => {
-    const duration = reducedMotion ? 0 : 420;
-    const t = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration, useNativeDriver: true }),
-      ]).start();
-    }, reducedMotion ? 0 : delay);
-    return () => clearTimeout(t);
-  }, [delay, opacity, translateY, reducedMotion]);
-  return { opacity, transform: [{ translateY }] } as any;
-}
-
 /** Book-opening entrance — gentle scaleY + opacity, used once for the Hero. */
 function useBookOpen(reducedMotion: boolean) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -133,19 +116,6 @@ function useBookOpen(reducedMotion: boolean) {
     ]).start();
   }, [opacity, scaleY, reducedMotion]);
   return { opacity, transform: [{ scaleY }] } as any;
-}
-
-function usePressScale(reducedMotion: boolean, toValue = 0.96) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn = useCallback(
-    () => Animated.timing(scale, { toValue: reducedMotion ? 1 : toValue, duration: 80, useNativeDriver: true }).start(),
-    [scale, toValue, reducedMotion],
-  );
-  const onPressOut = useCallback(
-    () => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start(),
-    [scale],
-  );
-  return { scale, onPressIn, onPressOut };
 }
 
 // ─── Section header ─────────────────────────────────────────────────────────
@@ -174,14 +144,13 @@ interface CollectionTileProps {
   rd: ReturnType<typeof useThemeTokens>["rd"];
   sp: ReturnType<typeof useThemeTokens>["sp"];
   type: ReturnType<typeof useThemeTokens>["type"];
-  reducedMotion: boolean;
   onPress: () => void;
 }
 
 const CollectionTile = memo(function CollectionTile({
-  icon, label, sub, color, colors, rd, sp, type, reducedMotion, onPress,
+  icon, label, sub, color, colors, rd, sp, type, onPress,
 }: CollectionTileProps) {
-  const { scale, onPressIn, onPressOut } = usePressScale(reducedMotion, 0.95);
+  const { scale, onPressIn, onPressOut } = usePressScale(0.96);
   return (
     <Animated.View style={{ width: "48%", transform: [{ scale }] }}>
       <Pressable
@@ -312,19 +281,19 @@ export default function SacredStudyScreen() {
     : (["#171008", "#1f1710", "#171008"] as const);
 
   const heroAnim = useBookOpen(reducedMotion);
-  const a0 = useEntrance(60, reducedMotion);
-  const a1 = useEntrance(110, reducedMotion);
-  const a2 = useEntrance(160, reducedMotion);
-  const a3 = useEntrance(210, reducedMotion);
-  const a4 = useEntrance(260, reducedMotion);
-  const a5 = useEntrance(310, reducedMotion);
-  const a6 = useEntrance(360, reducedMotion);
-  const a7 = useEntrance(410, reducedMotion);
-  const a8 = useEntrance(460, reducedMotion);
+  const a0 = useEntrance(60);
+  const a1 = useEntrance(110);
+  const a2 = useEntrance(160);
+  const a3 = useEntrance(210);
+  const a4 = useEntrance(260);
+  const a5 = useEntrance(310);
+  const a6 = useEntrance(360);
+  const a7 = useEntrance(410);
+  const a8 = useEntrance(460);
 
-  const parashaPress = usePressScale(reducedMotion, 0.98);
-  const dafPress = usePressScale(reducedMotion, 0.97);
-  const continuePress = usePressScale(reducedMotion, 0.96);
+  const parashaPress = usePressScale(0.98);
+  const dafPress = usePressScale(0.97);
+  const continuePress = usePressScale(0.96);
 
   const SIDDUR_TIMES = [
     { key: "Shacharit", label: "Morning", sub: "Shacharit", icon: "sunrise" as const },
@@ -578,7 +547,6 @@ export default function SacredStudyScreen() {
                 rd={rd}
                 sp={sp}
                 shadow={shadow}
-                reducedMotion={reducedMotion}
                 onPress={() => goSiddur("Prayer Books")}
               />
             ))}
@@ -624,14 +592,14 @@ export default function SacredStudyScreen() {
         <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a6]}>
           <SectionHeader icon="grid" label={t.sacredStudyStudyPaths} gold={gold} muted={colors.textMuted} />
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: sp[3] }}>
-            <CollectionTile icon="star" label="Parashah" sub={parasha?.name ?? "This week"} color={gold} colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={studyParasha} />
-            <CollectionTile icon="feather" label="Torah" sub="Track your study" color="#4ade80" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={goTorahTracker} />
-            <CollectionTile icon="book" label="Daf Yomi" sub={daf.tractate} color="#a78bfa" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={goDaf} />
-            <CollectionTile icon="book-open" label="Siddur" sub="Prayer texts" color="#6382FF" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={() => goSiddur("Siddur")} />
-            <CollectionTile icon="sun" label="Prayer" sub="Daily Tefillah" color="#f0a020" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={() => goSiddur("Prayer Books")} />
-            <CollectionTile icon="calendar" label={t.sacredStudyJewishCalendar} sub="Hebrew dates & holidays" color="#5eb3c9" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={goCalendar} />
-            <CollectionTile icon="layers" label="Learning Library" sub="All sacred texts" color="#e07856" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={() => goSiddur("All")} />
-            <CollectionTile icon="bookmark" label={t.sacredStudyBookmarks} sub={bookmarks.length ? `${bookmarks.length} saved` : "Nothing saved yet"} color="#d16b8f" colors={colors} rd={rd} sp={sp} type={type} reducedMotion={reducedMotion} onPress={scrollToBookmarks} />
+            <CollectionTile icon="star" label="Parashah" sub={parasha?.name ?? "This week"} color={gold} colors={colors} rd={rd} sp={sp} type={type} onPress={studyParasha} />
+            <CollectionTile icon="feather" label="Torah" sub="Track your study" color="#4ade80" colors={colors} rd={rd} sp={sp} type={type} onPress={goTorahTracker} />
+            <CollectionTile icon="book" label="Daf Yomi" sub={daf.tractate} color="#a78bfa" colors={colors} rd={rd} sp={sp} type={type} onPress={goDaf} />
+            <CollectionTile icon="book-open" label="Siddur" sub="Prayer texts" color="#6382FF" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("Siddur")} />
+            <CollectionTile icon="sun" label="Prayer" sub="Daily Tefillah" color="#f0a020" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("Prayer Books")} />
+            <CollectionTile icon="calendar" label={t.sacredStudyJewishCalendar} sub="Hebrew dates & holidays" color="#5eb3c9" colors={colors} rd={rd} sp={sp} type={type} onPress={goCalendar} />
+            <CollectionTile icon="layers" label="Learning Library" sub="All sacred texts" color="#e07856" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("All")} />
+            <CollectionTile icon="bookmark" label={t.sacredStudyBookmarks} sub={bookmarks.length ? `${bookmarks.length} saved` : "Nothing saved yet"} color="#d16b8f" colors={colors} rd={rd} sp={sp} type={type} onPress={scrollToBookmarks} />
           </View>
         </Animated.View>
 
@@ -695,14 +663,13 @@ interface SiddurTimeCardProps {
   rd: ReturnType<typeof useThemeTokens>["rd"];
   sp: ReturnType<typeof useThemeTokens>["sp"];
   shadow: ReturnType<typeof useThemeTokens>["shadow"];
-  reducedMotion: boolean;
   onPress: () => void;
 }
 
 const SiddurTimeCard = memo(function SiddurTimeCard({
-  icon, label, sub, colors, type, rd, sp, shadow, reducedMotion, onPress,
+  icon, label, sub, colors, type, rd, sp, shadow, onPress,
 }: SiddurTimeCardProps) {
-  const { scale, onPressIn, onPressOut } = usePressScale(reducedMotion, 0.94);
+  const { scale, onPressIn, onPressOut } = usePressScale(0.94);
   return (
     <Animated.View style={{ flex: 1, transform: [{ scale }] }}>
       <Pressable
