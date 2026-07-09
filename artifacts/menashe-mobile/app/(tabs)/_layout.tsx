@@ -68,7 +68,7 @@ export default function TabLayout() {
         options={{
           title: t.navHome,
           tabBarIcon: ({ color, focused }) => (
-            <Feather name="home" size={focused ? 23 : 21} color={color} />
+            <Feather name="home" size={focused ? 22 : 20} color={color} />
           ),
         }}
       />
@@ -77,7 +77,7 @@ export default function TabLayout() {
         options={{
           title: t.navJourney,
           tabBarIcon: ({ color, focused }) => (
-            <Feather name="compass" size={focused ? 23 : 21} color={color} />
+            <Feather name="compass" size={focused ? 22 : 20} color={color} />
           ),
         }}
       />
@@ -86,7 +86,7 @@ export default function TabLayout() {
         options={{
           title: t.navCalendar,
           tabBarIcon: ({ color, focused }) => (
-            <Feather name="calendar" size={focused ? 23 : 21} color={color} />
+            <Feather name="calendar" size={focused ? 22 : 20} color={color} />
           ),
         }}
       />
@@ -95,7 +95,7 @@ export default function TabLayout() {
         options={{
           title: t.navZmanim,
           tabBarIcon: ({ color, focused }) => (
-            <Feather name="clock" size={focused ? 23 : 21} color={color} />
+            <Feather name="clock" size={focused ? 22 : 20} color={color} />
           ),
         }}
       />

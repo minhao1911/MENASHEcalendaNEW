@@ -11,7 +11,7 @@ import { useAuth, useUser } from "@clerk/expo";
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
-import type { ThemeKey } from "@/constants/colors";
+import PALETTES, { type ThemeKey } from "@/constants/colors";
 import { LOCATIONS } from "@/lib/locations";
 import {
   requestPermission,
@@ -177,6 +177,7 @@ export default function SettingsScreen() {
           <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 14 }}>Theme</Text>
           <View style={{ flexDirection: "row", gap: 10 }}>
             {/* Royal Midnight */}
+            {/* Midnight */}
             <TouchableOpacity
               style={{ flex: 1, alignItems: "center" }}
               onPress={() => handleSetTheme("dark")}
@@ -184,28 +185,28 @@ export default function SettingsScreen() {
             >
               <View style={{
                 borderRadius: 14, overflow: "hidden", borderWidth: 2,
-                borderColor: theme === "dark" ? "#d4a843" : "transparent",
-                shadowColor: theme === "dark" ? "#d4a843" : "#000",
+                borderColor: theme === "dark" ? PALETTES.dark.primary : "transparent",
+                shadowColor: theme === "dark" ? PALETTES.dark.primary : "#000",
                 shadowOpacity: theme === "dark" ? 0.4 : 0.2,
                 shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
                 elevation: theme === "dark" ? 4 : 1,
               }}>
-                <View style={{ backgroundColor: "#080e1a", padding: 8, height: 72, gap: 4 }}>
-                  <View style={{ height: 8, borderRadius: 4, backgroundColor: "#d4a843", width: "60%" }} />
-                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#1a2540", width: "90%" }} />
-                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#1a2540", width: "75%" }} />
+                <View style={{ backgroundColor: PALETTES.dark.background, padding: 8, height: 72, gap: 4 }}>
+                  <View style={{ height: 8, borderRadius: 4, backgroundColor: PALETTES.dark.primary, width: "60%" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: PALETTES.dark.secondary, width: "90%" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: PALETTES.dark.secondary, width: "75%" }} />
                   <View style={{ flex: 1 }} />
                   <View style={{ flexDirection: "row", gap: 4 }}>
-                    {[1,2,3].map(i => <View key={i} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: "#111827" }} />)}
+                    {[1,2,3].map(i => <View key={i} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: PALETTES.dark.card }} />)}
                   </View>
                 </View>
-                <View style={{ backgroundColor: "#0d1627", padding: 5, flexDirection: "row", justifyContent: "space-around" }}>
+                <View style={{ backgroundColor: PALETTES.dark.background, padding: 5, flexDirection: "row", justifyContent: "space-around" }}>
                   {["🏠","📅","⏰","👥","⚙️"].map((ic, i) => (
                     <Text key={i} style={{ fontSize: 8 }}>{ic}</Text>
                   ))}
                 </View>
               </View>
-              <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "dark" ? "700" : "500", color: theme === "dark" ? "#d4a843" : colors.mutedForeground }}>
+              <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "dark" ? "700" : "500", color: theme === "dark" ? PALETTES.dark.primary : colors.mutedForeground }}>
                 {theme === "dark" ? "✓ " : ""}Midnight
               </Text>
             </TouchableOpacity>
@@ -218,28 +219,28 @@ export default function SettingsScreen() {
             >
               <View style={{
                 borderRadius: 14, overflow: "hidden", borderWidth: 2,
-                borderColor: theme === "light" ? "#8B6914" : "transparent",
-                shadowColor: theme === "light" ? "#8B6914" : "#000",
+                borderColor: theme === "light" ? PALETTES.light.primary : "transparent",
+                shadowColor: theme === "light" ? PALETTES.light.primary : "#000",
                 shadowOpacity: theme === "light" ? 0.3 : 0.15,
                 shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
                 elevation: theme === "light" ? 4 : 1,
               }}>
-                <View style={{ backgroundColor: "#F5EFE0", padding: 8, height: 72, gap: 4 }}>
-                  <View style={{ height: 8, borderRadius: 4, backgroundColor: "#8B6914", width: "60%" }} />
-                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#EDE4D3", width: "90%", borderWidth: 1, borderColor: "#D4C9B0" }} />
-                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#EDE4D3", width: "75%", borderWidth: 1, borderColor: "#D4C9B0" }} />
+                <View style={{ backgroundColor: PALETTES.light.background, padding: 8, height: 72, gap: 4 }}>
+                  <View style={{ height: 8, borderRadius: 4, backgroundColor: PALETTES.light.primary, width: "60%" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: PALETTES.light.card, width: "90%", borderWidth: 1, borderColor: PALETTES.light.border }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: PALETTES.light.card, width: "75%", borderWidth: 1, borderColor: PALETTES.light.border }} />
                   <View style={{ flex: 1 }} />
                   <View style={{ flexDirection: "row", gap: 4 }}>
-                    {[1,2,3].map(i => <View key={i} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: "#EDE4D3", borderWidth: 1, borderColor: "#D4C9B0" }} />)}
+                    {[1,2,3].map(i => <View key={i} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: PALETTES.light.card, borderWidth: 1, borderColor: PALETTES.light.border }} />)}
                   </View>
                 </View>
-                <View style={{ backgroundColor: "#EDE4D3", padding: 5, borderTopWidth: 1, borderTopColor: "#D4C9B0", flexDirection: "row", justifyContent: "space-around" }}>
+                <View style={{ backgroundColor: PALETTES.light.card, padding: 5, borderTopWidth: 1, borderTopColor: PALETTES.light.border, flexDirection: "row", justifyContent: "space-around" }}>
                   {["🏠","📅","⏰","👥","⚙️"].map((ic, i) => (
                     <Text key={i} style={{ fontSize: 8 }}>{ic}</Text>
                   ))}
                 </View>
               </View>
-              <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "light" ? "700" : "500", color: theme === "light" ? "#8B6914" : colors.mutedForeground }}>
+              <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "light" ? "700" : "500", color: theme === "light" ? PALETTES.light.primary : colors.mutedForeground }}>
                 {theme === "light" ? "✓ " : ""}Parchment
               </Text>
             </TouchableOpacity>
@@ -252,28 +253,28 @@ export default function SettingsScreen() {
             >
               <View style={{
                 borderRadius: 14, overflow: "hidden", borderWidth: 2,
-                borderColor: theme === "sapphire" ? "#6382FF" : "transparent",
-                shadowColor: theme === "sapphire" ? "#6382FF" : "#000",
+                borderColor: theme === "sapphire" ? PALETTES.sapphire.primary : "transparent",
+                shadowColor: theme === "sapphire" ? PALETTES.sapphire.primary : "#000",
                 shadowOpacity: theme === "sapphire" ? 0.4 : 0.2,
                 shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
                 elevation: theme === "sapphire" ? 4 : 1,
               }}>
-                <View style={{ backgroundColor: "#060e1e", padding: 8, height: 72, gap: 4 }}>
-                  <View style={{ height: 8, borderRadius: 4, backgroundColor: "#6382FF", width: "60%" }} />
-                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#0c1830", width: "90%", borderWidth: 1, borderColor: "#1a2e58" }} />
-                  <View style={{ height: 5, borderRadius: 3, backgroundColor: "#0c1830", width: "75%", borderWidth: 1, borderColor: "#1a2e58" }} />
+                <View style={{ backgroundColor: PALETTES.sapphire.background, padding: 8, height: 72, gap: 4 }}>
+                  <View style={{ height: 8, borderRadius: 4, backgroundColor: PALETTES.sapphire.primary, width: "60%" }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: PALETTES.sapphire.card, width: "90%", borderWidth: 1, borderColor: PALETTES.sapphire.border }} />
+                  <View style={{ height: 5, borderRadius: 3, backgroundColor: PALETTES.sapphire.card, width: "75%", borderWidth: 1, borderColor: PALETTES.sapphire.border }} />
                   <View style={{ flex: 1 }} />
                   <View style={{ flexDirection: "row", gap: 4 }}>
-                    {[1,2,3].map(i => <View key={i} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: "#0c1830", borderWidth: 1, borderColor: "#1a2e58" }} />)}
+                    {[1,2,3].map(i => <View key={i} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: PALETTES.sapphire.card, borderWidth: 1, borderColor: PALETTES.sapphire.border }} />)}
                   </View>
                 </View>
-                <View style={{ backgroundColor: "#060e1e", padding: 5, borderTopWidth: 1, borderTopColor: "#1a2e58", flexDirection: "row", justifyContent: "space-around" }}>
+                <View style={{ backgroundColor: PALETTES.sapphire.background, padding: 5, borderTopWidth: 1, borderTopColor: PALETTES.sapphire.border, flexDirection: "row", justifyContent: "space-around" }}>
                   {["🏠","📅","⏰","👥","⚙️"].map((ic, i) => (
                     <Text key={i} style={{ fontSize: 8 }}>{ic}</Text>
                   ))}
                 </View>
               </View>
-              <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "sapphire" ? "700" : "500", color: theme === "sapphire" ? "#6382FF" : colors.mutedForeground }}>
+              <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "sapphire" ? "700" : "500", color: theme === "sapphire" ? PALETTES.sapphire.primary : colors.mutedForeground }}>
                 {theme === "sapphire" ? "✓ " : ""}Sapphire
               </Text>
             </TouchableOpacity>

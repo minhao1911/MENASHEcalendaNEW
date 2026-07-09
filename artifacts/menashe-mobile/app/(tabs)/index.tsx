@@ -439,6 +439,18 @@ export default function HomeScreen() {
   const successColor  = colors.success;
   const sapphireBlue  = "#6382FF" as const;
 
+  // RC-002 Task 3: Memorial card — theme-aware candlelight/sanctuary palette
+  // (isSapphire already declared above from theme === "sapphire")
+  const memGradient: readonly [string, string, string, string] = isSapphire
+    ? ["#1a0e2a", "#0e0820", "#160c22", "#1a1030"]
+    : ["#3a1e08", "#1c0e00", "#2a1500", "#3a2208"];
+  const memTitleColor   = isSapphire ? "#d4c8f0" : "#f4e0c4";
+  const memTaglineColor = isSapphire ? "#a898cc" : "#c4b090";
+  const memOuterGlow    = isSapphire ? "rgba(99,130,255,0.14)" : "rgba(212,120,10,0.14)";
+  const memInnerGlow    = isSapphire ? "rgba(99,130,255,0.08)" : "rgba(240,150,20,0.10)";
+  const memCandleOuter  = isSapphire ? "rgba(99,130,255,0.18)" : "rgba(212,120,10,0.22)";
+  const memCandleInner  = isSapphire ? "rgba(99,130,255,0.10)" : "rgba(240,160,30,0.14)";
+
   // MEP-005: staggered entrance — 40ms stagger, shared useEntrance hook
   const a0  = useEntrance(0);
   const a1  = useEntrance(40);
@@ -450,6 +462,7 @@ export default function HomeScreen() {
   const a7  = useEntrance(280);
   const a8  = useEntrance(320);
   const a9  = useEntrance(360);
+  const a10 = useEntrance(400);
 
   // Phase 1: hero shimmer
   const shimmerOpacity = useHeroShimmer();
@@ -684,7 +697,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 5. TODAY'S FOCUS — Phase 2 ────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a2]}>
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a3]}>
         <TodaysFocusCard
           mode={countdownMode}
           isShabbat={isShabbat}
@@ -707,7 +720,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 5. SHABBAT COUNTDOWN — Phase 4 ────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a2]}>
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a4]}>
         <ShabbatCountdownCard
           mode={countdownMode}
           countdownMs={countdownMs}
@@ -728,7 +741,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 6. SACRED TIME — Phase 3 ───────────────────────────────────────────── */}
-      <Animated.View style={[{ marginBottom: 24 }, a3]}>
+      <Animated.View style={[{ marginBottom: 24 }, a5]}>
         <SectionTitle
           eyebrow={t.homeSacredTimeLabel}
           leadingIcon={<Feather name="clock" size={13} color={gold} />}
@@ -799,7 +812,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 7. QUICK ACTIONS 2×4 — Phase 5 ──────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: QA_H_PAD, marginBottom: 24 }, a4]}>
+      <Animated.View style={[{ marginHorizontal: QA_H_PAD, marginBottom: 24 }, a6]}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: QA_GAP }}>
           {QA_ITEMS.map((item) => (
             <QuickActionCard key={item.id} item={item} />
@@ -809,7 +822,7 @@ export default function HomeScreen() {
 
       {/* ─── 8. LEARNING EXPERIENCE — Phase 6 ──────────────────────────────────── */}
       {/* All 3 cards: one visual family — same overline · illustration · CTA style */}
-      <Animated.View style={[{ marginBottom: 24 }, a5]}>
+      <Animated.View style={[{ marginBottom: 24 }, a7]}>
         <SectionTitle
           eyebrow={t.homeLearningLabel}
           leadingIcon={<Feather name="book-open" size={13} color={gold} />}
@@ -928,7 +941,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 9. UPCOMING HOLIDAY ────────────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a6]}>
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a8]}>
         <Pressable
           style={({ pressed }) => ({
             backgroundColor: cardBg, borderRadius: rd.xl, borderWidth: 1, borderColor,
@@ -968,7 +981,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ─── 10. COMMUNITY PREVIEW ──────────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a6]}>
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a8]}>
         <Pressable
           style={({ pressed }) => ({
             backgroundColor: cardBg, borderRadius: rd.xl, borderWidth: 1, borderColor,
@@ -1005,7 +1018,7 @@ export default function HomeScreen() {
       <Animated.View style={[{
         marginHorizontal: HX, marginBottom: 18,
         borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2,
-      }, a7]}>
+      }, a9]}>
         <TouchableOpacity
           onPress={() => router.push("/sacred-memory")}
           activeOpacity={0.92}
@@ -1014,7 +1027,7 @@ export default function HomeScreen() {
           accessibilityRole="button"
         >
           <LinearGradient
-            colors={["#3a1e08", "#1c0e00", "#2a1500", "#3a2208"]}
+            colors={memGradient}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={{ minHeight: 212, padding: 24 }}
           >
@@ -1022,12 +1035,12 @@ export default function HomeScreen() {
             <View style={{
               position: "absolute", top: -32, right: -32,
               width: 160, height: 160, borderRadius: 80,
-              backgroundColor: "rgba(212,120,10,0.14)",
+              backgroundColor: memOuterGlow,
             }} />
             <View style={{
               position: "absolute", top: -10, right: -10,
               width: 90, height: 90, borderRadius: 45,
-              backgroundColor: "rgba(240,150,20,0.10)",
+              backgroundColor: memInnerGlow,
             }} />
 
             <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -1035,12 +1048,12 @@ export default function HomeScreen() {
                 <Overline text={t.homeMemorialTitle} color={gold} />
                 <Text style={{
                   fontSize: 22, fontWeight: "800",
-                  color: "#f4e0c4", marginTop: 8, marginBottom: 8, lineHeight: 28,
+                  color: memTitleColor, marginTop: 8, marginBottom: 8, lineHeight: 28,
                   letterSpacing: -0.3,
                 }}>
                   Memorial Sanctuary
                 </Text>
-                <Text style={{ fontSize: 13, color: "#c4b090", marginBottom: 20, lineHeight: 20, maxWidth: 200 }}>
+                <Text style={{ fontSize: 13, color: memTaglineColor, marginBottom: 20, lineHeight: 20, maxWidth: 200 }}>
                   {t.homeMemorialTagline}
                 </Text>
                 <PillButton
@@ -1055,13 +1068,13 @@ export default function HomeScreen() {
               <View style={{ alignItems: "center", justifyContent: "center", marginLeft: 18 }}>
                 <View style={{
                   width: 80, height: 80, borderRadius: 40,
-                  backgroundColor: "rgba(212,120,10,0.22)",
+                  backgroundColor: memCandleOuter,
                   alignItems: "center", justifyContent: "center",
                 }}>
                   <View style={{
                     position: "absolute",
                     width: 56, height: 56, borderRadius: 28,
-                    backgroundColor: "rgba(240,160,30,0.14)",
+                    backgroundColor: memCandleInner,
                   }} />
                   <Text style={{
                     fontSize: 42,
@@ -1081,7 +1094,7 @@ export default function HomeScreen() {
       <Animated.View style={[{
         marginHorizontal: HX, marginBottom: 18,
         borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2,
-      }, a8]}>
+      }, a10]}>
         <TouchableOpacity
           onPress={() => router.push("/(tabs)/torah")}
           activeOpacity={0.92}

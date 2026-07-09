@@ -22,7 +22,7 @@ import { MenasheButton } from "@/src/mobile/components/foundation/MenasheButton"
 import { hapticLight } from "@/src/mobile/lib/haptics";
 import { useEntrance } from "@/src/mobile/lib/useEntrance";
 import { SkeletonCard } from "@/src/mobile/components/feedback/LoadingState";
-import type { ColorTokens } from "@/src/mobile/design-system";
+import { EmptyState } from "@/src/mobile/components/feedback";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
 import { fetchPrayerRequests, amenPrayerRequest, type PrayerRequest } from "@/lib/prayerBoardApi";
@@ -31,18 +31,17 @@ import { fetchCommunityEvents, type CommunityEvent } from "@/lib/eventsApi";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Prayer category colour + emoji mapping (mirrors prayer-board.tsx) */
-const PRAYER_CAT: Record<string, { color: string; emoji: string }> = {
-  Healing:    { color: "#4ade80", emoji: "💚" },
-  Blessing:   { color: "#d4a843", emoji: "✨" },
-  Aliyah:     { color: "#4ade80", emoji: "🇮🇱" },
-  Family:     { color: "#f472b6", emoji: "👨‍👩‍👧‍👦" },
-  Livelihood: { color: "#818cf8", emoji: "🌾" },
-  Community:  { color: "#fb923c", emoji: "🫂" },
-  Gratitude:  { color: "#fbbf24", emoji: "🙏" },
-  Protection: { color: "#a78bfa", emoji: "🛡️" },
-  Other:      { color: "#94a3b8", emoji: "✡" },
-};
+/** Named semantic palette for prayer request categories.
+ *  These are category-identity constants — not inline hex, not theme-coupled.
+ *  Blessing and Other resolve at runtime from live design tokens (see CommunityScreen). */
+const PRAYER_PALETTE = {
+  emerald: "#4ade80",
+  pink:    "#f472b6",
+  indigo:  "#818cf8",
+  orange:  "#fb923c",
+  amber:   "#fbbf24",
+  violet:  "#a78bfa",
+} as const;
 
 function fmtAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -61,48 +60,25 @@ function navigate(path: string) {
   router.push(path as any);
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-type Colors = ColorTokens;
-
-function EmptyCard({ icon, message, colors }: {
-  icon: React.ComponentProps<typeof Feather>["name"];
-  message: string;
-  colors: Colors;
-}) {
-  return (
-    <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-      accessibilityLabel={message}
-    >
-      <Feather name={icon} size={28} color={colors.textSecondary} />
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{message}</Text>
-    </View>
-  );
-}
-
-function ComingSoonCard({ icon, title, hint, colors }: {
-  icon: React.ComponentProps<typeof Feather>["name"];
-  title: string;
-  hint: string;
-  colors: Colors;
-}) {
-  return (
-    <View style={[styles.comingSoonCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={[styles.comingSoonIcon, { backgroundColor: colors.primary + "16" }]}>
-        <Feather name={icon} size={22} color={colors.primary} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.comingSoonTitle, { color: colors.textHigh }]}>{title}</Text>
-        <Text style={[styles.comingSoonHint, { color: colors.textSecondary }]}>{hint}</Text>
-      </View>
-    </View>
-  );
-}
+// EmptyCard and ComingSoonCard removed — replaced by shared <EmptyState /> component.
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function CommunityScreen() {
   const { colors, sp, type: ty, rd } = useThemeTokens();
+
+  /** Runtime prayer category map — Blessing uses brand primary, Other uses muted token */
+  const PRAYER_CAT: Record<string, { color: string; emoji: string }> = {
+    Healing:    { color: PRAYER_PALETTE.emerald,  emoji: "💚" },
+    Blessing:   { color: colors.primary,          emoji: "✨" },
+    Aliyah:     { color: PRAYER_PALETTE.emerald,  emoji: "🇮🇱" },
+    Family:     { color: PRAYER_PALETTE.pink,     emoji: "👨‍👩‍👧‍👦" },
+    Livelihood: { color: PRAYER_PALETTE.indigo,   emoji: "🌾" },
+    Community:  { color: PRAYER_PALETTE.orange,   emoji: "🫂" },
+    Gratitude:  { color: PRAYER_PALETTE.amber,    emoji: "🙏" },
+    Protection: { color: PRAYER_PALETTE.violet,   emoji: "🛡️" },
+    Other:      { color: colors.mutedForeground,  emoji: "✡" },
+  };
   const { t, lang } = useLanguage();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
@@ -222,7 +198,7 @@ export default function CommunityScreen() {
               onAction={() => navigate("/community/announcements")}
             />
             {topAnnouncements.length === 0 ? (
-              <EmptyCard icon="bell" message={t.commAnnouncementsEmpty} colors={colors} />
+              <EmptyState icon="bell" title={t.commAnnouncementsEmpty} style={{ paddingVertical: 20 }} />
             ) : topAnnouncements.map((ann) => (
               <TouchableOpacity
                 key={ann.id}
@@ -276,7 +252,7 @@ export default function CommunityScreen() {
               onAction={() => navigate("/prayer-board")}
             />
             {approvedPrayers.length === 0 ? (
-              <EmptyCard icon="heart" message={t.commPrayerEmpty} colors={colors} />
+              <EmptyState icon="heart" title={t.commPrayerEmpty} style={{ paddingVertical: 20 }} />
             ) : approvedPrayers.map((pr) => {
               const meta = PRAYER_CAT[pr.category] ?? PRAYER_CAT.Other;
               return (
@@ -813,24 +789,7 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
 
-  // Empty / Coming-soon
-  emptyCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 20,
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  emptyText: {
-    fontSize: 13,
-    textAlign: "center",
-  },
+  // Coming-soon section cards (emptyCard/emptyText removed — replaced by EmptyState)
   comingSoonCard: {
     borderRadius: 14,
     borderWidth: 1,
