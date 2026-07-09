@@ -43,15 +43,21 @@ const PRAYER_PALETTE = {
   violet:  "#a78bfa",
 } as const;
 
-function fmtAgo(iso: string): string {
+function fmtAgo(
+  iso: string,
+  justNow: string,
+  minAgo: string,
+  hourAgo: string,
+  dayAgo: string,
+): string {
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.floor(ms / 60_000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return justNow;
+  if (m < 60) return minAgo.replace("{n}", String(m));
   const h = Math.floor(ms / 3_600_000);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return hourAgo.replace("{n}", String(h));
   const d = Math.floor(ms / 86_400_000);
-  if (d < 30) return `${d}d ago`;
+  if (d < 30) return dayAgo.replace("{n}", String(d));
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
@@ -81,6 +87,8 @@ export default function CommunityScreen() {
   };
   const { t, lang } = useLanguage();
   const insets = useSafeAreaInsets();
+  /** Localized relative-time formatter — wraps module-level fmtAgo with t strings. */
+  const ago = (iso: string) => fmtAgo(iso, t.commJustNow, t.commMinAgo, t.commHourAgo, t.commDayAgo);
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
   const [announcements, setAnnouncements] = useState<MobileAnnouncement[]>([]);
@@ -236,7 +244,7 @@ export default function CommunityScreen() {
                   )}
                   {!!ann.sentAt && (
                     <Text style={[styles.timeLabel, { color: colors.textMuted }]}>
-                      {fmtAgo(ann.sentAt)}
+                      {ago(ann.sentAt)}
                     </Text>
                   )}
                 </View>
@@ -273,11 +281,11 @@ export default function CommunityScreen() {
                       <Text style={[styles.catText, { color: meta.color }]}>{pr.category}</Text>
                     </View>
                     <Text style={[styles.timeLabel, { color: colors.mutedForeground }]}>
-                      {fmtAgo(pr.submittedAt)}
+                      {ago(pr.submittedAt)}
                     </Text>
                   </View>
                   <Text style={[styles.prayName, { color: colors.foreground }]}>
-                    {pr.isAnonymous ? "Anonymous" : pr.name}
+                    {pr.isAnonymous ? t.journeyAnonymous : pr.name}
                   </Text>
                   <Text style={[styles.prayText, { color: colors.mutedForeground }]} numberOfLines={2}>
                     {pr.text}

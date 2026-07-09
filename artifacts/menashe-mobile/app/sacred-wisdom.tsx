@@ -41,6 +41,7 @@ import { usePressScale } from "@/src/mobile/lib/usePressScale";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { storageGet, storageSet } from "@/lib/storageUtils";
+import { useLanguage } from "@/context/LanguageContext";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -49,26 +50,9 @@ const CONV_STORAGE_KEY = "menashe-sacred-wisdom-convs-v1";
 const MAX_CONVERSATIONS = 20;
 const READING_MAX_WIDTH = 680;
 
-const SUGGESTED_QUESTIONS = [
-  "What is today's Parashah?",
-  "Explain today's Daf Yomi",
-  "When is candle lighting this Shabbat?",
-  "What is the meaning of the Shema?",
-  "Tell me about the Bnei Menashe journey",
-  "What is Havdalah and how is it observed?",
-  "Explain the significance of Shabbat",
-  "Who are the Bnei Menashe?",
-];
-
-const LIBRARY_TOPICS: Array<{ label: string; icon: React.ComponentProps<typeof Feather>["name"] }> = [
-  { label: "Judaism",      icon: "star" },
-  { label: "Hebrew",       icon: "type" },
-  { label: "Prayer",       icon: "heart" },
-  { label: "Torah",        icon: "book-open" },
-  { label: "Bnei Menashe", icon: "users" },
-  { label: "Calendar",     icon: "calendar" },
-  { label: "History",      icon: "clock" },
-];
+// Suggested questions and library topics are derived from the translation system
+// inside HomeView via useLanguage(). AI prompts always use English topic labels
+// so the gateway receives well-formed queries regardless of UI language.
 
 const REFLECTIONS = [
   { text: "Who is wise? One who learns from every person.", source: "Pirkei Avot 4:1" },
@@ -533,16 +517,17 @@ const ConversationItem = memo(function ConversationItem({
   accentPrimary: string;
   accentGold: string;
 }) {
+  const { t } = useLanguage();
   const { scale, onPressIn, onPressOut } = usePressScale(0.97);
   const dateStr = useMemo(() => {
     const d = new Date(conv.updatedAt);
     const now = new Date();
     const diff = (now.getTime() - d.getTime()) / 1000;
-    if (diff < 60) return "Just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 60) return t.commJustNow;
+    if (diff < 3600) return t.commMinAgo.replace("{n}", String(Math.floor(diff / 60)));
+    if (diff < 86400) return t.commHourAgo.replace("{n}", String(Math.floor(diff / 3600)));
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }, [conv.updatedAt]);
+  }, [conv.updatedAt, t]);
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
@@ -642,7 +627,35 @@ function HomeView({
   onPinConv,
   reducedMotion,
 }: HomeViewProps) {
+  const { t } = useLanguage();
   const reflection = useMemo(() => getTodayReflection(), []);
+
+  /** Bilingual suggested questions — displayed label is the prompt sent to AI. */
+  const suggestedQuestions = useMemo(() => [
+    t.sacredWisdomQ1,
+    t.sacredWisdomQ2,
+    t.sacredWisdomQ3,
+    t.sacredWisdomQ4,
+    t.sacredWisdomQ5,
+    t.sacredWisdomQ6,
+    t.sacredWisdomQ7,
+    t.sacredWisdomQ8,
+  ], [t]);
+
+  /** Bilingual library topics — label is translated; promptLabel (always EN) drives the AI query. */
+  const libraryTopics: Array<{
+    label: string;
+    promptLabel: string;
+    icon: React.ComponentProps<typeof Feather>["name"];
+  }> = useMemo(() => [
+    { label: t.sacredWisdomTopicJudaism,     promptLabel: "Judaism",      icon: "star" },
+    { label: t.sacredWisdomTopicHebrew,      promptLabel: "Hebrew",       icon: "type" },
+    { label: t.sacredWisdomTopicPrayer,      promptLabel: "Prayer",       icon: "heart" },
+    { label: t.sacredWisdomTopicTorah,       promptLabel: "Torah",        icon: "book-open" },
+    { label: t.sacredWisdomTopicBneiMenashe, promptLabel: "Bnei Menashe", icon: "users" },
+    { label: t.sacredWisdomTopicCalendar,    promptLabel: "Calendar",     icon: "calendar" },
+    { label: t.sacredWisdomTopicHistory,     promptLabel: "History",      icon: "clock" },
+  ], [t]);
   const a0 = useEntrance(0);
   const a1 = useEntrance(80);
   const a2 = useEntrance(140);
@@ -685,13 +698,13 @@ function HomeView({
           <View pointerEvents="none" style={{ position: "absolute", top: 60, right: -10, width: 90, height: 90, borderRadius: 45, backgroundColor: accentGold + "0d" }} />
 
           <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 2.5, color: accentPrimary, textTransform: "uppercase", marginBottom: 20 }}>
-            Sacred Wisdom
+            {t.sacredWisdomTitle}
           </Text>
           <Text style={{ fontSize: 36, fontFamily: "Inter_700Bold", letterSpacing: -0.8, color: "#e8f0ff", lineHeight: 40 }}>
             Rav Menashe
           </Text>
           <Text style={{ fontSize: 17, fontFamily: "Inter_400Regular", color: "#8ba8d4", marginTop: 10, lineHeight: 26 }}>
-            Learn. Ask. Discover.
+            {t.sacredWisdomTagline}
           </Text>
 
           {/* Start chat input tap target */}
@@ -714,7 +727,7 @@ function HomeView({
           >
             <Feather name="message-circle" size={18} color={accentPrimary} />
             <Text style={{ flex: 1, color: "#8ba8d4", fontSize: 15, fontFamily: "Inter_400Regular" }}>
-              Ask Rav Menashe anything…
+              {t.sacredWisdomPlaceholder}
             </Text>
             <Feather name="arrow-up-circle" size={20} color={accentPrimary} />
           </Pressable>
@@ -726,7 +739,7 @@ function HomeView({
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: HX, marginBottom: 14 }}>
           <Feather name="compass" size={14} color={accentGold} />
           <Text style={{ fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.2, color: accentGold, textTransform: "uppercase" }}>
-            Suggested Questions
+            {t.sacredWisdomSuggestedTitle}
           </Text>
         </View>
         <ScrollView
@@ -735,7 +748,7 @@ function HomeView({
           contentContainerStyle={{ paddingHorizontal: HX, gap: 10 }}
           style={{ marginBottom: 8 }}
         >
-          {SUGGESTED_QUESTIONS.map((q) => (
+          {suggestedQuestions.map((q) => (
             <SuggestedQuestionCard
               key={q}
               question={q}
@@ -754,7 +767,7 @@ function HomeView({
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
             <Feather name="clock" size={14} color={accentGold} />
             <Text style={{ fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.2, color: accentGold, textTransform: "uppercase" }}>
-              Continue Learning
+              {t.sacredWisdomContinueTitle}
             </Text>
           </View>
           <View style={{ gap: 8 }}>
@@ -779,14 +792,14 @@ function HomeView({
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
           <Feather name="grid" size={14} color={accentGold} />
           <Text style={{ fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.2, color: accentGold, textTransform: "uppercase" }}>
-            Learning Library
+            {t.sacredWisdomLibraryTitle}
           </Text>
         </View>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          {LIBRARY_TOPICS.map((topic) => (
+          {libraryTopics.map((topic) => (
             <Pressable
-              key={topic.label}
-              onPress={() => onStartChat(`Tell me about ${topic.label} in the context of Bnei Menashe and Jewish tradition`)}
+              key={topic.promptLabel}
+              onPress={() => onStartChat(`Tell me about ${topic.promptLabel} in the context of Bnei Menashe and Jewish tradition`)}
               accessibilityRole="button"
               accessibilityLabel={`Explore ${topic.label}`}
               style={{

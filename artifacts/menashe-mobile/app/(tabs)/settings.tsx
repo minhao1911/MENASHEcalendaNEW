@@ -62,9 +62,9 @@ export default function SettingsScreen() {
         if (!granted) {
           if (Platform.OS !== "web") {
             Alert.alert(
-              "Notifications Blocked",
-              "Please enable notifications for Menashe Calendar in your device settings to receive alerts.",
-              [{ text: "OK" }],
+              t.settingsAlertNotifBlockedTitle,
+              t.settingsAlertNotifBlockedMsg,
+              [{ text: t.settingsAlertOk }],
             );
           }
           return;
@@ -82,7 +82,7 @@ export default function SettingsScreen() {
     const n = await reschedule();
     setRescheduling(false);
     if (Platform.OS !== "web") {
-      Alert.alert("Done", `${n} notifications scheduled on your device.`);
+      Alert.alert(t.settingsAlertScheduledTitle, t.settingsAlertScheduledMsg.replace("{n}", String(n)));
     }
   }
 
@@ -92,7 +92,7 @@ export default function SettingsScreen() {
     if (granted) {
       await setNotifPrefs({ shabbat: true, havdalah: true, prayers: false, parasha: true, holiday: true });
     } else {
-      Alert.alert("Permission Denied", "Could not enable notifications. Check your device settings.");
+      Alert.alert(t.settingsAlertPermDeniedTitle, t.settingsAlertPermDeniedMsg);
     }
   }
 
@@ -102,12 +102,12 @@ export default function SettingsScreen() {
     try {
       if (enable) {
         await registerServerPush(getToken);
-        Alert.alert("Server Push Enabled", "You'll receive Shabbat and holiday reminders from the server even when the app is closed.");
+        Alert.alert(t.settingsAlertServerPushTitle, t.settingsAlertServerPushMsg);
       } else {
         await unregisterServerPush(getToken);
       }
     } catch (err: any) {
-      Alert.alert("Error", err?.message ?? "Failed to update server push settings.");
+      Alert.alert(t.settingsAlertErrorTitle, err?.message ?? t.settingsAlertServerPushErrMsg);
     } finally {
       setServerPushLoading(false);
     }
@@ -118,9 +118,9 @@ export default function SettingsScreen() {
     setTestPushLoading(true);
     try {
       await sendTestExpoPush(getToken);
-      Alert.alert("Test Sent", "A test push notification was sent from the server. It should arrive shortly.");
+      Alert.alert(t.settingsAlertTestSentTitle, t.settingsAlertTestSentMsg);
     } catch (err: any) {
-      Alert.alert("Error", err?.message ?? "Failed to send test push.");
+      Alert.alert(t.settingsAlertErrorTitle, err?.message ?? t.settingsAlertTestFailMsg);
     } finally {
       setTestPushLoading(false);
     }
@@ -131,12 +131,12 @@ export default function SettingsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     Alert.alert(
-      "Sign Out",
-      "Are you sure you want to sign out?",
+      t.settingsAlertSignOutTitle,
+      t.settingsAlertSignOutMsg,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t.settingsAlertCancel, style: "cancel" },
         {
-          text: "Sign Out",
+          text: t.settingsAlertSignOutTitle,
           style: "destructive",
           onPress: async () => {
             await signOut();

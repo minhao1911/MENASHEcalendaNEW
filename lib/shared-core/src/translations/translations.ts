@@ -436,6 +436,54 @@ export interface SharedTranslations {
   txEditorGroupSettings: string;
   txEditorGroupFab: string;
   txEditorNote: string;
+
+  /* ── Community timestamps ── */
+  commJustNow: string;
+  commMinAgo: string;
+  commHourAgo: string;
+  commDayAgo: string;
+
+  /* ── Sacred Wisdom (SPR-M012) ── */
+  sacredWisdomTitle: string;
+  sacredWisdomTagline: string;
+  sacredWisdomPlaceholder: string;
+  sacredWisdomSuggestedTitle: string;
+  sacredWisdomContinueTitle: string;
+  sacredWisdomLibraryTitle: string;
+  sacredWisdomQ1: string;
+  sacredWisdomQ2: string;
+  sacredWisdomQ3: string;
+  sacredWisdomQ4: string;
+  sacredWisdomQ5: string;
+  sacredWisdomQ6: string;
+  sacredWisdomQ7: string;
+  sacredWisdomQ8: string;
+  sacredWisdomTopicJudaism: string;
+  sacredWisdomTopicHebrew: string;
+  sacredWisdomTopicPrayer: string;
+  sacredWisdomTopicTorah: string;
+  sacredWisdomTopicBneiMenashe: string;
+  sacredWisdomTopicCalendar: string;
+  sacredWisdomTopicHistory: string;
+
+  /* ── Settings alerts ── */
+  settingsAlertOk: string;
+  settingsAlertCancel: string;
+  settingsAlertNotifBlockedTitle: string;
+  settingsAlertNotifBlockedMsg: string;
+  settingsAlertScheduledTitle: string;
+  settingsAlertScheduledMsg: string;
+  settingsAlertPermDeniedTitle: string;
+  settingsAlertPermDeniedMsg: string;
+  settingsAlertServerPushTitle: string;
+  settingsAlertServerPushMsg: string;
+  settingsAlertErrorTitle: string;
+  settingsAlertServerPushErrMsg: string;
+  settingsAlertTestSentTitle: string;
+  settingsAlertTestSentMsg: string;
+  settingsAlertTestFailMsg: string;
+  settingsAlertSignOutTitle: string;
+  settingsAlertSignOutMsg: string;
 }
 
 export const sharedEn: SharedTranslations = {
@@ -854,6 +902,51 @@ export const sharedEn: SharedTranslations = {
   txEditorGroupSettings: "Settings",
   txEditorGroupFab: "Community Hub",
   txEditorNote: "Tip: Switch to Thadou Kuki mode (Settings → Language) to see your changes live.",
+
+  commJustNow: "just now",
+  commMinAgo: "{n}m ago",
+  commHourAgo: "{n}h ago",
+  commDayAgo: "{n}d ago",
+
+  sacredWisdomTitle: "Sacred Wisdom",
+  sacredWisdomTagline: "Learn. Ask. Discover.",
+  sacredWisdomPlaceholder: "Ask Rav Menashe anything…",
+  sacredWisdomSuggestedTitle: "Suggested Questions",
+  sacredWisdomContinueTitle: "Continue Learning",
+  sacredWisdomLibraryTitle: "Learning Library",
+  sacredWisdomQ1: "What is today's Parashah?",
+  sacredWisdomQ2: "Explain today's Daf Yomi",
+  sacredWisdomQ3: "When is candle lighting this Shabbat?",
+  sacredWisdomQ4: "What is the meaning of the Shema?",
+  sacredWisdomQ5: "Tell me about the Bnei Menashe journey",
+  sacredWisdomQ6: "What is Havdalah and how is it observed?",
+  sacredWisdomQ7: "Explain the significance of Shabbat",
+  sacredWisdomQ8: "Who are the Bnei Menashe?",
+  sacredWisdomTopicJudaism: "Judaism",
+  sacredWisdomTopicHebrew: "Hebrew",
+  sacredWisdomTopicPrayer: "Prayer",
+  sacredWisdomTopicTorah: "Torah",
+  sacredWisdomTopicBneiMenashe: "Bnei Menashe",
+  sacredWisdomTopicCalendar: "Calendar",
+  sacredWisdomTopicHistory: "History",
+
+  settingsAlertOk: "OK",
+  settingsAlertCancel: "Cancel",
+  settingsAlertNotifBlockedTitle: "Notifications Blocked",
+  settingsAlertNotifBlockedMsg: "Please enable notifications for Menashe Calendar in your device settings to receive alerts.",
+  settingsAlertScheduledTitle: "Done",
+  settingsAlertScheduledMsg: "{n} notifications scheduled on your device.",
+  settingsAlertPermDeniedTitle: "Permission Denied",
+  settingsAlertPermDeniedMsg: "Could not enable notifications. Check your device settings.",
+  settingsAlertServerPushTitle: "Server Push Enabled",
+  settingsAlertServerPushMsg: "You'll receive Shabbat and holiday reminders from the server even when the app is closed.",
+  settingsAlertErrorTitle: "Error",
+  settingsAlertServerPushErrMsg: "Failed to update server push settings.",
+  settingsAlertTestSentTitle: "Test Sent",
+  settingsAlertTestSentMsg: "A test push notification was sent from the server. It should arrive shortly.",
+  settingsAlertTestFailMsg: "Failed to send test push.",
+  settingsAlertSignOutTitle: "Sign Out",
+  settingsAlertSignOutMsg: "Are you sure you want to sign out?",
 };
 
 export const sharedTk: SharedTranslations = {
@@ -1272,6 +1365,51 @@ export const sharedTk: SharedTranslations = {
   txEditorGroupSettings: "Siam Dan",
   txEditorGroupFab: "Mipil Inn",
   txEditorNote: "Tip: Thadou Kuki mode on siam la (Siam Dan → Thu) nakin na siam zawng en theih.",
+
+  commJustNow: "Tunah taka",
+  commMinAgo: "{n}m a hla",
+  commHourAgo: "{n}h a hla",
+  commDayAgo: "{n}ni a hla",
+
+  sacredWisdomTitle: "Thu Thianghlim",
+  sacredWisdomTagline: "Zir. Zawh. Hmu.",
+  sacredWisdomPlaceholder: "Rav Menashe-ah na zawh duh zawng zawh rawh…",
+  sacredWisdomSuggestedTitle: "Zawh Thiam Dan",
+  sacredWisdomContinueTitle: "Zir Zel",
+  sacredWisdomLibraryTitle: "Zirna Inn",
+  sacredWisdomQ1: "Nizan Parashah engzat am ni?",
+  sacredWisdomQ2: "Nizan Daf Yomi explain siam rawh",
+  sacredWisdomQ3: "Shabbat katni mei hunlai engzat am ni?",
+  sacredWisdomQ4: "Shema meaning engzat am ni?",
+  sacredWisdomQ5: "Bnei Menashe zuangthu hrilh sak rawh",
+  sacredWisdomQ6: "Havdalah engzat ni leh entir dan eng am ni?",
+  sacredWisdomQ7: "Shabbat pawimawh dan explain siam rawh",
+  sacredWisdomQ8: "Bnei Menashe te heng an ni?",
+  sacredWisdomTopicJudaism: "Judah Thu",
+  sacredWisdomTopicHebrew: "Hebrew",
+  sacredWisdomTopicPrayer: "Thu Dawt",
+  sacredWisdomTopicTorah: "Torah",
+  sacredWisdomTopicBneiMenashe: "Bnei Menashe",
+  sacredWisdomTopicCalendar: "Ni Thu",
+  sacredWisdomTopicHistory: "History",
+
+  settingsAlertOk: "Aw",
+  settingsAlertCancel: "Cancel",
+  settingsAlertNotifBlockedTitle: "Hlabu a block",
+  settingsAlertNotifBlockedMsg: "Menashe Calendar-a hlabu dawng theihnan device siam dan ah app hlabu on rawh.",
+  settingsAlertScheduledTitle: "Zo Tawh",
+  settingsAlertScheduledMsg: "{n} hlabu na device-ah a rêl tawh.",
+  settingsAlertPermDeniedTitle: "Siamsak Theilo",
+  settingsAlertPermDeniedMsg: "Hlabu on theilo. Device siam dan en rawh.",
+  settingsAlertServerPushTitle: "Server Push On",
+  settingsAlertServerPushMsg: "App a tawp emaw, Shabbat leh ni thianghlim hlabu server lam pan dawng a ni ding.",
+  settingsAlertErrorTitle: "Thil Dang",
+  settingsAlertServerPushErrMsg: "Server push siam theilo.",
+  settingsAlertTestSentTitle: "Test Thawn Zo",
+  settingsAlertTestSentMsg: "Test hlabu server lam pan thawn tawh. A tlang zel ang.",
+  settingsAlertTestFailMsg: "Test hlabu thawn theilo.",
+  settingsAlertSignOutTitle: "Tawp Ta",
+  settingsAlertSignOutMsg: "Tawp duh am?",
 };
 
 const sharedTranslations: Record<Lang, SharedTranslations> = { en: sharedEn, tk: sharedTk };
