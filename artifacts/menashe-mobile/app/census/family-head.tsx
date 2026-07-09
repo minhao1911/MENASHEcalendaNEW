@@ -10,9 +10,11 @@
  *   ✓ All UI text via useLanguage()
  *   ✓ Proper accessibilityRole / accessibilityLabel on every interactive element
  *   ✓ No hardcoded English-only strings in JSX
+ *   ✓ Draft persistence via AsyncStorage (censusStore.saveDraft/loadDraft)
+ *   ✓ Inline step validation before proceeding
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -40,15 +42,36 @@ import {
   SEXES,
 } from "@workspace/shared-core/census";
 import type { AliyahStatus, MaritalStatus, Sex } from "@workspace/shared-core/census";
-import { setHead } from "@/lib/censusStore";
+import { setHead, loadDraft, saveDraft } from "@/lib/censusStore";
 
 const GOLD = "#d4a843";
+const ERR  = "#c0392b";
 
 function haptic() {
   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
 
-// ── Label helper ─────────────────────────────────────────────────────────────
+// ── Validation helpers ────────────────────────────────────────────────────────
+
+function isValidDateString(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s);
+  return !isNaN(d.getTime());
+}
+
+function isFutureDate(s: string): boolean {
+  return new Date(s) > new Date();
+}
+
+function isValidYear(s: string): boolean {
+  return /^\d{4}$/.test(s);
+}
+
+function isFutureYear(s: string): boolean {
+  return parseInt(s, 10) > new Date().getFullYear();
+}
+
+// ── Label helpers ─────────────────────────────────────────────────────────────
 
 function aliyahLabel(s: AliyahStatus): string {
   switch (s) {
@@ -84,7 +107,7 @@ function FieldLabel({
 }
 
 function TextRow({
-  label, value, onChangeText, placeholder, keyboardType, required, colors,
+  label, value, onChangeText, placeholder, keyboardType, required, colors, error,
 }: {
   label: string;
   value: string;
@@ -93,6 +116,7 @@ function TextRow({
   keyboardType?: "default" | "email-address" | "numeric";
   required?: boolean;
   colors: ReturnType<typeof useColors>;
+  error?: string;
 }) {
   return (
     <View style={styles.fieldWrap}>
@@ -105,11 +129,18 @@ function TextRow({
         keyboardType={keyboardType ?? "default"}
         style={[
           styles.input,
-          { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground },
+          {
+            backgroundColor: colors.card,
+            borderColor: error ? ERR : colors.border,
+            color: colors.foreground,
+          },
         ]}
         accessibilityLabel={label}
         accessibilityRequired={required}
       />
+      {!!error && (
+        <Text style={styles.errorText}>{error}</Text>
+      )}
     </View>
   );
 }
@@ -198,7 +229,113 @@ export default function FamilyHeadScreen() {
   const [aliyahStatus, setAliyahStatus] = useState<AliyahStatus>("unknown");
 
   const [saveDone, setSaveDone] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [errors, setErrors]     = useState<Record<string, string>>({});
+
+  // ── Load draft on mount ───────────────────────────────────────────────────
+  const draftLoaded = useRef(false);
+
+  useEffect(() => {
+    loadDraft().then((draft) => {
+      if (draft?.head && !draftLoaded.current) {
+        draftLoaded.current = true;
+        const h = draft.head;
+        setSurname(h.surname);
+        setNamePerPassport(h.namePerPassport);
+        setHebrewName(h.hebrewName);
+        setSex(h.sex || "");
+        setMaritalStatus(h.maritalStatus || "");
+        setDob(h.dob);
+        setFatherName(h.fatherName);
+        setMotherName(h.motherName);
+        setDateOfJudaismPractice(h.dateOfJudaismPractice);
+        setPassportNo(h.passportNo);
+        setPassportIssueDate(h.passportIssueDate);
+        setPassportExpiryDate(h.passportExpiryDate);
+        setAliyahStatus(h.aliyahStatus);
+      }
+    });
+  }, []);
+
+  // ── Auto-save draft (debounced 800 ms) ────────────────────────────────────
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      setHead({
+        surname:               surname.trim(),
+        namePerPassport:       namePerPassport.trim(),
+        hebrewName:            hebrewName.trim(),
+        sex:                   sex as Sex,
+        maritalStatus:         maritalStatus as MaritalStatus,
+        dob:                   dob.trim(),
+        fatherName:            fatherName.trim(),
+        motherName:            motherName.trim(),
+        dateOfJudaismPractice: dateOfJudaismPractice.trim(),
+        passportNo:            passportNo.trim(),
+        passportIssueDate:     passportIssueDate.trim(),
+        passportExpiryDate:    passportExpiryDate.trim(),
+        aliyahStatus,
+      });
+      saveDraft();
+    }, 800);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [
+    surname, namePerPassport, hebrewName, sex, maritalStatus, dob,
+    fatherName, motherName, dateOfJudaismPractice,
+    passportNo, passportIssueDate, passportExpiryDate, aliyahStatus,
+  ]);
+
+  // ── Validation ────────────────────────────────────────────────────────────
+
+  function validate(): boolean {
+    const errs: Record<string, string> = {};
+
+    if (!namePerPassport.trim()) {
+      errs.namePerPassport = t.censusNameRequired;
+    }
+    if (!surname.trim()) {
+      errs.surname = t.censusErrSurnameRequired;
+    }
+
+    const dobVal = dob.trim();
+    if (dobVal) {
+      if (!isValidDateString(dobVal)) {
+        errs.dob = t.censusErrDobFormat;
+      } else if (isFutureDate(dobVal)) {
+        errs.dob = t.censusErrDobFuture;
+      }
+    }
+
+    const judaismVal = dateOfJudaismPractice.trim();
+    if (judaismVal) {
+      if (!isValidYear(judaismVal)) {
+        errs.dateOfJudaismPractice = t.censusErrYearFormat;
+      } else if (isFutureYear(judaismVal)) {
+        errs.dateOfJudaismPractice = t.censusErrYearFuture;
+      }
+    }
+
+    const issueVal  = passportIssueDate.trim();
+    const expiryVal = passportExpiryDate.trim();
+
+    if (issueVal && !isValidDateString(issueVal)) {
+      errs.passportIssueDate = t.censusErrPassportDateFormat;
+    }
+    if (expiryVal && !isValidDateString(expiryVal)) {
+      errs.passportExpiryDate = t.censusErrPassportDateFormat;
+    }
+    if (!errs.passportIssueDate && !errs.passportExpiryDate &&
+        issueVal && expiryVal && expiryVal <= issueVal) {
+      errs.passportExpiryDate = t.censusErrExpiryAfterIssue;
+    }
+
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
 
   function buildCensusRow(): CensusRow {
     return {
@@ -218,7 +355,7 @@ export default function FamilyHeadScreen() {
   }
 
   function persistToStore() {
-    const row = buildCensusRow();
+    const _row = buildCensusRow();
     setHead({
       surname:               surname.trim(),
       namePerPassport:       namePerPassport.trim(),
@@ -237,14 +374,11 @@ export default function FamilyHeadScreen() {
   }
 
   function handleSaveDraft() {
-    if (!namePerPassport.trim()) {
-      Alert.alert(t.censusValidationTitle, t.censusNameRequired);
-      return;
-    }
     haptic();
     setSaving(true);
     try {
       persistToStore();
+      saveDraft();
       setSaveDone(true);
     } finally {
       setSaving(false);
@@ -252,14 +386,15 @@ export default function FamilyHeadScreen() {
   }
 
   function handleSubmit() {
-    if (!namePerPassport.trim()) {
-      Alert.alert(t.censusValidationTitle, t.censusNameRequired);
+    if (!validate()) {
+      haptic();
       return;
     }
     haptic();
     setSaving(true);
     try {
       persistToStore();
+      saveDraft();
       router.push("/census/family-members");
     } finally {
       setSaving(false);
@@ -329,7 +464,9 @@ export default function FamilyHeadScreen() {
             label={t.censusFieldSurname}
             value={surname}
             onChangeText={setSurname}
+            required
             colors={colors}
+            error={errors.surname}
           />
           <TextRow
             label={t.censusFieldNamePassport}
@@ -337,6 +474,7 @@ export default function FamilyHeadScreen() {
             onChangeText={setNamePerPassport}
             required
             colors={colors}
+            error={errors.namePerPassport}
           />
           <TextRow
             label={t.censusFieldHebrewName}
@@ -366,6 +504,7 @@ export default function FamilyHeadScreen() {
             onChangeText={setDob}
             placeholder="YYYY-MM-DD"
             colors={colors}
+            error={errors.dob}
           />
 
           {/* ── §2 Family ── */}
@@ -389,6 +528,7 @@ export default function FamilyHeadScreen() {
             onChangeText={setDateOfJudaismPractice}
             placeholder="YYYY"
             colors={colors}
+            error={errors.dateOfJudaismPractice}
           />
 
           {/* ── §3 Aliyah ── */}
@@ -419,6 +559,7 @@ export default function FamilyHeadScreen() {
             onChangeText={setPassportIssueDate}
             placeholder="YYYY-MM-DD"
             colors={colors}
+            error={errors.passportIssueDate}
           />
           <TextRow
             label={t.censusFieldPassportExpiry}
@@ -426,6 +567,7 @@ export default function FamilyHeadScreen() {
             onChangeText={setPassportExpiryDate}
             placeholder="YYYY-MM-DD"
             colors={colors}
+            error={errors.passportExpiryDate}
           />
 
           {/* ── Privacy note ── */}
@@ -454,7 +596,7 @@ export default function FamilyHeadScreen() {
                 <ActivityIndicator size="small" color="#1a1100" />
               ) : (
                 <>
-                  <Feather name="send" size={17} color="#1a1100" />
+                  <Feather name="arrow-right" size={17} color="#1a1100" />
                   <Text style={styles.submitBtnText}>{t.censusSubmitCta}</Text>
                 </>
               )}
@@ -554,6 +696,12 @@ const styles = StyleSheet.create({
     paddingVertical: SPACE[3],
     fontSize: TEXT.base,
     fontWeight: "400",
+  },
+  errorText: {
+    color: ERR,
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 3,
   },
 
   chipRow: {

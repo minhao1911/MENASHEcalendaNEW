@@ -18,10 +18,11 @@
  *   ✓ No AsyncStorage    ✓ Web untouched
  */
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   Animated,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -520,21 +521,29 @@ export default function JourneyScreen() {
   const [announcements, setAnnouncements] = React.useState<MobileAnnouncement[]>([]);
   const [yahrzeit, setYahrzeit]           = React.useState<CommunityYahrzeitEntry[]>([]);
   const [communityLoading, setCommunityLoading] = React.useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  React.useEffect(() => {
-    Promise.allSettled([
+  const refreshCommunity = useCallback(async () => {
+    const [evRes, prRes, anRes, yzRes] = await Promise.allSettled([
       fetchCommunityEvents(),
       fetchPrayerRequests(),
       fetchAnnouncements(),
       fetchCommunityYahrzeit(),
-    ]).then(([evRes, prRes, anRes, yzRes]) => {
-      if (evRes.status === "fulfilled") setEvents(evRes.value);
-      if (prRes.status === "fulfilled") setPrayerReqs(prRes.value);
-      if (anRes.status === "fulfilled") setAnnouncements(anRes.value);
-      if (yzRes.status === "fulfilled") setYahrzeit(yzRes.value);
-      setCommunityLoading(false);
-    });
+    ]);
+    if (evRes.status === "fulfilled") setEvents(evRes.value);
+    if (prRes.status === "fulfilled") setPrayerReqs(prRes.value);
+    if (anRes.status === "fulfilled") setAnnouncements(anRes.value);
+    if (yzRes.status === "fulfilled") setYahrzeit(yzRes.value);
+    setCommunityLoading(false);
   }, []);
+
+  React.useEffect(() => { refreshCommunity(); }, [refreshCommunity]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshCommunity();
+    setRefreshing(false);
+  }, [refreshCommunity]);
 
   // ── Derived community values ───────────────────────────────────────────────
   const todayIso  = today.toISOString().slice(0, 10);
@@ -623,6 +632,9 @@ export default function JourneyScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
         accessibilityLabel="Menashe Journey"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
 
         {/* ══ §1  GREETING ════════════════════════════════════════════════════ */}

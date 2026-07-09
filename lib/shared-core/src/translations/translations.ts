@@ -101,6 +101,17 @@ export interface SharedTranslations {
   censusNameRequired: string;
   censusErrorTitle: string;
   censusErrorBody: string;
+  censusErrSurnameRequired: string;
+  censusErrDobFormat: string;
+  censusErrDobFuture: string;
+  censusErrYearFormat: string;
+  censusErrYearFuture: string;
+  censusErrPassportDateFormat: string;
+  censusErrExpiryAfterIssue: string;
+  censusDiscardDraft: string;
+  censusDiscardDraftTitle: string;
+  censusDiscardDraftBody: string;
+  censusDiscardDraftConfirm: string;
 
   /* ── Home ── */
   homeToday: string;
@@ -615,6 +626,17 @@ export const sharedEn: SharedTranslations = {
   censusNameRequired: "Please enter your full name as it appears on your passport.",
   censusErrorTitle: "Could Not Save",
   censusErrorBody: "Please check your connection and try again.",
+  censusErrSurnameRequired: "Surname is required.",
+  censusErrDobFormat: "Date of birth must be in YYYY-MM-DD format.",
+  censusErrDobFuture: "Date of birth cannot be in the future.",
+  censusErrYearFormat: "Enter a 4-digit year (e.g. 1995).",
+  censusErrYearFuture: "Year cannot be in the future.",
+  censusErrPassportDateFormat: "Passport date must be in YYYY-MM-DD format.",
+  censusErrExpiryAfterIssue: "Expiry date must be after issue date.",
+  censusDiscardDraft: "Discard Draft",
+  censusDiscardDraftTitle: "Discard Draft?",
+  censusDiscardDraftBody: "All progress will be lost. This cannot be undone.",
+  censusDiscardDraftConfirm: "Discard",
 
   navSiddur: "Siddur",
 
@@ -1111,6 +1133,17 @@ export const sharedTk: SharedTranslations = {
   censusNameRequired: "Hming passport ang ziakin dah rawh.",
   censusErrorTitle: "Siamsak Theilo",
   censusErrorBody: "Internet connect khawia, tih leh rawh.",
+  censusErrSurnameRequired: "Pau hming dah ngai.",
+  censusErrDobFormat: "Nilaite YYYY-MM-DD format in dah rawh.",
+  censusErrDobFuture: "Nite lak hnuah nilaite dah theilo.",
+  censusErrYearFormat: "Kum 4 dik in dah rawh (e.g. 1995).",
+  censusErrYearFuture: "Kum lak hnuah dah theilo.",
+  censusErrPassportDateFormat: "Passport nilaite YYYY-MM-DD format in dah rawh.",
+  censusErrExpiryAfterIssue: "Tawppui nite issue nite hnuah ni ngai.",
+  censusDiscardDraft: "Draft Hon Phal",
+  censusDiscardDraftTitle: "Draft Hon Phal Maw?",
+  censusDiscardDraftBody: "Ziakna zawng zawng chhuah dawn. Tih leh theilo.",
+  censusDiscardDraftConfirm: "Hon Phal",
 
   navSiddur: "Thu Ziak",
 

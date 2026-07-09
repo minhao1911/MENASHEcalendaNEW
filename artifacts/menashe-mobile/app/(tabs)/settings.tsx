@@ -182,6 +182,9 @@ export default function SettingsScreen() {
               style={{ flex: 1, alignItems: "center" }}
               onPress={() => handleSetTheme("dark")}
               activeOpacity={0.75}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: theme === "dark" }}
+              accessibilityLabel={t.settingsThemeMidnight}
             >
               <View style={{
                 borderRadius: 14, overflow: "hidden", borderWidth: 2,
@@ -216,6 +219,9 @@ export default function SettingsScreen() {
               style={{ flex: 1, alignItems: "center" }}
               onPress={() => handleSetTheme("light")}
               activeOpacity={0.75}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: theme === "light" }}
+              accessibilityLabel={t.settingsThemeParchment}
             >
               <View style={{
                 borderRadius: 14, overflow: "hidden", borderWidth: 2,
@@ -250,6 +256,9 @@ export default function SettingsScreen() {
               style={{ flex: 1, alignItems: "center" }}
               onPress={() => handleSetTheme("sapphire")}
               activeOpacity={0.75}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: theme === "sapphire" }}
+              accessibilityLabel={t.settingsThemeSapphire}
             >
               <View style={{
                 borderRadius: 14, overflow: "hidden", borderWidth: 2,

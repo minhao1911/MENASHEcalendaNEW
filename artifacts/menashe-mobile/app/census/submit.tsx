@@ -24,7 +24,7 @@ import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
 import { SPACE, TEXT, RADIUS } from "@/constants/colors";
-import { getHead, getMembers, clearCensus } from "@/lib/censusStore";
+import { getHead, getMembers, clearCensus, clearDraft } from "@/lib/censusStore";
 import { saveBranch } from "@workspace/shared-core/census";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -123,6 +123,7 @@ export default function SubmitScreen() {
       );
 
       clearCensus();
+      clearDraft();
       router.replace("/census/success" as never);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Submission failed. Please try again.";

@@ -952,7 +952,7 @@ export default function HomeScreen() {
           })}
           onPress={() => router.push("/(tabs)/calendar")}
           accessibilityLabel={`${t.homeUpcomingHoliday}${nextHoliday ? ": " + nextHoliday.name : ""}`}
-          accessibilityRole="link"
+          accessibilityRole="button"
         >
           <View style={{
             width: 46, height: 46, borderRadius: 23,
@@ -992,7 +992,7 @@ export default function HomeScreen() {
           })}
           onPress={() => router.push("/(tabs)/community")}
           accessibilityLabel={t.homeCommunityPreviewTitle}
-          accessibilityRole="link"
+          accessibilityRole="button"
         >
           <View style={{
             width: 46, height: 46, borderRadius: 23,

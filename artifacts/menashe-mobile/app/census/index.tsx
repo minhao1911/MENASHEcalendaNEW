@@ -8,8 +8,9 @@
  *         warm neutral palette · MMDL token-driven colours
  */
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
+  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -25,6 +26,8 @@ import * as Haptics from "expo-haptics";
 import { useThemeTokens } from "@/src/mobile/design-system";
 import type { ColorTokens } from "@/src/mobile/design-system";
 import { MenasheButton } from "@/src/mobile/components/foundation/MenasheButton";
+import { hasDraft, clearDraft } from "@/lib/censusStore";
+import { useLanguage } from "@/context/LanguageContext";
 
 function haptic() {
   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -61,10 +64,36 @@ function InfoCard({
 export default function CensusScreen() {
   const { colors, sp } = useThemeTokens();
   const insets = useSafeAreaInsets();
+  const { t }  = useLanguage();
+
+  const [draftExists, setDraftExists] = useState(false);
+
+  useEffect(() => {
+    hasDraft().then(setDraftExists);
+  }, []);
 
   function handleBegin() {
     haptic();
     router.push("/census/family-head");
+  }
+
+  function handleDiscardDraft() {
+    haptic();
+    Alert.alert(
+      t.censusDiscardDraftTitle,
+      t.censusDiscardDraftBody,
+      [
+        { text: t.censusCancelBtn ?? "Cancel", style: "cancel" },
+        {
+          text: t.censusDiscardDraftConfirm,
+          style: "destructive",
+          onPress: async () => {
+            await clearDraft();
+            setDraftExists(false);
+          },
+        },
+      ],
+    );
   }
 
   return (
@@ -184,6 +213,21 @@ export default function CensusScreen() {
             onPress={handleBegin}
             accessibilityLabel="Begin Census — register as family head"
           />
+
+          {draftExists && (
+            <TouchableOpacity
+              onPress={handleDiscardDraft}
+              style={[styles.discardBtn, { borderColor: "#c0392b" }]}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={t.censusDiscardDraft}
+            >
+              <Feather name="trash-2" size={14} color="#c0392b" />
+              <Text style={[styles.discardBtnText, { color: "#c0392b" }]}>
+                {t.censusDiscardDraft}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.hintRow}>
             <Feather name="info" size={13} color={colors.mutedForeground as string} />
@@ -318,6 +362,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 24,
     gap: 12,
+  },
+  discardBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 9999,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+  },
+  discardBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   hintRow: {
     flexDirection: "row",

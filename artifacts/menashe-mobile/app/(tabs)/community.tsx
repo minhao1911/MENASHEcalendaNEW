@@ -10,7 +10,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Animated, View, Text, ScrollView, TouchableOpacity, Platform,
+  Animated, View, Text, ScrollView, TouchableOpacity, Platform, RefreshControl,
   StyleSheet,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -95,8 +95,9 @@ export default function CommunityScreen() {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [memorials, setMemorials] = useState<CommunityYahrzeitEntry[]>([]);
   const [events, setEvents] = useState<CommunityEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hubAmens, setHubAmens] = useState<Set<string>>(new Set());
+  const [loading, setLoading]     = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hubAmens, setHubAmens]   = useState<Set<string>>(new Set());
 
   // MEP-005: content entrance animation
   const cEnter = useEntrance(40);
@@ -125,6 +126,12 @@ export default function CommunityScreen() {
     setLoading(false);
   }, []);
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  }, [refresh]);
+
   useEffect(() => {
     refresh();
     const iv = setInterval(refresh, 60_000);
@@ -142,6 +149,9 @@ export default function CommunityScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
         accessibilityLabel="Community hub"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
         {/* ── Community Hero ── */}
         <View style={[styles.hero, { paddingTop: topPad + sp[4] }]}>
