@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  AccessibilityInfo, ImageBackground, ScrollView, StyleSheet,
+  AccessibilityInfo, Animated, ImageBackground, Pressable, ScrollView, StyleSheet,
   Text, TouchableOpacity, View, Platform,
 } from "react-native";
+import { useEntrance } from "@/src/mobile/lib/useEntrance";
+import { usePressScale } from "@/src/mobile/lib/usePressScale";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -107,6 +109,16 @@ export default function ZmanimScreen() {
     ...shadow.level1,
   };
 
+  // MEP-005: section entrance stagger — 40ms per section
+  const z0 = useEntrance(0);
+  const z1 = useEntrance(40);
+  const z2 = useEntrance(80);
+  const z3 = useEntrance(120);
+
+  // MEP-005: press scale for date navigation buttons (separate instances per button)
+  const { scale: prevScale, onPressIn: prevPressIn, onPressOut: prevPressOut } = usePressScale(0.88);
+  const { scale: nextScale, onPressIn: nextPressIn, onPressOut: nextPressOut } = usePressScale(0.88);
+
   /* Three key zmanim for the stat row */
   const sunriseTime  = formatTime(zmanim.sunrise  as Date | null, location.tz);
   const middayTime   = formatTime(zmanim.chatzot  as Date | null, location.tz);
@@ -119,6 +131,7 @@ export default function ZmanimScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* ── Premium Sacred Time Hero ── */}
+      <Animated.View style={z0}>
       <LinearGradient
         colors={heroGradient}
         start={{ x: 0, y: 0 }}
@@ -176,8 +189,10 @@ export default function ZmanimScreen() {
           </TouchableOpacity>
         )}
       </LinearGradient>
+      </Animated.View>
 
       {/* ── DATE CARD — reference image style ── */}
+      <Animated.View style={z1}>
       <SectionTitle eyebrow="DATE" style={{ marginHorizontal: sp[4], marginTop: sp[4] }} />
 
       <View style={[{ marginHorizontal: sp[4], marginBottom: sp[4], borderRadius: rd.lg, overflow: "hidden" }, shadow.level1]}>
@@ -202,22 +217,32 @@ export default function ZmanimScreen() {
                 </Text>
               </View>
               <View style={styles.dateNavRow}>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => setOffset(o => o - 1)}
+                  onPressIn={prevPressIn}
+                  onPressOut={prevPressOut}
                   style={[styles.dateNavBtn, { backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.14)" }]}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   accessibilityLabel="Previous day"
+                  accessibilityRole="button"
                 >
-                  <Feather name="chevron-left" size={14} color="rgba(255,255,255,0.75)" />
-                </TouchableOpacity>
-                <TouchableOpacity
+                  <Animated.View style={{ transform: [{ scale: prevScale }] }}>
+                    <Feather name="chevron-left" size={14} color="rgba(255,255,255,0.75)" />
+                  </Animated.View>
+                </Pressable>
+                <Pressable
                   onPress={() => setOffset(o => o + 1)}
+                  onPressIn={nextPressIn}
+                  onPressOut={nextPressOut}
                   style={[styles.dateNavBtn, { backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.14)" }]}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   accessibilityLabel="Next day"
+                  accessibilityRole="button"
                 >
-                  <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.75)" />
-                </TouchableOpacity>
+                  <Animated.View style={{ transform: [{ scale: nextScale }] }}>
+                    <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.75)" />
+                  </Animated.View>
+                </Pressable>
               </View>
             </View>
 
@@ -247,8 +272,10 @@ export default function ZmanimScreen() {
           </LinearGradient>
         </ImageBackground>
       </View>
+      </Animated.View>
 
       {/* ── Section: Halachic Hour ── */}
+      <Animated.View style={z2}>
       <SectionTitle eyebrow="HALACHIC HOUR" style={{ marginHorizontal: sp[4] }} />
       <View style={[styles.shaahCard, card, { marginHorizontal: sp[4], marginBottom: sp[4] }]}>
         <View style={[styles.shaahAccent, { backgroundColor: colors.primary }]} />
@@ -265,8 +292,10 @@ export default function ZmanimScreen() {
           {mins}m {secs}s
         </Text>
       </View>
+      </Animated.View>
 
       {/* ── Section: Prayer Times ── */}
+      <Animated.View style={z3}>
       <SectionTitle eyebrow="PRAYER TIMES" style={{ marginHorizontal: sp[4] }} />
       <View style={[styles.listCard, card, { marginHorizontal: sp[4] }]}>
         {visibleZmanim.map((z, i) => {
@@ -302,6 +331,7 @@ export default function ZmanimScreen() {
           );
         })}
       </View>
+      </Animated.View>
     </ScrollView>
   );
 }

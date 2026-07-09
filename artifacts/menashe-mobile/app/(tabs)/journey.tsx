@@ -20,6 +20,7 @@
 
 import React, { useMemo } from "react";
 import {
+  Animated,
   Platform,
   ScrollView,
   StyleSheet,
@@ -31,7 +32,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import { hapticLight } from "@/src/mobile/lib/haptics";
+import { useEntrance } from "@/src/mobile/lib/useEntrance";
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
@@ -482,12 +484,8 @@ function getContextualReflection(
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function haptic() {
-  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-}
-
 function go(path: string) {
-  haptic();
+  hapticLight();
   router.push(path as any);
 }
 
@@ -646,6 +644,15 @@ export default function JourneyScreen() {
 
   const L = lang === "tk" ? "tk" : "en";
 
+  // MEP-005: section entrance stagger — 40ms per section
+  const j0 = useEntrance(0);
+  const j1 = useEntrance(40);
+  const j2 = useEntrance(80);
+  const j3 = useEntrance(120);
+  const j4 = useEntrance(160);
+  const j5 = useEntrance(200);
+  const j6 = useEntrance(240);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
@@ -655,7 +662,7 @@ export default function JourneyScreen() {
       >
 
         {/* ══ §1  GREETING ════════════════════════════════════════════════════ */}
-        <View style={[styles.greetingSection, { paddingTop: topPad + sp[4] }]}>
+        <Animated.View style={[styles.greetingSection, { paddingTop: topPad + sp[4] }, j0]}>
           <View
             style={[styles.starAccent, { backgroundColor: GOLD + "18", borderColor: GOLD + "38" }]}
             accessible={false}
@@ -676,11 +683,12 @@ export default function JourneyScreen() {
           <Text style={[styles.gregDateText, { color: colors.mutedForeground }]}>{gregStr}</Text>
 
           <View style={[styles.greetingDivider, { backgroundColor: GOLD }]} />
-        </View>
+        </Animated.View>
 
         <View style={{ paddingHorizontal: sp[4] }}>
 
           {/* ══ §5  TODAY'S RECOMMENDATION — priority engine ═════════════════ */}
+          <Animated.View style={j1}>
           <SectionTitle title={t.journeyTodaysRecommendation} />
 
           <TouchableOpacity
@@ -720,7 +728,10 @@ export default function JourneyScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
+          </Animated.View>
+
           {/* ══ §1  TODAY'S LEARNING ═══════════════════════════════════════════ */}
+          <Animated.View style={j2}>
           <SectionTitle title={t.journeyTodaysLearning} />
 
           <TouchableOpacity
@@ -765,7 +776,10 @@ export default function JourneyScreen() {
             ) : null}
           </TouchableOpacity>
 
+          </Animated.View>
+
           {/* ══ §2  TODAY'S SACRED TIME ════════════════════════════════════════ */}
+          <Animated.View style={j3}>
           <SectionTitle title={t.journeyTodaysSacredTime} />
 
           <TouchableOpacity
@@ -827,7 +841,10 @@ export default function JourneyScreen() {
             )}
           </TouchableOpacity>
 
+          </Animated.View>
+
           {/* ══ §3  COMMUNITY TODAY ════════════════════════════════════════════ */}
+          <Animated.View style={j4}>
           <SectionTitle title={t.journeyCommunityToday} />
 
           <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, gap: 0 }]}>
@@ -946,7 +963,10 @@ export default function JourneyScreen() {
             </View>
           </View>
 
+          </Animated.View>
+
           {/* ══ §4  FAMILY JOURNEY — census + memorials ════════════════════════ */}
+          <Animated.View style={j5}>
           <SectionTitle title={t.journeyFamilyJourney} />
 
           {censusLoading ? (
@@ -1102,7 +1122,10 @@ export default function JourneyScreen() {
             </View>
           </TouchableOpacity>
 
+          </Animated.View>
+
           {/* ══ §6  REFLECTION — day-context aware ══════════════════════════════ */}
+          <Animated.View style={j6}>
           <SectionTitle title={t.journeyReflectionTitle} />
 
           <View
@@ -1121,6 +1144,8 @@ export default function JourneyScreen() {
               — {reflection.source}
             </Text>
           </View>
+
+          </Animated.View>
 
         </View>
       </ScrollView>

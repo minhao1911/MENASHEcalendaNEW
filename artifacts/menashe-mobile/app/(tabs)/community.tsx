@@ -10,17 +10,18 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, Platform,
-  ActivityIndicator, StyleSheet,
+  Animated, View, Text, ScrollView, TouchableOpacity, Platform,
+  StyleSheet,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
-
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { SectionTitle } from "@/src/mobile/components/display";
 import { MenasheButton } from "@/src/mobile/components/foundation/MenasheButton";
+import { hapticLight } from "@/src/mobile/lib/haptics";
+import { useEntrance } from "@/src/mobile/lib/useEntrance";
+import { SkeletonCard } from "@/src/mobile/components/feedback/LoadingState";
 import type { ColorTokens } from "@/src/mobile/design-system";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
@@ -55,12 +56,8 @@ function fmtAgo(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function haptic() {
-  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-}
-
 function navigate(path: string) {
-  haptic();
+  hapticLight();
   router.push(path as any);
 }
 
@@ -117,9 +114,12 @@ export default function CommunityScreen() {
   const [loading, setLoading] = useState(true);
   const [hubAmens, setHubAmens] = useState<Set<string>>(new Set());
 
+  // MEP-005: content entrance animation
+  const cEnter = useEntrance(40);
+
   function handleHubAmen(id: string) {
     if (hubAmens.has(id)) return;
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    hapticLight();
     setHubAmens((prev) => new Set(prev).add(id));
     setPrayers((prev) =>
       prev.map((r) => r.id === id ? { ...r, amens: r.amens + 1 } : r)
@@ -205,11 +205,14 @@ export default function CommunityScreen() {
         </View>
 
         {loading ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator color={colors.primary} size="large" />
+          <View style={{ paddingHorizontal: sp[4], gap: 16, marginTop: 8 }}>
+            <SkeletonCard lines={3} />
+            <SkeletonCard lines={3} />
+            <SkeletonCard lines={3} />
+            <SkeletonCard lines={3} />
           </View>
         ) : (
-          <View style={{ paddingHorizontal: sp[4] }}>
+          <Animated.View style={[{ paddingHorizontal: sp[4] }, cEnter]}>
 
             {/* ═══ 1. ANNOUNCEMENTS ═══ */}
             <SectionTitle
@@ -702,7 +705,8 @@ export default function CommunityScreen() {
             </View>
             <Feather name="arrow-right" size={18} color={colors.primary as string} style={{ alignSelf: "center", marginLeft: sp[2] }} />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
+        )}
 
       </ScrollView>
     </View>

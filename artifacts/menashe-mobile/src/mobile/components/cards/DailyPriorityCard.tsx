@@ -25,8 +25,6 @@ import React, {
   memo,
   useState,
   useEffect,
-  useRef,
-  useCallback,
   useMemo,
 } from "react";
 import {
@@ -47,6 +45,7 @@ import { fetchCommunityYahrzeit } from "@/lib/communityApi";
 import { getHead } from "@/lib/censusStore";
 import { useApp } from "@/context/AppContext";
 import { useThemeTokens } from "@/src/mobile/design-system";
+import { usePressScale } from "@/src/mobile/lib/usePressScale";
 
 // ─── Priority slot ─────────────────────────────────────────────────────────────
 
@@ -200,30 +199,7 @@ function buildPriority(
   };
 }
 
-// ─── Press scale ───────────────────────────────────────────────────────────────
-
-function usePressScale(toValue = 0.96) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn = useCallback(
-    () =>
-      Animated.timing(scale, {
-        toValue,
-        duration: 80,
-        useNativeDriver: true,
-      }).start(),
-    [scale, toValue],
-  );
-  const onPressOut = useCallback(
-    () =>
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }).start(),
-    [scale],
-  );
-  return { scale, onPressIn, onPressOut };
-}
+// usePressScale is provided by @/src/mobile/lib/usePressScale (MEP-005)
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 

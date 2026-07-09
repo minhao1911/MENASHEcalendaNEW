@@ -60,6 +60,9 @@ import {
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { SectionTitle } from "@/src/mobile/components/display";
 import { DailyPriorityCard } from "@/src/mobile/components/cards/DailyPriorityCard";
+import { hapticLight } from "@/src/mobile/lib/haptics";
+import { useEntrance, useReducedMotion } from "@/src/mobile/lib/useEntrance";
+import { usePressScale } from "@/src/mobile/lib/usePressScale";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -158,41 +161,10 @@ const TORAH_INSIGHTS = [
   { quote: "\"Every day one must say: the world was created for my sake.\"",           source: "Sanhedrin 37a"       },
 ];
 
-// ─── Phase 12: Reduced Motion ─────────────────────────────────────────────────
-
-function useReducedMotionSafe(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduced).catch(() => {});
-    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduced);
-    return () => sub.remove();
-  }, []);
-  return reduced;
-}
-
-// ─── Phase 10: Staggered entrance (MEL motionGuide — entrance recipe) ─────────
-
-function useEntrance(delay = 0): Animated.AnimatedProps<ViewStyle> {
-  const reducedMotion = useReducedMotionSafe();
-  const opacity    = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(reducedMotion ? 0 : 14)).current;
-  useEffect(() => {
-    const duration = reducedMotion ? 0 : 420;
-    const t = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(opacity,    { toValue: 1, duration,       useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration,       useNativeDriver: true }),
-      ]).start();
-    }, reducedMotion ? 0 : delay);
-    return () => clearTimeout(t);
-  }, [delay, opacity, translateY, reducedMotion]);
-  return { opacity, transform: [{ translateY }] } as any;
-}
-
 // ─── Phase 1: Hero shimmer — fades out on mount to reveal artwork ──────────────
 
 function useHeroShimmer() {
-  const reducedMotion = useReducedMotionSafe();
+  const reducedMotion = useReducedMotion();
   const opacity = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     const t = setTimeout(() => {
@@ -205,17 +177,6 @@ function useHeroShimmer() {
     return () => clearTimeout(t);
   }, [opacity, reducedMotion]);
   return opacity;
-}
-
-// ─── Phase 10: Animated press scale ───────────────────────────────────────────
-
-function usePressScale(toValue = 0.95) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn  = useCallback(() =>
-    Animated.timing(scale, { toValue,  duration: 80,  useNativeDriver: true }).start(), [scale, toValue]);
-  const onPressOut = useCallback(() =>
-    Animated.timing(scale, { toValue: 1.0, duration: 150, useNativeDriver: true }).start(), [scale]);
-  return { scale, onPressIn, onPressOut };
 }
 
 // ─── Overline label ───────────────────────────────────────────────────────────
@@ -238,7 +199,7 @@ const PillButton = memo(function PillButton({
 }: {
   label: string; onPress: () => void; bg: string; fg: string; small?: boolean;
 }) {
-  const { scale, onPressIn, onPressOut } = usePressScale(0.94);
+  const { scale, onPressIn, onPressOut } = usePressScale(0.96);
   return (
     <Pressable
       onPress={onPress}
@@ -310,7 +271,7 @@ const QuickActionCard = memo(function QuickActionCard({
 }: {
   item: typeof QA_ITEMS[number];
 }) {
-  const { scale, onPressIn, onPressOut } = usePressScale(0.93);
+  const { scale, onPressIn, onPressOut } = usePressScale(0.96);
   return (
     <Pressable
       onPress={() => router.push(item.route as any)}
@@ -520,17 +481,17 @@ export default function HomeScreen() {
   const successColor  = colors.success;
   const sapphireBlue  = "#6382FF" as const;
 
-  // Phase 10: staggered entrance — MEL motionGuide
+  // MEP-005: staggered entrance — 40ms stagger, shared useEntrance hook
   const a0  = useEntrance(0);
-  const a1  = useEntrance(60);
-  const a2  = useEntrance(110);
-  const a3  = useEntrance(160);
-  const a4  = useEntrance(210);
-  const a5  = useEntrance(260);
-  const a6  = useEntrance(310);
-  const a7  = useEntrance(360);
-  const a8  = useEntrance(400);
-  const a9  = useEntrance(440);
+  const a1  = useEntrance(40);
+  const a2  = useEntrance(80);
+  const a3  = useEntrance(120);
+  const a4  = useEntrance(160);
+  const a5  = useEntrance(200);
+  const a6  = useEntrance(240);
+  const a7  = useEntrance(280);
+  const a8  = useEntrance(320);
+  const a9  = useEntrance(360);
 
   // Phase 1: hero shimmer
   const shimmerOpacity = useHeroShimmer();
