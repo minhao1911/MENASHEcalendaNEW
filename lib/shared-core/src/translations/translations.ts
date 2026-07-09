@@ -484,6 +484,40 @@ export interface SharedTranslations {
   settingsAlertTestFailMsg: string;
   settingsAlertSignOutTitle: string;
   settingsAlertSignOutMsg: string;
+
+  /* ── Settings — UI strings (RC-003) ── */
+  settingsThemeMidnight: string;
+  settingsThemeParchment: string;
+  settingsThemeSapphire: string;
+  settingsNotifCandleLighting: string;
+  settingsNotifHavdalah: string;
+  settingsNotifParasha: string;
+  settingsNotifHolidayAlerts: string;
+  settingsNotifPrayerReminders: string;
+  settingsNotifShabbatSub: string;
+  settingsNotifHavdalahSub: string;
+  settingsNotifParashaSub: string;
+  settingsNotifHolidaySub: string;
+  settingsNotifPrayersSub: string;
+  settingsScheduled: string;
+  settingsScheduledCount: string;
+  settingsEnableAllNotif: string;
+  settingsRescheduleNow: string;
+  settingsRescheduling: string;
+  settingsLocalNotifDesc: string;
+  settingsServerPushSection: string;
+  settingsServerPushLabel: string;
+  settingsServerPushActiveDesc: string;
+  settingsServerPushInactiveDesc: string;
+  settingsSendingPush: string;
+  settingsSendTestNotif: string;
+  settingsServerPushFullDesc: string;
+  settingsSignedIn: string;
+  settingsSignOutHint: string;
+  settingsSelectLocation: string;
+  settingsLocationUtc: string;
+  settingsYourAccount: string;
+  settingsLeadTimeSection: string;
 }
 
 export const sharedEn: SharedTranslations = {
@@ -947,6 +981,39 @@ export const sharedEn: SharedTranslations = {
   settingsAlertTestFailMsg: "Failed to send test push.",
   settingsAlertSignOutTitle: "Sign Out",
   settingsAlertSignOutMsg: "Are you sure you want to sign out?",
+
+  settingsThemeMidnight: "Midnight",
+  settingsThemeParchment: "Parchment",
+  settingsThemeSapphire: "Sapphire",
+  settingsNotifCandleLighting: "Candle Lighting",
+  settingsNotifHavdalah: "Havdalah",
+  settingsNotifParasha: "Weekly Parasha",
+  settingsNotifHolidayAlerts: "Holiday Alerts",
+  settingsNotifPrayerReminders: "Prayer Reminders",
+  settingsNotifShabbatSub: "18 min before Shabbat",
+  settingsNotifHavdalahSub: "When Shabbat ends",
+  settingsNotifParashaSub: "Friday morning reminder",
+  settingsNotifHolidaySub: "Day before each holiday",
+  settingsNotifPrayersSub: "Shacharit, Mincha, Maariv",
+  settingsScheduled: "SCHEDULED",
+  settingsScheduledCount: "{n} notifications scheduled",
+  settingsEnableAllNotif: "Enable All Notifications",
+  settingsRescheduleNow: "Reschedule Now",
+  settingsRescheduling: "Rescheduling...",
+  settingsLocalNotifDesc: "Notifications appear in your device's notification bar even when the app is closed. They are scheduled locally on your device — no internet required.",
+  settingsServerPushSection: "SERVER PUSH NOTIFICATIONS",
+  settingsServerPushLabel: "Server Push",
+  settingsServerPushActiveDesc: "Shabbat & holiday alerts delivered by server",
+  settingsServerPushInactiveDesc: "Enable to receive server-sent reminders",
+  settingsSendingPush: "Sending...",
+  settingsSendTestNotif: "Send Test Notification",
+  settingsServerPushFullDesc: "Server push delivers Shabbat candle lighting, Havdalah, Parasha, and holiday reminders directly from the Bnei Menashe servers — even if you haven't opened the app in days.",
+  settingsSignedIn: "Signed in",
+  settingsSignOutHint: "You will be returned to the sign-in screen.",
+  settingsSelectLocation: "Select Location",
+  settingsLocationUtc: "UTC offset by timezone",
+  settingsYourAccount: "Your account",
+  settingsLeadTimeSection: "LEAD TIME (PRAYERS)",
 };
 
 export const sharedTk: SharedTranslations = {
@@ -1410,6 +1477,39 @@ export const sharedTk: SharedTranslations = {
   settingsAlertTestFailMsg: "Test hlabu thawn theilo.",
   settingsAlertSignOutTitle: "Tawp Ta",
   settingsAlertSignOutMsg: "Tawp duh am?",
+
+  settingsThemeMidnight: "Tlaibawk",
+  settingsThemeParchment: "Lehthlalang",
+  settingsThemeSapphire: "Sapphire",
+  settingsNotifCandleLighting: "Katni Mei",
+  settingsNotifHavdalah: "Havdalah",
+  settingsNotifParasha: "Parashah Thupek",
+  settingsNotifHolidayAlerts: "Ni Thianghlim Hla",
+  settingsNotifPrayerReminders: "Thu Dawt Hla Dan",
+  settingsNotifShabbatSub: "Shabbat hma minit 18",
+  settingsNotifHavdalahSub: "Shabbat tawp hnu",
+  settingsNotifParashaSub: "Zirtawpni tûk hla",
+  settingsNotifHolidaySub: "Ni thianghlim hma ni",
+  settingsNotifPrayersSub: "Shacharit, Mincha, Maariv",
+  settingsScheduled: "DIN ZO",
+  settingsScheduledCount: "Hlabu {n} din zo",
+  settingsEnableAllNotif: "Hlabu Zawng Zawng On",
+  settingsRescheduleNow: "Thar Dah Leh",
+  settingsRescheduling: "A thar dah mek...",
+  settingsLocalNotifDesc: "Hlabu chu app a tawp ngin emaw device a lock ngemin na device notification bar-ah a lang. Na device-ah a din a ni — internet a ngai lo.",
+  settingsServerPushSection: "SERVER PUSH HLABU",
+  settingsServerPushLabel: "Server Push",
+  settingsServerPushActiveDesc: "Shabbat leh ni thianghlim hla server in a thlen",
+  settingsServerPushInactiveDesc: "Server hlabu dawng nan on rawh",
+  settingsSendingPush: "A thawn mek...",
+  settingsSendTestNotif: "Test Hlabu Thawn",
+  settingsServerPushFullDesc: "Server push hian Shabbat katni mei, Havdalah, Parasha, leh ni thianghlim hla chu Bnei Menashe server atangin a thlen — ni tam tak in app i hawng ngai lo emaw.",
+  settingsSignedIn: "I lut zo",
+  settingsSignOutHint: "Sign-in screen-ah i lo thleng leh ang.",
+  settingsSelectLocation: "Hmun Dah",
+  settingsLocationUtc: "Timezone in UTC offset",
+  settingsYourAccount: "I account",
+  settingsLeadTimeSection: "HMASAWN NI DAN (THU DAWT)",
 };
 
 const sharedTranslations: Record<Lang, SharedTranslations> = { en: sharedEn, tk: sharedTk };

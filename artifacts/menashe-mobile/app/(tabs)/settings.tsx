@@ -148,11 +148,11 @@ export default function SettingsScreen() {
   }
 
   const notifRows: { key: keyof NotificationPrefs; label: string; sub: string; icon: keyof typeof Feather.glyphMap }[] = [
-    { key: "shabbat",  label: "Candle Lighting", sub: "18 min before Shabbat",     icon: "star" },
-    { key: "havdalah", label: "Havdalah",         sub: "When Shabbat ends",         icon: "moon" },
-    { key: "parasha",  label: "Weekly Parasha",   sub: "Friday morning reminder",   icon: "book-open" },
-    { key: "holiday",  label: "Holiday Alerts",   sub: "Day before each holiday",   icon: "calendar" },
-    { key: "prayers",  label: "Prayer Reminders", sub: "Shacharit, Mincha, Maariv", icon: "clock" },
+    { key: "shabbat",  label: t.settingsNotifCandleLighting,  sub: t.settingsNotifShabbatSub,  icon: "star" },
+    { key: "havdalah", label: t.settingsNotifHavdalah,         sub: t.settingsNotifHavdalahSub, icon: "moon" },
+    { key: "parasha",  label: t.settingsNotifParasha,          sub: t.settingsNotifParashaSub,  icon: "book-open" },
+    { key: "holiday",  label: t.settingsNotifHolidayAlerts,    sub: t.settingsNotifHolidaySub,  icon: "calendar" },
+    { key: "prayers",  label: t.settingsNotifPrayerReminders,  sub: t.settingsNotifPrayersSub,  icon: "clock" },
   ];
 
   return (
@@ -163,18 +163,18 @@ export default function SettingsScreen() {
       >
         {/* ── SCREEN HEADER ── */}
         <View style={{ paddingTop: topPad + 12, paddingHorizontal: 16, marginBottom: 20 }}>
-          <Text style={{ fontSize: 28, fontWeight: "700", color: colors.foreground, letterSpacing: -0.5 }}>Settings</Text>
+          <Text style={{ fontSize: 28, fontWeight: "700", color: colors.foreground, letterSpacing: -0.5 }}>{t.settingsTitle}</Text>
           <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 4, fontWeight: "500" }}>
-            {user?.primaryEmailAddress?.emailAddress ?? "Your account"}
+            {user?.primaryEmailAddress?.emailAddress ?? t.settingsYourAccount}
           </Text>
         </View>
 
         {/* ── APPEARANCE ── */}
         <View style={{ paddingHorizontal: 16 }}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>APPEARANCE</Text>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t.settingsAppearance}</Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16, marginBottom: 16 }]}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 14 }}>Theme</Text>
+          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 14 }}>{t.settingsTheme}</Text>
           <View style={{ flexDirection: "row", gap: 10 }}>
             {/* Royal Midnight */}
             {/* Midnight */}
@@ -207,7 +207,7 @@ export default function SettingsScreen() {
                 </View>
               </View>
               <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "dark" ? "700" : "500", color: theme === "dark" ? PALETTES.dark.primary : colors.mutedForeground }}>
-                {theme === "dark" ? "✓ " : ""}Midnight
+                {theme === "dark" ? "✓ " : ""}{t.settingsThemeMidnight}
               </Text>
             </TouchableOpacity>
 
@@ -241,7 +241,7 @@ export default function SettingsScreen() {
                 </View>
               </View>
               <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "light" ? "700" : "500", color: theme === "light" ? PALETTES.light.primary : colors.mutedForeground }}>
-                {theme === "light" ? "✓ " : ""}Parchment
+                {theme === "light" ? "✓ " : ""}{t.settingsThemeParchment}
               </Text>
             </TouchableOpacity>
 
@@ -275,7 +275,7 @@ export default function SettingsScreen() {
                 </View>
               </View>
               <Text style={{ marginTop: 6, fontSize: 10, fontWeight: theme === "sapphire" ? "700" : "500", color: theme === "sapphire" ? PALETTES.sapphire.primary : colors.mutedForeground }}>
-                {theme === "sapphire" ? "✓ " : ""}Sapphire
+                {theme === "sapphire" ? "✓ " : ""}{t.settingsThemeSapphire}
               </Text>
             </TouchableOpacity>
           </View>
@@ -338,7 +338,7 @@ export default function SettingsScreen() {
 
         {/* ── LOCATION ── */}
         <View style={{ paddingHorizontal: 16 }}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>LOCATION</Text>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t.settingsLocation}</Text>
         </View>
 
         {/* Location Card */}
@@ -352,7 +352,7 @@ export default function SettingsScreen() {
               <Feather name="map-pin" size={18} color={colors.primary} />
               <View style={{ marginLeft: 12 }}>
                 <Text style={[styles.cardTitle, { color: colors.foreground }]}>{location.name}</Text>
-                <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{location.country} · UTC offset by timezone</Text>
+                <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{location.country} · {t.settingsLocationUtc}</Text>
               </View>
             </View>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -360,7 +360,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         <View style={{ paddingTop: 24, paddingHorizontal: 16 }}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>NOTIFICATIONS</Text>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t.settingsNotifications}</Text>
         </View>
 
         {/* Enable All Button */}
@@ -370,7 +370,7 @@ export default function SettingsScreen() {
           activeOpacity={0.8}
         >
           <Feather name="bell" size={16} color={colors.primaryForeground} />
-          <Text style={[styles.enableBtnText, { color: colors.primaryForeground }]}>Enable All Notifications</Text>
+          <Text style={[styles.enableBtnText, { color: colors.primaryForeground }]}>{t.settingsEnableAllNotif}</Text>
         </TouchableOpacity>
 
         {/* Notification Toggles */}
@@ -399,7 +399,7 @@ export default function SettingsScreen() {
 
         {/* Lead Time */}
         <View style={{ paddingTop: 24, paddingHorizontal: 16 }}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>LEAD TIME (PRAYERS)</Text>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t.settingsLeadTimeSection}</Text>
         </View>
         <View style={[styles.leadRow, { marginHorizontal: 16 }]}>
           {LEAD_OPTIONS.map((mins) => (
@@ -421,14 +421,14 @@ export default function SettingsScreen() {
 
         {/* Status + Reschedule */}
         <View style={{ paddingTop: 24, paddingHorizontal: 16 }}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>SCHEDULED</Text>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t.settingsScheduled}</Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16 }]}>
           <View style={styles.rowBetween}>
             <View style={styles.rowStart}>
               <Feather name="bell" size={18} color={colors.primary} />
               <Text style={[styles.cardTitle, { color: colors.foreground, marginLeft: 12 }]}>
-                {scheduledCount} notifications scheduled
+                {t.settingsScheduledCount.replace("{n}", String(scheduledCount))}
               </Text>
             </View>
           </View>
@@ -442,13 +442,13 @@ export default function SettingsScreen() {
         >
           <Feather name="refresh-cw" size={16} color={colors.primary} />
           <Text style={[styles.rescheduleBtnText, { color: colors.primary }]}>
-            {rescheduling ? "Rescheduling..." : "Reschedule Now"}
+            {rescheduling ? t.settingsRescheduling : t.settingsRescheduleNow}
           </Text>
         </TouchableOpacity>
 
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
           <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
-            {"Notifications appear in your device's notification bar even when the app is closed. They are scheduled locally on your device — no internet required."}
+            {t.settingsLocalNotifDesc}
           </Text>
         </View>
 
@@ -456,7 +456,7 @@ export default function SettingsScreen() {
         {Platform.OS !== "web" && (
           <>
             <View style={{ paddingTop: 24, paddingHorizontal: 16 }}>
-              <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>SERVER PUSH NOTIFICATIONS</Text>
+              <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t.settingsServerPushSection}</Text>
             </View>
 
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16 }]}>
@@ -465,11 +465,11 @@ export default function SettingsScreen() {
                   <Feather name="cloud" size={15} color={colors.primary} />
                 </View>
                 <View style={styles.toggleText}>
-                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>Server Push</Text>
+                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>{t.settingsServerPushLabel}</Text>
                   <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
                     {serverPushRegistered
-                      ? "Shabbat & holiday alerts delivered by server"
-                      : "Enable to receive server-sent reminders"}
+                      ? t.settingsServerPushActiveDesc
+                      : t.settingsServerPushInactiveDesc}
                   </Text>
                 </View>
                 <Switch
@@ -491,14 +491,14 @@ export default function SettingsScreen() {
               >
                 <Feather name="send" size={16} color={colors.primary} />
                 <Text style={[styles.rescheduleBtnText, { color: colors.primary }]}>
-                  {testPushLoading ? "Sending..." : "Send Test Notification"}
+                  {testPushLoading ? t.settingsSendingPush : t.settingsSendTestNotif}
                 </Text>
               </TouchableOpacity>
             )}
 
             <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
               <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
-                Server push delivers Shabbat candle lighting, Havdalah, Parasha, and holiday reminders directly from the Bnei Menashe servers — even if you haven't opened the app in days.
+                {t.settingsServerPushFullDesc}
               </Text>
             </View>
           </>
@@ -506,7 +506,7 @@ export default function SettingsScreen() {
 
         {/* ── ACCOUNT ── */}
         <View style={{ paddingTop: 32, paddingHorizontal: 16 }}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>ACCOUNT</Text>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t.settingsAccount}</Text>
         </View>
 
         {/* User info card */}
@@ -520,7 +520,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>{user.fullName}</Text>
               ) : null}
               <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>
-                {user?.primaryEmailAddress?.emailAddress ?? "Signed in"}
+                {user?.primaryEmailAddress?.emailAddress ?? t.settingsSignedIn}
               </Text>
             </View>
           </View>
@@ -532,12 +532,12 @@ export default function SettingsScreen() {
           activeOpacity={0.8}
         >
           <Feather name="log-out" size={16} color="#c0392b" />
-          <Text style={[styles.signOutText, { color: "#c0392b" }]}>Sign Out</Text>
+          <Text style={[styles.signOutText, { color: "#c0392b" }]}>{t.settingsSignOut}</Text>
         </TouchableOpacity>
 
         <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 }}>
           <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
-            You will be returned to the sign-in screen.
+            {t.settingsSignOutHint}
           </Text>
         </View>
 
@@ -547,7 +547,7 @@ export default function SettingsScreen() {
       <Modal visible={showLocationPicker} animationType="slide" presentationStyle="pageSheet">
         <View style={{ flex: 1, backgroundColor: colors.background }}>
           <View style={[styles.modalHeader, { paddingTop: insets.top + 16, borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Select Location</Text>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>{t.settingsSelectLocation}</Text>
             <TouchableOpacity onPress={() => setShowLocationPicker(false)}>
               <Feather name="x" size={24} color={colors.foreground} />
             </TouchableOpacity>
