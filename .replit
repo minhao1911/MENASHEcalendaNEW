@@ -141,7 +141,7 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-VAPID_PUBLIC_KEY = "BBWVKa2fu6rVkKANdSG9_bFbIoEa41LlZs2J2XThCuMF6DHxgLFKRNtwqXEcNkbvn5Uy20Oxo3j70RRuEvOvYFo"
+VAPID_PUBLIC_KEY = "BH7chWodSDOU8tAOY0FfgUBbH2OmXfLyzuwZoXLYx0fmc948VyUvWqXF2dbt9OshwmbqrvWRQsF-AnEySrbMVD4"
 VAPID_SUBJECT = "mailto:admin@menashecalendar.app"
 VITE_CLERK_PROXY_URL = ""
 CLERK_PUBLISHABLE_KEY = "pk_test_cHJlc2VudC1waXBlZmlzaC0xNy5jbGVyay5hY2NvdW50cy5kZXYk"
@@ -151,6 +151,7 @@ ADMIN_PIN = "1948"
 VITE_ADMIN_PIN = "1948"
 ADMIN_USER_ID = "user_3FPrdIHD0jHZYORFdutfQ4aspal"
 VITE_ADMIN_USER_ID = "user_3FPrdIHD0jHZYORFdutfQ4aspal"
+VITE_VAPID_PUBLIC_KEY = "BH7chWodSDOU8tAOY0FfgUBbH2OmXfLyzuwZoXLYx0fmc948VyUvWqXF2dbt9OshwmbqrvWRQsF-AnEySrbMVD4"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-c5b161bf-7380-4234-b117-63cabc6e63ee"

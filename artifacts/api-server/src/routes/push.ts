@@ -17,7 +17,11 @@ const VAPID_PRIVATE = (process.env["VAPID_PRIVATE_KEY"] ?? "").replace(/[="'\s]/
 const VAPID_SUBJECT = process.env["VAPID_SUBJECT"] ?? "mailto:admin@menashecalendar.app";
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+  } catch (err) {
+    logger.error({ err }, "VAPID key validation failed — push notifications disabled");
+  }
 }
 
 export type ScheduleItem = {
