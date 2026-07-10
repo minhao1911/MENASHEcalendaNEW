@@ -659,9 +659,6 @@ export default function CommunityScreen() {
               <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.commSynagogueSeeAll}</Text>
             </TouchableOpacity>
 
-          </View>
-        )}
-
         {/* ── §8  Community Census ── */}
         <View style={[styles.section, { paddingBottom: sp[4] }]}>
           <SectionTitle
@@ -699,6 +696,7 @@ export default function CommunityScreen() {
             </View>
             <Feather name="arrow-right" size={18} color={colors.primary as string} style={{ alignSelf: "center", marginLeft: sp[2] }} />
           </TouchableOpacity>
+        </View>
         </Animated.View>
         )}
 

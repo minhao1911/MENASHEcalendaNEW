@@ -8,6 +8,14 @@
     "scheme": "menashe-mobile",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
+    },
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
@@ -44,6 +52,7 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
+      "expo-updates",
       [
         "expo-notifications",
         {
