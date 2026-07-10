@@ -323,9 +323,14 @@ export default function HomeScreen() {
     try { return formatHebrewDateHebrew(hdate); } catch { return ""; }
   }, [hdate]);
 
-  const hebrewDayNum    = parseInt(hebrewDateStr.split(" ")[0] ?? "1", 10);
-  const hebrewGlyph     = HEBREW_DAY[hebrewDayNum] ?? hebrewDateStr.split(" ")[0] ?? "";
-  const hebrewMonthYear = hebrewDateStr.split(" ").slice(1).join(" ");
+  const { hebrewGlyph, hebrewMonthYear } = useMemo(() => {
+    const parts  = hebrewDateStr.split(" ");
+    const dayNum = parseInt(parts[0] ?? "1", 10);
+    return {
+      hebrewGlyph:     HEBREW_DAY[dayNum] ?? parts[0] ?? "",
+      hebrewMonthYear: parts.slice(1).join(" "),
+    };
+  }, [hebrewDateStr]);
 
   const parasha     = useMemo(() => getCurrentParasha(), []);
   const holidays    = useMemo(() => getUpcomingHolidays(30), []);
@@ -377,40 +382,21 @@ export default function HomeScreen() {
     [location, saturday],
   );
 
-  const gregDate = today.toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric",
-  });
+  const gregDate = useMemo(
+    () => today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }),
+    [today],
+  );
 
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  // Countdown mode determined by day-of-week; actual ms computed inside ShabbatCountdownCard.
+  const countdownMode: "candle" | "havdalah" | "upcoming" =
+    isShabbat ? "havdalah" : isFriday ? "candle" : "upcoming";
 
-  const candleLightingMs = fridayZm.candleLighting ? fridayZm.candleLighting.getTime() - now : null;
-  const havdalahMs       = satZm.havdalah         ? satZm.havdalah.getTime()          - now : null;
-
-  let countdownMode: "candle" | "havdalah" | "upcoming" = "upcoming";
-  let countdownMs   = 0;
-  let countdownDate = friday;
-
-  if (isShabbat && havdalahMs && havdalahMs > 0) {
-    countdownMode = "havdalah";
-    countdownMs   = havdalahMs;
-    countdownDate = saturday;
-  } else if (isFriday && candleLightingMs && candleLightingMs > 0) {
-    countdownMode = "candle";
-    countdownMs   = candleLightingMs;
-    countdownDate = friday;
-  } else if (candleLightingMs && candleLightingMs > 0) {
-    countdownMode = "upcoming";
-    countdownMs   = candleLightingMs;
-    countdownDate = friday;
-  }
-
-  const countdownDateStr = countdownDate.toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric",
-  });
+  const countdownDateStr = useMemo(
+    () => (countdownMode === "havdalah" ? saturday : friday).toLocaleDateString("en-US", {
+      weekday: "long", month: "long", day: "numeric", year: "numeric",
+    }),
+    [countdownMode, friday, saturday],
+  );
 
   const todayInsight = useMemo(() => {
     const idx = Math.abs(Math.floor(today.getTime() / 86_400_000) % TORAH_INSIGHTS.length);
@@ -723,11 +709,11 @@ export default function HomeScreen() {
       <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a4]}>
         <ShabbatCountdownCard
           mode={countdownMode}
-          countdownMs={countdownMs}
           countdownDateStr={countdownDateStr}
+          candleLightingDate={fridayZm.candleLighting ?? null}
+          havdalahDate={satZm.havdalah ?? null}
           candleLightingTime={fridayZm.candleLighting ? formatTime(fridayZm.candleLighting, location.tz) : "—"}
           havdalahTime={satZm.havdalah ? formatTime(satZm.havdalah, location.tz) : "—"}
-          now={now}
           t={t}
           gold={gold}
           cardBg={cardBg}
@@ -764,7 +750,7 @@ export default function HomeScreen() {
               { label: t.homeNightfall,   icon: "moon"    as const, time: todayZm.tzais         },
               { label: t.homeTzais,       icon: "moon"    as const, time: todayZm.tzais         },
             ];
-            const nowMs    = now;
+            const nowMs    = Date.now();
             let   currentIdx = -1;
             zmanList.forEach((z, i) => {
               if (z.time && new Date(z.time).getTime() <= nowMs) currentIdx = i;
@@ -1345,22 +1331,32 @@ const TodaysFocusCard = memo(function TodaysFocusCard({
 // Hierarchy: Countdown (large, dominant) → Candle Lighting → Havdalah
 
 const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
-  mode, countdownMs, countdownDateStr,
+  mode, countdownDateStr,
+  candleLightingDate, havdalahDate,
   candleLightingTime, havdalahTime,
-  now, t,
+  t,
   gold, cardBg, borderColor, textPrimary, textMuted, rd, shadow, isLight,
 }: {
   mode:               "candle" | "havdalah" | "upcoming";
-  countdownMs:        number;
   countdownDateStr:   string;
+  candleLightingDate: Date | null;
+  havdalahDate:       Date | null;
   candleLightingTime: string;
   havdalahTime:       string;
-  now:                number;
   t:                  any;
   gold: string; cardBg: string; borderColor: string;
   textPrimary: string; textMuted: string;
   rd: any; shadow: any; isLight: boolean;
 }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const targetDate  = mode === "havdalah" ? havdalahDate : candleLightingDate;
+  const countdownMs = targetDate ? targetDate.getTime() - now : 0;
+
   const accent = mode === "havdalah" ? "#a78bfa" : gold;
   const label  = mode === "havdalah" ? t.homeUntilHavdalah : t.homeUntilNextShabbatLabel;
 

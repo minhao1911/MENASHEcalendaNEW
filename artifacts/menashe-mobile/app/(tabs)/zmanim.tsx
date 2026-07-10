@@ -70,11 +70,14 @@ export default function ZmanimScreen() {
   const isFriday = selectedDate.getDay() === 5;
   const isShabbat = selectedDate.getDay() === 6;
 
-  const visibleZmanim = ZMANIM_LIST.filter((z) => {
-    if (z.key === "candleLighting") return isFriday;
-    if (z.key === "havdalah") return isShabbat;
-    return true;
-  });
+  const visibleZmanim = useMemo(
+    () => ZMANIM_LIST.filter((z) => {
+      if (z.key === "candleLighting") return isFriday;
+      if (z.key === "havdalah") return isShabbat;
+      return true;
+    }),
+    [isFriday, isShabbat],
+  );
 
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
   const mins = Math.floor(zmanim.shaahZmanitGra);
