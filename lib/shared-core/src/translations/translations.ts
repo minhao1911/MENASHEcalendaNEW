@@ -554,6 +554,10 @@ export interface SharedTranslations {
   settingsSignOutHint: string;
   settingsSelectLocation: string;
   settingsLocationUtc: string;
+  locationDetectGps: string;
+  locationDetecting: string;
+  locationGpsError: string;
+  locationSearchPlaceholder: string;
   settingsYourAccount: string;
   settingsLeadTimeSection: string;
 }
@@ -1088,6 +1092,10 @@ export const sharedEn: SharedTranslations = {
   settingsSignOutHint: "You will be returned to the sign-in screen.",
   settingsSelectLocation: "Select Location",
   settingsLocationUtc: "UTC offset by timezone",
+  locationDetectGps: "Use My Location",
+  locationDetecting: "Detecting…",
+  locationGpsError: "Could not detect location. Pick a city below.",
+  locationSearchPlaceholder: "Search cities…",
   settingsYourAccount: "Your account",
   settingsLeadTimeSection: "LEAD TIME (PRAYERS)",
 };
@@ -1622,6 +1630,10 @@ export const sharedTk: SharedTranslations = {
   settingsSignOutHint: "Sign-in screen-ah i lo thleng leh ang.",
   settingsSelectLocation: "Hmun Dah",
   settingsLocationUtc: "Timezone in UTC offset",
+  locationDetectGps: "Ka Hmun Hmang",
+  locationDetecting: "Hmun dih in…",
+  locationGpsError: "Hmun la hmang thei lo. Hmun dang dah rawh.",
+  locationSearchPlaceholder: "Hmun ziah…",
   settingsYourAccount: "I account",
   settingsLeadTimeSection: "HMASAWN NI DAN (THU DAWT)",
 };

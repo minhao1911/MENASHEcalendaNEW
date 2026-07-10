@@ -13,6 +13,7 @@ import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import PALETTES, { type ThemeKey } from "@/constants/colors";
 import { LOCATIONS } from "@/lib/locations";
+import LocationPickerModal from "@/components/LocationPickerModal";
 import {
   requestPermission,
   getPermissionStatus,
@@ -552,41 +553,15 @@ export default function SettingsScreen() {
 
       </ScrollView>
 
-      {/* Location Picker Modal */}
-      <Modal visible={showLocationPicker} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
-          <View style={[styles.modalHeader, { paddingTop: insets.top + 16, borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>{t.settingsSelectLocation}</Text>
-            <TouchableOpacity onPress={() => setShowLocationPicker(false)}>
-              <Feather name="x" size={24} color={colors.foreground} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView>
-            {LOCATIONS.map((loc) => (
-              <TouchableOpacity
-                key={loc.name}
-                style={[styles.locationRow, { borderBottomColor: colors.border }]}
-                onPress={() => {
-                  setLocation(loc);
-                  setShowLocationPicker(false);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.locName, { color: location.name === loc.name ? colors.primary : colors.foreground }]}>
-                    {loc.name}
-                  </Text>
-                  <Text style={[styles.locCountry, { color: colors.mutedForeground }]}>{loc.country}</Text>
-                </View>
-                {location.name === loc.name && (
-                  <Feather name="check" size={18} color={colors.primary} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      </Modal>
+      <LocationPickerModal
+        visible={showLocationPicker}
+        current={location}
+        onSelect={(loc) => {
+          setLocation(loc);
+          setShowLocationPicker(false);
+        }}
+        onClose={() => setShowLocationPicker(false)}
+      />
     </View>
   );
 }

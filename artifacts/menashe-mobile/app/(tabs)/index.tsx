@@ -66,6 +66,7 @@ import { useEntrance, useReducedMotion } from "@/src/mobile/lib/useEntrance";
 import { usePressScale } from "@/src/mobile/lib/usePressScale";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
+import LocationPickerModal from "@/components/LocationPickerModal";
 
 /* ── Hebrew day-number glyph map (days 1–30) ─────────────────────────────── */
 const HEBREW_DAY: Record<number, string> = {
@@ -304,7 +305,8 @@ const QuickActionCard = memo(function QuickActionCard({
 export default function HomeScreen() {
   const { colors, type, sp, rd, shadow, theme } = useThemeTokens();
   const insets    = useSafeAreaInsets();
-  const { location } = useApp();
+  const { location, setLocation } = useApp();
+  const [showLocationPicker, setShowLocationPicker] = React.useState(false);
   const { lang, setLang, t } = useLanguage();
 
   const firstName: string | null = null;
@@ -457,6 +459,7 @@ export default function HomeScreen() {
   const HX = 20;
 
   return (
+    <>
     <ScrollView
       style={{ flex: 1, backgroundColor: pageBg }}
       contentContainerStyle={{ paddingBottom: (insets.bottom || 0) + 104 }}
@@ -498,17 +501,23 @@ export default function HomeScreen() {
         </View>
 
         {/* Location chip */}
-        <View style={{
-          flexDirection: "row", alignItems: "center", gap: 4,
-          backgroundColor: isLight ? "#fff8ee" : cardBg,
-          borderRadius: rd.pill, paddingHorizontal: 10, paddingVertical: 7,
-          borderWidth: 1, borderColor, marginRight: 10,
-        }}>
+        <TouchableOpacity
+          onPress={() => setShowLocationPicker(true)}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={`Location: ${location.name}. Tap to change.`}
+          style={{
+            flexDirection: "row", alignItems: "center", gap: 4,
+            backgroundColor: isLight ? "#fff8ee" : cardBg,
+            borderRadius: rd.pill, paddingHorizontal: 10, paddingVertical: 7,
+            borderWidth: 1, borderColor, marginRight: 10,
+          }}
+        >
           <Feather name="map-pin" size={10} color={gold} />
           <Text style={{ fontSize: 11, color: textMuted, fontWeight: "500" }} numberOfLines={1}>
             {location.name}
           </Text>
-        </View>
+        </TouchableOpacity>
 
         {/* Bell — 48dp target */}
         <TouchableOpacity
@@ -1200,6 +1209,16 @@ export default function HomeScreen() {
         </Pressable>
       </Animated.View>
     </ScrollView>
+    <LocationPickerModal
+      visible={showLocationPicker}
+      current={location}
+      onSelect={(loc) => {
+        setLocation(loc);
+        setShowLocationPicker(false);
+      }}
+      onClose={() => setShowLocationPicker(false)}
+    />
+    </>
   );
 }
 

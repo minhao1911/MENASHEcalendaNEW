@@ -8,6 +8,7 @@
 
 import React, { memo, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Keyboard,
   Modal,
@@ -22,8 +23,10 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import * as ExpoLocation from "expo-location";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
+import { useLanguage } from "@/context/LanguageContext";
 import { LOCATIONS, type Location } from "@/lib/locations";
 
 // ─── Country flag lookup ────────────────────────────────────────────────────
@@ -134,23 +137,70 @@ export default function LocationPickerModal({
   const { colors, rd, sp } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
+  const { t } = useLanguage();
 
   const gold = colors.accentGold ?? "#d4a843";
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery]       = useState("");
+  const [gpsState, setGpsState] = useState<"idle" | "loading" | "error">("idle");
+  const [gpsError, setGpsError] = useState("");
 
   const items = useMemo(() => buildList(query), [query]);
+
+  async function detectLocation() {
+    setGpsState("loading");
+    setGpsError("");
+    try {
+      const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setGpsError(t.locationGpsError);
+        setGpsState("error");
+        return;
+      }
+      const pos = await ExpoLocation.getCurrentPositionAsync({
+        accuracy: ExpoLocation.Accuracy.Balanced,
+      });
+      const { latitude: lat, longitude: lng } = pos.coords;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      let name = "My Location";
+      let country = "Custom";
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+          { headers: { "Accept-Language": "en" } },
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const addr = data.address || {};
+          name    = addr.city || addr.town || addr.village || addr.county || addr.state || "My Location";
+          country = addr.country || "Custom";
+        }
+      } catch { /* use coords only */ }
+
+      setGpsState("idle");
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      handlePick({ name, country, lat, lng, tz, candleLightingMinutes: 18 });
+    } catch {
+      setGpsError(t.locationGpsError);
+      setGpsState("error");
+    }
+  }
 
   function handlePick(loc: Location) {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSelect(loc);
     setQuery("");
+    setGpsState("idle");
+    setGpsError("");
     onClose();
   }
 
   function handleClose() {
     Keyboard.dismiss();
     setQuery("");
+    setGpsState("idle");
+    setGpsError("");
     onClose();
   }
 
@@ -225,6 +275,33 @@ export default function LocationPickerModal({
           >
             <Feather name="x" size={16} color={colors.textPrimary} />
           </TouchableOpacity>
+        </View>
+
+        {/* ── GPS detect button ── */}
+        <View style={[styles.gpsSection, { paddingHorizontal: sp[4], borderBottomColor: colors.cardBorder }]}>
+          <TouchableOpacity
+            style={[
+              styles.gpsBtn,
+              { backgroundColor: gold + "18", borderColor: gold + "44" },
+              gpsState === "loading" && { opacity: 0.7 },
+            ]}
+            onPress={detectLocation}
+            disabled={gpsState === "loading"}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={t.locationDetectGps}
+          >
+            {gpsState === "loading"
+              ? <ActivityIndicator size="small" color={gold} />
+              : <Feather name="navigation" size={15} color={gold} />
+            }
+            <Text style={[styles.gpsBtnText, { color: gold }]}>
+              {gpsState === "loading" ? t.locationDetecting : t.locationDetectGps}
+            </Text>
+          </TouchableOpacity>
+          {gpsState === "error" && (
+            <Text style={[styles.gpsError, { color: "#e74c3c" }]}>{gpsError}</Text>
+          )}
         </View>
 
         {/* ── Search bar ── */}
@@ -365,6 +442,28 @@ const styles = StyleSheet.create({
   },
   currentText: {
     fontSize: 12, fontWeight: "600",
+  },
+  gpsSection: {
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  gpsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
+  gpsBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  gpsError: {
+    fontSize: 12,
+    marginTop: 8,
+    lineHeight: 18,
   },
   countryHeader: {
     flexDirection: "row", alignItems: "center", gap: 8,
