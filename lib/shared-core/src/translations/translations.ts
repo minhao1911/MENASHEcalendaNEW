@@ -112,6 +112,33 @@ export interface SharedTranslations {
   censusDiscardDraftTitle: string;
   censusDiscardDraftBody: string;
   censusDiscardDraftConfirm: string;
+  censusAliyahInIsrael: string;
+  censusAliyahAwaiting: string;
+  censusAliyahUnknown: string;
+  censusSexMale: string;
+  censusSexFemale: string;
+  censusSelectPlaceholder: string;
+  censusMaritalSingle: string;
+  censusMaritalMarried: string;
+  censusMaritalDivorced: string;
+  censusMaritalWidowed: string;
+  censusSubmitScreenTitle: string;
+  censusStep4of4: string;
+  censusAlmostDone: string;
+  censusReadyToSubmit: string;
+  censusReadBeforeSubmit: string;
+  censusPeople: string;
+  censusMembers: string;
+  censusBullet1: string;
+  censusBullet2: string;
+  censusBullet3: string;
+  censusBullet4: string;
+  censusSubmissionFailed: string;
+  censusSubmissionFailedMsg: string;
+  censusRetry: string;
+  censusBackToReview: string;
+  censusPrevious: string;
+  censusConfirmSubmit: string;
 
   /* ── Home ── */
   homeToday: string;
@@ -637,6 +664,33 @@ export const sharedEn: SharedTranslations = {
   censusDiscardDraftTitle: "Discard Draft?",
   censusDiscardDraftBody: "All progress will be lost. This cannot be undone.",
   censusDiscardDraftConfirm: "Discard",
+  censusAliyahInIsrael: "In Israel",
+  censusAliyahAwaiting: "Awaiting Aliyah",
+  censusAliyahUnknown: "Unknown",
+  censusSexMale: "Male",
+  censusSexFemale: "Female",
+  censusSelectPlaceholder: "Select…",
+  censusMaritalSingle: "Single",
+  censusMaritalMarried: "Married",
+  censusMaritalDivorced: "Divorced",
+  censusMaritalWidowed: "Widowed",
+  censusSubmitScreenTitle: "Submit Community Census",
+  censusStep4of4: "Step 4 of 4",
+  censusAlmostDone: "ALMOST DONE",
+  censusReadyToSubmit: "Ready to Submit",
+  censusReadBeforeSubmit: "Please read the following before confirming your submission.",
+  censusPeople: "People",
+  censusMembers: "Members",
+  censusBullet1: "Your information will be securely submitted to community administrators.",
+  censusBullet2: "Administrators may review your submission before it is recorded.",
+  censusBullet3: "If corrections are needed, you may be asked to resubmit.",
+  censusBullet4: "Your data is never shared publicly or with third parties.",
+  censusSubmissionFailed: "Submission Failed",
+  censusSubmissionFailedMsg: "Submission failed. Please try again.",
+  censusRetry: "Retry",
+  censusBackToReview: "Back to Review",
+  censusPrevious: "Previous",
+  censusConfirmSubmit: "Confirm & Submit",
 
   navSiddur: "Siddur",
 
@@ -1144,6 +1198,33 @@ export const sharedTk: SharedTranslations = {
   censusDiscardDraftTitle: "Draft Hon Phal Maw?",
   censusDiscardDraftBody: "Ziakna zawng zawng chhuah dawn. Tih leh theilo.",
   censusDiscardDraftConfirm: "Hon Phal",
+  censusAliyahInIsrael: "Israel Chhunga",
+  censusAliyahAwaiting: "Aliyah Ngai Mek",
+  censusAliyahUnknown: "Hriat Lo",
+  censusSexMale: "Patal",
+  censusSexFemale: "Nu",
+  censusSelectPlaceholder: "Dah Rawh…",
+  censusMaritalSingle: "Neilo",
+  censusMaritalMarried: "Innei Tawh",
+  censusMaritalDivorced: "Inruk Tawh",
+  censusMaritalWidowed: "Pho Thi Tawh",
+  censusSubmitScreenTitle: "Inpui Census Pek",
+  censusStep4of4: "Step 4/4",
+  censusAlmostDone: "ZO HAI DAWN",
+  censusReadyToSubmit: "Pek Theih Tawh",
+  censusReadBeforeSubmit: "I pek hmain hi ziak zawng zawk rawh.",
+  censusPeople: "Mipui",
+  censusMembers: "Member",
+  censusBullet1: "I thu hi phat takin admin-te hnenah pek dawn.",
+  censusBullet2: "Admin-te chuan i pek thu en hnu chuan record an tih ang.",
+  censusBullet3: "Thil dik lo awm chuan, tih leh pek turin ngen an tih thei.",
+  censusBullet4: "I data hi pawl dangah an hrilh lo.",
+  censusSubmissionFailed: "Pek Theilo",
+  censusSubmissionFailedMsg: "Pek theilo. Tih leh rawh.",
+  censusRetry: "Tih Leh",
+  censusBackToReview: "En Leh",
+  censusPrevious: "Hmasa",
+  censusConfirmSubmit: "Ngaihdan Pek",
 
   navSiddur: "Thu Ziak",
 

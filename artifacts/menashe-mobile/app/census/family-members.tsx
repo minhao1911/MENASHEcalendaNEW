@@ -7,7 +7,7 @@
  * Design mirrors family-head.tsx: gold accents, chip pickers, section bars.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -35,7 +35,7 @@ import type {
   MaritalStatus,
   Sex,
 } from "@workspace/shared-core/census";
-import { setMembers } from "@/lib/censusStore";
+import { setMembers as setMembersStore, loadDraft, saveDraft } from "@/lib/censusStore";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -322,6 +322,58 @@ export default function FamilyMembersScreen() {
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
   const [members, setMembers] = useState<FamilyMember[]>([]);
+
+  // ── Restore draft on mount ────────────────────────────────────────────────
+  const draftLoaded = useRef(false);
+
+  useEffect(() => {
+    if (draftLoaded.current) return;
+    loadDraft().then((draft) => {
+      if (draft?.members && draft.members.length > 0 && !draftLoaded.current) {
+        draftLoaded.current = true;
+        setMembers(
+          draft.members.map((m) => ({
+            id:              m.id,
+            relation:        (m.relation || "") as Relation | "",
+            surname:         m.surname         ?? "",
+            namePerPassport: m.namePerPassport  ?? "",
+            hebrewName:      m.hebrewName       ?? "",
+            sex:             (m.sex || "")      as Sex | "",
+            maritalStatus:   (m.maritalStatus || "") as MaritalStatus,
+            dob:             m.dob              ?? "",
+            aliyahStatus:    m.aliyahStatus     ?? "unknown",
+          }))
+        );
+      } else {
+        draftLoaded.current = true;
+      }
+    });
+  }, []);
+
+  // ── Persist draft on change (debounced 800 ms) ────────────────────────────
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!draftLoaded.current) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      setMembersStore(
+        members.map((m) => ({
+          id:              m.id,
+          relation:        m.relation,
+          surname:         m.surname,
+          namePerPassport: m.namePerPassport,
+          hebrewName:      m.hebrewName,
+          sex:             m.sex,
+          maritalStatus:   m.maritalStatus,
+          dob:             m.dob,
+          aliyahStatus:    m.aliyahStatus,
+        }))
+      );
+      saveDraft();
+    }, 800);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [members]);
 
   function addMember() {
     haptic();

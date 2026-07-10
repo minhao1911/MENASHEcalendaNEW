@@ -24,6 +24,7 @@ import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
 import { SPACE, TEXT, RADIUS } from "@/constants/colors";
+import { useLanguage } from "@/context/LanguageContext";
 import { getHead, getMembers, clearCensus, clearDraft } from "@/lib/censusStore";
 import { saveBranch } from "@workspace/shared-core/census";
 
@@ -36,32 +37,12 @@ function haptic() {
   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
 
-// ── Confirmation bullets ──────────────────────────────────────────────────────
-
-const BULLETS = [
-  {
-    icon: "lock"      as const,
-    text: "Your information will be securely submitted to community administrators.",
-  },
-  {
-    icon: "eye"       as const,
-    text: "Administrators may review your submission before it is recorded.",
-  },
-  {
-    icon: "edit"      as const,
-    text: "If corrections are needed, you may be asked to resubmit.",
-  },
-  {
-    icon: "shield"    as const,
-    text: "Your data is never shared publicly or with third parties.",
-  },
-];
-
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function SubmitScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { t }  = useLanguage();
 
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
@@ -126,7 +107,7 @@ export default function SubmitScreen() {
       clearDraft();
       router.replace("/census/success" as never);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Submission failed. Please try again.";
+      const msg = err instanceof Error ? err.message : t.censusSubmissionFailedMsg;
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -147,14 +128,14 @@ export default function SubmitScreen() {
           onPress={() => { haptic(); router.back(); }}
           style={styles.backBtn}
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t.censusGoBack}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Feather name="arrow-left" size={22} color={colors.foreground} />
         </TouchableOpacity>
 
         <Text style={[styles.navTitle, { color: colors.foreground }]}>
-          Submit Community Census
+          {t.censusSubmitScreenTitle}
         </Text>
 
         <View style={{ width: 40 }} />
@@ -165,7 +146,7 @@ export default function SubmitScreen() {
         <View style={[styles.progressFill, { backgroundColor: GOLD, width: "100%" }]} />
       </View>
       <Text style={[styles.progressLabel, { color: colors.mutedForeground }]}>
-        Step 4 of 4
+        {t.censusStep4of4}
       </Text>
 
       {/* ── Scroll body ── */}
@@ -179,12 +160,12 @@ export default function SubmitScreen() {
           <View style={[styles.heroIcon, { borderColor: GOLD + "44", backgroundColor: GOLD + "16" }]}>
             <Text style={styles.heroEmoji}>📋</Text>
           </View>
-          <Text style={[styles.overline, { color: GOLD }]}>ALMOST DONE</Text>
+          <Text style={[styles.overline, { color: GOLD }]}>{t.censusAlmostDone}</Text>
           <Text style={[styles.heroTitle, { color: colors.foreground }]}>
-            Ready to Submit
+            {t.censusReadyToSubmit}
           </Text>
           <Text style={[styles.heroBody, { color: colors.mutedForeground }]}>
-            Please read the following before confirming your submission.
+            {t.censusReadBeforeSubmit}
           </Text>
         </View>
 
@@ -195,7 +176,7 @@ export default function SubmitScreen() {
               {head ? 1 + members.length : 0}
             </Text>
             <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
-              People
+              {t.censusPeople}
             </Text>
           </View>
           <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
@@ -204,7 +185,7 @@ export default function SubmitScreen() {
               {members.length}
             </Text>
             <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
-              Members
+              {t.censusMembers}
             </Text>
           </View>
           <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
@@ -213,42 +194,52 @@ export default function SubmitScreen() {
               {[head, ...members].filter(Boolean).filter((p) => (p as { aliyahStatus: string }).aliyahStatus === "awaiting").length}
             </Text>
             <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
-              Awaiting Aliyah
+              {t.censusAliyahAwaiting}
             </Text>
           </View>
         </View>
 
         {/* Bullets */}
-        <View style={styles.bullets}>
-          {BULLETS.map(({ icon, text }, i) => (
-            <View
-              key={i}
-              style={[styles.bullet, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <View style={[styles.bulletIcon, { backgroundColor: GOLD + "18", borderColor: GOLD + "38" }]}>
-                <Feather name={icon} size={16} color={GOLD} />
-              </View>
-              <Text style={[styles.bulletText, { color: colors.mutedForeground }]}>{text}</Text>
+        {(() => {
+          const BULLETS: { icon: "lock" | "eye" | "edit" | "shield"; textKey: keyof typeof t }[] = [
+            { icon: "lock",   textKey: "censusBullet1" },
+            { icon: "eye",    textKey: "censusBullet2" },
+            { icon: "edit",   textKey: "censusBullet3" },
+            { icon: "shield", textKey: "censusBullet4" },
+          ];
+          return (
+            <View style={styles.bullets}>
+              {BULLETS.map(({ icon, textKey }, i) => (
+                <View
+                  key={i}
+                  style={[styles.bullet, { backgroundColor: colors.card, borderColor: colors.border }]}
+                >
+                  <View style={[styles.bulletIcon, { backgroundColor: GOLD + "18", borderColor: GOLD + "38" }]}>
+                    <Feather name={icon} size={16} color={GOLD} />
+                  </View>
+                  <Text style={[styles.bulletText, { color: colors.mutedForeground }]}>{t[textKey]}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          );
+        })()}
 
         {/* Error card */}
         {error && (
           <View style={[styles.errorCard, { backgroundColor: RED + "10", borderColor: RED + "44" }]}>
             <View style={styles.errorHeader}>
               <Feather name="alert-triangle" size={18} color={RED} />
-              <Text style={[styles.errorTitle, { color: RED }]}>Submission Failed</Text>
+              <Text style={[styles.errorTitle, { color: RED }]}>{t.censusSubmissionFailed}</Text>
             </View>
             <Text style={[styles.errorBody, { color: RED + "cc" }]}>{error}</Text>
             <TouchableOpacity
               style={[styles.retryBtn, { borderColor: RED + "66" }]}
               onPress={handleSubmit}
               accessibilityRole="button"
-              accessibilityLabel="Retry submission"
+              accessibilityLabel={t.censusRetry}
             >
               <Feather name="refresh-cw" size={14} color={RED} />
-              <Text style={[styles.retryBtnText, { color: RED }]}>Retry</Text>
+              <Text style={[styles.retryBtnText, { color: RED }]}>{t.censusRetry}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -272,10 +263,10 @@ export default function SubmitScreen() {
           disabled={submitting}
           activeOpacity={0.82}
           accessibilityRole="button"
-          accessibilityLabel="Back to Review"
+          accessibilityLabel={t.censusBackToReview}
         >
           <Feather name="arrow-left" size={16} color={colors.mutedForeground} />
-          <Text style={[styles.prevBtnText, { color: colors.mutedForeground }]}>Previous</Text>
+          <Text style={[styles.prevBtnText, { color: colors.mutedForeground }]}>{t.censusPrevious}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -284,14 +275,14 @@ export default function SubmitScreen() {
           disabled={submitting}
           activeOpacity={0.82}
           accessibilityRole="button"
-          accessibilityLabel="Confirm and submit census"
+          accessibilityLabel={t.censusConfirmSubmit}
         >
           {submitting ? (
             <ActivityIndicator size="small" color="#1a1100" />
           ) : (
             <>
               <Feather name="check-circle" size={17} color="#1a1100" />
-              <Text style={styles.confirmBtnText}>Confirm &amp; Submit</Text>
+              <Text style={styles.confirmBtnText}>{t.censusConfirmSubmit}</Text>
             </>
           )}
         </TouchableOpacity>

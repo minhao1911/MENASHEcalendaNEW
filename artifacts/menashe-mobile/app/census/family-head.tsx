@@ -71,25 +71,7 @@ function isFutureYear(s: string): boolean {
   return parseInt(s, 10) > new Date().getFullYear();
 }
 
-// ── Label helpers ─────────────────────────────────────────────────────────────
-
-function aliyahLabel(s: AliyahStatus): string {
-  switch (s) {
-    case "in_israel": return "In Israel";
-    case "awaiting":  return "Awaiting Aliyah";
-    case "unknown":   return "Unknown";
-  }
-}
-
-function maritalLabel(s: MaritalStatus): string {
-  return s || "Select…";
-}
-
-function sexLabel(s: Sex | ""): string {
-  if (s === "M") return "Male";
-  if (s === "F") return "Female";
-  return "Select…";
-}
+// ── Label helpers (t-aware versions created inside screen component) ──────────
 
 // ── Field components ─────────────────────────────────────────────────────────
 
@@ -231,6 +213,31 @@ export default function FamilyHeadScreen() {
   const [saveDone, setSaveDone] = useState(false);
   const [saving, setSaving]     = useState(false);
   const [errors, setErrors]     = useState<Record<string, string>>({});
+
+  // ── t-aware label helpers ─────────────────────────────────────────────────
+  const getAliyahLabel = (s: AliyahStatus): string => {
+    switch (s) {
+      case "in_israel": return t.censusAliyahInIsrael;
+      case "awaiting":  return t.censusAliyahAwaiting;
+      case "unknown":   return t.censusAliyahUnknown;
+    }
+  };
+
+  const getSexLabel = (s: Sex | ""): string => {
+    if (s === "M") return t.censusSexMale;
+    if (s === "F") return t.censusSexFemale;
+    return t.censusSelectPlaceholder;
+  };
+
+  const getMaritalLabel = (s: MaritalStatus): string => {
+    switch (s) {
+      case "Single":   return t.censusMaritalSingle;
+      case "Married":  return t.censusMaritalMarried;
+      case "Divorced": return t.censusMaritalDivorced;
+      case "Widowed":  return t.censusMaritalWidowed;
+      default:         return t.censusSelectPlaceholder;
+    }
+  };
 
   // ── Load draft on mount ───────────────────────────────────────────────────
   const draftLoaded = useRef(false);
@@ -486,7 +493,7 @@ export default function FamilyHeadScreen() {
             label={t.censusFieldSex}
             value={sex}
             options={SEXES}
-            getLabel={sexLabel}
+            getLabel={getSexLabel}
             onSelect={setSex}
             colors={colors}
           />
@@ -494,7 +501,7 @@ export default function FamilyHeadScreen() {
             label={t.censusFieldMaritalStatus}
             value={maritalStatus}
             options={MARITAL_STATUSES}
-            getLabel={maritalLabel}
+            getLabel={getMaritalLabel}
             onSelect={setMaritalStatus}
             colors={colors}
           />
@@ -538,7 +545,7 @@ export default function FamilyHeadScreen() {
             label={t.censusFieldAliyahStatus}
             value={aliyahStatus}
             options={ALIYAH_STATUSES}
-            getLabel={aliyahLabel}
+            getLabel={getAliyahLabel}
             onSelect={setAliyahStatus}
             required
             colors={colors}

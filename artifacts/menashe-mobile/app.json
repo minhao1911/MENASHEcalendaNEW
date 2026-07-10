@@ -15,12 +15,14 @@
     },
     "ios": {
       "supportsTablet": false,
+      "bundleIdentifier": "com.menashecalendar.app",
       "infoPlist": {
         "UIBackgroundModes": ["fetch"],
         "NSFaceIDUsageDescription": "Sign in quickly and securely with Face ID"
       }
     },
     "android": {
+      "package": "com.menashecalendar.app",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
