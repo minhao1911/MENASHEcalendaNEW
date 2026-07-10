@@ -1346,8 +1346,8 @@ const TodaysFocusCard = memo(function TodaysFocusCard({
   );
 });
 
-// ─── Shabbat Countdown Card — Phase 4 ─────────────────────────────────────────
-// Hierarchy: Countdown (large, dominant) → Candle Lighting → Havdalah
+// ─── Shabbat Countdown Card — compact two-row design ──────────────────────────
+// Small, clear, professional. Left gold stripe → two info rows → countdown pill.
 
 const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
   mode, countdownDateStr,
@@ -1373,68 +1373,128 @@ const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
     return () => clearInterval(timer);
   }, []);
 
-  const targetDate  = mode === "havdalah" ? havdalahDate : candleLightingDate;
-  const countdownMs = targetDate ? targetDate.getTime() - now : 0;
-
-  const accent = mode === "havdalah" ? "#a78bfa" : gold;
-  const label  = mode === "havdalah" ? t.homeUntilHavdalah : t.homeUntilNextShabbatLabel;
+  const havdalahAccent = "#a78bfa";
+  const targetDate     = mode === "havdalah" ? havdalahDate : candleLightingDate;
+  const countdownMs    = targetDate ? Math.max(0, targetDate.getTime() - now) : 0;
+  const showCountdown  = countdownMs > 0;
 
   return (
-    <View style={{
-      backgroundColor: cardBg,
-      borderRadius: rd.xl,
-      borderWidth: 1, borderColor,
-      overflow: "hidden",
-      ...shadow.level2,
-    }}>
-      {/* Top accent line */}
-      <View style={{ height: 3, backgroundColor: accent }} />
+    <View
+      style={{
+        backgroundColor: cardBg,
+        borderRadius: rd.xl,
+        borderWidth: 1, borderColor,
+        flexDirection: "row",
+        overflow: "hidden",
+        ...shadow.level1,
+      }}
+    >
+      {/* Left accent stripe — gold for candle/upcoming, violet for havdalah */}
+      <View
+        style={{
+          width: 4,
+          backgroundColor: mode === "havdalah" ? havdalahAccent : gold,
+        }}
+      />
 
-      <View style={{ padding: 20 }}>
-        {/* Label */}
-        <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase", marginBottom: 8 }}>
-          {label}
-        </Text>
+      {/* Main content */}
+      <View style={{ flex: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 10 }}>
 
-        {/* Countdown — dominant, large */}
-        <Text style={{
-          fontSize: 38, fontWeight: "800",
-          color: accent, letterSpacing: -1, lineHeight: 44,
-          marginBottom: 4,
-        }}>
-          {countdownMs > 0 ? formatCountdown(countdownMs) : "—"}
-        </Text>
-
-        {/* Date */}
-        <Text style={{ fontSize: 12, color: textMuted, marginBottom: 20, lineHeight: 17 }}>
-          {countdownDateStr}
-        </Text>
-
-        {/* Divider */}
-        <View style={{ height: 1, backgroundColor: borderColor, marginBottom: 18 }} />
-
-        {/* Candle Lighting + Havdalah — below the big number */}
-        <View style={{ flexDirection: "row", gap: 24 }}>
-          <View style={{ gap: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={{ fontSize: 12 }}>🕯</Text>
-              <Text style={{ fontSize: 11, color: textMuted, fontWeight: "600" }}>{t.homeCandleLighting}</Text>
-            </View>
-            <Text style={{ fontSize: 18, fontWeight: "700", color: gold }}>{candleLightingTime}</Text>
+        {/* Row 1 — Candle Lighting */}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View
+            style={{
+              width: 28, height: 28, borderRadius: 14,
+              backgroundColor: gold + "18",
+              alignItems: "center", justifyContent: "center",
+              marginRight: 10,
+            }}
+          >
+            <Text style={{ fontSize: 14 }}>🕯</Text>
           </View>
-
-          <View style={{ width: 1, backgroundColor: borderColor }} />
-
-          <View style={{ gap: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={{ fontSize: 12 }}>✨</Text>
-              <Text style={{ fontSize: 11, color: textMuted, fontWeight: "600" }}>{t.homeHavdalah}</Text>
+          <View style={{ flex: 1 }}>
+            <Text
+              allowFontScaling={false}
+              style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase" }}
+            >
+              {t.homeCandleLighting}
+            </Text>
+            <Text
+              allowFontScaling={false}
+              style={{ fontSize: 16, fontWeight: "700", color: gold, marginTop: 1 }}
+            >
+              {candleLightingTime}
+            </Text>
+          </View>
+          {/* Countdown badge — shown only when approaching candle lighting */}
+          {showCountdown && mode !== "havdalah" && (
+            <View
+              style={{
+                backgroundColor: gold + "18",
+                borderWidth: 1, borderColor: gold + "40",
+                borderRadius: 9999,
+                paddingHorizontal: 10, paddingVertical: 4,
+              }}
+            >
+              <Text
+                allowFontScaling={false}
+                style={{ fontSize: 11, fontWeight: "700", color: gold }}
+              >
+                {formatCountdown(countdownMs)}
+              </Text>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: "700", color: mode === "havdalah" ? "#a78bfa" : gold }}>
+          )}
+        </View>
+
+        {/* Thin divider */}
+        <View style={{ height: 1, backgroundColor: borderColor, marginLeft: 38 }} />
+
+        {/* Row 2 — Havdalah */}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View
+            style={{
+              width: 28, height: 28, borderRadius: 14,
+              backgroundColor: havdalahAccent + "18",
+              alignItems: "center", justifyContent: "center",
+              marginRight: 10,
+            }}
+          >
+            <Text style={{ fontSize: 14 }}>✨</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              allowFontScaling={false}
+              style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase" }}
+            >
+              {t.homeHavdalah}
+            </Text>
+            <Text
+              allowFontScaling={false}
+              style={{ fontSize: 16, fontWeight: "700", color: havdalahAccent, marginTop: 1 }}
+            >
               {havdalahTime}
             </Text>
           </View>
+          {/* Countdown badge — shown when in havdalah mode */}
+          {showCountdown && mode === "havdalah" && (
+            <View
+              style={{
+                backgroundColor: havdalahAccent + "18",
+                borderWidth: 1, borderColor: havdalahAccent + "40",
+                borderRadius: 9999,
+                paddingHorizontal: 10, paddingVertical: 4,
+              }}
+            >
+              <Text
+                allowFontScaling={false}
+                style={{ fontSize: 11, fontWeight: "700", color: havdalahAccent }}
+              >
+                {formatCountdown(countdownMs)}
+              </Text>
+            </View>
+          )}
         </View>
+
       </View>
     </View>
   );
