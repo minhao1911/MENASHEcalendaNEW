@@ -35,7 +35,7 @@ Additional artifact workflows (start individually as needed):
 | `CLERK_PUBLISHABLE_KEY` | `.replit` userenv.shared | Clerk dev instance (public key — safe in repo) |
 | `VITE_CLERK_PUBLISHABLE_KEY` | `.replit` userenv.shared | Same value, injected into Vite bundle |
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | `.replit` userenv.shared | Same value, injected into Expo bundle |
-| `CLERK_SECRET_KEY` | `.replit` userenv.shared ⚠️ | Should be moved to Replit Secrets |
+| `CLERK_SECRET_KEY` | Replit Secrets | — |
 | `VAPID_PUBLIC_KEY` | `.replit` userenv.shared | Web push public key |
 | `VAPID_SUBJECT` | `.replit` userenv.shared | Web push contact email |
 | `ADMIN_PIN` | `.replit` userenv.shared | Admin access PIN (also `VITE_ADMIN_PIN`) |
@@ -111,7 +111,7 @@ lib/
 
 ## Gotchas
 
-- `CLERK_SECRET_KEY` is currently stored in `.replit` `[userenv.shared]` — it should be moved to a Replit Secret (tracked file in git).
+- `CLERK_SECRET_KEY` is stored as a Replit Secret (not tracked in git).
 - AI features (Sacred Wisdom chat) silently degrade if no AI API keys are set — add `OPENAI_API_KEY` as a Replit Secret to enable.
 - Push notifications require `VAPID_PRIVATE_KEY` as a Replit Secret.
 - `@hebcal/noaa` ships pure ESM; a pre-compiled CJS shim is used via Metro `resolveRequest` for the mobile build.
