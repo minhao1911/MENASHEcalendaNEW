@@ -466,118 +466,129 @@ export default function HomeScreen() {
       showsVerticalScrollIndicator={false}
     >
 
-      {/* ─── 1. HEADER ──────────────────────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          1. PROFILE HEADER — Premium native greeting
+          Left:  Avatar · Greeting · Location (tappable)
+          Right: Language toggle · Bell notification
+          ═══════════════════════════════════════════════════════════════════════ */}
       <Animated.View style={[{
-        paddingTop: topPad, paddingHorizontal: HX, paddingBottom: 12,
-        flexDirection: "row", alignItems: "center",
+        paddingTop: topPad + 4,
+        paddingHorizontal: HX,
+        paddingBottom: 18,
+        flexDirection: "row",
+        alignItems: "center",
       }, a0]}>
-        {/* Hamburger — 48dp touch target */}
-        <TouchableOpacity
-          style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center", marginRight: 6 }}
-          activeOpacity={0.7}
-          accessibilityLabel="Open menu"
-          accessibilityRole="button"
-        >
-          <Feather name="menu" size={22} color={textPrimary} />
-        </TouchableOpacity>
 
-        {/* Logo + Brand */}
-        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <View style={{
-            width: 36, height: 36, borderRadius: 10,
-            backgroundColor: gold + "1e", borderWidth: 1, borderColor: gold + "44",
-            alignItems: "center", justifyContent: "center",
-          }}>
-            <Text style={{ fontSize: 17 }}>⛩</Text>
-          </View>
-          <View>
-            <Text style={{ fontSize: 13, fontWeight: "800", color: gold, letterSpacing: 1.8 }}>
-              BNEI MENASHE
-            </Text>
-            <Text style={{ fontSize: 10, color: textMuted, letterSpacing: 0.4, marginTop: 1 }}>
-              {t.homeSacredCalendar}
-            </Text>
-          </View>
-        </View>
+        {/* LEFT — Avatar + Greeting + Location */}
+        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 13 }}>
 
-        {/* Location chip */}
-        <TouchableOpacity
-          onPress={() => setShowLocationPicker(true)}
-          activeOpacity={0.75}
-          accessibilityRole="button"
-          accessibilityLabel={`Location: ${location.name}. Tap to change.`}
-          style={{
-            flexDirection: "row", alignItems: "center", gap: 4,
-            backgroundColor: isLight ? "#fff8ee" : cardBg,
-            borderRadius: rd.pill, paddingHorizontal: 10, paddingVertical: 7,
-            borderWidth: 1, borderColor, marginRight: 10,
-          }}
-        >
-          <Feather name="map-pin" size={10} color={gold} />
-          <Text style={{ fontSize: 11, color: textMuted, fontWeight: "500" }} numberOfLines={1}>
-            {location.name}
-          </Text>
-        </TouchableOpacity>
+          {/* Sacred avatar — gold ring, settable destination */}
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/settings" as any)}
+            activeOpacity={0.82}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+          >
+            <View style={{
+              width: 46, height: 46, borderRadius: 23,
+              backgroundColor: gold + "1a",
+              borderWidth: 2, borderColor: gold + "50",
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Text style={{ fontSize: 22 }}>⛩</Text>
+            </View>
+          </TouchableOpacity>
 
-        {/* Bell — 48dp target */}
-        <TouchableOpacity
-          style={{
-            width: 48, height: 48, borderRadius: 24,
-            backgroundColor: cardBg, borderWidth: 1, borderColor,
-            alignItems: "center", justifyContent: "center",
-          }}
-          activeOpacity={0.7}
-          accessibilityLabel="Notifications"
-          accessibilityRole="button"
-        >
-          <Feather name="bell" size={17} color={textPrimary} />
-          <View style={{
-            position: "absolute", top: 9, right: 10,
-            width: 7, height: 7, borderRadius: 4,
-            backgroundColor: "#fb923c",
-            borderWidth: 1.5, borderColor: pageBg,
-          }} />
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* ─── 2. LANG BAR ──────────────────────────────────────────────────────── */}
-      <Animated.View style={[{
-        paddingHorizontal: HX, marginBottom: 16,
-        flexDirection: "row", alignItems: "center", gap: 10,
-      }, a0]}>
-        <View style={{
-          width: 32, height: 32, borderRadius: 16,
-          backgroundColor: gold + "18", borderWidth: 1, borderColor: gold + "44",
-          alignItems: "center", justifyContent: "center",
-        }}>
-          <Text style={{ fontSize: 14, color: gold }}>✡</Text>
-        </View>
-
-        <View style={{
-          flexDirection: "row",
-          backgroundColor: cardBg, borderRadius: rd.pill,
-          borderWidth: 1, borderColor, padding: 3,
-        }}>
-          {(["en", "tk"] as const).map((l) => (
-            <TouchableOpacity
-              key={l}
+          {/* Greeting text + location chip stacked */}
+          <View style={{ flex: 1 }}>
+            <Text
+              allowFontScaling={false}
               style={{
-                paddingHorizontal: 16, paddingVertical: 8,
-                minHeight: 44, minWidth: 52, justifyContent: "center", alignItems: "center",
-                borderRadius: rd.pill,
-                backgroundColor: lang === l ? gold : "transparent",
+                fontSize: 19, fontWeight: "700",
+                color: textPrimary, letterSpacing: -0.4,
               }}
-              onPress={() => setLang(l)}
-              activeOpacity={0.8}
-              accessibilityLabel={l === "en" ? "Switch to English" : "Switch to Thadou Kuki"}
-              accessibilityRole="button"
-              accessibilityState={{ selected: lang === l }}
+              numberOfLines={1}
             >
-              <Text style={{ fontSize: 11, fontWeight: "700", color: lang === l ? colors.primaryForeground : textMuted }}>
-                {l.toUpperCase()}
-              </Text>
+              {greeting}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setShowLocationPicker(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Location: ${location.name}. Tap to change.`}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 }}>
+                <Feather name="map-pin" size={10} color={gold} />
+                <Text
+                  allowFontScaling={false}
+                  style={{ fontSize: 12, color: textMuted, fontWeight: "500" }}
+                  numberOfLines={1}
+                >
+                  {location.name}
+                </Text>
+              </View>
             </TouchableOpacity>
-          ))}
+          </View>
+        </View>
+
+        {/* RIGHT — Compact language toggle + Bell */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+
+          {/* EN / TK pill toggle — compact */}
+          <View style={{
+            flexDirection: "row",
+            backgroundColor: cardBg,
+            borderRadius: rd.pill,
+            borderWidth: 1, borderColor,
+            padding: 3,
+          }}>
+            {(["en", "tk"] as const).map((l) => (
+              <TouchableOpacity
+                key={l}
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: rd.pill,
+                  backgroundColor: lang === l ? gold : "transparent",
+                  minWidth: 36,
+                  alignItems: "center",
+                }}
+                onPress={() => setLang(l)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityState={{ selected: lang === l }}
+                accessibilityLabel={l === "en" ? "Switch to English" : "Switch to Thadou Kuki"}
+              >
+                <Text
+                  allowFontScaling={false}
+                  style={{ fontSize: 10, fontWeight: "700", color: lang === l ? colors.primaryForeground : textMuted }}
+                >
+                  {l.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Bell — notification indicator */}
+          <TouchableOpacity
+            style={{
+              width: 42, height: 42, borderRadius: 21,
+              backgroundColor: cardBg,
+              borderWidth: 1, borderColor,
+              alignItems: "center", justifyContent: "center",
+            }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+          >
+            <Feather name="bell" size={17} color={textPrimary} />
+            <View style={{
+              position: "absolute", top: 9, right: 9,
+              width: 7, height: 7, borderRadius: 4,
+              backgroundColor: "#fb923c",
+              borderWidth: 1.5, borderColor: pageBg,
+            }} />
+          </TouchableOpacity>
         </View>
       </Animated.View>
 
@@ -685,14 +696,32 @@ export default function HomeScreen() {
         </ImageBackground>
       </Animated.View>
 
-      {/* ─── 4. DAILY PRIORITY — SPR-X002 ──────────────────────────────────────── */}
-      {/* One meaningful next step — highest priority wins, nothing else shown.    */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a2]}>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          3. TODAY'S DASHBOARD
+          Three stacked cards as one cohesive block:
+            Daily Priority → Today's Focus → Shabbat Times
+          ═══════════════════════════════════════════════════════════════════════ */}
+
+      {/* Section eyebrow label */}
+      <Animated.View style={[{ paddingHorizontal: HX, marginBottom: 12 }, a2]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+          <Feather name="star" size={11} color={gold} />
+          <Text
+            allowFontScaling={false}
+            style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, textTransform: "uppercase", color: gold }}
+          >
+            {t.homeTodaysFocusLabel}
+          </Text>
+        </View>
+      </Animated.View>
+
+      {/* 3a — Daily Priority — single most-important action */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 8 }, a2]}>
         <DailyPriorityCard />
       </Animated.View>
 
-      {/* ─── 5. TODAY'S FOCUS — Phase 2 ────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a3]}>
+      {/* 3b — Today's Focus (holiday / shabbat / omer / default) */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 8 }, a3]}>
         <TodaysFocusCard
           mode={countdownMode}
           isShabbat={isShabbat}
@@ -714,8 +743,8 @@ export default function HomeScreen() {
         />
       </Animated.View>
 
-      {/* ─── 5. SHABBAT COUNTDOWN — Phase 4 ────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a4]}>
+      {/* 3c — Shabbat times (compact two-row card) */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a4]}>
         <ShabbatCountdownCard
           mode={countdownMode}
           countdownDateStr={countdownDateStr}
@@ -806,16 +835,7 @@ export default function HomeScreen() {
         </ScrollView>
       </Animated.View>
 
-      {/* ─── 7. QUICK ACTIONS 2×4 — Phase 5 ──────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: QA_H_PAD, marginBottom: 24 }, a6]}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: QA_GAP }}>
-          {QA_ITEMS.map((item) => (
-            <QuickActionCard key={item.id} item={item} />
-          ))}
-        </View>
-      </Animated.View>
-
-      {/* ─── 8. LEARNING EXPERIENCE — Phase 6 ──────────────────────────────────── */}
+      {/* ─── 7. LEARNING EXPERIENCE — Phase 6 ──────────────────────────────────── */}
       {/* All 3 cards: one visual family — same overline · illustration · CTA style */}
       <Animated.View style={[{ marginBottom: 24 }, a7]}>
         <SectionTitle
@@ -1171,7 +1191,25 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* ─── 13. GO PREMIUM ─────────────────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          9. QUICK ACTIONS — 8-icon app-icon grid
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <Animated.View style={[{ marginBottom: 8 }, a9]}>
+        <SectionTitle
+          eyebrow={t.homeQuickActionsTitle}
+          leadingIcon={<Feather name="grid" size={13} color={gold} />}
+          style={{ paddingHorizontal: HX, marginTop: 0 }}
+        />
+      </Animated.View>
+      <Animated.View style={[{ marginHorizontal: QA_H_PAD, marginBottom: 32 }, a9]}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: QA_GAP }}>
+          {QA_ITEMS.map((item) => (
+            <QuickActionCard key={item.id} item={item} />
+          ))}
+        </View>
+      </Animated.View>
+
+      {/* ─── GO PREMIUM ─────────────────────────────────────────────────────── */}
       <Animated.View style={[{ marginHorizontal: HX, marginBottom: 6 }, a9]}>
         <Pressable
           style={({ pressed }) => ({
