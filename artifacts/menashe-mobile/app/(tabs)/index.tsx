@@ -80,6 +80,14 @@ const HEBREW_DAY: Record<number, string> = {
 
 const HERO_BG = require("../../assets/images/saipikhup-photo.jpg");
 
+/* ── Hero card background rotation — crossfades between sacred-site photos ─── */
+const HERO_BG_IMAGES = [
+  require("../../assets/images/hero-kotel.jpg"),
+  require("../../assets/images/hero-temple-mount.jpg"),
+  require("../../assets/images/hero-synagogue.jpg"),
+  HERO_BG,
+];
+
 function getOmerDay(): number | null {
   const hd = new HDate(new Date());
   const m  = hd.getMonth();
@@ -136,6 +144,77 @@ function useHeroShimmer() {
     return () => clearTimeout(t);
   }, [opacity, reducedMotion]);
   return opacity;
+}
+
+// ─── Hero background crossfade — slow ambient rotation through sacred-site art ─
+// Two stacked ImageBackground layers; the top layer fades in over the current
+// one, then swaps index so the fade can repeat indefinitely. Respects Reduced
+// Motion by swapping instantly instead of animating.
+
+function HeroBackgroundCrossfade({
+  images, style, children, intervalMs = 7000, fadeMs = 1400,
+}: {
+  images: any[];
+  style?: ViewStyle;
+  children?: React.ReactNode;
+  intervalMs?: number;
+  fadeMs?: number;
+}) {
+  const reducedMotion = useReducedMotion();
+  const [index, setIndex]   = useState(0);
+  const indexRef            = useRef(0);
+  const nextOpacity         = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = setInterval(() => {
+      const next = (indexRef.current + 1) % images.length;
+      if (reducedMotion) {
+        indexRef.current = next;
+        setIndex(next);
+        return;
+      }
+      Animated.timing(nextOpacity, {
+        toValue: 1,
+        duration: fadeMs,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) {
+          indexRef.current = next;
+          setIndex(next);
+          nextOpacity.setValue(0);
+        }
+      });
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [images.length, reducedMotion, intervalMs, fadeMs, nextOpacity]);
+
+  const nextIndex = (index + 1) % images.length;
+
+  return (
+    <View style={style}>
+      <ImageBackground
+        source={images[index]}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+        accessibilityIgnoresInvertColors
+      />
+      {images.length > 1 && (
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFillObject, { opacity: nextOpacity }]}
+        >
+          <ImageBackground
+            source={images[nextIndex]}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+          />
+        </Animated.View>
+      )}
+      {children}
+    </View>
+  );
 }
 
 // ─── Overline label ───────────────────────────────────────────────────────────
@@ -599,11 +678,9 @@ export default function HomeScreen() {
         borderRadius: 28, overflow: "hidden",
         ...shadow.level2,
       }, a1]}>
-        <ImageBackground
-          source={HERO_BG}
+        <HeroBackgroundCrossfade
+          images={HERO_BG_IMAGES}
           style={{ minHeight: 264 }}
-          resizeMode="cover"
-          accessibilityIgnoresInvertColors
         >
           <LinearGradient
             colors={["rgba(10,8,3,0.28)", "rgba(8,6,2,0.74)", "rgba(4,3,1,0.97)"]}
@@ -693,7 +770,7 @@ export default function HomeScreen() {
               }}
             />
           </LinearGradient>
-        </ImageBackground>
+        </HeroBackgroundCrossfade>
       </Animated.View>
 
       {/* ═══════════════════════════════════════════════════════════════════════
