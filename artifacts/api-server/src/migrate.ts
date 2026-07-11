@@ -543,6 +543,39 @@ export async function runMigrations(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_prayer_requests_status ON prayer_requests (status, submitted_at DESC)
     `);
 
+    // ── Member Directory (server-backed, shared across web + mobile) ────────
+    await client.query(`
+      DO $mds$ BEGIN
+        CREATE TYPE member_directory_status AS ENUM ('pending','approved','hidden');
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $mds$
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS member_directory (
+        id                 TEXT PRIMARY KEY,
+        user_id            TEXT NOT NULL UNIQUE,
+        name               TEXT NOT NULL,
+        city               TEXT NOT NULL DEFAULT '',
+        country            TEXT NOT NULL DEFAULT 'India',
+        role               TEXT NOT NULL DEFAULT 'Member',
+        bio                TEXT NOT NULL DEFAULT '',
+        whatsapp           TEXT,
+        phone              TEXT,
+        email              TEXT,
+        other_contact      TEXT,
+        birthday           TEXT,
+        aliyah_date        TEXT,
+        avatar_emoji       TEXT,
+        profile_photo_url  TEXT,
+        status             member_directory_status NOT NULL DEFAULT 'pending',
+        joined_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_member_directory_status ON member_directory (status)
+    `);
+
     logger.info("Schema ready");
 
     const { rows } = await client.query("SELECT COUNT(*) AS cnt FROM books");

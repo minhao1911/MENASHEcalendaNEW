@@ -375,6 +375,55 @@ export interface SharedTranslations {
   commOrgNewsletterDesc: string;
   commOrgTorahClassesDesc: string;
   commOrgConnectDesc: string;
+  dirTitle: string;
+  dirSeeAll: string;
+  dirHubCardDesc: string;
+  dirMembersWorldwide: string;
+  dirSearchPlaceholder: string;
+  dirNoMembers: string;
+  dirNoMatch: string;
+  dirBeFirst: string;
+  dirConnect: string;
+  dirClose: string;
+  dirMemberSince: string;
+  dirJoinQuestion: string;
+  dirJoinDesc: string;
+  dirJoinButton: string;
+  dirLoadError: string;
+  dirRegisterTitle: string;
+  dirEditTitle: string;
+  dirReviewNote: string;
+  dirAlreadyRegisteredNote: string;
+  dirFullName: string;
+  dirFullNamePlaceholder: string;
+  dirCity: string;
+  dirCityPlaceholder: string;
+  dirCountry: string;
+  dirRole: string;
+  dirBio: string;
+  dirBioPlaceholder: string;
+  dirContactSection: string;
+  dirContactNote: string;
+  dirWhatsapp: string;
+  dirPhone: string;
+  dirEmail: string;
+  dirOtherContact: string;
+  dirOtherContactPlaceholder: string;
+  dirCelebrationSection: string;
+  dirCelebrationNote: string;
+  dirBirthday: string;
+  dirAliyahDate: string;
+  dirNameRequired: string;
+  dirCityRequired: string;
+  dirSubmit: string;
+  dirSubmitting: string;
+  dirUpdate: string;
+  dirSubmitFailed: string;
+  dirSuccessTitle: string;
+  dirSuccessDesc: string;
+  dirUpdateSuccessTitle: string;
+  dirUpdateSuccessDesc: string;
+  dirBackToDirectory: string;
   commLearningTitle: string;
   commLearningSoon: string;
   commSynagogueTitle: string;
@@ -923,6 +972,55 @@ export const sharedEn: SharedTranslations = {
   commOrgHotlineDesc: "For halachic and community questions.",
   commOrgNewsletterDesc: "Monthly community updates.",
   commOrgTorahClassesDesc: "Online shiurim for Bnei Menashe communities.",
+  dirTitle: "Member Directory",
+  dirSeeAll: "See all",
+  dirHubCardDesc: "Find and connect with Bnei Menashe members worldwide.",
+  dirMembersWorldwide: "approved members worldwide",
+  dirSearchPlaceholder: "Search by name or city…",
+  dirNoMembers: "No approved members yet",
+  dirNoMatch: "No members match your search",
+  dirBeFirst: "Be the first to register!",
+  dirConnect: "Connect",
+  dirClose: "Close",
+  dirMemberSince: "Member since",
+  dirJoinQuestion: "Are you a Bnei Menashe member?",
+  dirJoinDesc: "Add yourself to the community directory",
+  dirJoinButton: "Join the Directory",
+  dirLoadError: "Couldn't load the directory. Please try again.",
+  dirRegisterTitle: "Join the Directory",
+  dirEditTitle: "Edit My Listing",
+  dirReviewNote: "Your profile will be reviewed by the admin before appearing in the directory.",
+  dirAlreadyRegisteredNote: "You're already listed in the directory. Changes are saved right away.",
+  dirFullName: "Full Name",
+  dirFullNamePlaceholder: "Your full name",
+  dirCity: "City",
+  dirCityPlaceholder: "Your city",
+  dirCountry: "Country",
+  dirRole: "Role in Community",
+  dirBio: "Short Bio (optional)",
+  dirBioPlaceholder: "A few words about yourself and your connection to the community…",
+  dirContactSection: "Contact Info (optional)",
+  dirContactNote: "Only visible to other approved members. Leave blank if you prefer privacy.",
+  dirWhatsapp: "WhatsApp Number",
+  dirPhone: "Phone Number",
+  dirEmail: "Email Address",
+  dirOtherContact: "Other (Telegram, Facebook, etc.)",
+  dirOtherContactPlaceholder: "e.g. @username on Telegram",
+  dirCelebrationSection: "Celebration Dates (optional)",
+  dirCelebrationNote: "Let the community wish you on your special days! Only approved members are notified.",
+  dirBirthday: "Birthday",
+  dirAliyahDate: "Aliyah Date",
+  dirNameRequired: "Please enter your name.",
+  dirCityRequired: "Please enter your city.",
+  dirSubmit: "Submit for Review",
+  dirSubmitting: "Submitting…",
+  dirUpdate: "Save Changes",
+  dirSubmitFailed: "Failed to submit — please try again.",
+  dirSuccessTitle: "Registration Submitted!",
+  dirSuccessDesc: "Your profile is now pending review. The admin will approve your listing shortly.",
+  dirUpdateSuccessTitle: "Changes Saved!",
+  dirUpdateSuccessDesc: "Your directory listing has been updated.",
+  dirBackToDirectory: "Back to Directory",
   commOrgConnectDesc: "Find community members near you.",
   commLearningTitle: "Learning Groups",
   commLearningSoon: "Learning groups coming soon",
@@ -1461,6 +1559,55 @@ export const sharedTk: SharedTranslations = {
   commOrgHotlineDesc: "Halacha leh mipil dotna tur ahi.",
   commOrgNewsletterDesc: "Kha khat hin mipil thu update.",
   commOrgTorahClassesDesc: "Bnei Menashe mipil tan online shiur.",
+  dirTitle: "Mipil Directory",
+  dirSeeAll: "Zawng zawng en",
+  dirHubCardDesc: "Bnei Menashe mipil khawvel zawng zawng zawn la inzawmpui rawh.",
+  dirMembersWorldwide: "mipil pawm khawvel zawng zawng",
+  dirSearchPlaceholder: "Hming emaw khua emaw zawn…",
+  dirNoMembers: "Mipil pawm a awm lo",
+  dirNoMatch: "I zawnna hovin mipil a awm lo",
+  dirBeFirst: "Hmasa berin i inziak thei!",
+  dirConnect: "Inzawmpui",
+  dirClose: "Khar",
+  dirMemberSince: "Aṭanga mipil",
+  dirJoinQuestion: "Bnei Menashe mipil i ni em?",
+  dirJoinDesc: "Directory-ah i hming ziak rawh",
+  dirJoinButton: "Directory-ah Tel",
+  dirLoadError: "Directory chhut theih lo. Ṭhen leh rawh.",
+  dirRegisterTitle: "Directory-ah Tel",
+  dirEditTitle: "Ka Profile Siam Danglam",
+  dirReviewNote: "Directory-ah a lang hma ah admin-in a en tep tep ang.",
+  dirAlreadyRegisteredNote: "Directory-ah i hming a lo ziak tawh. Danglamna zawng zawng chu a laiin dah a ni thin.",
+  dirFullName: "Hming Kimchang",
+  dirFullNamePlaceholder: "I hming kimchang",
+  dirCity: "Khua",
+  dirCityPlaceholder: "I khua",
+  dirCountry: "Ram",
+  dirRole: "Mipil Kalpuina Hnathawh",
+  dirBio: "Bio Tawi (a ngai lo)",
+  dirBioPlaceholder: "Nangma chungchang leh mipil kalpuina i inlaichinna chungchang tlem ziak rawh…",
+  dirContactSection: "Biakna Chanchin (a ngai lo)",
+  dirContactNote: "Mipil pawm dangte hriat theih ani. I duh loh chuan hawng suh.",
+  dirWhatsapp: "WhatsApp Number",
+  dirPhone: "Phone Number",
+  dirEmail: "Email Address",
+  dirOtherContact: "Dang (Telegram, Facebook, etc.)",
+  dirOtherContactPlaceholder: "Tv. Telegram @username",
+  dirCelebrationSection: "Lawmman Ni (a ngai lo)",
+  dirCelebrationNote: "Mipil pawm chuan i ni lawm hun an hriat theih ang che!",
+  dirBirthday: "Piannikhua",
+  dirAliyahDate: "Aliyah Ni",
+  dirNameRequired: "I hming ziak rawh.",
+  dirCityRequired: "I khua ziak rawh.",
+  dirSubmit: "En Tur Thehluh",
+  dirSubmitting: "Theh mek…",
+  dirUpdate: "Danglamna Dah",
+  dirSubmitFailed: "Thehluh a chhuak lo — ṭhen leh rawh.",
+  dirSuccessTitle: "Inziakna Theh A Ni Tawh!",
+  dirSuccessDesc: "I profile chu en tur ah a awm tawh. Admin-in a en hnu chuan a lang dawn.",
+  dirUpdateSuccessTitle: "Danglamna Dah A Ni Tawh!",
+  dirUpdateSuccessDesc: "I directory profile chu siam danglam a ni tawh.",
+  dirBackToDirectory: "Directory-ah Kir Leh",
   commOrgConnectDesc: "Na kilkung mipil member te hmuh.",
   commLearningTitle: "Kihilna Pawl",
   commLearningSoon: "Kihilna pawl a hla mek",

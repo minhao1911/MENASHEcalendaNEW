@@ -17,6 +17,7 @@ import memorialsRouter from "./memorials";
 import feedbackRouter from "./feedback";
 import prayerBoardRouter from "./prayerBoard";
 import communityEventsRouter from "./communityEvents";
+import directoryRouter from "./directory";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(memorialsRouter);
 router.use(feedbackRouter);
 router.use(prayerBoardRouter);
 router.use(communityEventsRouter);
+router.use(directoryRouter);
 
 export default router;

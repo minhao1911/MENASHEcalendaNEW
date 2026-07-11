@@ -84,10 +84,12 @@ artifacts/
     components/     — UI primitives, BottomNav, banners
     lib/            — hebrewCalendar, zmanim, parasha, translations, LanguageContext
   api-server/src/
-    routes/         — books, memorials, community, ai, payments, ...
+    routes/         — books, memorials, community, ai, payments, directory (member_directory), ...
     memorial/       — repos + services for memorial system
     ai/             — gateway (OpenAI → Gemini → Grok fallback), circuit breaker
   menashe-mobile/   — Expo app (tabs: Calendar, Torah, Community, Settings)
+    app/community/directory.tsx, directory-register.tsx — Member Directory browse + register/edit
+    lib/directoryApi.ts — Clerk-token-authenticated fetch client for the directory API
   mockup-sandbox/   — Vite component preview server for Canvas design work
 lib/
   shared-core/      — Hebrew calendar utils, zmanim, parasha aliyot, translations

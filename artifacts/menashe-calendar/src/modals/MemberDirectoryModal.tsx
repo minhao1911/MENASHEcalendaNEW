@@ -1,4 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import {
+  type DirectoryMember, type DirectoryRegistration,
+  fetchDirectory, registerDirectoryMember,
+  fetchAllDirectoryMembers, approveDirectoryMember, hideDirectoryMember, deleteDirectoryMember,
+} from "../lib/directoryApi";
 
 interface Props {
   onClose: () => void;
@@ -6,26 +11,7 @@ interface Props {
   userProfile?: { name: string; city: string; country: string; role: string; bio: string } | null;
 }
 
-export interface Member {
-  id: string;
-  name: string;
-  city: string;
-  country: string;
-  role: string;
-  bio: string;
-  whatsapp?: string;
-  phone?: string;
-  email?: string;
-  otherContact?: string;
-  birthday?: string;
-  aliyahDate?: string;
-  status: "pending" | "approved" | "hidden";
-  joinedAt: string;
-  avatarEmoji?: string;
-  profilePhotoUrl?: string | null;
-}
-
-const STORAGE_KEY = "menashe-member-directory";
+export type Member = DirectoryMember;
 
 const ROLES = ["Member", "Community Leader", "Rabbi", "Cantor", "Youth Leader", "Women's Group", "Student", "Elder"];
 const COUNTRIES = ["India", "Israel", "United States", "United Kingdom", "Australia", "Canada", "Other"];
@@ -84,21 +70,6 @@ function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-function loadMembers(): Member[] {
-  try { const r = localStorage.getItem(STORAGE_KEY); if (r) return JSON.parse(r); } catch {}
-  return DEFAULT_MEMBERS;
-}
-function saveMembers(m: Member[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(m)); } catch {}
-}
-
-const DEFAULT_MEMBERS: Member[] = [
-  { id: "d1", name: "Avichail Cohen", city: "Jerusalem", country: "Israel", role: "Community Leader", bio: "Leading the Bnei Menashe community in Jerusalem since aliyah.", whatsapp: "+97250000001", email: "avichail@example.com", birthday: "1978-06-22", aliyahDate: "2010-06-22", status: "approved", joinedAt: "2023-03-15T00:00:00.000Z" },
-  { id: "d2", name: "Shmuel Haokip", city: "Churachandpur", country: "India", role: "Rabbi", bio: "Teaching Torah and preparing community members for aliyah.", whatsapp: "+9198765000", email: "shmuel@example.com", birthday: "1985-06-25", status: "approved", joinedAt: "2023-06-01T00:00:00.000Z" },
-  { id: "d3", name: "Miriam Lhouvum", city: "Imphal", country: "India", role: "Women's Group", bio: "Organising women's Torah study and community events.", email: "miriam@example.com", aliyahDate: "2017-06-26", status: "approved", joinedAt: "2024-01-10T00:00:00.000Z" },
-  { id: "d4", name: "Yosef Thangkhiew", city: "Kiryat Arba", country: "Israel", role: "Elder", bio: "Keeper of Bnei Menashe traditions and oral history.", status: "approved", joinedAt: "2022-09-20T00:00:00.000Z" },
-];
-
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "10px 12px", borderRadius: 10,
   background: "var(--elevated)", border: "1px solid var(--border)",
@@ -114,7 +85,9 @@ function emptyReg(): Omit<Member, "id" | "status" | "joinedAt"> {
 }
 
 export default function MemberDirectoryModal({ onClose, isAdmin = false, userProfile }: Props) {
-  const [members, setMembers] = useState<Member[]>(loadMembers);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [view, setView] = useState<"directory" | "register" | "admin">("directory");
   const [reg, setReg] = useState(() => {
     if (userProfile) {
@@ -130,6 +103,7 @@ export default function MemberDirectoryModal({ onClose, isAdmin = false, userPro
   });
   const [regSent, setRegSent] = useState(false);
   const [regError, setRegError] = useState("");
+  const [regBusy, setRegBusy] = useState(false);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("All");
   const [filterCountry, setFilterCountry] = useState("All");
@@ -138,20 +112,50 @@ export default function MemberDirectoryModal({ onClose, isAdmin = false, userPro
   const [connectOpen, setConnectOpen] = useState<string | null>(null);
   const [introMsg, setIntroMsg] = useState("Shalom! I found you in the Bnei Menashe Member Directory and would love to connect. 🕍");
 
-  function persist(list: Member[]) { setMembers(list); saveMembers(list); }
+  const loadDirectory = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const list = isAdmin && view === "admin" ? await fetchAllDirectoryMembers() : await fetchDirectory();
+      setMembers(list);
+    } catch {
+      setLoadError("Couldn't load the directory. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin, view]);
 
-  function submitReg() {
+  useEffect(() => { loadDirectory(); }, [loadDirectory]);
+
+  async function submitReg() {
     if (!reg.name.trim()) { setRegError("Please enter your name."); return; }
     if (!reg.city.trim()) { setRegError("Please enter your city."); return; }
     setRegError("");
-    const m: Member = { ...reg, id: `m-${Date.now()}`, status: "pending", joinedAt: new Date().toISOString() };
-    persist([...members, m]);
-    setRegSent(true);
+    setRegBusy(true);
+    try {
+      const data: DirectoryRegistration = { ...reg, whatsapp: reg.whatsapp || undefined, phone: reg.phone || undefined, email: reg.email || undefined, otherContact: reg.otherContact || undefined, birthday: reg.birthday || undefined, aliyahDate: reg.aliyahDate || undefined };
+      await registerDirectoryMember(data);
+      setRegSent(true);
+    } catch (err: any) {
+      setRegError(err?.message || "Failed to submit — please try again.");
+    } finally {
+      setRegBusy(false);
+    }
   }
 
-  function approve(id: string) { persist(members.map(m => m.id === id ? { ...m, status: "approved" } : m)); }
-  function hide(id: string)    { persist(members.map(m => m.id === id ? { ...m, status: "hidden" } : m)); }
-  function deleteMember(id: string) { persist(members.filter(m => m.id !== id)); setDeleteConfirm(null); }
+  async function approve(id: string) {
+    setMembers(prev => prev.map(m => m.id === id ? { ...m, status: "approved" } : m));
+    try { await approveDirectoryMember(id); } catch { loadDirectory(); }
+  }
+  async function hide(id: string) {
+    setMembers(prev => prev.map(m => m.id === id ? { ...m, status: "hidden" } : m));
+    try { await hideDirectoryMember(id); } catch { loadDirectory(); }
+  }
+  async function deleteMember(id: string) {
+    setDeleteConfirm(null);
+    setMembers(prev => prev.filter(m => m.id !== id));
+    try { await deleteDirectoryMember(id); } catch { loadDirectory(); }
+  }
 
   const approved = useMemo(() => {
     let list = members.filter(m => m.status === "approved");
@@ -313,9 +317,9 @@ export default function MemberDirectoryModal({ onClose, isAdmin = false, userPro
 
             {regError && <div style={{ fontSize: 12, color: "#ef4444", marginBottom: 10 }}>⚠️ {regError}</div>}
 
-            <button className="btn-gold" style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 800, marginBottom: 10 }}
-              onClick={submitReg}>
-              Submit for Review
+            <button className="btn-gold" style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 800, marginBottom: 10, opacity: regBusy ? 0.6 : 1 }}
+              onClick={submitReg} disabled={regBusy}>
+              {regBusy ? "Submitting…" : "Submit for Review"}
             </button>
             <button onClick={() => setView("directory")} className="btn-close-full">Cancel</button>
           </>
@@ -476,7 +480,14 @@ export default function MemberDirectoryModal({ onClose, isAdmin = false, userPro
         </div>
 
         {/* Member cards */}
-        {approved.length === 0 ? (
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-muted)", fontSize: 13 }}>Loading directory…</div>
+        ) : loadError ? (
+          <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-muted)" }}>
+            <div style={{ fontSize: 13, color: "#ef4444", marginBottom: 10 }}>⚠️ {loadError}</div>
+            <button onClick={loadDirectory} className="btn-gold" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 700 }}>Retry</button>
+          </div>
+        ) : approved.length === 0 ? (
           <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-muted)" }}>
             <div style={{ fontSize: 44, marginBottom: 10 }}>🔍</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>

@@ -561,6 +561,39 @@ export default function CommunityScreen() {
               <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.commOrgsSeeAll}</Text>
             </TouchableOpacity>
 
+            {/* ═══ 5.5 MEMBER DIRECTORY ═══ */}
+            <SectionTitle
+              leadingIcon={<Text style={{ fontSize: 16 }}>👥</Text>}
+              title={t.dirTitle}
+              actionLabel={t.dirSeeAll}
+              onAction={() => navigate("/community/directory")}
+            />
+            <TouchableOpacity
+              activeOpacity={0.82}
+              onPress={() => navigate("/community/directory")}
+              accessibilityRole="button"
+              accessibilityLabel={t.dirTitle}
+              style={[styles.orgCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
+              <View style={[styles.orgBadge, { backgroundColor: "#1a2e4a" }]}>
+                <Text style={{ fontSize: ty.subtitle.fontSize }}>👥</Text>
+              </View>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={[styles.orgName, { color: colors.foreground }]}>{t.dirTitle}</Text>
+                <Text style={[styles.orgDesc, { color: colors.mutedForeground }]}>{t.dirHubCardDesc}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.dashedCta, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0C" }]}
+              onPress={() => navigate("/community/directory")}
+              accessibilityRole="button"
+              accessibilityLabel={t.dirSeeAll}
+              activeOpacity={0.75}
+            >
+              <Feather name="users" size={16} color={colors.primary} />
+              <Text style={[styles.dashedCtaText, { color: colors.primary }]}>{t.dirSeeAll}</Text>
+            </TouchableOpacity>
+
             {/* ═══ 6. LEARNING GROUPS ═══ */}
             <SectionTitle
               leadingIcon={<Text style={{ fontSize: 16 }}>📚</Text>}
