@@ -60,7 +60,7 @@ const defaultAnnForm = { emoji: "📢", title: "", body: "", pinned: false, sche
 
 interface CensusSubmission {
   id: string;
-  branch: { id: string; name: string; cityName: string; adminName?: string; established?: string; families: unknown[] };
+  branch: { id: string; name: string; cityName: string; adminName?: string; established?: string; logoUrl?: string; synagogueImageUrl?: string; families: unknown[] };
   submittedAt: string;
   status: "pending" | "approved" | "rejected";
   reviewNote?: string;
@@ -924,7 +924,11 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
                           padding: "12px 14px",
                         }}>
                           <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
-                            <div style={{ fontSize: 22, lineHeight: 1 }}>🏛️</div>
+                            {sub.branch.logoUrl ? (
+                              <img src={sub.branch.logoUrl} alt={`${sub.branch.name} logo`} style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+                            ) : (
+                              <div style={{ fontSize: 22, lineHeight: 1 }}>🏛️</div>
+                            )}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{sub.branch.name}</div>
                               <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
@@ -939,6 +943,9 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
                               {sub.status.toUpperCase()}
                             </span>
                           </div>
+                          {sub.branch.synagogueImageUrl && (
+                            <img src={sub.branch.synagogueImageUrl} alt={`${sub.branch.name} synagogue`} style={{ width: "100%", height: 90, borderRadius: 8, objectFit: "cover", marginBottom: 8 }} />
+                          )}
                           <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: isPending ? 10 : 0 }}>
                             Submitted {new Date(sub.submittedAt).toLocaleDateString()}
                             {sub.reviewNote && <span style={{ marginLeft: 8, color: "var(--text-muted)", fontStyle: "italic" }}>· "{sub.reviewNote}"</span>}

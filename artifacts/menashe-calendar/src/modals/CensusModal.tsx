@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   fetchCensusBranch, saveCensusBranch,
   fetchCensusSubmissions, submitCensusBranchForReview, reviewCensusSubmission,
@@ -9,6 +9,7 @@ import type {
   CensusRow, FamilyMember, Family, Branch,
 } from "@workspace/shared-core/census";
 import { RELATION_LABELS, ALIYAH_LABELS } from "@workspace/shared-core/census";
+import { useUpload } from "@workspace/object-storage-web";
 
 interface Props { onClose: () => void; isAdmin?: boolean; }
 
@@ -106,6 +107,66 @@ function Label({ children }: { children: string }) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div><Label>{label}</Label>{children}</div>;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   IMAGE UPLOAD BOX — used for community logo / synagogue photo
+══════════════════════════════════════════════════════════════ */
+function ImageUploadBox({ label, imageUrl, isUploading, progress, inputRef, onPick }: {
+  label: string;
+  imageUrl?: string;
+  isUploading: boolean;
+  progress: number;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onPick: (file: File) => void;
+}) {
+  return (
+    <div style={{ flex: 1 }}>
+      <div
+        onClick={() => !isUploading && inputRef.current?.click()}
+        style={{
+          border: `2px dashed ${isUploading ? "#d4a843" : imageUrl ? "rgba(74,222,128,0.4)" : "var(--border)"}`,
+          borderRadius: 10, padding: imageUrl ? 0 : "18px 10px", textAlign: "center",
+          cursor: isUploading ? "default" : "pointer",
+          background: isUploading ? "rgba(212,168,67,0.05)" : "var(--elevated)",
+          overflow: "hidden", minHeight: 96, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", transition: "all 0.2s",
+        }}
+      >
+        {isUploading ? (
+          <>
+            <div style={{ fontSize: 20, marginBottom: 6 }}>⏳</div>
+            <div style={{ fontSize: 11, color: "#d4a843", fontWeight: 700, marginBottom: 6 }}>Uploading… {progress}%</div>
+            <div style={{ height: 4, width: "80%", background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${progress}%`, background: "#d4a843", borderRadius: 2, transition: "width 0.3s" }} />
+            </div>
+          </>
+        ) : imageUrl ? (
+          <div style={{ position: "relative", width: "100%" }}>
+            <img src={imageUrl} alt={label} style={{ width: "100%", height: 96, objectFit: "cover", display: "block" }} />
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "4px 6px", background: "rgba(0,0,0,0.55)", fontSize: 10, color: "#4ade80", fontWeight: 700 }}>✓ Tap to replace</div>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 22, marginBottom: 4 }}>🖼️</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)" }}>{label}</div>
+            <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 2 }}>Tap to upload</div>
+          </>
+        )}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
+        style={{ display: "none" }}
+        onChange={e => {
+          const file = e.target.files?.[0];
+          if (file) onPick(file);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -625,7 +686,7 @@ function CommunitySubmitForm({
   prefill,
   defaultBranchId,
 }: {
-  allBranches: { id: string; name: string; cityName: string }[];
+  allBranches: { id: string; name: string; cityName: string; logoUrl?: string; synagogueImageUrl?: string }[];
   onSubmit: (entry: Omit<MemberSubmissionEntry, "id" | "submittedAt" | "status">) => void;
   onCancel: () => void;
   prefill?: MemberSubmissionEntry;
@@ -710,6 +771,18 @@ function CommunitySubmitForm({
               {allBranches.map(b => <option key={b.id} value={b.id}>{b.name} · {b.cityName}</option>)}
             </select>
           </Field>
+
+          {selectedBranch && (selectedBranch.logoUrl || selectedBranch.synagogueImageUrl) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.25)" }}>
+              {selectedBranch.logoUrl && (
+                <img src={selectedBranch.logoUrl} alt={`${selectedBranch.name} logo`} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover" }} />
+              )}
+              {selectedBranch.synagogueImageUrl && (
+                <img src={selectedBranch.synagogueImageUrl} alt={`${selectedBranch.name} synagogue`} style={{ width: 52, height: 36, borderRadius: 8, objectFit: "cover" }} />
+              )}
+              <div style={{ fontSize: 11, color: "#4ade80", fontWeight: 600 }}>Is this your community? Confirm before submitting.</div>
+            </div>
+          )}
 
           <Field label="YOUR FULL NAME (for identification)">
             <input style={inputStyle} placeholder="Your full name as you'd like to be identified" value={submitterName} onChange={e => setSubmitterName(e.target.value)} />
@@ -997,10 +1070,15 @@ function Dashboard({ stats, cities, approvedBranches = [], onSubmitRequest, onSt
               return (
                 <div key={b.id} style={{ padding: "12px 14px", borderBottom: i < approvedBranches.length - 1 ? "1px solid var(--border)" : "none" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{b.name}</div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                        🇮🇳 {b.cityName}{b.adminName ? ` · Admin: ${b.adminName}` : ""}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {b.logoUrl && (
+                        <img src={b.logoUrl} alt={`${b.name} logo`} style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(74,222,128,0.3)" }} />
+                      )}
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{b.name}</div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                          🇮🇳 {b.cityName}{b.adminName ? ` · Admin: ${b.adminName}` : ""}
+                        </div>
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -1715,6 +1793,31 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const synagogueInputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile: uploadLogo, isUploading: isLogoUploading, progress: logoProgress } = useUpload({
+    onSuccess: (response) => {
+      const url = `/api/storage${response.objectPath}`;
+      setBranch(b => {
+        if (!b) return b;
+        const updated = { ...b, logoUrl: url };
+        saveCensusBranch(updated as any);
+        return updated;
+      });
+    },
+  });
+  const { uploadFile: uploadSynagogueImage, isUploading: isSynagogueUploading, progress: synagogueProgress } = useUpload({
+    onSuccess: (response) => {
+      const url = `/api/storage${response.objectPath}`;
+      setBranch(b => {
+        if (!b) return b;
+        const updated = { ...b, synagogueImageUrl: url };
+        saveCensusBranch(updated as any);
+        return updated;
+      });
+    },
+  });
+
   /* Load branch from DB on first open (if user is signed in) */
   useEffect(() => {
     if (initialBranch) return;
@@ -1818,12 +1921,17 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
 
       <div style={{ padding: "14px 16px", borderRadius: 14, background: "linear-gradient(135deg, rgba(79,142,247,0.12), rgba(79,142,247,0.04))", border: "1px solid rgba(79,142,247,0.3)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>{branch.name}</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-              🇮🇳 {branch.cityName}{branch.established && <span style={{ marginLeft: 6 }}>· Est. {branch.established}</span>}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {branch.logoUrl && (
+              <img src={branch.logoUrl} alt={`${branch.name} logo`} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(79,142,247,0.35)" }} />
+            )}
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>{branch.name}</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                🇮🇳 {branch.cityName}{branch.established && <span style={{ marginLeft: 6 }}>· Est. {branch.established}</span>}
+              </div>
+              {branch.adminName && <div style={{ fontSize: 11, color: "#4f8ef7", marginTop: 2 }}>Admin: {branch.adminName}</div>}
             </div>
-            {branch.adminName && <div style={{ fontSize: 11, color: "#4f8ef7", marginTop: 2 }}>Admin: {branch.adminName}</div>}
           </div>
           <button onClick={() => { if (confirm("Reset branch? All data will be lost.")) setBranch(null); }} style={{ fontSize: 11, color: "#ef4444", background: "transparent", border: "none", cursor: "pointer" }}>Reset</button>
         </div>
@@ -1834,6 +1942,32 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
               <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{s.label}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ── COMMUNITY IDENTITY (required before submitting for review) ── */}
+      <div style={{ borderRadius: 14, background: "var(--card)", border: "1px solid rgba(212,168,67,0.3)", overflow: "hidden" }}>
+        <div style={{ padding: "12px 14px 8px", borderBottom: "1px solid var(--border)", background: "rgba(212,168,67,0.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#d4a843" }}>🖼️ COMMUNITY IDENTITY</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Upload your community logo and synagogue photo so members can easily recognise their branch when submitting their census. Both are required before you can submit your branch for review.</div>
+        </div>
+        <div style={{ display: "flex", gap: 10, padding: 12 }}>
+          <ImageUploadBox
+            label="Community Logo"
+            imageUrl={branch.logoUrl}
+            isUploading={isLogoUploading}
+            progress={logoProgress}
+            inputRef={logoInputRef}
+            onPick={file => uploadLogo(file)}
+          />
+          <ImageUploadBox
+            label="Synagogue Photo"
+            imageUrl={branch.synagogueImageUrl}
+            isUploading={isSynagogueUploading}
+            progress={synagogueProgress}
+            inputRef={synagogueInputRef}
+            onPick={file => uploadSynagogueImage(file)}
+          />
         </div>
       </div>
 
@@ -1928,7 +2062,7 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
         />
       ))}
 
-      {branch.families.length > 0 && (
+      {(
         <>
           <button onClick={async () => {
             if (!branch || saving) return;
@@ -1968,6 +2102,18 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
           {/* ── SUBMIT FOR REVIEW ── */}
           {(() => {
             const st = submission?.status;
+            const identityComplete = Boolean(branch.logoUrl && branch.synagogueImageUrl);
+            if (!identityComplete && st !== "pending" && st !== "approved") return (
+              <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.3)", display: "flex", gap: 12, alignItems: "center" }}>
+                <span style={{ fontSize: 22 }}>🖼️</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#d4a843" }}>Community Identity Required</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                    Upload your {!branch.logoUrl && !branch.synagogueImageUrl ? "community logo and synagogue photo" : !branch.logoUrl ? "community logo" : "synagogue photo"} above before submitting your branch for review.
+                  </div>
+                </div>
+              </div>
+            );
             if (st === "pending") return (
               <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.35)", display: "flex", gap: 12, alignItems: "center" }}>
                 <span style={{ fontSize: 22 }}>⏳</span>
@@ -2078,7 +2224,7 @@ export default function CensusModal({ onClose, isAdmin = false }: Props) {
   const localSubmission = submissions.find(s => s.id === localSubmissionId);
 
   /* all submitted branches (any status) — community members pick from these */
-  const allSubmittedBranches = submissions.map(s => ({ id: s.branch.id, name: s.branch.name, cityName: s.branch.cityName }));
+  const allSubmittedBranches = submissions.map(s => ({ id: s.branch.id, name: s.branch.name, cityName: s.branch.cityName, logoUrl: s.branch.logoUrl, synagogueImageUrl: s.branch.synagogueImageUrl }));
 
   async function handleSubmit(branch: Branch) {
     try {

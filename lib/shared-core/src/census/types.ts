@@ -48,5 +48,9 @@ export interface Branch {
   cityName: string;
   established?: string;
   adminName?: string;
+  /** Community logo image — helps members identify their branch when submitting census. */
+  logoUrl?: string;
+  /** Photo of the local synagogue — helps members identify their branch when submitting census. */
+  synagogueImageUrl?: string;
   families: Family[];
 }

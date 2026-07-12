@@ -159,10 +159,20 @@ export async function runMigrations(): Promise<void> {
         city_name       TEXT NOT NULL DEFAULT '',
         admin_name      TEXT,
         established     TEXT,
+        logo_url             TEXT,
+        synagogue_image_url  TEXT,
         families        JSONB NOT NULL DEFAULT '[]',
         updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `);
+
+    // Add logo_url / synagogue_image_url to census_branches (idempotent, for pre-existing tables)
+    await client.query(`
+      ALTER TABLE census_branches ADD COLUMN IF NOT EXISTS logo_url TEXT
+    `);
+    await client.query(`
+      ALTER TABLE census_branches ADD COLUMN IF NOT EXISTS synagogue_image_url TEXT
     `);
 
     // Census — branch submissions for global admin review

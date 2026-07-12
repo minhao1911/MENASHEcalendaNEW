@@ -22,6 +22,8 @@ function rowToBranch(row: any) {
     cityName: row.city_name,
     adminName: row.admin_name ?? undefined,
     established: row.established ?? undefined,
+    logoUrl: row.logo_url ?? undefined,
+    synagogueImageUrl: row.synagogue_image_url ?? undefined,
     families: Array.isArray(row.families) ? row.families : [],
   };
 }
@@ -76,12 +78,12 @@ router.put("/census/branch", requireAuth, async (req, res) => {
   if (!parsed.success) {
     return apiError.badRequest(res, "Invalid branch data", parsed.error.issues);
   }
-  const { id, name, cityId, cityName, adminName, established, families } = parsed.data;
+  const { id, name, cityId, cityName, adminName, established, logoUrl, synagogueImageUrl, families } = parsed.data;
   const branchId = id || `br_${Date.now()}`;
   try {
     await pool.query(
-      `INSERT INTO census_branches (id, owner_user_id, name, city_id, city_name, admin_name, established, families, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, NOW())
+      `INSERT INTO census_branches (id, owner_user_id, name, city_id, city_name, admin_name, established, logo_url, synagogue_image_url, families, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, NOW())
        ON CONFLICT (owner_user_id) DO UPDATE
          SET id = EXCLUDED.id,
              name = EXCLUDED.name,
@@ -89,9 +91,11 @@ router.put("/census/branch", requireAuth, async (req, res) => {
              city_name = EXCLUDED.city_name,
              admin_name = EXCLUDED.admin_name,
              established = EXCLUDED.established,
+             logo_url = EXCLUDED.logo_url,
+             synagogue_image_url = EXCLUDED.synagogue_image_url,
              families = EXCLUDED.families,
              updated_at = NOW()`,
-      [branchId, userId, name, cityId || "", cityName || "", adminName || null, established || null, JSON.stringify(families ?? [])]
+      [branchId, userId, name, cityId || "", cityName || "", adminName || null, established || null, logoUrl || null, synagogueImageUrl || null, JSON.stringify(families ?? [])]
     );
     res.json({ ok: true, id: branchId });
   } catch (err) {
