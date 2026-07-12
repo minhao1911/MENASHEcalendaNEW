@@ -28,10 +28,29 @@ function rowToBranch(row: any) {
   };
 }
 
+// Reads camelCase keys from a parsed JSONB branch_data snapshot.
+function jsonToBranch(data: any) {
+  return {
+    id: data.id,
+    name: data.name,
+    cityId: data.cityId,
+    cityName: data.cityName,
+    adminName: data.adminName ?? undefined,
+    established: data.established ?? undefined,
+    logoUrl: data.logoUrl ?? undefined,
+    synagogueImageUrl: data.synagogueImageUrl ?? undefined,
+    families: Array.isArray(data.families) ? data.families : [],
+  };
+}
+
 function rowToSubmission(row: any) {
+  const branch = jsonToBranch(row.branch_data);
+  // Overlay with live image URLs fetched via JOIN (beat the stale JSONB snapshot)
+  if (row.branch_logo_url != null) branch.logoUrl = row.branch_logo_url;
+  if (row.branch_synagogue_image_url != null) branch.synagogueImageUrl = row.branch_synagogue_image_url;
   return {
     id: row.id,
-    branch: rowToBranch(row.branch_data),
+    branch,
     submittedAt: row.submitted_at,
     status: row.status,
     reviewNote: row.review_note ?? undefined,
@@ -109,7 +128,12 @@ router.put("/census/branch", requireAuth, async (req, res) => {
 router.get("/census/submissions", requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM census_submissions ORDER BY submitted_at DESC"
+      `SELECT cs.*,
+              cb.logo_url            AS branch_logo_url,
+              cb.synagogue_image_url AS branch_synagogue_image_url
+         FROM census_submissions cs
+         LEFT JOIN census_branches cb ON cb.owner_user_id = cs.owner_user_id
+        ORDER BY cs.submitted_at DESC`
     );
     res.json(rows.map(rowToSubmission));
   } catch (err) {
@@ -173,7 +197,15 @@ router.patch("/census/submissions/:id", requireAdmin, async (req, res) => {
          WHERE id = $1`,
       [id, status, reviewNote || null]
     );
-    const { rows } = await pool.query("SELECT * FROM census_submissions WHERE id = $1", [id]);
+    const { rows } = await pool.query(
+      `SELECT cs.*,
+              cb.logo_url            AS branch_logo_url,
+              cb.synagogue_image_url AS branch_synagogue_image_url
+         FROM census_submissions cs
+         LEFT JOIN census_branches cb ON cb.owner_user_id = cs.owner_user_id
+        WHERE cs.id = $1`,
+      [id]
+    );
     if (rows.length === 0) { return apiError.notFound(res); }
     res.json(rowToSubmission(rows[0]));
   } catch (err) {
