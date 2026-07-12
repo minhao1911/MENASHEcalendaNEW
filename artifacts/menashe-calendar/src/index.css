@@ -1248,8 +1248,8 @@ body {
 
 /* ══════════════════════════════════════════════════════════════════════
    DESKTOP / WIDE-VIEWPORT LAYOUT
-   Below 1024px the app keeps its phone-frame presentation (bottom tab
-   bar, single narrow column). At 1024px+ it becomes a real web app:
+   Below 768px the app keeps its phone-frame presentation (bottom tab
+   bar, single narrow column). At 768px+ it becomes a real web app:
    a persistent left sidebar replaces the bottom tab bar, the shell
    expands to use the available width, and home content flows into a
    two-column dashboard grid instead of one long mobile stack.
@@ -1257,7 +1257,7 @@ body {
    (.bottom-nav, .nav-item, etc.) are unconditional, so this block must
    come later in source order to win the cascade at matching widths.
    ══════════════════════════════════════════════════════════════════════ */
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .app-container {
     align-items: stretch;
   }
@@ -1377,7 +1377,7 @@ body {
   }
 }
 
-@media (min-width: 1024px) and (max-width: 1279px) {
+@media (min-width: 768px) and (max-width: 1279px) {
   .app-shell {
     max-width: 100%;
   }
