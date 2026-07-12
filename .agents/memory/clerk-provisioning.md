@@ -14,6 +14,8 @@ description: Clerk must be provisioned via setupClerkWhitelabelAuth() before the
 2. Then restart both the API server and the web workflows so new secrets are baked in.
 3. The `post-merge.sh` guard will also fail loudly (`exit 1`) if `VITE_CLERK_PUBLISHABLE_KEY` is unset after a merge, preventing silent failures.
 
+**Re-import note (2026-07-12):** on a fresh GitHub re-import, `checkClerkManagementStatus()` returned `"external"` (not `not_configured`) because `.replit` userenv.shared already had the publishable keys baked in from before. In that case skip `setupClerkWhitelabelAuth()` — just request the missing `CLERK_SECRET_KEY` as a Replit Secret (it's never stored in `.replit`) and restart workflows.
+
 **Safeguards added (as of 2025-06-17):**
 - `artifacts/menashe-calendar/src/App.tsx` — styled fallback UI instead of hard crash
 - `scripts/post-merge.sh` — exits with clear error message if key is missing
