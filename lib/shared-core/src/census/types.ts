@@ -8,11 +8,12 @@
 
 import type { AliyahStatus, MaritalStatus, Relation, Sex } from "./enums";
 
-/** The 12 tracked fields for a single person's census record. */
+/** The 13 tracked fields for a single person's census record. */
 export interface CensusRow {
   surname?: string;
   namePerPassport?: string;
   hebrewName?: string;
+  aadharNo?: string;
   maritalStatus?: MaritalStatus;
   sex?: Sex;
   dob?: string;

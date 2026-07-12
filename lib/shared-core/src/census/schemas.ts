@@ -14,11 +14,12 @@ export const relationSchema = z.enum(RELATIONS);
 export const maritalStatusSchema = z.union([z.enum(MARITAL_STATUSES), z.literal("")]);
 export const sexSchema = z.union([z.enum(SEXES), z.literal("")]);
 
-/** The 12 tracked fields for a single person's census record. */
+/** The 13 tracked fields for a single person's census record. */
 export const censusRowSchema = z.object({
   surname: z.string().max(200).optional(),
   namePerPassport: z.string().max(200).optional(),
   hebrewName: z.string().max(200).optional(),
+  aadharNo: z.string().max(100).optional(),
   maritalStatus: maritalStatusSchema.optional(),
   sex: sexSchema.optional(),
   dob: z.string().max(50).optional(),

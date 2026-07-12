@@ -208,6 +208,12 @@ function CensusRowForm({
           <input style={inputStyle} placeholder="Exact name on ID" value={data.namePerPassport || ""} onChange={e => set("namePerPassport", e.target.value)} />
         </div>
       </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <Label>AADHAR / TEUDAT NUMBER</Label>
+          <input style={inputStyle} placeholder="Aadhar No. or Teudat Zehut No." value={data.aadharNo || ""} onChange={e => set("aadharNo", e.target.value)} />
+        </div>
+      </div>
       <Field label="HEBREW NAME">
         <input style={inputStyle} placeholder="Hebrew/Jewish name" value={data.hebrewName || ""} onChange={e => set("hebrewName", e.target.value)} />
       </Field>
@@ -299,7 +305,7 @@ function exportCSV(branch: Branch) {
   const esc = (s?: string) => `"${(s || "").replace(/"/g, '""')}"`;
 
   const header = [
-    "Sl.No", "Surname", "Name (Adhaar/Passport)", "Hebrew Name",
+    "Sl.No", "Surname", "Name (Adhaar/Passport)", "Aadhar/Teudat No.", "Hebrew Name",
     "Marital Status", "Sex", "Date of Birth", "Father's Name", "Mother's Name",
     "Date of Judaism Practice", "Passport No.", "Passport Date of Issue", "Passport Date of Expiry",
     "Relation to Head", "Aliyah Status",
@@ -318,14 +324,14 @@ function exportCSV(branch: Branch) {
   branch.families.forEach(fam => {
     const h = fam.headCensus;
     rows.push([
-      1, esc(h.surname), esc(h.namePerPassport), esc(h.hebrewName),
+      1, esc(h.surname), esc(h.namePerPassport), esc(h.aadharNo), esc(h.hebrewName),
       esc(h.maritalStatus), esc(h.sex), esc(h.dob), esc(h.fatherName), esc(h.motherName),
       esc(h.dateOfJudaismPractice), esc(h.passportNo), esc(h.passportIssueDate), esc(h.passportExpiryDate),
       "Head of Family", esc(ALIYAH_LABELS[fam.headAliyah].label),
     ].join(","));
     fam.members.forEach((m, i) => {
       rows.push([
-        i + 2, esc(m.surname), esc(m.namePerPassport), esc(m.hebrewName),
+        i + 2, esc(m.surname), esc(m.namePerPassport), esc(m.aadharNo), esc(m.hebrewName),
         esc(m.maritalStatus), esc(m.sex), esc(m.dob), esc(m.fatherName), esc(m.motherName),
         esc(m.dateOfJudaismPractice), esc(m.passportNo), esc(m.passportIssueDate), esc(m.passportExpiryDate),
         esc(RELATION_LABELS[m.relation]), esc(ALIYAH_LABELS[m.aliyahStatus].label),
@@ -414,6 +420,7 @@ async function downloadPDF(branch: Branch) {
       String(i + 1),
       fmt(r.surname),
       fmt(r.namePerPassport),
+      fmt(r.aadharNo),
       fmt(r.hebrewName),
       fmt(r.maritalStatus),
       fmt(r.sex),
@@ -431,18 +438,19 @@ async function downloadPDF(branch: Branch) {
       margin: { left: margin, right: margin },
       head: [
         [
-          { content: "Sl.\nNo",                          rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Surname",                          rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Sl.\nNo",                            rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Surname",                            rowSpan: 2, styles: { halign: "center", valign: "middle" } },
           { content: "Name According to\nAdhaar/Passport", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Hebrew\nName",                     rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Marital\nStatus",                  rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Sex\nM/F",                         rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Date of\nBirth",                   rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Father's\nName",                   rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Mother's\nName",                   rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Date of\nJudaism\nPractice",       rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Passport No.",                     rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "Passport",                         colSpan: 2, styles: { halign: "center" } },
+          { content: "Aadhar /\nTeudat No.",               rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Hebrew\nName",                       rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Marital\nStatus",                    rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Sex\nM/F",                           rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Date of\nBirth",                     rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Father's\nName",                     rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Mother's\nName",                     rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Date of\nJudaism\nPractice",         rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Passport No.",                       rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          { content: "Passport",                           colSpan: 2, styles: { halign: "center" } },
         ],
         [
           { content: "Date of\nIssue",  styles: { halign: "center", valign: "middle" } },
@@ -473,12 +481,13 @@ async function downloadPDF(branch: Branch) {
       },
       columnStyles: {
         0:  { cellWidth: 9 },
-        4:  { cellWidth: 16 },
-        5:  { cellWidth: 10 },
-        6:  { cellWidth: 18 },
-        9:  { cellWidth: 18 },
-        11: { cellWidth: 18 },
+        3:  { cellWidth: 20 },
+        5:  { cellWidth: 16 },
+        6:  { cellWidth: 10 },
+        7:  { cellWidth: 18 },
+        10: { cellWidth: 18 },
         12: { cellWidth: 18 },
+        13: { cellWidth: 18 },
       },
     });
 
