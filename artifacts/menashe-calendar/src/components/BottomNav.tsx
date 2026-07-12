@@ -5,6 +5,8 @@ interface BottomNavProps {
   active: string;
   onNavigate: (page: string) => void;
   onChat?: () => void;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -47,6 +49,23 @@ function SiddurIcon({ active }: { active: boolean }) {
   );
 }
 
+function ChevronIcon({ collapsed }: { collapsed: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }}
+    >
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
 function SettingsIcon({ active }: { active: boolean }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -56,7 +75,7 @@ function SettingsIcon({ active }: { active: boolean }) {
   );
 }
 
-const BottomNav = memo(function BottomNav({ active, onNavigate }: BottomNavProps) {
+const BottomNav = memo(function BottomNav({ active, onNavigate, collapsed = false, onToggleCollapsed }: BottomNavProps) {
   const { t } = useLanguage();
 
   const NAV_ITEMS = [
@@ -68,10 +87,21 @@ const BottomNav = memo(function BottomNav({ active, onNavigate }: BottomNavProps
   ];
 
   return (
-    <nav className="bottom-nav" aria-label="Main navigation" style={{ display: "flex" }}>
+    <nav className={`bottom-nav${collapsed ? " collapsed" : ""}`} aria-label="Main navigation" style={{ display: "flex" }}>
       <div className="nav-brand">
         <img src="/logo-benei-menashe.png" alt="" className="nav-brand-logo" />
         <span className="nav-brand-text">Bnei Menashe</span>
+        {onToggleCollapsed && (
+          <button
+            type="button"
+            className="nav-collapse-toggle"
+            onClick={onToggleCollapsed}
+            aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+            title={collapsed ? "Expand navigation" : "Collapse navigation"}
+          >
+            <ChevronIcon collapsed={collapsed} />
+          </button>
+        )}
       </div>
       {NAV_ITEMS.map(({ id, label, icon: Icon, ariaLabel, handler }) => {
         const isActive = active === id;
@@ -83,6 +113,7 @@ const BottomNav = memo(function BottomNav({ active, onNavigate }: BottomNavProps
             onClick={handler}
             aria-label={ariaLabel}
             aria-current={isActive ? "page" : undefined}
+            title={collapsed ? ariaLabel : undefined}
             style={{ background: "none", border: "none", outline: "none", flex: 1 }}
           >
             <Icon active={isActive} />

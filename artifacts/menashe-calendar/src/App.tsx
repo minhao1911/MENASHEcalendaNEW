@@ -402,6 +402,16 @@ function AppShell() {
     try { return localStorage.getItem("menashe-is-premium") === "true"; } catch { return false; }
   });
   const [premiumJustApproved, setPremiumJustApproved] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(() => {
+    try { return localStorage.getItem("menashe-nav-collapsed") === "true"; } catch { return false; }
+  });
+  const toggleNavCollapsed = useCallback(() => {
+    setNavCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem("menashe-nav-collapsed", String(next)); } catch {}
+      return next;
+    });
+  }, []);
 
   // Auto-show "What's New" when the app version bumps (skip in dev preview mode)
   useEffect(() => {
@@ -684,7 +694,7 @@ function AppShell() {
   return (
     <LanguageProvider>
       <div className={`app-container${theme === "light" ? " light-theme" : theme === "sapphire" ? " sapphire-theme" : ""}`}>
-        <div className="app-shell">
+        <div className={`app-shell${navCollapsed ? " nav-collapsed" : ""}`}>
           <Suspense fallback={null}>
           {readingBook && (
             <BookReaderModal book={readingBook} onClose={() => setReadingBook(null)} />
@@ -705,7 +715,13 @@ function AppShell() {
                 </div>
               </Suspense>
 
-              <BottomNav active={activePage} onNavigate={(p) => setActivePage(p as Page)} onChat={() => setChatOpen(true)} />
+              <BottomNav
+                active={activePage}
+                onNavigate={(p) => setActivePage(p as Page)}
+                onChat={() => setChatOpen(true)}
+                collapsed={navCollapsed}
+                onToggleCollapsed={toggleNavCollapsed}
+              />
 
               {toast && <div className="toast">{toast}</div>}
 
