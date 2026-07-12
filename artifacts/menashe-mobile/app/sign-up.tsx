@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Dimensions,
+  useWindowDimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -48,6 +49,8 @@ export default function SignUpScreen() {
   const { signUp, errors: signUpErrors, fetchStatus } = useSignUp();
   const { startSSOFlow } = useSSO();
   useWarmUpBrowser();
+  const { width: winW } = useWindowDimensions();
+  const isWideWeb = Platform.OS === "web" && winW >= 900;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -129,6 +132,73 @@ export default function SignUpScreen() {
     errorMsg;
 
   if (verifying) {
+    const verifyFields = (
+      <>
+        <Text style={styles.welcomeTitle}>Check your email</Text>
+        <Text style={styles.welcomeSub}>We sent a verification code to {email}</Text>
+
+        <Text style={styles.fieldLabel}>VERIFICATION CODE</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter 6-digit code"
+          placeholderTextColor="#4a4a5a"
+          value={code}
+          onChangeText={setCode}
+          keyboardType="numeric"
+          returnKeyType="go"
+          onSubmitEditing={handleVerify}
+          selectionColor={GOLD}
+        />
+
+        {!!fieldError && <Text style={styles.errorText}>{fieldError}</Text>}
+
+        <TouchableOpacity
+          style={[styles.continueBtn, (loading || !code) && styles.continueBtnDisabled]}
+          onPress={handleVerify}
+          activeOpacity={0.82}
+          disabled={loading || !code}
+        >
+          <LinearGradient colors={["#F0C840", "#C49A20"]} style={styles.continueBtnGradient}>
+            {loading ? <ActivityIndicator color="#0a0800" /> : <Text style={styles.continueBtnText}>Verify Email</Text>}
+          </LinearGradient>
+          <View style={styles.continueBtnShadowBar} />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => signUp.verifications.sendEmailCode()} style={{ marginTop: 16, alignItems: "center" }}>
+          <Text style={styles.footerLink}>Resend code</Text>
+        </TouchableOpacity>
+      </>
+    );
+
+    if (isWideWeb) {
+      return (
+        <View style={styles.webRoot}>
+          <View style={styles.webBrandPanel}>
+            <ImageBackground source={PHOTO} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <LinearGradient
+              colors={["rgba(3,3,8,0.30)", "rgba(3,3,8,0.55)", "rgba(3,3,8,0.92)"]}
+              locations={[0, 0.55, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.webBrandContent}>
+              <Image source={LOGO} style={styles.webBrandLogo} resizeMode="contain" />
+              <Text style={styles.webBrandTitle}>Bnei Menashe Calendar</Text>
+              <Text style={styles.webBrandTagline}>Serving the Bnei Menashe community worldwide</Text>
+            </View>
+          </View>
+          <View style={styles.webFormPanel}>
+            <ScrollView contentContainerStyle={styles.webFormScroll} keyboardShouldPersistTaps="handled">
+              <View style={styles.webFormCard}>
+                <LinearGradient colors={["#111118", "#0f0f16"]} style={[styles.webFormBody, { paddingTop: 32, paddingBottom: 24 }]}>
+                  {verifyFields}
+                </LinearGradient>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.root}>
         <ImageBackground source={PHOTO} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -140,43 +210,123 @@ export default function SignUpScreen() {
           >
             <View style={styles.card}>
               <LinearGradient colors={["#111118", "#0f0f16"]} style={[styles.formBody, { paddingTop: 32, paddingBottom: 24 }]}>
-                <Text style={styles.welcomeTitle}>Check your email</Text>
-                <Text style={styles.welcomeSub}>We sent a verification code to {email}</Text>
-
-                <Text style={styles.fieldLabel}>VERIFICATION CODE</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter 6-digit code"
-                  placeholderTextColor="#4a4a5a"
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="numeric"
-                  returnKeyType="go"
-                  onSubmitEditing={handleVerify}
-                  selectionColor={GOLD}
-                />
-
-                {!!fieldError && <Text style={styles.errorText}>{fieldError}</Text>}
-
-                <TouchableOpacity
-                  style={[styles.continueBtn, (loading || !code) && styles.continueBtnDisabled]}
-                  onPress={handleVerify}
-                  activeOpacity={0.82}
-                  disabled={loading || !code}
-                >
-                  <LinearGradient colors={["#F0C840", "#C49A20"]} style={styles.continueBtnGradient}>
-                    {loading ? <ActivityIndicator color="#0a0800" /> : <Text style={styles.continueBtnText}>Verify Email</Text>}
-                  </LinearGradient>
-                  <View style={styles.continueBtnShadowBar} />
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => signUp.verifications.sendEmailCode()} style={{ marginTop: 16, alignItems: "center" }}>
-                  <Text style={styles.footerLink}>Resend code</Text>
-                </TouchableOpacity>
+                {verifyFields}
               </LinearGradient>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
+      </View>
+    );
+  }
+
+  const formFields = (
+    <>
+      <Text style={styles.welcomeTitle}>Create account</Text>
+      <Text style={styles.welcomeSub}>Join the Bnei Menashe community</Text>
+
+      <TouchableOpacity
+        style={styles.googleBtn}
+        onPress={handleGoogle}
+        activeOpacity={0.85}
+        disabled={loading}
+      >
+        <Text style={styles.googleG}>G</Text>
+        <Text style={styles.googleText}>Continue with Google</Text>
+      </TouchableOpacity>
+
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <Text style={styles.fieldLabel}>EMAIL ADDRESS</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter your email address"
+        placeholderTextColor="#4a4a5a"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        returnKeyType="next"
+        selectionColor={GOLD}
+      />
+
+      <Text style={styles.fieldLabel}>PASSWORD</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Create a password"
+        placeholderTextColor="#4a4a5a"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        returnKeyType="go"
+        onSubmitEditing={handleSignUp}
+        selectionColor={GOLD}
+      />
+
+      {!!fieldError && <Text style={styles.errorText}>{fieldError}</Text>}
+
+      <TouchableOpacity
+        style={[styles.continueBtn, (loading || !email || !password) && styles.continueBtnDisabled]}
+        onPress={handleSignUp}
+        activeOpacity={0.82}
+        disabled={loading || !email || !password}
+      >
+        <LinearGradient colors={["#F0C840", "#C49A20"]} style={styles.continueBtnGradient}>
+          {loading ? <ActivityIndicator color="#0a0800" /> : <Text style={styles.continueBtnText}>Create Account</Text>}
+        </LinearGradient>
+        <View style={styles.continueBtnShadowBar} />
+      </TouchableOpacity>
+
+      <View nativeID="clerk-captcha" />
+    </>
+  );
+
+  const footerRow = (
+    <View style={styles.footer}>
+      <Text style={styles.footerText}>Already have an account? </Text>
+      <Link href="/sign-in" asChild>
+        <TouchableOpacity>
+          <Text style={styles.footerLink}>Sign in</Text>
+        </TouchableOpacity>
+      </Link>
+    </View>
+  );
+
+  if (isWideWeb) {
+    return (
+      <View style={styles.webRoot}>
+        <View style={styles.webBrandPanel}>
+          <ImageBackground source={PHOTO} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <LinearGradient
+            colors={["rgba(3,3,8,0.30)", "rgba(3,3,8,0.55)", "rgba(3,3,8,0.92)"]}
+            locations={[0, 0.55, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.webBrandContent}>
+            <Image source={LOGO} style={styles.webBrandLogo} resizeMode="contain" />
+            <Text style={styles.webBrandTitle}>Bnei Menashe Calendar</Text>
+            <Text style={styles.webBrandTagline}>Serving the Bnei Menashe community worldwide</Text>
+          </View>
+        </View>
+
+        <View style={styles.webFormPanel}>
+          <ScrollView
+            contentContainerStyle={styles.webFormScroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.webFormCard}>
+              <LinearGradient colors={["#111118", "#0f0f16"]} style={styles.webFormBody}>
+                {formFields}
+              </LinearGradient>
+              {footerRow}
+            </View>
+          </ScrollView>
+        </View>
       </View>
     );
   }
@@ -226,77 +376,10 @@ export default function SignUpScreen() {
             />
 
             <LinearGradient colors={["#111118", "#0f0f16"]} style={styles.formBody}>
-              <Text style={styles.welcomeTitle}>Create account</Text>
-              <Text style={styles.welcomeSub}>Join the Bnei Menashe community</Text>
-
-              <TouchableOpacity
-                style={styles.googleBtn}
-                onPress={handleGoogle}
-                activeOpacity={0.85}
-                disabled={loading}
-              >
-                <Text style={styles.googleG}>G</Text>
-                <Text style={styles.googleText}>Continue with Google</Text>
-              </TouchableOpacity>
-
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <Text style={styles.fieldLabel}>EMAIL ADDRESS</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email address"
-                placeholderTextColor="#4a4a5a"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                returnKeyType="next"
-                selectionColor={GOLD}
-              />
-
-              <Text style={styles.fieldLabel}>PASSWORD</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Create a password"
-                placeholderTextColor="#4a4a5a"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                returnKeyType="go"
-                onSubmitEditing={handleSignUp}
-                selectionColor={GOLD}
-              />
-
-              {!!fieldError && <Text style={styles.errorText}>{fieldError}</Text>}
-
-              <TouchableOpacity
-                style={[styles.continueBtn, (loading || !email || !password) && styles.continueBtnDisabled]}
-                onPress={handleSignUp}
-                activeOpacity={0.82}
-                disabled={loading || !email || !password}
-              >
-                <LinearGradient colors={["#F0C840", "#C49A20"]} style={styles.continueBtnGradient}>
-                  {loading ? <ActivityIndicator color="#0a0800" /> : <Text style={styles.continueBtnText}>Create Account</Text>}
-                </LinearGradient>
-                <View style={styles.continueBtnShadowBar} />
-              </TouchableOpacity>
-
-              <View nativeID="clerk-captcha" />
+              {formFields}
             </LinearGradient>
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account? </Text>
-              <Link href="/sign-in" asChild>
-                <TouchableOpacity>
-                  <Text style={styles.footerLink}>Sign in</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
+            {footerRow}
           </View>
 
           <Text style={styles.tagline}>Serving the Bnei Menashe community worldwide</Text>
@@ -310,6 +393,45 @@ const CARD_W = Math.min(SW - 32, 420);
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#030308" },
+  webRoot: { flex: 1, flexDirection: "row", backgroundColor: "#030308", minHeight: "100%" },
+  webBrandPanel: {
+    flex: 1.1,
+    minHeight: "100%",
+    overflow: "hidden",
+    position: "relative",
+    borderRightWidth: 1,
+    borderRightColor: "rgba(212,175,55,0.18)",
+  },
+  webBrandContent: {
+    position: "absolute",
+    left: 0, right: 0, bottom: 0,
+    padding: 56,
+    alignItems: "flex-start",
+  },
+  webBrandLogo: { width: 96, height: 96, marginBottom: 24 },
+  webBrandTitle: { color: GOLD_BRIGHT, fontSize: 32, fontWeight: "800", letterSpacing: -0.5, marginBottom: 12 },
+  webBrandTagline: { color: "rgba(240,237,228,0.75)", fontSize: 15, lineHeight: 22, maxWidth: 420 },
+  webFormPanel: {
+    flex: 1,
+    minHeight: "100%",
+    backgroundColor: "#0a0a10",
+  },
+  webFormScroll: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 48,
+  },
+  webFormCard: {
+    width: "100%",
+    maxWidth: 440,
+  },
+  webFormBody: {
+    borderRadius: 16,
+    padding: 32,
+    borderWidth: 1,
+    borderColor: "rgba(212,175,55,0.18)",
+  },
   centerGlow: {
     position: "absolute", width: 400, height: 400, borderRadius: 200,
     backgroundColor: "rgba(212,175,55,0.04)",
