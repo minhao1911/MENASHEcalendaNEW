@@ -6,18 +6,18 @@ A sacred Jewish calendar app for the Bnei Menashe community — featuring Hebrew
 
 ### Replit workflows
 
-The main **"Start application"** workflow runs `bash scripts/start-dev.sh`, which installs dependencies then starts both servers in parallel:
+The project is registered as 4 Replit artifacts, each with its own managed workflow (run together via the **"Project"** run button):
 
-| Service | Command | Port |
-|---------|---------|------|
-| Frontend (Vite) | `pnpm --filter @workspace/menashe-calendar run dev` | 5000 |
-| API Server (Express) | `pnpm --filter @workspace/api-server run dev` | 8080 |
+| Workflow | Service | Port | Preview path |
+|----------|---------|------|---------------|
+| `artifacts/menashe-calendar: web` | Frontend (Vite) | 21636 | `/` |
+| `artifacts/api-server: API Server` | API Server (Express) | 8080 | `/api` |
+| `artifacts/mockup-sandbox: Component Preview Server` | Canvas design sandbox (Vite) | 8081 | `/__mockup` |
+| `artifacts/menashe-mobile: expo` | Expo Metro bundler | 25726 | `/mobile/` |
 
 The frontend proxies all `/api/*` requests to `http://localhost:8080` (configured in `artifacts/menashe-calendar/vite.config.ts`).
 
-Additional artifact workflows (start individually as needed):
-- **artifacts/menashe-mobile: expo** — Expo Metro bundler (port 25726)
-- **artifacts/mockup-sandbox: Component Preview Server** — Vite mockup sandbox (port 8081)
+Note: `scripts/start-dev.sh` (old combined frontend+API launcher) is superseded by the per-artifact workflows above and is no longer used by any workflow — kept only for manual/local use.
 
 ### Other useful commands
 - `pnpm run typecheck` — full typecheck across all packages
