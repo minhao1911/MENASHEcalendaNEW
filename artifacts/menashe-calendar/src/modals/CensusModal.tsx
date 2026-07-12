@@ -112,23 +112,24 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 /* ══════════════════════════════════════════════════════════════
    IMAGE UPLOAD BOX — used for community logo / synagogue photo
 ══════════════════════════════════════════════════════════════ */
-function ImageUploadBox({ label, imageUrl, isUploading, progress, inputRef, onPick }: {
+function ImageUploadBox({ label, imageUrl, isUploading, progress, inputRef, onPick, errorMessage }: {
   label: string;
   imageUrl?: string;
   isUploading: boolean;
   progress: number;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onPick: (file: File) => void;
+  errorMessage?: string | null;
 }) {
   return (
     <div style={{ flex: 1 }}>
       <div
         onClick={() => !isUploading && inputRef.current?.click()}
         style={{
-          border: `2px dashed ${isUploading ? "#d4a843" : imageUrl ? "rgba(74,222,128,0.4)" : "var(--border)"}`,
+          border: `2px dashed ${isUploading ? "#d4a843" : errorMessage ? "rgba(239,68,68,0.45)" : imageUrl ? "rgba(74,222,128,0.4)" : "var(--border)"}`,
           borderRadius: 10, padding: imageUrl ? 0 : "18px 10px", textAlign: "center",
           cursor: isUploading ? "default" : "pointer",
-          background: isUploading ? "rgba(212,168,67,0.05)" : "var(--elevated)",
+          background: isUploading ? "rgba(212,168,67,0.05)" : errorMessage ? "rgba(239,68,68,0.05)" : "var(--elevated)",
           overflow: "hidden", minHeight: 96, display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center", transition: "all 0.2s",
         }}
@@ -154,6 +155,12 @@ function ImageUploadBox({ label, imageUrl, isUploading, progress, inputRef, onPi
           </>
         )}
       </div>
+      {errorMessage && (
+        <div style={{ display: "flex", gap: 5, alignItems: "flex-start", marginTop: 5, padding: "6px 8px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
+          <span style={{ fontSize: 11, lineHeight: 1.4 }}>⚠️</span>
+          <div style={{ fontSize: 10, color: "#ef4444", lineHeight: 1.4 }}>{errorMessage}</div>
+        </div>
+      )}
       <input
         ref={inputRef}
         type="file"
@@ -1795,26 +1802,51 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const synagogueInputRef = useRef<HTMLInputElement>(null);
-  const { uploadFile: uploadLogo, isUploading: isLogoUploading, progress: logoProgress } = useUpload({
-    onSuccess: (response) => {
+  const [logoSaveError, setLogoSaveError] = useState<string | null>(null);
+  const [synagogueSaveError, setSynagogueSaveError] = useState<string | null>(null);
+  const getClerkToken = () => (window as any).Clerk?.session?.getToken() ?? null;
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+
+  const { uploadFile: uploadLogo, isUploading: isLogoUploading, progress: logoProgress, error: logoUploadError } = useUpload({
+    getAuthToken: getClerkToken,
+    maxSizeBytes: MAX_IMAGE_BYTES,
+    acceptedTypes: ["image/"],
+    onSuccess: async (response) => {
+      setLogoSaveError(null);
       const url = `/api/storage${response.objectPath}`;
+      let updated: Branch | null = null;
       setBranch(b => {
         if (!b) return b;
-        const updated = { ...b, logoUrl: url };
-        saveCensusBranch(updated as any);
+        updated = { ...b, logoUrl: url };
         return updated;
       });
+      if (!updated) return;
+      try {
+        await saveCensusBranch(updated as any);
+      } catch {
+        setLogoSaveError("Logo uploaded, but saving it to your branch failed. Check your connection and try again.");
+      }
     },
   });
-  const { uploadFile: uploadSynagogueImage, isUploading: isSynagogueUploading, progress: synagogueProgress } = useUpload({
-    onSuccess: (response) => {
+  const { uploadFile: uploadSynagogueImage, isUploading: isSynagogueUploading, progress: synagogueProgress, error: synagogueUploadError } = useUpload({
+    getAuthToken: getClerkToken,
+    maxSizeBytes: MAX_IMAGE_BYTES,
+    acceptedTypes: ["image/"],
+    onSuccess: async (response) => {
+      setSynagogueSaveError(null);
       const url = `/api/storage${response.objectPath}`;
+      let updated: Branch | null = null;
       setBranch(b => {
         if (!b) return b;
-        const updated = { ...b, synagogueImageUrl: url };
-        saveCensusBranch(updated as any);
+        updated = { ...b, synagogueImageUrl: url };
         return updated;
       });
+      if (!updated) return;
+      try {
+        await saveCensusBranch(updated as any);
+      } catch {
+        setSynagogueSaveError("Photo uploaded, but saving it to your branch failed. Check your connection and try again.");
+      }
     },
   });
 
@@ -1958,7 +1990,8 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
             isUploading={isLogoUploading}
             progress={logoProgress}
             inputRef={logoInputRef}
-            onPick={file => uploadLogo(file)}
+            errorMessage={logoUploadError?.message || logoSaveError}
+            onPick={file => { setLogoSaveError(null); uploadLogo(file); }}
           />
           <ImageUploadBox
             label="Synagogue Photo"
@@ -1966,7 +1999,8 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
             isUploading={isSynagogueUploading}
             progress={synagogueProgress}
             inputRef={synagogueInputRef}
-            onPick={file => uploadSynagogueImage(file)}
+            errorMessage={synagogueUploadError?.message || synagogueSaveError}
+            onPick={file => { setSynagogueSaveError(null); uploadSynagogueImage(file); }}
           />
         </div>
       </div>

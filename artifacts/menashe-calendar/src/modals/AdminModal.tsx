@@ -218,7 +218,11 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
   const [annDeleteId, setAnnDeleteId] = useState<string | null>(null);
   const [annPinning, setAnnPinning] = useState<string | null>(null);
 
-  const { uploadFile, isUploading, progress } = useUpload({
+  const getClerkToken = () => (window as any).Clerk?.session?.getToken() ?? null;
+
+  const { uploadFile, isUploading, progress, error: uploadFileError } = useUpload({
+    getAuthToken: getClerkToken,
+    maxSizeBytes: 50 * 1024 * 1024,
     onSuccess: (response: { uploadURL: string; objectPath: string; metadata: { name: string; size: number; contentType: string } }) => {
       const servingUrl = `/api/storage${response.objectPath}`;
       setF({ fileUrl: servingUrl });
@@ -226,7 +230,10 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
     },
   });
 
-  const { uploadFile: uploadCoverImage, isUploading: isCoverUploading, progress: coverProgress } = useUpload({
+  const { uploadFile: uploadCoverImage, isUploading: isCoverUploading, progress: coverProgress, error: coverUploadError } = useUpload({
+    getAuthToken: getClerkToken,
+    maxSizeBytes: 5 * 1024 * 1024,
+    acceptedTypes: ["image/"],
     onSuccess: (response: { uploadURL: string; objectPath: string; metadata: { name: string; size: number; contentType: string } }) => {
       const servingUrl = `/api/storage${response.objectPath}`;
       setF({ coverImageUrl: servingUrl });
@@ -1819,6 +1826,9 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
                       </>
                     )}
                   </div>
+                  {coverUploadError && (
+                    <div style={{ marginTop: 6, fontSize: 10, color: "#ef4444", lineHeight: 1.4 }}>⚠️ {coverUploadError.message}</div>
+                  )}
                   {F.coverImageUrl && (
                     <button
                       onClick={() => { setF({ coverImageUrl: "" }); setCoverImageUploaded(null); }}
@@ -1961,6 +1971,10 @@ export default function AdminModal({ onClose, onRefresh }: Props) {
                         </>
                       )}
                     </div>
+
+                    {uploadFileError && (
+                      <div style={{ marginTop: 8, fontSize: 11, color: "#ef4444", lineHeight: 1.4 }}>⚠️ {uploadFileError.message}</div>
+                    )}
 
                     <input
                       ref={fileInputRef}
