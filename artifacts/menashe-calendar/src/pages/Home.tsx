@@ -2949,6 +2949,8 @@ const Home = memo(function Home({
       </div>
 
       <div style={{ padding: "14px 16px 0" }}>
+      <div className="home-content">
+      <div className="home-col home-col-primary">
 
         {/* ── Calendar Section: date, zmanim, holidays, yahrzeit ── */}
         <CalendarSection
@@ -3023,6 +3025,9 @@ const Home = memo(function Home({
         <YahrzeitReminderCard onShowYartzeit={onShowYartzeit} />
         </CalendarSection>
 
+      </div>
+      <div className="home-col home-col-secondary">
+
         {/* ── Learning Section: parasha, omer, daily wisdom ── */}
         <LearningSection
           parasha={parasha}
@@ -3058,6 +3063,8 @@ const Home = memo(function Home({
           onMoreTools={onMoreTools}
         />
 
+      </div>
+      </div>
       </div>
 
       {/* ── Community Hub Floating Button ── */}

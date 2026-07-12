@@ -403,8 +403,9 @@ function AppShell() {
   });
   const [premiumJustApproved, setPremiumJustApproved] = useState(false);
 
-  // Auto-show "What's New" when the app version bumps
+  // Auto-show "What's New" when the app version bumps (skip in dev preview mode)
   useEffect(() => {
+    if (DEV_PREVIEW) return;
     const seen = localStorage.getItem(VERSION_KEY);
     if (seen !== APP_VERSION) {
       setTimeout(() => setModal("whats-new"), 800);

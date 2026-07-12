@@ -61,7 +61,7 @@ html {
 html, body, #root {
   height: 100%;
   width: 100%;
-  background: var(--background);
+  background: lime !important;
   color: var(--foreground);
   font-family: var(--app-font-sans);
   overflow: hidden;
@@ -92,12 +92,13 @@ html, body, #root {
   background: var(--background);
   position: relative;
   overflow: hidden;
-  transition: background 0.4s ease;
+  transition: background 0.4s ease, max-width 0.2s ease;
   /* Safe-area-inset-top: pushes all content below the notch / Dynamic Island
      on standalone PWA mode. The sticky header's top:0 then sticks correctly
      to the usable area (just below the status bar). */
   padding-top: env(safe-area-inset-top, 0px);
 }
+
 
 .screen {
   flex: 1;
@@ -241,6 +242,10 @@ html, body, #root {
   width: 22px;
   height: 22px;
   transition: filter 0.2s;
+}
+
+.nav-brand {
+  display: none;
 }
 
 .premium-badge {
@@ -1240,3 +1245,140 @@ body {
   }
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════
+   DESKTOP / WIDE-VIEWPORT LAYOUT
+   Below 1024px the app keeps its phone-frame presentation (bottom tab
+   bar, single narrow column). At 1024px+ it becomes a real web app:
+   a persistent left sidebar replaces the bottom tab bar, the shell
+   expands to use the available width, and home content flows into a
+   two-column dashboard grid instead of one long mobile stack.
+   Placed at the end of the file on purpose: several base rules above
+   (.bottom-nav, .nav-item, etc.) are unconditional, so this block must
+   come later in source order to win the cascade at matching widths.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  .app-container {
+    align-items: stretch;
+  }
+
+  .app-shell {
+    max-width: 1680px;
+    width: 100%;
+    flex-direction: row;
+    padding-top: 0;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+
+  .screen {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+    padding-bottom: 40px;
+  }
+
+  .bottom-nav {
+    order: 1;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: 248px;
+    height: 100%;
+    padding: 20px 14px calc(env(safe-area-inset-bottom, 0px) + 16px);
+    gap: 4px;
+    border-top: none;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 12px 20px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-brand-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid rgba(212,168,67,0.35);
+    flex-shrink: 0;
+  }
+
+  .nav-brand-text {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+    white-space: nowrap;
+  }
+
+  .nav-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+
+  .nav-item::before {
+    top: 50%;
+    left: 0;
+    width: 3px;
+    height: 20px;
+    border-radius: 0 4px 4px 0;
+    transform: translateY(-50%) scaleY(0);
+    background: linear-gradient(180deg, transparent, var(--accent), transparent);
+  }
+
+  .nav-item.active::before {
+    transform: translateY(-50%) scaleY(1);
+  }
+
+  .nav-item.active {
+    background: rgba(212,168,67,0.1);
+  }
+
+  .nav-item span {
+    order: 2;
+  }
+
+  .nav-item svg {
+    order: 1;
+    flex-shrink: 0;
+  }
+
+  .app-header {
+    padding: 18px 32px;
+  }
+
+  .home-content {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 8px !important;
+  }
+
+  .home-content > .home-col-secondary {
+    margin-top: 0;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .app-shell {
+    max-width: 100%;
+  }
+}

@@ -69,6 +69,10 @@ const BottomNav = memo(function BottomNav({ active, onNavigate }: BottomNavProps
 
   return (
     <nav className="bottom-nav" aria-label="Main navigation" style={{ display: "flex" }}>
+      <div className="nav-brand">
+        <img src="/logo-benei-menashe.png" alt="" className="nav-brand-logo" />
+        <span className="nav-brand-text">Bnei Menashe</span>
+      </div>
       {NAV_ITEMS.map(({ id, label, icon: Icon, ariaLabel, handler }) => {
         const isActive = active === id;
         return (
