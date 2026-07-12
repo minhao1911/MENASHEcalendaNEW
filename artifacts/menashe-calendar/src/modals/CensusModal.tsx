@@ -780,14 +780,30 @@ function CommunitySubmitForm({
           </Field>
 
           {selectedBranch && (selectedBranch.logoUrl || selectedBranch.synagogueImageUrl) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.25)" }}>
-              {selectedBranch.logoUrl && (
-                <img src={selectedBranch.logoUrl} alt={`${selectedBranch.name} logo`} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover" }} />
-              )}
-              {selectedBranch.synagogueImageUrl && (
-                <img src={selectedBranch.synagogueImageUrl} alt={`${selectedBranch.name} synagogue`} style={{ width: 52, height: 36, borderRadius: 8, objectFit: "cover" }} />
-              )}
-              <div style={{ fontSize: 11, color: "#4ade80", fontWeight: 600 }}>Is this your community? Confirm before submitting.</div>
+            <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(74,222,128,0.3)" }}>
+              {selectedBranch.synagogueImageUrl ? (
+                /* Synagogue photo as banner with logo badge */
+                <div style={{ position: "relative", height: 90, overflow: "hidden" }}>
+                  <img src={selectedBranch.synagogueImageUrl} alt={`${selectedBranch.name} synagogue`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(0,0,0,0.62))" }} />
+                  {selectedBranch.logoUrl && (
+                    <img src={selectedBranch.logoUrl} alt={`${selectedBranch.name} logo`} style={{ position: "absolute", bottom: 9, left: 10, width: 34, height: 34, borderRadius: 8, objectFit: "cover", border: "2px solid rgba(255,255,255,0.88)", boxShadow: "0 1px 6px rgba(0,0,0,0.4)" }} />
+                  )}
+                  <div style={{ position: "absolute", bottom: 9, left: selectedBranch.logoUrl ? 52 : 10, right: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>{selectedBranch.name}</div>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", marginTop: 1 }}>🇮🇳 {selectedBranch.cityName}</div>
+                  </div>
+                </div>
+              ) : selectedBranch.logoUrl ? (
+                /* Logo only — no photo */
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(74,222,128,0.06)" }}>
+                  <img src={selectedBranch.logoUrl} alt={`${selectedBranch.name} logo`} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover" }} />
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{selectedBranch.name}</div>
+                </div>
+              ) : null}
+              <div style={{ padding: "7px 12px", background: "rgba(74,222,128,0.07)", fontSize: 11, color: "#4ade80", fontWeight: 600 }}>
+                ✓ Is this your community? Confirm before submitting.
+              </div>
             </div>
           )}
 
@@ -1075,25 +1091,45 @@ function Dashboard({ stats, cities, approvedBranches = [], onSubmitRequest, onSt
               const inIsrael = b.families.reduce((s, f) =>
                 s + (f.headAliyah === "in_israel" ? 1 : 0) + f.members.filter(m => m.aliyahStatus === "in_israel").length, 0);
               return (
-                <div key={b.id} style={{ padding: "12px 14px", borderBottom: i < approvedBranches.length - 1 ? "1px solid var(--border)" : "none" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div key={b.id} style={{ borderBottom: i < approvedBranches.length - 1 ? "1px solid var(--border)" : "none" }}>
+                  {/* ── Synagogue photo banner with logo badge ── */}
+                  {b.synagogueImageUrl ? (
+                    <div style={{ position: "relative", height: 110, overflow: "hidden" }}>
+                      <img src={b.synagogueImageUrl} alt={`${b.name} synagogue`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%)" }} />
                       {b.logoUrl && (
-                        <img src={b.logoUrl} alt={`${b.name} logo`} style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(74,222,128,0.3)" }} />
+                        <img src={b.logoUrl} alt={`${b.name} logo`} style={{ position: "absolute", bottom: 10, left: 12, width: 42, height: 42, borderRadius: 10, objectFit: "cover", border: "2px solid rgba(255,255,255,0.9)", boxShadow: "0 2px 8px rgba(0,0,0,0.45)" }} />
                       )}
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{b.name}</div>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                          🇮🇳 {b.cityName}{b.adminName ? ` · Admin: ${b.adminName}` : ""}
-                        </div>
+                      <div style={{ position: "absolute", bottom: 10, left: b.logoUrl ? 64 : 12, right: 70 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.6)", lineHeight: 1.2 }}>{b.name}</div>
+                        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.82)", marginTop: 2 }}>🇮🇳 {b.cityName}{b.adminName ? ` · ${b.adminName}` : ""}</div>
+                      </div>
+                      <div style={{ position: "absolute", top: 8, right: 10, background: "rgba(74,222,128,0.88)", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700, color: "#fff" }}>✅ VERIFIED</div>
+                      <div style={{ position: "absolute", bottom: 10, right: 10, textAlign: "right" }}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#4ade80", textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{total}</div>
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)" }}>members</div>
                       </div>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#4ade80" }}>{total}</div>
-                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>members</div>
+                  ) : (
+                    /* No photo — plain header with logo */
+                    <div style={{ padding: "12px 14px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {b.logoUrl && (
+                          <img src={b.logoUrl} alt={`${b.name} logo`} style={{ width: 36, height: 36, borderRadius: 9, objectFit: "cover", border: "1px solid rgba(74,222,128,0.35)" }} />
+                        )}
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{b.name}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>🇮🇳 {b.cityName}{b.adminName ? ` · ${b.adminName}` : ""} · ✅ VERIFIED</div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#4ade80" }}>{total}</div>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)" }}>members</div>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  )}
+                  {/* ── Stats row ── */}
+                  <div style={{ display: "flex", gap: 8, padding: "10px 12px 12px" }}>
                     <div style={{ flex: 1, padding: "5px 8px", borderRadius: 8, background: "rgba(79,142,247,0.08)", textAlign: "center" }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#4f8ef7" }}>{b.families.length}</div>
                       <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Families</div>
@@ -1951,23 +1987,42 @@ function BranchRegistryPanel({ cities, submission, onSubmit, memberSubmissions =
         </button>
       </div>
 
-      <div style={{ padding: "14px 16px", borderRadius: 14, background: "linear-gradient(135deg, rgba(79,142,247,0.12), rgba(79,142,247,0.04))", border: "1px solid rgba(79,142,247,0.3)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ borderRadius: 14, background: "linear-gradient(135deg, rgba(79,142,247,0.12), rgba(79,142,247,0.04))", border: "1px solid rgba(79,142,247,0.3)", overflow: "hidden" }}>
+        {/* ── Synagogue photo banner (shown once uploaded) ── */}
+        {branch.synagogueImageUrl ? (
+          <div style={{ position: "relative", height: 120, overflow: "hidden" }}>
+            <img src={branch.synagogueImageUrl} alt={`${branch.name} synagogue`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.72) 100%)" }} />
             {branch.logoUrl && (
-              <img src={branch.logoUrl} alt={`${branch.name} logo`} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(79,142,247,0.35)" }} />
+              <img src={branch.logoUrl} alt={`${branch.name} logo`} style={{ position: "absolute", bottom: 12, left: 14, width: 44, height: 44, borderRadius: 11, objectFit: "cover", border: "2px solid rgba(255,255,255,0.92)", boxShadow: "0 2px 10px rgba(0,0,0,0.45)" }} />
             )}
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>{branch.name}</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                🇮🇳 {branch.cityName}{branch.established && <span style={{ marginLeft: 6 }}>· Est. {branch.established}</span>}
-              </div>
-              {branch.adminName && <div style={{ fontSize: 11, color: "#4f8ef7", marginTop: 2 }}>Admin: {branch.adminName}</div>}
+            <div style={{ position: "absolute", bottom: 12, left: branch.logoUrl ? 68 : 14, right: 60 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.6)", lineHeight: 1.2 }}>{branch.name}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>🇮🇳 {branch.cityName}{branch.established ? ` · Est. ${branch.established}` : ""}</div>
+              {branch.adminName && <div style={{ fontSize: 10, color: "rgba(79,142,247,0.95)", marginTop: 1 }}>Admin: {branch.adminName}</div>}
             </div>
+            <button onClick={() => { if (confirm("Reset branch? All data will be lost.")) setBranch(null); }} style={{ position: "absolute", top: 8, right: 10, fontSize: 11, color: "#ef4444", background: "rgba(0,0,0,0.45)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 6, cursor: "pointer", padding: "3px 8px" }}>Reset</button>
           </div>
-          <button onClick={() => { if (confirm("Reset branch? All data will be lost.")) setBranch(null); }} style={{ fontSize: 11, color: "#ef4444", background: "transparent", border: "none", cursor: "pointer" }}>Reset</button>
-        </div>
-        <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+        ) : (
+          /* No synagogue photo yet — plain header */
+          <div style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {branch.logoUrl && (
+                <img src={branch.logoUrl} alt={`${branch.name} logo`} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(79,142,247,0.35)" }} />
+              )}
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>{branch.name}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                  🇮🇳 {branch.cityName}{branch.established && <span style={{ marginLeft: 6 }}>· Est. {branch.established}</span>}
+                </div>
+                {branch.adminName && <div style={{ fontSize: 11, color: "#4f8ef7", marginTop: 2 }}>Admin: {branch.adminName}</div>}
+              </div>
+            </div>
+            <button onClick={() => { if (confirm("Reset branch? All data will be lost.")) setBranch(null); }} style={{ fontSize: 11, color: "#ef4444", background: "transparent", border: "none", cursor: "pointer" }}>Reset</button>
+          </div>
+        )}
+        {/* ── Stats ── */}
+        <div style={{ display: "flex", gap: 12, padding: "12px 16px" }}>
           {[{ label: "Families", value: branch.families.length }, { label: "Members", value: totalMembers }, { label: "In Israel", value: inIsrael }].map(s => (
             <div key={s.label} style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 10, background: "rgba(255,255,255,0.04)" }}>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#4f8ef7" }}>{s.value}</div>
