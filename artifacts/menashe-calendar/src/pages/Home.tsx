@@ -2900,13 +2900,15 @@ const Home = memo(function Home({
             title={isPremium && candleEnabled && candleCountdown ? `🕯 ${candleCountdown}` : "Premium"}
             style={{
               position: "relative",
-              width: 34, height: 34, borderRadius: "50%",
+              width: 36, height: 36, borderRadius: "50%",
               background: "linear-gradient(135deg, #b8860b 0%, #f0c050 50%, #b8860b 100%)",
               backgroundSize: "200% auto",
               animation: "goldShimmer 4s linear infinite",
               border: "none",
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
+              transition: "transform 0.15s, box-shadow 0.18s",
+              boxShadow: "0 2px 10px rgba(184,134,11,0.4)",
             }}
           >
             <span style={{ fontSize: 16, lineHeight: 1, animation: "crownFloat 3s ease-in-out infinite", display: "inline-block" }}>👑</span>
@@ -2926,11 +2928,11 @@ const Home = memo(function Home({
             onClick={onNotifBell}
             style={{
               position: "relative",
-              width: 34, height: 34, borderRadius: "50%",
+              width: 36, height: 36, borderRadius: "50%",
               background: (notifActive || announcementCount > 0) ? "rgba(212,168,67,0.13)" : "var(--elevated)",
               border: `1px solid ${(notifActive || announcementCount > 0) ? "rgba(212,168,67,0.4)" : "var(--border)"}`,
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0, transition: "all 0.2s",
+              flexShrink: 0, transition: "background 0.18s, border-color 0.18s, transform 0.15s",
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -2962,10 +2964,11 @@ const Home = memo(function Home({
           <button
             onClick={onToggleTheme}
             style={{
-              width: 34, height: 34, borderRadius: "50%",
+              width: 36, height: 36, borderRadius: "50%",
               background: "var(--elevated)", border: "1px solid var(--border)",
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 16, flexShrink: 0,
+              transition: "background 0.18s, border-color 0.18s, transform 0.15s",
             }}
           >
             {isLight ? "🌙" : "☀️"}
