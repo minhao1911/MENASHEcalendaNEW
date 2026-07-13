@@ -642,6 +642,7 @@ function DateZmanimCard({
   const hebrewYear  = hdate.getFullYear();
   const dayName     = getDayOfWeek(today);
   const monthStr    = today.toLocaleDateString("en-US", { month: "long" });
+  const monthShort  = today.toLocaleDateString("en-US", { month: "short" });
   const yearStr     = today.getFullYear();
 
   return (
@@ -670,26 +671,50 @@ function DateZmanimCard({
           textAlign: "left",
         }}
       >
-        {/* Hebrew date block */}
-        <div style={{
-          flexShrink: 0, textAlign: "center",
-          padding: "10px 14px", borderRadius: 13,
-          background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.22)",
-          minWidth: 68,
-        }}>
+        {/* Date cards — Hebrew + Gregorian side by side */}
+        <div style={{ flexShrink: 0, display: "flex", gap: 7 }}>
+          {/* Hebrew date */}
           <div style={{
-            fontFamily: "'Noto Serif Hebrew', serif",
-            fontSize: 22, fontWeight: 800, color: "#f0c050",
-            lineHeight: 1.1, direction: "rtl", marginBottom: 3,
+            textAlign: "center",
+            padding: "10px 12px", borderRadius: 13,
+            background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.22)",
+            minWidth: 58,
           }}>
-            {hebrewDay}
+            <div style={{
+              fontFamily: "'Noto Serif Hebrew', serif",
+              fontSize: 22, fontWeight: 800, color: "#f0c050",
+              lineHeight: 1.1, direction: "rtl", marginBottom: 3,
+            }}>
+              {hebrewDay}
+            </div>
+            <div style={{
+              fontFamily: "'Noto Serif Hebrew', serif",
+              fontSize: 10, color: "#d4a843", fontWeight: 700,
+              direction: "rtl", lineHeight: 1.2,
+            }}>
+              {hebrewMonth}
+            </div>
           </div>
+
+          {/* Gregorian date */}
           <div style={{
-            fontFamily: "'Noto Serif Hebrew', serif",
-            fontSize: 11, color: "#d4a843", fontWeight: 700,
-            direction: "rtl", lineHeight: 1.2,
+            textAlign: "center",
+            padding: "10px 12px", borderRadius: 13,
+            background: "rgba(99,149,255,0.1)", border: "1px solid rgba(99,149,255,0.22)",
+            minWidth: 58,
           }}>
-            {hebrewMonth}
+            <div style={{
+              fontSize: 22, fontWeight: 800, color: "#a8c4ff",
+              lineHeight: 1.1, marginBottom: 3, letterSpacing: "-0.5px",
+            }}>
+              {today.getDate()}
+            </div>
+            <div style={{
+              fontSize: 10, color: "#6395ff", fontWeight: 700,
+              lineHeight: 1.2, letterSpacing: "0.02em",
+            }}>
+              {monthShort.toUpperCase()}
+            </div>
           </div>
         </div>
 
@@ -698,8 +723,8 @@ function DateZmanimCard({
           <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(212,168,67,0.6)", marginBottom: 3 }}>
             {dayName.toUpperCase()} · {t.homeToday}
           </div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: "white", lineHeight: 1, letterSpacing: "-0.5px" }}>
-            {today.getDate()} {monthStr}
+          <div style={{ fontSize: 16, fontWeight: 900, color: "white", lineHeight: 1, letterSpacing: "-0.3px" }}>
+            {monthStr} {yearStr}
           </div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 4, fontWeight: 600, letterSpacing: "0.04em" }}>
             Hebrew Year {hebrewYear}
