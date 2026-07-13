@@ -61,7 +61,6 @@ html {
 html, body, #root {
   height: 100%;
   width: 100%;
-  background: lime !important;
   color: var(--foreground);
   font-family: var(--app-font-sans);
   overflow: hidden;
@@ -416,8 +415,8 @@ html, body, #root {
   border: 1.5px solid rgba(212,168,67,0.50);
   border-radius: 24px;
   width: 100%;
-  max-width: 440px;
-  max-height: 84vh;
+  max-width: min(94vw, 440px);
+  max-height: 88vh;
   padding: 20px;
   position: relative;
   overflow: hidden;
@@ -502,7 +501,7 @@ html, body, #root {
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-width: 430px;
+  max-width: min(94vw, 430px);
   padding: 16px;
   border: 1px solid var(--border);
   border-bottom: none;
@@ -1445,5 +1444,50 @@ body {
 @media (min-width: 768px) and (max-width: 1279px) {
   .app-shell {
     max-width: 100%;
+  }
+}
+
+/* ── Responsive popups & modals — expand on tablet / desktop ───────────────
+   On mobile the max-width clamps naturally. At 600px+ we start letting
+   popups breathe; at 1024px+ they become proper desktop dialogs; at
+   1440px+ they max out at a comfortable reading width.
+   ─────────────────────────────────────────────────────────────────────── */
+@media (min-width: 600px) {
+  .popup-overlay {
+    padding: 32px 40px;
+  }
+  .popup-card {
+    max-width: min(88vw, 640px);
+    max-height: 90vh;
+    padding: 28px 30px;
+    border-radius: 28px;
+  }
+  .popup-card::before { border-radius: 28px; }
+  .modal-sheet {
+    max-width: min(88vw, 620px);
+    border-radius: 24px 24px 0 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .popup-overlay {
+    padding: 40px 60px;
+  }
+  .popup-card {
+    max-width: min(82vw, 820px);
+    max-height: 88vh;
+    padding: 32px 36px;
+  }
+  .modal-sheet {
+    max-width: min(82vw, 800px);
+  }
+}
+
+@media (min-width: 1440px) {
+  .popup-card {
+    max-width: min(72vw, 960px);
+  }
+  .modal-sheet {
+    max-width: min(72vw, 940px);
   }
 }

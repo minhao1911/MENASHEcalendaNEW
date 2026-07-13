@@ -102,7 +102,7 @@ export default function WhatsNewModal({ onClose }: Props) {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: "100%", maxWidth: 520,
+          width: "100%", maxWidth: "min(92vw, 700px)",
           maxHeight: "88dvh",
           borderRadius: "24px 24px 0 0",
           background: "linear-gradient(180deg, #111827 0%, #0d1320 100%)",

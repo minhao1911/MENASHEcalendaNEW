@@ -36,7 +36,7 @@ function CompassPopup({
   subtitle,
   icon,
   children,
-  maxWidth = 400,
+  maxWidth = 820,
 }: {
   open: boolean;
   onClose: () => void;
@@ -115,7 +115,7 @@ function CompassPopup({
         <div
           onClick={e => e.stopPropagation()}
           style={{
-            width: "100%", maxWidth,
+            width: "100%", maxWidth: `min(92vw, ${maxWidth}px)`,
             background: "linear-gradient(160deg, #0e1020 0%, #0a0e1a 55%, #10090a 100%)",
             border: `1.5px solid ${accentColor}70`,
             borderRadius: 24,
@@ -223,7 +223,7 @@ export default function CompassCard({
   minHeight = 200,
   style,
   shimmerColor,
-  popupMaxWidth = 420,
+  popupMaxWidth = 820,
   watermarkSrc,
   backgroundLayer,
 }: CompassCardProps) {
