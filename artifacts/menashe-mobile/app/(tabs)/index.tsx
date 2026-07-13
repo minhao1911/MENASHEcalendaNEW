@@ -413,6 +413,28 @@ export default function HomeScreen() {
     };
   }, [hebrewDateStr]);
 
+  const weekDays = useMemo(() => {
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      let hebLetter = "";
+      try {
+        const hStr = formatHebrewDate(getHebrewDate(d));
+        const dayNum = parseInt(hStr.split(" ")[0] ?? "1", 10);
+        hebLetter = HEBREW_DAY[dayNum] ?? "";
+      } catch { /* noop */ }
+      return {
+        gregNum: d.getDate(),
+        hebLetter,
+        isToday: d.toDateString() === today.toDateString(),
+        isSaturday: i === 6,
+      };
+    });
+  }, [today]);
+
   const parasha     = useMemo(() => getCurrentParasha(), []);
   const holidays    = useMemo(() => getUpcomingHolidays(30), []);
   const nextHoliday = holidays[0] ?? null;
@@ -685,7 +707,7 @@ export default function HomeScreen() {
           <LinearGradient
             colors={["rgba(10,8,3,0.28)", "rgba(8,6,2,0.74)", "rgba(4,3,1,0.97)"]}
             locations={[0, 0.50, 1]}
-            style={{ minHeight: 264, paddingTop: 20, paddingHorizontal: 20 }}
+            style={{ paddingTop: 20, paddingHorizontal: 20, paddingBottom: 20 }}
           >
             {/* Top row: TODAY badge + greeting */}
             <View style={{
@@ -710,55 +732,77 @@ export default function HomeScreen() {
               </Text>
             </View>
 
-            {/* Hebrew day glyph — large, prominent */}
-            <Text style={{
-              fontSize: 44, fontWeight: "700",
-              color: "#F0E6C0", lineHeight: 50, letterSpacing: -0.8,
-              textShadowColor: "rgba(0,0,0,0.65)",
-              textShadowOffset: { width: 0, height: 2 },
-              textShadowRadius: 7,
-            }}>
-              {hebrewGlyph}
-            </Text>
-
-            {/* Hebrew month + year */}
-            <Text style={{
-              fontSize: 24, fontWeight: "700",
-              color: "#FFFFFF", letterSpacing: -0.4,
-              marginTop: 2, marginBottom: 4,
-              textShadowColor: "rgba(0,0,0,0.52)",
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 4,
-            }}>
-              {hebrewMonthYear}
-            </Text>
-
-            {/* Gregorian subtitle */}
-            <Text style={{
-              fontSize: 11, fontWeight: "500",
-              color: "rgba(220,200,160,0.78)",
-              letterSpacing: 0.3, marginBottom: 18,
-            }} numberOfLines={1}>
-              {gregDate}  ·  {location.name}
-            </Text>
-
-            {/* Glass Zmanim bar — 3 key times */}
-            {Platform.OS !== "web" ? (
-              <BlurView
-                intensity={55} tint="dark"
-                style={{ marginHorizontal: -6, marginBottom: 14, borderRadius: rd.lg, overflow: "hidden" }}
-              >
-                <ZmanimBar todayZm={todayZm} location={location} textPrimary="#FFFFFF" textMuted="rgba(220,200,160,0.72)" isLight={false} />
-              </BlurView>
-            ) : (
-              <View style={{
-                marginHorizontal: -6, marginBottom: 14, borderRadius: rd.lg, overflow: "hidden",
-                backgroundColor: "rgba(0,0,0,0.55)",
-                borderWidth: 1, borderColor: "rgba(255,255,255,0.10)",
-              }}>
-                <ZmanimBar todayZm={todayZm} location={location} textPrimary="#FFFFFF" textMuted="rgba(220,200,160,0.72)" isLight={false} />
+            {/* Hebrew day glyph + big Gregorian date, side by side */}
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 14, marginBottom: 2 }}>
+              <View>
+                <Text style={{
+                  fontSize: 40, fontWeight: "700",
+                  color: gold, lineHeight: 46, letterSpacing: -0.6,
+                  textShadowColor: "rgba(0,0,0,0.65)",
+                  textShadowOffset: { width: 0, height: 2 },
+                  textShadowRadius: 7,
+                }}>
+                  {hebrewGlyph}
+                </Text>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: "rgba(220,200,160,0.78)", marginTop: 1 }}>
+                  {hebrewMonthYear.split(" ")[0] ?? ""}
+                </Text>
               </View>
-            )}
+              <View style={{
+                width: 1, height: 44, backgroundColor: "rgba(255,255,255,0.15)", marginTop: 2,
+              }} />
+              <View>
+                <Text style={{
+                  fontSize: 40, fontWeight: "800",
+                  color: "#8BB4FF", lineHeight: 44, letterSpacing: -1,
+                  textShadowColor: "rgba(0,0,0,0.52)",
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 4,
+                }}>
+                  {today.getDate()}
+                </Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#8BB4FF", letterSpacing: 1.2, marginTop: 1 }}>
+                  {today.toLocaleDateString("en-US", { month: "short" }).toUpperCase()}
+                </Text>
+              </View>
+            </View>
+
+            {/* Hebrew + Gregorian year */}
+            <Text style={{
+              fontSize: 20, fontWeight: "700",
+              color: "#FFFFFF", letterSpacing: -0.2,
+              marginTop: 8, marginBottom: 4,
+            }}>
+              {hebrewMonthYear.split(" ").slice(1).join(" ")} · {today.getFullYear()}
+            </Text>
+
+            {/* Weekday + location subtitle */}
+            <Text style={{
+              fontSize: 11, fontWeight: "600",
+              color: "rgba(220,200,160,0.78)", letterSpacing: 1.0,
+              marginBottom: 18, textTransform: "uppercase",
+            }} numberOfLines={1}>
+              {today.toLocaleDateString("en-US", { weekday: "long" })}  ·  {location.name}
+            </Text>
+
+            {/* THIS WEEK — mini calendar strip */}
+            <WeekStrip weekDays={weekDays} gold={gold} t={t} />
+
+            {/* TODAY AT A GLANCE — zmanim timeline */}
+            <GlanceTimeline todayZm={todayZm} location={location} gold={gold} t={t} isFriday={isFriday} />
+
+            {/* READ → link */}
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/torah")}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={t.homeReadLink}
+              style={{ alignSelf: "flex-end", marginTop: 14 }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: "700", color: "rgba(220,200,160,0.7)", letterSpacing: 0.4 }}>
+                {t.homeReadLink.toUpperCase()} ›
+              </Text>
+            </TouchableOpacity>
 
             {/* Phase 1: elegant loading shimmer */}
             <Animated.View
@@ -1329,6 +1373,200 @@ export default function HomeScreen() {
     </>
   );
 }
+
+// ─── Week Strip — "THIS WEEK" mini calendar row inside Hero ───────────────────
+
+const DAY_ABBR = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
+const WeekStrip = memo(function WeekStrip({
+  weekDays, gold, t,
+}: {
+  weekDays: Array<{ gregNum: number; hebLetter: string; isToday: boolean; isSaturday: boolean }>;
+  gold: string;
+  t: any;
+}) {
+  return (
+    <View style={{
+      backgroundColor: "rgba(255,255,255,0.05)",
+      borderRadius: 16,
+      borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
+      padding: 14, marginBottom: 12,
+    }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Feather name="calendar" size={12} color={gold} />
+          <Text allowFontScaling={false} style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "rgba(240,220,160,0.82)" }}>
+            {t.homeThisWeekLabel.toUpperCase()}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push("/(tabs)/calendar")}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t.homeCalendarLink}
+        >
+          <Text style={{ fontSize: 12, fontWeight: "700", color: gold }}>{t.homeCalendarLink} →</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        {weekDays.map((d, i) => (
+          <View
+            key={i}
+            style={[
+              { alignItems: "center", gap: 4, paddingVertical: 6, paddingHorizontal: 6, borderRadius: 12, minWidth: 34 },
+              d.isToday ? { borderWidth: 1.5, borderColor: gold, backgroundColor: "rgba(212,168,67,0.12)" } : null,
+              !d.isToday && d.isSaturday ? { backgroundColor: "rgba(147,112,255,0.14)" } : null,
+            ]}
+          >
+            <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 0.5, color: d.isToday ? gold : "rgba(220,200,170,0.6)" }}>
+              {DAY_ABBR[i]}
+            </Text>
+            <Text style={{ fontSize: 15, fontWeight: "800", color: d.isToday ? gold : d.isSaturday ? "#c4b0ff" : "#F0E6C0" }}>
+              {d.gregNum}
+            </Text>
+            <Text style={{ fontSize: 10, color: d.isToday ? gold : "rgba(220,200,170,0.55)" }}>
+              {d.hebLetter}
+            </Text>
+            {d.isToday && <View style={{ width: 14, height: 2, borderRadius: 1, backgroundColor: gold, marginTop: 1 }} />}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+// ─── Glance Timeline — "TODAY AT A GLANCE" zmanim strip inside Hero ───────────
+
+const GlanceTimeline = memo(function GlanceTimeline({
+  todayZm, location, gold, t, isFriday,
+}: {
+  todayZm: any;
+  location: any;
+  gold: string;
+  t: any;
+  isFriday: boolean;
+}) {
+  const stops = [
+    { key: "dawn",    icon: "sunrise" as const, time: todayZm.alotHaShachar, above: false },
+    { key: "sunrise", icon: "sun"     as const, time: todayZm.sunrise,       above: true  },
+    { key: "midday",  icon: "book-open" as const, time: todayZm.chatzot,     above: false },
+    { key: "mincha",  icon: "clock"   as const, time: todayZm.minchaKetana,  above: true  },
+    { key: "sunset",  icon: isFriday ? "star" as const : "sunset" as const,
+      time: isFriday ? todayZm.candleLighting : todayZm.sunset,               above: false },
+    { key: "night",   icon: "moon"    as const, time: todayZm.tzais,         above: true  },
+  ];
+
+  const validTimes = stops.map((s) => s.time).filter(Boolean) as Date[];
+  const rangeStart = validTimes[0]?.getTime() ?? 0;
+  const rangeEnd   = validTimes[validTimes.length - 1]?.getTime() ?? 1;
+  const nowMs      = Date.now();
+  const nowFrac    = rangeEnd > rangeStart
+    ? Math.min(1, Math.max(0, (nowMs - rangeStart) / (rangeEnd - rangeStart)))
+    : 0;
+  const nowVisible  = nowMs >= rangeStart && nowMs <= rangeEnd;
+
+  return (
+    <View style={{
+      backgroundColor: "rgba(255,255,255,0.05)",
+      borderRadius: 16,
+      borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
+      padding: 14, paddingTop: 16,
+    }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Feather name="clock" size={12} color={gold} />
+          <Text allowFontScaling={false} style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "rgba(240,220,160,0.82)" }}>
+            {t.homeGlanceLabel.toUpperCase()}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push("/(tabs)/zmanim")}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t.homeFullZmanimLink}
+        >
+          <Text style={{ fontSize: 12, fontWeight: "700", color: gold }}>{t.homeFullZmanimLink} →</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Above-line labels */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 2, marginBottom: 6, height: 28 }}>
+        {stops.map((s) => (
+          <View key={s.key + "-top"} style={{ width: 1, alignItems: "center" }}>
+            {s.above && s.time ? (
+              <>
+                <Feather name={s.icon} size={11} color={gold} style={{ marginBottom: 2 }} />
+                <Text style={{ fontSize: 10, fontWeight: "700", color: "#F0E6C0" }} numberOfLines={1}>
+                  {formatTime(s.time, location.tz)}
+                </Text>
+              </>
+            ) : null}
+          </View>
+        ))}
+      </View>
+
+      {/* Gradient line + dots */}
+      <View style={{ height: 20, justifyContent: "center" }}>
+        <LinearGradient
+          colors={["#60a5fa", "#f0c050", "#fb7185"]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={{ height: 2, borderRadius: 1, marginHorizontal: 8 }}
+        />
+        <View style={{
+          position: "absolute", left: 0, right: 0, top: 0, bottom: 0,
+          flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 4,
+        }}>
+          {stops.map((s) => (
+            <View
+              key={s.key + "-dot"}
+              style={{
+                width: 9, height: 9, borderRadius: 4.5,
+                backgroundColor: s.time ? gold : "rgba(255,255,255,0.25)",
+                borderWidth: 2, borderColor: "#0a0805",
+              }}
+            />
+          ))}
+        </View>
+        {nowVisible && (
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute", top: -3,
+              left: `${8 + nowFrac * 84}%`,
+              width: 14, height: 14, borderRadius: 7,
+              backgroundColor: gold,
+              borderWidth: 2, borderColor: "#0a0805",
+              shadowColor: gold, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 },
+            }}
+          />
+        )}
+      </View>
+
+      {/* Below-line labels */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 2, marginTop: 6 }}>
+        {stops.map((s) => (
+          <View key={s.key + "-bottom"} style={{ width: 1, alignItems: "center" }}>
+            {!s.above && s.time ? (
+              <>
+                <Feather name={s.icon} size={11} color="rgba(220,200,160,0.75)" style={{ marginBottom: 2 }} />
+                <Text style={{ fontSize: 10, fontWeight: "600", color: "rgba(220,200,160,0.75)" }} numberOfLines={1}>
+                  {formatTime(s.time, location.tz)}
+                </Text>
+              </>
+            ) : null}
+          </View>
+        ))}
+      </View>
+
+      {nowVisible && (
+        <Text style={{ fontSize: 10, fontWeight: "700", color: gold, textAlign: "center", marginTop: 10, letterSpacing: 0.3 }}>
+          {t.homeNowLabel.toUpperCase()} · {formatTime(new Date(nowMs), location.tz)}
+        </Text>
+      )}
+    </View>
+  );
+});
 
 // ─── ZmanimBar — scannable glass bar inside Hero — Phase 3 ────────────────────
 

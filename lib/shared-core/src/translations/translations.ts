@@ -238,6 +238,13 @@ export interface SharedTranslations {
   homeCommunityPreviewCta: string;
   homeEnterSanctuary: string;
 
+  /* ── Hero week strip + glance timeline ── */
+  homeThisWeekLabel: string;
+  homeCalendarLink: string;
+  homeGlanceLabel: string;
+  homeFullZmanimLink: string;
+  homeReadLink: string;
+
   /* ── Settings ── */
   settingsTitle: string;
   settingsAppearance: string;
@@ -841,6 +848,12 @@ export const sharedEn: SharedTranslations = {
   homeCommunityPreviewCta: "View Community",
   homeEnterSanctuary: "Enter Sanctuary",
 
+  homeThisWeekLabel: "This Week",
+  homeCalendarLink: "Calendar",
+  homeGlanceLabel: "Today at a Glance",
+  homeFullZmanimLink: "Full Zmanim",
+  homeReadLink: "Read",
+
   settingsTitle: "Settings",
   settingsAppearance: "APPEARANCE",
   settingsTheme: "Theme",
@@ -1427,6 +1440,12 @@ export const sharedTk: SharedTranslations = {
   homeCommunityPreviewDesc: "Bnei Menashe mipil khawvel zawng zawng in intlun rawh",
   homeCommunityPreviewCta: "Mipil En",
   homeEnterSanctuary: "Inn Thianghlim Lut",
+
+  homeThisWeekLabel: "Tuni Ni Sagih",
+  homeCalendarLink: "Kalenda",
+  homeGlanceLabel: "Tuni Chin Vekpi",
+  homeFullZmanimLink: "Zmanim Adaptawm",
+  homeReadLink: "Sim",
 
   settingsTitle: "Siam Dan",
   settingsAppearance: "SIM BUATSAIH",
