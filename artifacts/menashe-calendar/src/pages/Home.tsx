@@ -2993,12 +2993,46 @@ const Home = memo(function Home({
           category="TODAY"
           backgroundLayer={<TimeAwareBackground sunrise={zmanim.sunrise} sunset={zmanim.sunset} />}
           icon={
-            <span style={{ fontFamily: "'Noto Serif Hebrew', serif", fontSize: 40, color: "#c9a227", lineHeight: 1, display: "block", filter: "drop-shadow(0 0 10px rgba(201,162,39,0.5))" }}>
-              {hebrewDay}
-            </span>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 20 }}>
+              {/* Hebrew date */}
+              <div>
+                <span style={{
+                  fontFamily: "'Noto Serif Hebrew', serif",
+                  fontSize: 44, color: "#c9a227", lineHeight: 1, display: "block",
+                  filter: "drop-shadow(0 0 10px rgba(201,162,39,0.5))",
+                }}>
+                  {hebrewDay}
+                </span>
+                <span style={{
+                  fontFamily: "'Noto Serif Hebrew', serif",
+                  fontSize: 12, color: "rgba(201,162,39,0.75)", fontWeight: 700,
+                  display: "block", direction: "rtl", marginTop: 3, letterSpacing: "0.02em",
+                }}>
+                  {hebrewMonth}
+                </span>
+              </div>
+              {/* Divider */}
+              <div style={{ width: 1, height: 42, background: "rgba(255,255,255,0.12)", marginBottom: 4, flexShrink: 0 }} />
+              {/* Gregorian date */}
+              <div>
+                <span style={{
+                  fontSize: 44, fontWeight: 900, color: "#a8c4ff", lineHeight: 1,
+                  display: "block", letterSpacing: "-2px",
+                  filter: "drop-shadow(0 0 10px rgba(120,160,255,0.45))",
+                }}>
+                  {today.getDate()}
+                </span>
+                <span style={{
+                  fontSize: 12, color: "rgba(140,180,255,0.75)", fontWeight: 700,
+                  display: "block", marginTop: 3, letterSpacing: "0.08em",
+                }}>
+                  {today.toLocaleDateString("en-US", { month: "short" }).toUpperCase()}
+                </span>
+              </div>
+            </div>
           }
-          title={`${hebrewMonth} ${hebrewYear}`}
-          subtitle={`${dayName} · ${monthStr} ${today.getDate()}, ${yearStr} · ${location.name}`}
+          title={`${hebrewYear}  ·  ${yearStr}`}
+          subtitle={`${dayName} · ${location.name}`}
           previewContent={
             <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
               {[
@@ -3019,7 +3053,7 @@ const Home = memo(function Home({
             </div>
           }
           expandedTitle="Today's Calendar"
-          expandedSubtitle={`${dayName} · ${monthStr} ${today.getDate()}, ${yearStr}`}
+          expandedSubtitle={`${dayName} · ${monthStr} ${today.getDate()}, ${yearStr} · ${location.name}`}
           watermarkSrc={torahScrollWatermark}
         >
           <div style={{ padding: "16px 16px 0" }}>
