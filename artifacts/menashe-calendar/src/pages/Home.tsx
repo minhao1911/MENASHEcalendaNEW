@@ -3034,22 +3034,14 @@ const Home = memo(function Home({
           title={`${hebrewYear}  ·  ${yearStr}`}
           subtitle={`${dayName} · ${location.name}`}
           previewContent={
-            <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
-              {[
-                { label: "SUNRISE", time: zmanim.sunrise },
-                { label: "MIDDAY", time: zmanim.chatzot },
-                { label: showCandleLighting && zmanim.candleLighting ? "CANDLES" : "SUNSET", time: showCandleLighting && zmanim.candleLighting ? zmanim.candleLighting : zmanim.sunset },
-              ].map(({ label, time }) => (
-                <div key={label} style={{
-                  flex: 1, textAlign: "center",
-                  background: "rgba(201,162,39,0.07)", borderRadius: 10,
-                  padding: "7px 4px",
-                  border: "1px solid rgba(201,162,39,0.18)",
-                }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(201,162,39,0.75)", letterSpacing: "0.1em", marginBottom: 3 }}>{label}</div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: "white" }}>{time ? formatTime(time) : "—"}</div>
-                </div>
-              ))}
+            /* Stop pointer events from bubbling to the card's tap-open handler */
+            <div
+              onPointerDown={e => e.stopPropagation()}
+              onPointerUp={e => e.stopPropagation()}
+              style={{ marginTop: 4 }}
+            >
+              <WeekStrip onNavigate={onNavigate} />
+              <ZmanimTimeline zmanim={zmanim} location={location} onNavigate={onNavigate} />
             </div>
           }
           expandedTitle="Today's Calendar"
@@ -3064,8 +3056,6 @@ const Home = memo(function Home({
               onNavigate={onNavigate}
               forceExpand={mapForceExpand}
             />
-            <WeekStrip onNavigate={onNavigate} />
-            <ZmanimTimeline zmanim={zmanim} location={location} onNavigate={onNavigate} />
           </div>
         </CompassCard>
 
