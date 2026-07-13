@@ -24,7 +24,7 @@ const publicProfileSchema = z.object({
   displayName: z.string().min(1).max(100),
   congregation: z.string().max(200).optional(),
   bio: z.string().max(500).optional(),
-  role: z.enum(["Member", "Elder", "Rabbi", "Student", "Leader", "Teacher", "Other", "Community Leader", "Cantor", "Youth Leader", "Women's Group", "Admin"]).optional(),
+  role: z.enum(["Member", "Avrekh", "Elder", "Rabbi", "Student", "Leader", "Teacher", "Other", "Community Leader", "Cantor", "Youth Leader", "Women's Group", "Admin"]).optional(),
   city: z.string().max(100).optional(),
   country: z.string().max(100).optional(),
   avatarEmoji: z.string().max(10).optional(),

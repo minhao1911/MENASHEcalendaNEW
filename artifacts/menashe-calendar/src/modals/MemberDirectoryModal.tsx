@@ -13,11 +13,12 @@ interface Props {
 
 export type Member = DirectoryMember;
 
-const ROLES = ["Member", "Community Leader", "Rabbi", "Cantor", "Youth Leader", "Women's Group", "Student", "Elder"];
+const ROLES = ["Member", "Avrekh", "Community Leader", "Rabbi", "Cantor", "Youth Leader", "Women's Group", "Student", "Elder"];
 const COUNTRIES = ["India", "Israel", "United States", "United Kingdom", "Australia", "Canada", "Other"];
 
 const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
   "Rabbi":             { bg: "rgba(212,168,67,0.18)", color: "#d4a843" },
+  "Avrekh":            { bg: "rgba(20,184,166,0.16)",  color: "#2dd4bf" },
   "Cantor":            { bg: "rgba(212,168,67,0.12)", color: "#c9a03a" },
   "Community Leader":  { bg: "rgba(139,92,246,0.18)", color: "#a78bfa" },
   "Youth Leader":      { bg: "rgba(59,130,246,0.18)", color: "#60a5fa" },
