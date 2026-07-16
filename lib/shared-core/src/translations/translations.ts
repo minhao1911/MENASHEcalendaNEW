@@ -299,7 +299,30 @@ export interface SharedTranslations {
   settingsUpgrade: string;
   settingsUpgradeSub: string;
   settingsAccount: string;
+  settingsEditProfile: string;
+  settingsEditProfileHint: string;
   settingsSignOut: string;
+  /* ── Edit Profile screen ── */
+  profileTitle: string;
+  profileVisibleIn: string;
+  profileDisplayName: string;
+  profileCongregation: string;
+  profileRole: string;
+  profileCountry: string;
+  profileCity: string;
+  profileBio: string;
+  profileBioPlaceholder: string;
+  profileUploadPhoto: string;
+  profileChangePhoto: string;
+  profileRemovePhoto: string;
+  profilePhotoHint: string;
+  profilePhotoTooBig: string;
+  profileChooseEmoji: string;
+  profileNameRequired: string;
+  profileSaveBtn: string;
+  profileSaving: string;
+  profileSaved: string;
+  profileVisibility: string;
   settingsVersion: string;
   settingsNotifBlocked: string;
   settingsNotifBlockedSub: string;
@@ -912,7 +935,30 @@ export const sharedEn: SharedTranslations = {
   settingsUpgrade: "Upgrade to Premium",
   settingsUpgradeSub: "Unlock all features — 7 days free",
   settingsAccount: "ACCOUNT",
+  settingsEditProfile: "Edit Profile",
+  settingsEditProfileHint: "Update your public community profile",
   settingsSignOut: "Sign Out",
+  /* ── Edit Profile screen ── */
+  profileTitle: "My Profile",
+  profileVisibleIn: "Visible in Member Directory & Prayer Board",
+  profileDisplayName: "Display Name",
+  profileCongregation: "Congregation / Community",
+  profileRole: "Role",
+  profileCountry: "Country",
+  profileCity: "City",
+  profileBio: "Bio",
+  profileBioPlaceholder: "A short description about yourself (optional)",
+  profileUploadPhoto: "Upload Photo",
+  profileChangePhoto: "Change Photo",
+  profileRemovePhoto: "Remove Photo",
+  profilePhotoHint: "Max 5 MB · JPEG or PNG",
+  profilePhotoTooBig: "Photo exceeds the 5 MB limit. Please choose a smaller image.",
+  profileChooseEmoji: "Choose Avatar Emoji",
+  profileNameRequired: "Please enter your display name.",
+  profileSaveBtn: "Save Profile",
+  profileSaving: "Saving…",
+  profileSaved: "✓ Saved!",
+  profileVisibility: "Your profile is visible to other community members.",
   settingsVersion: "Menashe Calendar",
   settingsNotifBlocked: "Notifications blocked",
   settingsNotifBlockedSub: "Enable notifications for this app in your device settings",
@@ -1510,7 +1556,30 @@ export const sharedTk: SharedTranslations = {
   settingsUpgrade: "Premium Nei Ta",
   settingsUpgradeSub: "Zawng zawng en theih — 7 ni bel",
   settingsAccount: "ACCOUNT",
+  settingsEditProfile: "Profile Siam",
+  settingsEditProfileHint: "I public community profile siam danglam",
   settingsSignOut: "Tawp Ta",
+  /* ── Edit Profile screen ── */
+  profileTitle: "Ka Profile",
+  profileVisibleIn: "Member Directory & Prayer Board-ah a lang",
+  profileDisplayName: "Hming Lang",
+  profileCongregation: "Khawm Pi / Community",
+  profileRole: "Hna",
+  profileCountry: "Ram",
+  profileCity: "Khua",
+  profileBio: "Ka Chanchin",
+  profileBioPlaceholder: "I chanchin hrang hrang ziak la (optional)",
+  profileUploadPhoto: "Photo Upload",
+  profileChangePhoto: "Photo Danglam",
+  profileRemovePhoto: "Photo Tlak",
+  profilePhotoHint: "5 MB chauh · JPEG leh PNG",
+  profilePhotoTooBig: "Photo chu 5 MB a liam tawh. A tlang zawk thlang rawh.",
+  profileChooseEmoji: "Avatar Emoji Thlang",
+  profileNameRequired: "I hming lang ziak rawh.",
+  profileSaveBtn: "Profile Siam Danglam",
+  profileSaving: "A siam mek…",
+  profileSaved: "✓ A siam ta!",
+  profileVisibility: "I profile chu community member dangte hian an en thei.",
   settingsVersion: "Menashe Ni Thu",
   settingsNotifBlocked: "Hlabu a block",
   settingsNotifBlockedSub: "Device siam dan ah app hlabu dawng theihna pe rawh",

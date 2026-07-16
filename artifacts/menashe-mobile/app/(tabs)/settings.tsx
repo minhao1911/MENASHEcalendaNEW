@@ -536,6 +536,26 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Edit Profile row */}
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16, marginBottom: 12 }]}
+          onPress={() => router.push("/profile/edit" as any)}
+          activeOpacity={0.75}
+        >
+          <View style={styles.rowBetween}>
+            <View style={styles.rowStart}>
+              <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: colors.primary + "14", alignItems: "center", justifyContent: "center" }}>
+                <Feather name="edit-2" size={16} color={colors.primary} />
+              </View>
+              <View style={{ marginLeft: 12 }}>
+                <Text style={[styles.cardTitle, { color: colors.foreground }]}>{t.settingsEditProfile}</Text>
+                <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{t.settingsEditProfileHint}</Text>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </View>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.signOutBtn, { borderColor: "#c0392b", marginHorizontal: 16 }]}
           onPress={handleSignOut}
