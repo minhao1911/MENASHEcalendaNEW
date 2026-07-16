@@ -2,21 +2,41 @@
  * Lightweight Census store — in-memory singleton + AsyncStorage draft persistence.
  *
  * Written to by family-head and family-members screens.
- * Read by review screen.
+ * Read by review and submit screens.
  * Cleared on submit.
+ *
+ * Types match the canonical shared-core enums exactly:
+ *   - MaritalStatus: "Single" | "Married" | "Divorced" | "Widowed" | ""
+ *   - Relation: "spouse" | "son" | "daughter" | "grandson" | "granddaughter" |
+ *               "daughter_in_law" | "son_in_law" | "other"
+ *
+ * Draft key bumped to v2 (v1 had wrong casing for MaritalStatus and wrong
+ * Relation values that don't match the shared-core / API enums).
  */
 
 import { storageGet, storageSet, storageRemove } from "./storageUtils";
 
-export type AliyahStatus = "in_israel" | "awaiting" | "unknown";
-export type MaritalStatus = "single" | "married" | "divorced" | "widowed" | "";
-export type Sex = "M" | "F" | "";
-export type Relation = "spouse" | "child" | "parent" | "sibling" | "other" | "";
+// Re-export canonical types so screens can import from one place.
+export type AliyahStatus   = "in_israel" | "awaiting" | "unknown";
+export type MaritalStatus  = "Single" | "Married" | "Divorced" | "Widowed" | "";
+export type Sex            = "M" | "F" | "";
+export type Relation       =
+  | "spouse"
+  | "son"
+  | "daughter"
+  | "grandson"
+  | "granddaughter"
+  | "daughter_in_law"
+  | "son_in_law"
+  | "other"
+  | "";
 
+/** All 13 CensusRow fields + aliyahStatus for the family head. */
 export interface CensusHeadData {
   surname:               string;
   namePerPassport:       string;
   hebrewName:            string;
+  aadharNo:              string;
   sex:                   Sex;
   maritalStatus:         MaritalStatus;
   dob:                   string;
@@ -29,16 +49,24 @@ export interface CensusHeadData {
   aliyahStatus:          AliyahStatus;
 }
 
+/** All 13 CensusRow fields + relation + aliyahStatus for a household member. */
 export interface CensusMemberData {
-  id:              string;
-  relation:        Relation;
-  surname:         string;
-  namePerPassport: string;
-  hebrewName:      string;
-  sex:             Sex;
-  maritalStatus:   MaritalStatus;
-  dob:             string;
-  aliyahStatus:    AliyahStatus;
+  id:                    string;
+  relation:              Relation;
+  surname:               string;
+  namePerPassport:       string;
+  hebrewName:            string;
+  aadharNo:              string;
+  sex:                   Sex;
+  maritalStatus:         MaritalStatus;
+  dob:                   string;
+  fatherName:            string;
+  motherName:            string;
+  dateOfJudaismPractice: string;
+  passportNo:            string;
+  passportIssueDate:     string;
+  passportExpiryDate:    string;
+  aliyahStatus:          AliyahStatus;
 }
 
 interface CensusStore {
@@ -51,7 +79,7 @@ const _store: CensusStore = {
   members: [],
 };
 
-const DRAFT_KEY = "census_draft_v1";
+const DRAFT_KEY = "census_draft_v2";
 
 // ── In-memory accessors ───────────────────────────────────────────────────────
 

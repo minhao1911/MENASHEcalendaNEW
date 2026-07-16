@@ -1,10 +1,14 @@
 /**
  * Census — Family Members — SPR-P006D
  *
- * Step 2 of 4: add / remove family members.
- * In-memory state only — no API, no AsyncStorage.
+ * Step 2 of 4: add / remove / edit family members.
+ * Collects ALL 13 CensusRow fields for each member, matching the web modal.
  *
- * Design mirrors family-head.tsx: gold accents, chip pickers, section bars.
+ * Uses canonical RELATIONS from @workspace/shared-core/census:
+ *   spouse | son | daughter | grandson | granddaughter |
+ *   daughter_in_law | son_in_law | other
+ *
+ * Draft persistence via censusStore (matches family-head.tsx pattern).
  */
 
 import React, { useState, useEffect, useRef } from "react";
@@ -28,64 +32,62 @@ import { SPACE, TEXT, RADIUS } from "@/constants/colors";
 import {
   ALIYAH_STATUSES,
   MARITAL_STATUSES,
+  RELATIONS,
+  RELATION_LABELS,
   SEXES,
 } from "@workspace/shared-core/census";
-import type {
-  AliyahStatus,
-  MaritalStatus,
-  Sex,
-} from "@workspace/shared-core/census";
+import type { AliyahStatus, MaritalStatus, Relation, Sex } from "@workspace/shared-core/census";
 import { setMembers as setMembersStore, loadDraft, saveDraft } from "@/lib/censusStore";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const GOLD = "#d4a843";
 
-type Relation = "spouse" | "child" | "parent" | "sibling" | "other";
-const RELATIONS: readonly Relation[] = [
-  "spouse",
-  "child",
-  "parent",
-  "sibling",
-  "other",
-] as const;
-
 interface FamilyMember {
-  id:            string;
-  relation:      Relation | "";
-  surname:       string;
-  namePerPassport: string;
-  hebrewName:    string;
-  sex:           Sex | "";
-  maritalStatus: MaritalStatus;
-  dob:           string;
-  aliyahStatus:  AliyahStatus;
+  id:                    string;
+  relation:              Relation | "";
+  surname:               string;
+  namePerPassport:       string;
+  hebrewName:            string;
+  aadharNo:              string;
+  sex:                   Sex | "";
+  maritalStatus:         MaritalStatus;
+  dob:                   string;
+  fatherName:            string;
+  motherName:            string;
+  dateOfJudaismPractice: string;
+  passportNo:            string;
+  passportIssueDate:     string;
+  passportExpiryDate:    string;
+  aliyahStatus:          AliyahStatus;
 }
 
 function emptyMember(): FamilyMember {
   return {
-    id:             Math.random().toString(36).slice(2),
-    relation:       "",
-    surname:        "",
-    namePerPassport: "",
-    hebrewName:     "",
-    sex:            "",
-    maritalStatus:  "",
-    dob:            "",
-    aliyahStatus:   "unknown",
+    id:                    Math.random().toString(36).slice(2),
+    relation:              "",
+    surname:               "",
+    namePerPassport:       "",
+    hebrewName:            "",
+    aadharNo:              "",
+    sex:                   "",
+    maritalStatus:         "",
+    dob:                   "",
+    fatherName:            "",
+    motherName:            "",
+    dateOfJudaismPractice: "",
+    passportNo:            "",
+    passportIssueDate:     "",
+    passportExpiryDate:    "",
+    aliyahStatus:          "unknown",
   };
 }
 
 // ── Label helpers ─────────────────────────────────────────────────────────────
 
-function relationLabel(r: Relation): string {
-  switch (r) {
-    case "spouse":  return "Spouse";
-    case "child":   return "Child";
-    case "parent":  return "Parent";
-    case "sibling": return "Sibling";
-    case "other":   return "Other";
-  }
+function relationLabel(r: Relation | ""): string {
+  if (!r) return "Select…";
+  return RELATION_LABELS[r as Relation] ?? r;
 }
 
 function aliyahLabel(s: AliyahStatus): string {
@@ -152,7 +154,6 @@ function TextRow({
           { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground },
         ]}
         accessibilityLabel={label}
-        accessibilityRequired={required}
       />
     </View>
   );
@@ -201,13 +202,11 @@ function ChipPicker<T extends string>({
   );
 }
 
-function SectionHeader({ title, colors }: { title: string; colors: ReturnType<typeof useColors> }) {
+function SectionLabel({ title, colors }: { title: string; colors: ReturnType<typeof useColors> }) {
   return (
-    <View style={styles.sectionHeader}>
-      <View style={[styles.sectionBar, { backgroundColor: GOLD }]} accessible={false} />
-      <Text style={[styles.sectionTitle, { color: colors.foreground }]} accessibilityRole="header">
-        {title}
-      </Text>
+    <View style={styles.sectionLabel}>
+      <View style={[styles.sectionBar, { backgroundColor: GOLD + "88" }]} />
+      <Text style={[styles.sectionLabelText, { color: colors.mutedForeground }]}>{title}</Text>
     </View>
   );
 }
@@ -246,7 +245,10 @@ function MemberCard({
         </TouchableOpacity>
       </View>
 
-      {/* Relation */}
+      {/* ── §A Identity ── */}
+      <SectionLabel title="Identity" colors={colors} />
+
+      {/* Relation — uses canonical RELATIONS enum */}
       <ChipPicker
         label="Relation"
         value={member.relation}
@@ -257,24 +259,14 @@ function MemberCard({
         colors={colors}
       />
 
-      {/* Identity fields */}
+      <TextRow label="Surname"       value={member.surname}        onChangeText={(v) => onChange({ surname: v })}        colors={colors} />
+      <TextRow label="Passport Name" value={member.namePerPassport} onChangeText={(v) => onChange({ namePerPassport: v })} required colors={colors} />
+      <TextRow label="Hebrew Name"   value={member.hebrewName}     onChangeText={(v) => onChange({ hebrewName: v })}     colors={colors} />
       <TextRow
-        label="Surname"
-        value={member.surname}
-        onChangeText={(v) => onChange({ surname: v })}
-        colors={colors}
-      />
-      <TextRow
-        label="Passport Name"
-        value={member.namePerPassport}
-        onChangeText={(v) => onChange({ namePerPassport: v })}
-        required
-        colors={colors}
-      />
-      <TextRow
-        label="Hebrew Name"
-        value={member.hebrewName}
-        onChangeText={(v) => onChange({ hebrewName: v })}
+        label="Aadhar / Teudat Zehut No."
+        value={member.aadharNo}
+        onChangeText={(v) => onChange({ aadharNo: v })}
+        placeholder="Aadhar No. or Teudat Zehut No."
         colors={colors}
       />
 
@@ -294,14 +286,17 @@ function MemberCard({
         onSelect={(v) => onChange({ maritalStatus: v })}
         colors={colors}
       />
+      <TextRow label="Date of Birth" value={member.dob} onChangeText={(v) => onChange({ dob: v })} placeholder="YYYY-MM-DD" colors={colors} />
 
-      <TextRow
-        label="Date of Birth"
-        value={member.dob}
-        onChangeText={(v) => onChange({ dob: v })}
-        placeholder="YYYY-MM-DD"
-        colors={colors}
-      />
+      {/* ── §B Family ── */}
+      <SectionLabel title="Family" colors={colors} />
+
+      <TextRow label="Father's Name"        value={member.fatherName}            onChangeText={(v) => onChange({ fatherName: v })}            colors={colors} />
+      <TextRow label="Mother's Name"        value={member.motherName}            onChangeText={(v) => onChange({ motherName: v })}            colors={colors} />
+      <TextRow label="Judaism Practice Year" value={member.dateOfJudaismPractice} onChangeText={(v) => onChange({ dateOfJudaismPractice: v })} placeholder="YYYY" colors={colors} />
+
+      {/* ── §C Aliyah ── */}
+      <SectionLabel title="Aliyah" colors={colors} />
 
       <ChipPicker
         label="Aliyah Status"
@@ -312,6 +307,13 @@ function MemberCard({
         required
         colors={colors}
       />
+
+      {/* ── §D Passport ── */}
+      <SectionLabel title="Passport" colors={colors} />
+
+      <TextRow label="Passport No."    value={member.passportNo}        onChangeText={(v) => onChange({ passportNo: v })}        colors={colors} />
+      <TextRow label="Passport Issued" value={member.passportIssueDate} onChangeText={(v) => onChange({ passportIssueDate: v })} placeholder="YYYY-MM-DD" colors={colors} />
+      <TextRow label="Passport Expiry" value={member.passportExpiryDate} onChangeText={(v) => onChange({ passportExpiryDate: v })} placeholder="YYYY-MM-DD" colors={colors} />
     </View>
   );
 }
@@ -333,15 +335,22 @@ export default function FamilyMembersScreen() {
         draftLoaded.current = true;
         setMembers(
           draft.members.map((m) => ({
-            id:              m.id,
-            relation:        (m.relation || "") as Relation | "",
-            surname:         m.surname         ?? "",
-            namePerPassport: m.namePerPassport  ?? "",
-            hebrewName:      m.hebrewName       ?? "",
-            sex:             (m.sex || "")      as Sex | "",
-            maritalStatus:   (m.maritalStatus || "") as MaritalStatus,
-            dob:             m.dob              ?? "",
-            aliyahStatus:    m.aliyahStatus     ?? "unknown",
+            id:                    m.id,
+            relation:              (m.relation || "")              as Relation | "",
+            surname:               m.surname                       ?? "",
+            namePerPassport:       m.namePerPassport               ?? "",
+            hebrewName:            m.hebrewName                    ?? "",
+            aadharNo:              m.aadharNo                      ?? "",
+            sex:                   (m.sex || "")                   as Sex | "",
+            maritalStatus:         (m.maritalStatus || "")         as MaritalStatus,
+            dob:                   m.dob                           ?? "",
+            fatherName:            m.fatherName                    ?? "",
+            motherName:            m.motherName                    ?? "",
+            dateOfJudaismPractice: m.dateOfJudaismPractice         ?? "",
+            passportNo:            m.passportNo                    ?? "",
+            passportIssueDate:     m.passportIssueDate             ?? "",
+            passportExpiryDate:    m.passportExpiryDate            ?? "",
+            aliyahStatus:          m.aliyahStatus                  ?? "unknown",
           }))
         );
       } else {
@@ -359,15 +368,22 @@ export default function FamilyMembersScreen() {
     saveTimer.current = setTimeout(() => {
       setMembersStore(
         members.map((m) => ({
-          id:              m.id,
-          relation:        m.relation,
-          surname:         m.surname,
-          namePerPassport: m.namePerPassport,
-          hebrewName:      m.hebrewName,
-          sex:             m.sex,
-          maritalStatus:   m.maritalStatus,
-          dob:             m.dob,
-          aliyahStatus:    m.aliyahStatus,
+          id:                    m.id,
+          relation:              m.relation as Relation,
+          surname:               m.surname,
+          namePerPassport:       m.namePerPassport,
+          hebrewName:            m.hebrewName,
+          aadharNo:              m.aadharNo,
+          sex:                   m.sex as Sex,
+          maritalStatus:         m.maritalStatus as MaritalStatus,
+          dob:                   m.dob,
+          fatherName:            m.fatherName,
+          motherName:            m.motherName,
+          dateOfJudaismPractice: m.dateOfJudaismPractice,
+          passportNo:            m.passportNo,
+          passportIssueDate:     m.passportIssueDate,
+          passportExpiryDate:    m.passportExpiryDate,
+          aliyahStatus:          m.aliyahStatus,
         }))
       );
       saveDraft();
@@ -385,9 +401,33 @@ export default function FamilyMembersScreen() {
   }
 
   function patchMember(id: string, patch: Partial<FamilyMember>) {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...patch } : m))
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  }
+
+  function handleNext() {
+    haptic();
+    // Flush latest state to store before navigating
+    setMembersStore(
+      members.map((m) => ({
+        id:                    m.id,
+        relation:              m.relation as Relation,
+        surname:               m.surname,
+        namePerPassport:       m.namePerPassport,
+        hebrewName:            m.hebrewName,
+        aadharNo:              m.aadharNo,
+        sex:                   m.sex as Sex,
+        maritalStatus:         m.maritalStatus as MaritalStatus,
+        dob:                   m.dob,
+        fatherName:            m.fatherName,
+        motherName:            m.motherName,
+        dateOfJudaismPractice: m.dateOfJudaismPractice,
+        passportNo:            m.passportNo,
+        passportIssueDate:     m.passportIssueDate,
+        passportExpiryDate:    m.passportExpiryDate,
+        aliyahStatus:          m.aliyahStatus,
+      }))
     );
+    router.push("/census/review" as never);
   }
 
   return (
@@ -438,7 +478,12 @@ export default function FamilyMembersScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <SectionHeader title="Household Members" colors={colors} />
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionBarMain, { backgroundColor: GOLD }]} accessible={false} />
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]} accessibilityRole="header">
+              Household Members
+            </Text>
+          </View>
 
           {members.length === 0 && (
             <View
@@ -504,21 +549,7 @@ export default function FamilyMembersScreen() {
 
           <TouchableOpacity
             style={[styles.nextBtn, { backgroundColor: GOLD }]}
-            onPress={() => {
-              haptic();
-              setMembers(members.map((m) => ({
-                id:              m.id,
-                relation:        m.relation,
-                surname:         m.surname,
-                namePerPassport: m.namePerPassport,
-                hebrewName:      m.hebrewName,
-                sex:             m.sex,
-                maritalStatus:   m.maritalStatus,
-                dob:             m.dob,
-                aliyahStatus:    m.aliyahStatus,
-              })));
-              router.push("/census/review" as never);
-            }}
+            onPress={handleNext}
             activeOpacity={0.82}
             accessibilityRole="button"
             accessibilityLabel="Continue to Review"
@@ -572,10 +603,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACE[2],
   },
 
-  scroll: {
-    paddingHorizontal: SPACE[4],
-    gap: 0,
-  },
+  scroll: { paddingHorizontal: SPACE[4] },
 
   sectionHeader: {
     flexDirection: "row",
@@ -584,8 +612,8 @@ const styles = StyleSheet.create({
     marginTop: SPACE[6],
     marginBottom: SPACE[3],
   },
-  sectionBar:   { width: 3, height: 18, borderRadius: 2 },
-  sectionTitle: { fontSize: TEXT.md, fontWeight: "700", letterSpacing: 0.1 },
+  sectionBarMain: { width: 3, height: 18, borderRadius: 2 },
+  sectionTitle:   { fontSize: TEXT.md, fontWeight: "700", letterSpacing: 0.1 },
 
   emptyState: {
     alignItems: "center",
@@ -633,13 +661,18 @@ const styles = StyleSheet.create({
   },
   removeBtnText: { fontSize: TEXT.xs, fontWeight: "600" },
 
-  fieldWrap: { marginBottom: SPACE[4] },
-  label: {
-    fontSize: TEXT.sm,
-    fontWeight: "600",
-    letterSpacing: 0.2,
-    marginBottom: SPACE[1],
+  sectionLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE[2],
+    marginTop: SPACE[4],
+    marginBottom: SPACE[3],
   },
+  sectionBar:      { width: 2, height: 14, borderRadius: 2 },
+  sectionLabelText: { fontSize: TEXT.xs, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
+
+  fieldWrap: { marginBottom: SPACE[4] },
+  label: { fontSize: TEXT.sm, fontWeight: "600", letterSpacing: 0.2, marginBottom: SPACE[1] },
   input: {
     borderWidth: 1,
     borderRadius: RADIUS.lg,
@@ -648,6 +681,7 @@ const styles = StyleSheet.create({
     fontSize: TEXT.base,
     fontWeight: "400",
   },
+
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: SPACE[2] },
   chip: {
     borderWidth: 1,

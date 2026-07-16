@@ -2,9 +2,9 @@
  * Census — Review & Validation — SPR-P006E
  *
  * Step 3 of 4: read-only summary of Family Head + Family Members.
+ * Shows ALL 13 CensusRow fields for each person (matching the web modal export).
  * Highlights missing required fields, invalid dates, empty names.
- * No editing inline — Edit buttons route back to the appropriate step.
- * Submit button navigates to /census/submit (not built yet).
+ * Edit buttons route back to the appropriate step.
  */
 
 import React, { useMemo } from "react";
@@ -30,6 +30,8 @@ import {
   type CensusHeadData,
   type CensusMemberData,
 } from "@/lib/censusStore";
+import { RELATION_LABELS } from "@workspace/shared-core/census";
+import type { Relation } from "@workspace/shared-core/census";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -53,7 +55,7 @@ function aliyahLabel(s: AliyahStatus): string {
 
 function relationLabel(r: string): string {
   if (!r) return "—";
-  return r.charAt(0).toUpperCase() + r.slice(1);
+  return RELATION_LABELS[r as Relation] ?? (r.charAt(0).toUpperCase() + r.slice(1));
 }
 
 function orDash(v: string | undefined | null): string {
@@ -66,7 +68,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const YEAR_RE = /^\d{4}$/;
 
 function isValidDate(v: string): boolean {
-  if (!v) return true; // empty = not required, skip
+  if (!v) return true;
   if (!DATE_RE.test(v)) return false;
   const d = new Date(v);
   return !isNaN(d.getTime());
@@ -81,6 +83,7 @@ function isValidYear(v: string): boolean {
 
 interface HeadIssues {
   namePerPassport: boolean;
+  surname:         boolean;
   dob:             boolean;
   passportIssue:   boolean;
   passportExpiry:  boolean;
@@ -95,10 +98,11 @@ interface MemberIssues {
 
 function validateHead(head: CensusHeadData | null): HeadIssues {
   if (!head) {
-    return { namePerPassport: true, dob: false, passportIssue: false, passportExpiry: false, judaismDate: false };
+    return { namePerPassport: true, surname: false, dob: false, passportIssue: false, passportExpiry: false, judaismDate: false };
   }
   return {
     namePerPassport: !head.namePerPassport.trim(),
+    surname:         !head.surname.trim(),
     dob:             !isValidDate(head.dob),
     passportIssue:   !isValidDate(head.passportIssueDate),
     passportExpiry:  !isValidDate(head.passportExpiryDate),
@@ -201,12 +205,7 @@ function ReviewRow({
   );
 }
 
-function IssuesBanner({
-  count, colors,
-}: {
-  count: number;
-  colors: ReturnType<typeof useColors>;
-}) {
+function IssuesBanner({ count, colors }: { count: number; colors: ReturnType<typeof useColors> }) {
   if (count === 0) return null;
   return (
     <View style={[styles.issuesBanner, { backgroundColor: RED + "12", borderColor: RED + "44" }]}>
@@ -255,7 +254,7 @@ export default function ReviewScreen() {
     headIssueCount(headIssues) +
     memberIssueMap.reduce((acc, { issues }) => acc + memberIssueCount(issues), 0);
 
-  const totalPeople = 1 + members.length; // head + members (even if head not yet saved)
+  const totalPeople = 1 + members.length;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -318,19 +317,24 @@ export default function ReviewScreen() {
 
         {head ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <ReviewRow label="Passport Name"    value={orDash(head.namePerPassport)}       invalid={headIssues.namePerPassport} colors={colors} />
-            <ReviewRow label="Surname"          value={orDash(head.surname)}                colors={colors} />
+            <ReviewRow label="Surname"          value={orDash(head.surname)}               invalid={headIssues.surname}         colors={colors} />
+            <ReviewRow label="Passport Name"    value={orDash(head.namePerPassport)}       invalid={headIssues.namePerPassport}  colors={colors} />
             <ReviewRow label="Hebrew Name"      value={orDash(head.hebrewName)}             colors={colors} />
-            <ReviewRow label="Sex"              value={head.sex === "M" ? "Male" : head.sex === "F" ? "Female" : "—"} colors={colors} />
+            <ReviewRow label="Aadhar / Teudat" value={orDash(head.aadharNo)}               colors={colors} />
+            <ReviewRow
+              label="Sex"
+              value={head.sex === "M" ? "Male" : head.sex === "F" ? "Female" : "—"}
+              colors={colors}
+            />
             <ReviewRow label="Marital Status"   value={orDash(head.maritalStatus)}          colors={colors} />
-            <ReviewRow label="Date of Birth"    value={orDash(head.dob)}                    invalid={headIssues.dob && !!head.dob} colors={colors} />
+            <ReviewRow label="Date of Birth"    value={orDash(head.dob)}                    invalid={headIssues.dob && !!head.dob}         colors={colors} />
             <ReviewRow label="Father's Name"    value={orDash(head.fatherName)}             colors={colors} />
             <ReviewRow label="Mother's Name"    value={orDash(head.motherName)}             colors={colors} />
             <ReviewRow label="Judaism Since"    value={orDash(head.dateOfJudaismPractice)}  invalid={headIssues.judaismDate && !!head.dateOfJudaismPractice} colors={colors} />
-            <ReviewRow label="Passport No."     value={orDash(head.passportNo)}             colors={colors} />
-            <ReviewRow label="Passport Issued"  value={orDash(head.passportIssueDate)}      invalid={headIssues.passportIssue && !!head.passportIssueDate} colors={colors} />
-            <ReviewRow label="Passport Expiry"  value={orDash(head.passportExpiryDate)}     invalid={headIssues.passportExpiry && !!head.passportExpiryDate} colors={colors} />
             <ReviewRow label="Aliyah Status"    value={aliyahLabel(head.aliyahStatus)}      colors={colors} />
+            <ReviewRow label="Passport No."     value={orDash(head.passportNo)}             colors={colors} />
+            <ReviewRow label="Passport Issued"  value={orDash(head.passportIssueDate)}      invalid={headIssues.passportIssue && !!head.passportIssueDate}   colors={colors} />
+            <ReviewRow label="Passport Expiry"  value={orDash(head.passportExpiryDate)}     invalid={headIssues.passportExpiry && !!head.passportExpiryDate} colors={colors} />
           </View>
         ) : (
           <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: RED + "55" }]}>
@@ -385,13 +389,25 @@ export default function ReviewScreen() {
                   )}
                 </View>
 
-                <ReviewRow label="Passport Name"  value={orDash(m.namePerPassport)} invalid={mIssues?.namePerPassport} colors={colors} />
-                <ReviewRow label="Surname"        value={orDash(m.surname)}          colors={colors} />
-                <ReviewRow label="Hebrew Name"    value={orDash(m.hebrewName)}       colors={colors} />
-                <ReviewRow label="Sex"            value={m.sex === "M" ? "Male" : m.sex === "F" ? "Female" : "—"} colors={colors} />
-                <ReviewRow label="Marital Status" value={orDash(m.maritalStatus)}    colors={colors} />
-                <ReviewRow label="Date of Birth"  value={orDash(m.dob)}              invalid={mIssues?.dob && !!m.dob} colors={colors} />
-                <ReviewRow label="Aliyah Status"  value={aliyahLabel(m.aliyahStatus)} colors={colors} />
+                {/* All 13 CensusRow fields for member */}
+                <ReviewRow label="Surname"          value={orDash(m.surname)}               colors={colors} />
+                <ReviewRow label="Passport Name"    value={orDash(m.namePerPassport)}       invalid={mIssues?.namePerPassport} colors={colors} />
+                <ReviewRow label="Hebrew Name"      value={orDash(m.hebrewName)}             colors={colors} />
+                <ReviewRow label="Aadhar / Teudat" value={orDash(m.aadharNo)}               colors={colors} />
+                <ReviewRow
+                  label="Sex"
+                  value={m.sex === "M" ? "Male" : m.sex === "F" ? "Female" : "—"}
+                  colors={colors}
+                />
+                <ReviewRow label="Marital Status"   value={orDash(m.maritalStatus)}          colors={colors} />
+                <ReviewRow label="Date of Birth"    value={orDash(m.dob)}                    invalid={mIssues?.dob && !!m.dob} colors={colors} />
+                <ReviewRow label="Father's Name"    value={orDash(m.fatherName)}             colors={colors} />
+                <ReviewRow label="Mother's Name"    value={orDash(m.motherName)}             colors={colors} />
+                <ReviewRow label="Judaism Since"    value={orDash(m.dateOfJudaismPractice)}  colors={colors} />
+                <ReviewRow label="Aliyah Status"    value={aliyahLabel(m.aliyahStatus)}      colors={colors} />
+                <ReviewRow label="Passport No."     value={orDash(m.passportNo)}             colors={colors} />
+                <ReviewRow label="Passport Issued"  value={orDash(m.passportIssueDate)}      colors={colors} />
+                <ReviewRow label="Passport Expiry"  value={orDash(m.passportExpiryDate)}     colors={colors} />
               </View>
             );
           })
@@ -428,9 +444,8 @@ export default function ReviewScreen() {
           ]}
           onPress={() => { haptic(); router.push("/census/submit" as never); }}
           activeOpacity={0.82}
-          disabled={false}
           accessibilityRole="button"
-          accessibilityLabel="Submit census"
+          accessibilityLabel="Proceed to submit census"
         >
           <Feather name="send" size={16} color="#1a1100" />
           <Text style={styles.submitBtnText}>Submit</Text>
@@ -480,7 +495,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACE[2],
   },
 
-  scroll: { paddingHorizontal: SPACE[4], gap: 0 },
+  scroll: { paddingHorizontal: SPACE[4] },
 
   issuesBanner: {
     flexDirection: "row",
@@ -538,7 +553,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: SPACE[4],
     marginBottom: SPACE[4],
-    gap: 0,
   },
   emptyCard: {
     flexDirection: "row",
