@@ -220,7 +220,7 @@ function OtherFeaturesCard({ colors }: { colors: ReturnType<typeof useThemeToken
     { emoji: "🕍", label: "Synagogues",    path: "/community/synagogues",      accent: "#d4a843" },
     { emoji: "🏛",  label: "Organisations", path: "/community/organizations",   accent: "#fb923c" },
     { emoji: "👥", label: "Directory",     path: "/community/directory",       accent: "#60a5fa" },
-    { emoji: "📋", label: "Census",        path: "/census/index",              accent: "#a78bfa" },
+    { emoji: "📋", label: "Census",        path: "/census/demographics",       accent: "#a78bfa" },
   ];
 
   return (
@@ -875,14 +875,14 @@ export default function CommunityScreen() {
             leadingIcon={<Text style={{ fontSize: 16 }}>📋</Text>}
             title="Community Census"
             actionLabel={t.commSeeAll}
-            onAction={() => navigate("/census")}
+            onAction={() => navigate("/census/demographics")}
           />
           <TouchableOpacity
             style={[styles.censusEntryCard, {
               backgroundColor: (colors.primary as string) + "10",
               borderColor: (colors.primary as string) + "40",
             }]}
-            onPress={() => navigate("/census")}
+            onPress={() => navigate("/census/demographics")}
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityLabel="Community Census — register your family"
