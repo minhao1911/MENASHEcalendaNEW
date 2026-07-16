@@ -118,6 +118,22 @@ function formatCountdown(ms: number): string {
   return `${s}s`;
 }
 
+// ─── Next-prayer resolver ─────────────────────────────────────────────────────
+// Returns the next upcoming prayer and its time from today's zmanim.
+// Shacharit deadline = chatzot · Mincha = minchaKetana · Maariv starts at tzais
+function resolveNextPrayer(zm: {
+  chatzot: Date | null; minchaKetana: Date | null; tzais: Date | null;
+}): { name: string; label: string; icon: "sunrise" | "sun" | "moon"; time: Date } | null {
+  const now = Date.now();
+  if (zm.chatzot      && zm.chatzot.getTime()      > now)
+    return { name: "Shacharit", label: "by",  icon: "sunrise", time: zm.chatzot      };
+  if (zm.minchaKetana && zm.minchaKetana.getTime() > now)
+    return { name: "Mincha",    label: "at",  icon: "sun",     time: zm.minchaKetana };
+  if (zm.tzais        && zm.tzais.getTime()        > now)
+    return { name: "Maariv",    label: "at",  icon: "moon",    time: zm.tzais        };
+  return null;
+}
+
 const TORAH_INSIGHTS = [
   { quote: "\"The Torah is a tree of life to those who hold fast to it.\"",           source: "Proverbs 3:18"       },
   { quote: "\"Who is wise? One who learns from every person.\"",                       source: "Pirkei Avot 4:1"     },
@@ -506,6 +522,9 @@ export default function HomeScreen() {
     return TORAH_INSIGHTS[idx];
   }, [today]);
 
+  // Resolve the next upcoming prayer from today's zmanim
+  const nextPrayer = useMemo(() => resolveNextPrayer(todayZm), [todayZm]);
+
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
   const isLight    = theme === "light";
@@ -817,44 +836,149 @@ export default function HomeScreen() {
         </HeroBackgroundCrossfade>
       </Animated.View>
 
-      {/* ─── UPCOMING HOLIDAY (moved: directly below hero) ──────────────────────── */}
+      {/* ─── UPCOMING PRAYER + HOLIDAY — combined official dual card ─────────────── */}
       <Animated.View style={[{ marginHorizontal: HX, marginBottom: 20 }, a2]}>
-        <Pressable
-          style={({ pressed }) => ({
-            backgroundColor: cardBg, borderRadius: rd.lg, borderWidth: 1, borderColor,
-            flexDirection: "row", alignItems: "center",
-            paddingHorizontal: 16, paddingVertical: 14, gap: 12,
-            transform: [{ scale: pressed ? 0.98 : 1 }],
-            ...shadow.level1,
-          })}
-          onPress={() => router.push("/(tabs)/calendar")}
-          accessibilityLabel={`${t.homeUpcomingHoliday}${nextHoliday ? ": " + nextHoliday.name : ""}`}
-          accessibilityRole="button"
-        >
-          <View style={{
-            width: 44, height: 44, borderRadius: 22,
-            backgroundColor: gold + "0f", borderWidth: 1, borderColor: gold + "30",
-            alignItems: "center", justifyContent: "center",
-          }}>
-            <Text style={{ fontSize: 19, opacity: 0.85 }}>✡</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, fontWeight: "800", letterSpacing: 1.6, textTransform: "uppercase", color: gold, marginBottom: 4 }}>
-              {t.homeUpcomingHoliday}
+        {/* Outer card shell */}
+        <View style={{
+          backgroundColor: cardBg,
+          borderRadius: rd.lg,
+          borderWidth: 1,
+          borderColor,
+          overflow: "hidden",
+          flexDirection: "row",
+          ...shadow.level1,
+        }}>
+
+          {/* ── LEFT HALF — Next Prayer ─────────────────────────────── */}
+          <Pressable
+            onPress={() => router.push("/(tabs)/zmanim" as any)}
+            accessibilityRole="button"
+            accessibilityLabel={nextPrayer ? `Next prayer: ${nextPrayer.name}` : t.homeNoPrayer}
+            style={({ pressed }) => ({
+              flex: 1,
+              paddingHorizontal: 14,
+              paddingVertical: 16,
+              backgroundColor: pressed ? gold + "0a" : "transparent",
+            })}
+          >
+            {/* Overline */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 12 }}>
+              <View style={{
+                width: 6, height: 6, borderRadius: 3,
+                backgroundColor: gold,
+              }} />
+              <Text style={{
+                fontSize: 9, fontWeight: "800", letterSpacing: 1.5,
+                textTransform: "uppercase", color: gold,
+              }}>
+                {t.homeNextPrayer}
+              </Text>
+            </View>
+
+            {/* Icon circle */}
+            <View style={{
+              width: 42, height: 42, borderRadius: 21,
+              backgroundColor: gold + "14",
+              borderWidth: 1, borderColor: gold + "35",
+              alignItems: "center", justifyContent: "center",
+              marginBottom: 10,
+            }}>
+              <Feather
+                name={nextPrayer ? nextPrayer.icon : "clock"}
+                size={18}
+                color={gold}
+              />
+            </View>
+
+            {/* Prayer name */}
+            <Text style={{
+              fontSize: 17, fontWeight: "700",
+              color: textPrimary, marginBottom: 3, letterSpacing: -0.2,
+            }} numberOfLines={1}>
+              {nextPrayer ? nextPrayer.name : "—"}
             </Text>
-            {nextHoliday ? (
-              <>
-                <Text style={{ fontSize: 18, fontWeight: "700", color: textPrimary }}>{nextHoliday.name}</Text>
-                <Text style={{ fontSize: 13, color: textMuted, marginTop: 2 }}>
-                  {nextHoliday.date.toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}
-                </Text>
-              </>
-            ) : (
-              <Text style={{ fontSize: 13, color: textMuted }}>{t.homeNoHolidays}</Text>
-            )}
-          </View>
-          <Feather name="chevron-right" size={16} color={textMuted} />
-        </Pressable>
+
+            {/* Time */}
+            <Text style={{ fontSize: 12, color: textMuted, marginBottom: 12 }} numberOfLines={1}>
+              {nextPrayer
+                ? `${nextPrayer.label} ${formatTime(nextPrayer.time, location.tz)}`
+                : t.homeNoPrayer}
+            </Text>
+
+            {/* Footer CTA */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+              <Text style={{ fontSize: 11, fontWeight: "600", color: gold }}>Zmanim</Text>
+              <Feather name="chevron-right" size={10} color={gold} />
+            </View>
+          </Pressable>
+
+          {/* ── Vertical divider ────────────────────────────────────── */}
+          <View style={{
+            width: 1,
+            backgroundColor: borderColor,
+            marginVertical: 16,
+          }} />
+
+          {/* ── RIGHT HALF — Upcoming Holiday ───────────────────────── */}
+          <Pressable
+            onPress={() => router.push("/(tabs)/calendar" as any)}
+            accessibilityRole="button"
+            accessibilityLabel={nextHoliday ? `Upcoming holiday: ${nextHoliday.name}` : t.homeNoHolidays}
+            style={({ pressed }) => ({
+              flex: 1,
+              paddingHorizontal: 14,
+              paddingVertical: 16,
+              backgroundColor: pressed ? gold + "0a" : "transparent",
+            })}
+          >
+            {/* Overline */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 12 }}>
+              <View style={{
+                width: 6, height: 6, borderRadius: 3,
+                backgroundColor: gold,
+              }} />
+              <Text style={{
+                fontSize: 9, fontWeight: "800", letterSpacing: 1.5,
+                textTransform: "uppercase", color: gold,
+              }}>
+                {t.homeUpcomingHoliday}
+              </Text>
+            </View>
+
+            {/* Icon circle */}
+            <View style={{
+              width: 42, height: 42, borderRadius: 21,
+              backgroundColor: gold + "14",
+              borderWidth: 1, borderColor: gold + "35",
+              alignItems: "center", justifyContent: "center",
+              marginBottom: 10,
+            }}>
+              <Text style={{ fontSize: 20 }}>✡</Text>
+            </View>
+
+            {/* Holiday name */}
+            <Text style={{
+              fontSize: 17, fontWeight: "700",
+              color: textPrimary, marginBottom: 3, letterSpacing: -0.2,
+            }} numberOfLines={2}>
+              {nextHoliday ? nextHoliday.name : "—"}
+            </Text>
+
+            {/* Date */}
+            <Text style={{ fontSize: 12, color: textMuted, marginBottom: 12 }} numberOfLines={1}>
+              {nextHoliday
+                ? nextHoliday.date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+                : t.homeNoHolidays}
+            </Text>
+
+            {/* Footer CTA */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+              <Text style={{ fontSize: 11, fontWeight: "600", color: gold }}>Calendar</Text>
+              <Feather name="chevron-right" size={10} color={gold} />
+            </View>
+          </Pressable>
+
+        </View>
       </Animated.View>
 
       {/* ═══════════════════════════════════════════════════════════════════════

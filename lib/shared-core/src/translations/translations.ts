@@ -170,6 +170,8 @@ export interface SharedTranslations {
   homeUpcomingHoliday: string;
   homeUpcomingHolidays: string;
   homeNoHolidays: string;
+  homeNextPrayer: string;
+  homeNoPrayer: string;
   homeTodayHoliday: string;
   homeChagSameach: string;
   homeDafYomi: string;
@@ -786,6 +788,8 @@ export const sharedEn: SharedTranslations = {
   homeUpcomingHoliday: "Upcoming Holiday",
   homeUpcomingHolidays: "UPCOMING HOLIDAYS",
   homeNoHolidays: "No upcoming holidays",
+  homeNextPrayer: "Next Prayer",
+  homeNoPrayer: "See full zmanim",
   homeTodayHoliday: "TODAY'S HOLIDAY",
   homeChagSameach: "Chag Sameach! 🎉",
   homeDafYomi: "Daf Yomi",
@@ -1382,6 +1386,8 @@ export const sharedTk: SharedTranslations = {
   homeUpcomingHoliday: "Ni Thianghlim Hla",
   homeUpcomingHolidays: "NI THIANGHLIM HLA",
   homeNoHolidays: "Ni thianghlim hla awm lo",
+  homeNextPrayer: "Thu Dawt Hla",
+  homeNoPrayer: "Zmanim En",
   homeTodayHoliday: "NIZAN NI THIANGHLIM",
   homeChagSameach: "Chag Sameach! 🎉",
   homeDafYomi: "Daf Yomi",
