@@ -28,3 +28,5 @@
 - [MMDL hook tokens in StyleSheet](mmdl-stylesheet-guard.md) — sp/rd/type from useThemeTokens() crash in StyleSheet.create() (module-level); use numeric literals there; ESLint no-restricted-syntax rule guards this in artifacts/menashe-mobile/.eslintrc.js.
 - [Member Directory server migration](member-directory-migration.md) — localStorage→DB pattern; DO $ dollar-quote gotcha in migrate.ts; api-server dev script won't rebuild if dist/index.mjs already exists.
 - [Translations file split](translations-file-split.md) — web calendar app has its own standalone translations.ts; mobile re-exports lib/shared-core/translations — add new bilingual keys to the right one.
+- [MMDL missing color token aliases](mmdl-color-aliases.md) — ColorTokens had no surfacePrimary/surfaceTertiary/surfaceInteractive/backgroundElevated/backgroundOverlay/borderDefault/borderSoft/textHigh; add as aliases in all 3 theme defs when new screens use them.
+- [shared-core dist build required](shared-core-dist-build.md) — lib/shared-core exports src directly but tsconfig project refs need dist; run `pnpm run typecheck:libs` (tsc --build) from root to build dist/ before mobile tsc check.

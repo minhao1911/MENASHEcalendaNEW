@@ -144,6 +144,16 @@ export interface ColorTokens {
   foreground:        string;  // alias → textPrimary
   mutedForeground:   string;  // alias → textSecondary
   muted:             string;  // alias → surface
+
+  // ── Extended surface / border / text aliases used by newer screens ──────────
+  surfacePrimary:    string;  // alias → surface
+  surfaceTertiary:   string;  // alias → surfaceRaised
+  surfaceInteractive: string; // alias → card (pressable surfaces)
+  backgroundElevated: string; // alias → backgroundSubtle
+  backgroundOverlay:  string; // alias → overlay
+  borderDefault:     string;  // alias → border
+  borderSoft:        string;  // alias → divider
+  textHigh:          string;  // alias → textPrimary
 }
 
 // ─── Theme definitions ────────────────────────────────────────────────────────
@@ -217,6 +227,16 @@ const DARK_TOKENS: ColorTokens = {
   foreground:          RAW.offWhite,
   mutedForeground:     "#a8b8cc",
   muted:               "#141e32",
+
+  // Extended aliases
+  surfacePrimary:      "#141e32",
+  surfaceTertiary:     "#1a2745",
+  surfaceInteractive:  "#14203a",
+  backgroundElevated:  "#0a1020",
+  backgroundOverlay:   "rgba(0, 0, 0, 0.55)",
+  borderDefault:       "#243050",
+  borderSoft:          "rgba(36, 48, 80, 0.7)",
+  textHigh:            RAW.offWhite,
 };
 
 const LIGHT_TOKENS: ColorTokens = {
@@ -288,6 +308,16 @@ const LIGHT_TOKENS: ColorTokens = {
   foreground:          RAW.charcoal,
   mutedForeground:     RAW.stoneDeep,
   muted:               RAW.ivory,
+
+  // Extended aliases
+  surfacePrimary:      RAW.warmCream,
+  surfaceTertiary:     "#f0e8d5",
+  surfaceInteractive:  RAW.warmCream,
+  backgroundElevated:  "#faf6ee",
+  backgroundOverlay:   "rgba(15, 24, 41, 0.45)",
+  borderDefault:       RAW.stone,
+  borderSoft:          "rgba(212, 201, 176, 0.6)",
+  textHigh:            RAW.charcoal,
 };
 
 const SAPPHIRE_TOKENS: ColorTokens = {
@@ -359,6 +389,16 @@ const SAPPHIRE_TOKENS: ColorTokens = {
   foreground:          RAW.sapphireText,
   mutedForeground:     "#a0b4d8",
   muted:               RAW.sapphireFull,
+
+  // Extended aliases
+  surfacePrimary:      RAW.sapphireMid,
+  surfaceTertiary:     "#101e38",
+  surfaceInteractive:  RAW.sapphireMid,
+  backgroundElevated:  "#040c1a",
+  backgroundOverlay:   "rgba(0, 0, 0, 0.60)",
+  borderDefault:       RAW.sapphireMute,
+  borderSoft:          "rgba(26, 46, 88, 0.6)",
+  textHigh:            RAW.sapphireText,
 };
 
 // ─── Theme map ────────────────────────────────────────────────────────────────

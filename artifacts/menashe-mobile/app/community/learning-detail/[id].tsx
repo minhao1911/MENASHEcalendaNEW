@@ -593,7 +593,7 @@ export default function LearningDetailScreen() {
                   activeOpacity={0.8}
                   accessibilityRole="button"
                   accessibilityLabel={`${skill.title[L]}. ${UI.whyMatters[L]}`}
-                  style={[styles.skillCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderSoft }]}
+                  style={[styles.skillCard, { backgroundColor: colors.surfacePrimary, borderColor: colors.borderSoft }]}
                 >
                   <View style={[styles.skillIconBox, { backgroundColor: sAccent + "1A" }]}>
                     <Feather name={skill.icon} size={18} color={sAccent} />

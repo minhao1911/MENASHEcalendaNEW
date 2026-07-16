@@ -598,8 +598,8 @@ export default function JourneyScreen() {
     [nextPrayer, nowMs],
   );
   const prayerTimeStr = useMemo(
-    () => nextPrayer ? formatTime(nextPrayer.time, location.timezone ?? "Asia/Jerusalem") : null,
-    [nextPrayer, location.timezone],
+    () => nextPrayer ? formatTime(nextPrayer.time) : null,
+    [nextPrayer],
   );
 
   // ── Priority action ────────────────────────────────────────────────────────

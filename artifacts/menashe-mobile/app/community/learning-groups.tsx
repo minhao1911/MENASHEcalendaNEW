@@ -209,7 +209,7 @@ const GroupCard = memo(function GroupCard({
       activeOpacity={0.85}
       onPress={handleOpenDetail}
       accessibilityRole="button"
-      accessibilityLabel={`${name}. ${t.commLearningOpenDetail ?? "View learning details"}`}
+      accessibilityLabel={`${name}. ${t.commLearningOpenToAll ?? "View learning details"}`}
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
       {/* Top */}

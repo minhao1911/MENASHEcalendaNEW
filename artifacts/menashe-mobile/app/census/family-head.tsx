@@ -207,6 +207,7 @@ export default function FamilyHeadScreen() {
       case "in_israel": return t.censusAliyahInIsrael;
       case "awaiting":  return t.censusAliyahAwaiting;
       case "unknown":   return t.censusAliyahUnknown;
+      default:          return s;
     }
   };
 

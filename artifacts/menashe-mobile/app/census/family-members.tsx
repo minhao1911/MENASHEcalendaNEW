@@ -95,6 +95,7 @@ function aliyahLabel(s: AliyahStatus): string {
     case "in_israel": return "In Israel";
     case "awaiting":  return "Awaiting Aliyah";
     case "unknown":   return "Unknown";
+    default:          return s;
   }
 }
 

@@ -72,6 +72,9 @@ export default function SubmitScreen() {
           // submitterName is the family head's passport name (required by schema)
           submitterName: head?.namePerPassport?.trim() || head?.surname?.trim() || "Unknown",
           submitterNote: submitterNote.trim() || undefined,
+          // branchId / branchName resolved server-side for community submissions
+          branchId: "",
+          branchName: "",
 
           // headCensus: all 13 CensusRow fields, omitting empty strings.
           // All CensusRow fields are optional, so an empty object is valid
