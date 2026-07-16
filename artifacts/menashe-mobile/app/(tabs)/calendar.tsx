@@ -1,36 +1,37 @@
 /**
- * MUX-001 — Calendar Experience Redesign
- * "What do I need to know TODAY?" — one clear visual answer per scroll position.
+ * Calendar Screen — Web-Parity Grid View
  *
- * Screen hierarchy (replaces old vertical stack):
- *   1. Today Hero      — large Gregorian date, Hebrew date, Shabbat/holiday badge
- *   2. Month Nav       — compact centered ← Month Year →
- *   3. Calendar Card   — premium card surface, grid + selected detail inside
- *   4. Next Holy Day   — single upcoming holiday, days countdown prominent
- *   5. Sacred Time     — next prayer + countdown → Zmanim tab CTA
- *   6. This Week       — horizontal chips, one-glance week overview
- *
- * Architecture rules (SPR-M009):
- *   ✓ No new APIs          ✓ No new calculations       ✓ Shared Core reused
- *   ✓ Web untouched        ✓ Zmanim detail stays on Zmanim tab
- *   ✓ Navigation unchanged ✓ MMDL design system used throughout
+ * Full month calendar grid matching the web app design:
+ *   - Gold-gradient header card with Month/Year + Hebrew month range
+ *   - Day column headers (Sun–Sat) with Hebrew names
+ *   - Rich day cells: Hebrew numeral, month name, candle-lighting times,
+ *     FAST label, holiday names, special Shabbat names
+ *   - Today highlighted in gold; Shabbat (Sat) in crimson; fast in charcoal
+ *   - Legend row + TODAY button
+ *   - Tap a day for a full detail card below the grid
  */
 
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Animated,
+  Dimensions,
   Platform,
   Pressable,
   ScrollView,
   Text,
   View,
-  type ViewStyle,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { HDate } from "@hebcal/core";
 
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { useReducedMotion } from "@/src/mobile/design-system/accessibility";
@@ -39,92 +40,168 @@ import { useLanguage } from "@/context/LanguageContext";
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
 import {
   getHebrewDate,
-  formatHebrewDate,
-  formatHebrewDateHebrew,
   getHebrewMonthName,
   getMonthCalendar,
-  getCurrentParasha,
-  getUpcomingHolidays,
   hebrewDayNumeral,
   type CalendarDay,
 } from "@/lib/hebrewCalendar";
 
-// ─── Local presentation helpers (display only — no calendar math) ─────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+const GRID_H_PAD = 14; // px, each side inside the card
+const CARD_MARGIN = 14; // px, card from screen edge
 
-/** Omer day 1–49 derived from already-computed HDate — display only. */
-function getOmerDay(hd: HDate): number | null {
-  const m = hd.getMonth();
-  const d = hd.getDate();
-  if (m === 1 && d >= 16) return d - 15;
-  if (m === 2) return 15 + d;
-  if (m === 3 && d <= 5) return 44 + d;
-  return null;
+// Full day-of-week labels for header
+const DAY_LABELS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_LABELS_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "ששי", "שבת"];
+
+// Fast-day keyword regex
+const FAST_RE = /fast|tzom|tisha|ta'?anit|taanis/i;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function isFastEvent(events: string[]): boolean {
+  return events.some((e) => FAST_RE.test(e));
 }
 
-/** Human-readable countdown from now to a future Date. */
-function formatCountdown(target: Date): string {
-  const diff = Math.max(0, target.getTime() - Date.now());
-  if (diff === 0) return "Now";
-  const hours = Math.floor(diff / 3_600_000);
-  const mins = Math.floor((diff % 3_600_000) / 60_000);
-  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
-  if (hours > 0) return `${hours}h ${mins}m`;
-  return `${mins}m`;
+/** Return the first holiday/special event that is NOT generic "Shabbat". */
+function primaryEvent(events: string[]): string | null {
+  return events.find((e) => !/^shabbat$/i.test(e)) ?? null;
 }
 
-// ─── Reduced-motion entrance animation ───────────────────────────────────────
-
-function useEntrance(delay: number, reducedMotion: boolean): Animated.AnimatedProps<ViewStyle> {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(reducedMotion ? 0 : 12)).current;
-  useEffect(() => {
-    const duration = reducedMotion ? 0 : 360;
-    const t = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration, useNativeDriver: true }),
-      ]).start();
-    }, reducedMotion ? 0 : delay);
-    return () => clearTimeout(t);
-  }, [delay, opacity, translateY, reducedMotion]);
-  return { opacity, transform: [{ translateY }] } as any;
+/** Shorten long event names so they fit inside a narrow cell. */
+function shortenEvent(name: string): string {
+  return name
+    .replace(/Rosh Chodesh\s*/i, "R.Ch. ")
+    .replace(/Parashat\s*/i, "")
+    .replace(/Shabbat\s*/i, "Shab. ")
+    .trim();
 }
 
-function usePressScale(reducedMotion: boolean, toValue = 0.96) {
+/** "7:31 PM" → "7:31PM" for tighter cell display */
+function compactTime(t: string): string {
+  return t.replace(/\s+/g, "");
+}
+
+// ─── Month navigation animation hook ─────────────────────────────────────────
+
+function useMonthAnim(reducedMotion: boolean) {
+  const opacity = useRef(new Animated.Value(1)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  const run = useCallback(
+    (dir: 1 | -1, apply: () => void) => {
+      if (reducedMotion) {
+        apply();
+        return;
+      }
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 90,
+        useNativeDriver: true,
+      }).start(() => {
+        apply();
+        translateX.setValue(16 * dir);
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateX, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    },
+    [opacity, translateX, reducedMotion],
+  );
+
+  return { opacity, translateX, run };
+}
+
+// ─── Press-scale micro-animation ─────────────────────────────────────────────
+
+function usePressScale(reducedMotion: boolean, to = 0.94) {
   const scale = useRef(new Animated.Value(1)).current;
   const onPressIn = useCallback(
-    () => Animated.timing(scale, { toValue: reducedMotion ? 1 : toValue, duration: 80, useNativeDriver: true }).start(),
-    [scale, toValue, reducedMotion],
+    () =>
+      Animated.timing(scale, {
+        toValue: reducedMotion ? 1 : to,
+        duration: 70,
+        useNativeDriver: true,
+      }).start(),
+    [scale, to, reducedMotion],
   );
   const onPressOut = useCallback(
-    () => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start(),
+    () =>
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 130,
+        useNativeDriver: true,
+      }).start(),
     [scale],
   );
   return { scale, onPressIn, onPressOut };
 }
 
-// ─── DayCell — memoized calendar day with MUX-001 visual language ─────────────
-//
-//   Gold border + gold text  →  Today
-//   Gold fill + white text   →  Selected
-//   Subtle gold tint bg      →  Shabbat
-//   Gold dot                 →  Holiday / event
+// ─── DayCell ──────────────────────────────────────────────────────────────────
 
 interface DayCellProps {
   day: CalendarDay;
+  candleTime: string | null; // pre-computed for Fridays
   isSelected: boolean;
+  cellW: number;
+  cellH: number;
   reducedMotion: boolean;
-  colors: ReturnType<typeof useThemeTokens>["colors"];
-  onPress: (day: CalendarDay) => void;
+  accentGold: string;
+  textPrimary: string;
+  textMuted: string;
+  onPress: (d: CalendarDay) => void;
 }
 
 const DayCell = memo(
-  function DayCell({ day, isSelected, reducedMotion, colors, onPress }: DayCellProps) {
-    const { scale, onPressIn, onPressOut } = usePressScale(reducedMotion, 0.9);
-    const hasEvents = day.events.length > 0;
-    const gold = colors.accentGold;
+  function DayCell({
+    day,
+    candleTime,
+    isSelected,
+    cellW,
+    cellH,
+    reducedMotion,
+    accentGold,
+    textPrimary,
+    textMuted,
+    onPress,
+  }: DayCellProps) {
+    const { scale, onPressIn, onPressOut } = usePressScale(reducedMotion, 0.88);
+
+    const isSat = day.date.getDay() === 6;
+    const isFri = day.date.getDay() === 5;
+    const isFast = isFastEvent(day.events);
+    const evLabel = primaryEvent(day.events);
+
+    // Visual state priority: selected > today > shabbat > fast > normal
+    const bgColor = isSelected
+      ? accentGold
+      : day.isToday
+      ? accentGold + "22"
+      : isFast && !isSat
+      ? "#374151" + "18"
+      : "transparent";
+
+    const dayNumColor = isSelected
+      ? "#fff"
+      : day.isToday
+      ? accentGold
+      : isSat
+      ? "#dc2626"
+      : isFast
+      ? "#374151"
+      : textPrimary;
+
+    const subColor = isSelected ? "rgba(255,255,255,0.65)" : textMuted;
 
     return (
       <Pressable
@@ -133,756 +210,899 @@ const DayCell = memo(
         onPressOut={onPressOut}
         accessibilityRole="button"
         accessibilityLabel={[
-          day.date.toLocaleDateString("en-US", { month: "long", day: "numeric" }),
+          day.date.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          }),
           day.isToday ? "today" : "",
-          day.isShabbat ? "Shabbat" : "",
-          hasEvents ? day.events.join(", ") : "",
-        ].filter(Boolean).join(", ")}
+          isFast ? "fast day" : "",
+          evLabel ?? "",
+        ]
+          .filter(Boolean)
+          .join(", ")}
         accessibilityState={{ selected: isSelected }}
-        style={{ width: "14.28%", aspectRatio: 0.92, alignItems: "center", justifyContent: "center", paddingVertical: 2 }}
+        style={{
+          width: cellW,
+          height: cellH,
+          alignItems: "center",
+          justifyContent: "flex-start",
+          paddingTop: 4,
+          paddingBottom: 2,
+        }}
       >
         <Animated.View
           style={{
-            width: 38, height: 38, borderRadius: 12,
-            alignItems: "center", justifyContent: "center",
-            transform: [{ scale }],
-            backgroundColor: isSelected ? gold : day.isShabbat ? gold + "15" : "transparent",
+            width: cellW - 3,
+            height: cellH - 3,
+            borderRadius: 8,
+            alignItems: "center",
+            justifyContent: "flex-start",
+            paddingTop: 3,
+            backgroundColor: bgColor,
             borderWidth: day.isToday && !isSelected ? 1.5 : 0,
-            borderColor: gold,
+            borderColor: accentGold,
+            transform: [{ scale }],
+            overflow: "hidden",
           }}
         >
+          {/* Candle lighting time — Fridays */}
+          {candleTime && !isSelected && (
+            <Text
+              allowFontScaling={false}
+              numberOfLines={1}
+              style={{
+                fontSize: 7,
+                fontWeight: "600",
+                color: accentGold,
+                lineHeight: 10,
+              }}
+            >
+              {compactTime(candleTime)}
+            </Text>
+          )}
+
+          {/* Day number */}
           <Text
             allowFontScaling={false}
             style={{
-              fontSize: 13,
-              fontWeight: (day.isToday || isSelected || hasEvents) ? "700" : "400",
-              color: isSelected ? "#fff" : day.isToday ? gold : day.isShabbat ? gold + "dd" : colors.textPrimary,
+              fontSize: cellW > 48 ? 15 : 13,
+              fontWeight: day.isToday || isSelected ? "800" : isSat ? "700" : "500",
+              color: dayNumColor,
+              lineHeight: cellW > 48 ? 18 : 16,
+              marginTop: candleTime && !isSelected ? 0 : isFri ? 2 : 2,
             }}
           >
             {day.gregorianDay}
           </Text>
+
+          {/* Hebrew day numeral */}
           <Text
             allowFontScaling={false}
-            style={{ fontSize: 7.5, marginTop: 0.5, color: isSelected ? "rgba(255,255,255,0.65)" : colors.textMuted }}
+            style={{
+              fontSize: 8,
+              color: subColor,
+              lineHeight: 11,
+              fontWeight: "400",
+            }}
           >
             {hebrewDayNumeral(day.hebrewDay)}
           </Text>
-          {hasEvents && (
-            <View
+
+          {/* Hebrew month name */}
+          <Text
+            allowFontScaling={false}
+            style={{
+              fontSize: 7,
+              color: subColor,
+              lineHeight: 9,
+            }}
+          >
+            {day.hebrewMonth}
+          </Text>
+
+          {/* Event label — fast / holiday / rosh chodesh / special shabbat */}
+          {(isFast || evLabel || day.roshChodesh) && (
+            <Text
+              allowFontScaling={false}
+              numberOfLines={1}
               style={{
-                position: "absolute", bottom: 3,
-                width: 3.5, height: 3.5, borderRadius: 2,
-                backgroundColor: isSelected ? "rgba(255,255,255,0.8)" : gold,
+                fontSize: 6.5,
+                fontWeight: "700",
+                color: isSelected
+                  ? "rgba(255,255,255,0.85)"
+                  : isFast
+                  ? "#f59e0b"
+                  : isSat
+                  ? "#dc2626"
+                  : "#7c3aed",
+                lineHeight: 9,
+                marginTop: 1,
+                paddingHorizontal: 1,
+                textAlign: "center",
               }}
-            />
+            >
+              {isFast
+                ? "FAST"
+                : evLabel
+                ? shortenEvent(evLabel).substring(0, 10)
+                : "R.Ch."}
+            </Text>
           )}
         </Animated.View>
       </Pressable>
     );
   },
-  (prev, next) =>
-    prev.isSelected === next.isSelected &&
-    prev.reducedMotion === next.reducedMotion &&
-    prev.day.date.getTime() === next.day.date.getTime() &&
-    prev.day.events.length === next.day.events.length,
+  (p, n) =>
+    p.isSelected === n.isSelected &&
+    p.day.date.getTime() === n.day.date.getTime() &&
+    p.day.events.length === n.day.events.length &&
+    p.candleTime === n.candleTime,
 );
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
-export default function SacredTimeScreen() {
-  const { colors, type, sp, rd, shadow, theme } = useThemeTokens();
+export default function CalendarScreen() {
+  const { colors, sp, rd, shadow, theme } = useThemeTokens();
   const insets = useSafeAreaInsets();
   const { location } = useApp();
   const { t } = useLanguage();
   const reducedMotion = useReducedMotion();
 
+  const { width: screenW } = Dimensions.get("window");
+
+  // ── State ──────────────────────────────────────────────────────────────────
   const today = useMemo(() => new Date(), []);
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState<CalendarDay | null>(null);
 
+  const isCurrentMonth =
+    year === today.getFullYear() && month === today.getMonth();
+
   const isLight = theme === "light";
-  const isSapphire = theme === "sapphire";
+  const gold = colors.accentGold;
 
-  // ── Data — all sourced from shared-core, zero duplication ──────────────────
-  const hdate = useMemo(() => getHebrewDate(today), [today]);
-  const hebrewDateStr = useMemo(() => formatHebrewDate(hdate), [hdate]);
-  const hebrewNumeralStr = useMemo(() => {
-    try { return formatHebrewDateHebrew(hdate); } catch { return ""; }
-  }, [hdate]);
-  const hebrewMonthName = useMemo(() => getHebrewMonthName(hdate), [hdate]);
-  const gregMonthName = useMemo(() => today.toLocaleDateString("en-US", { month: "long" }), [today]);
+  // ── Grid dimensions ────────────────────────────────────────────────────────
+  const gridWidth = screenW - CARD_MARGIN * 2 - GRID_H_PAD * 2;
+  const cellW = Math.floor(gridWidth / 7);
+  const cellH = Math.floor(cellW * 1.45); // tall enough for all cell content
 
-  // Month nav label — tracks navigation state, not just today
-  const navMonthLabel = useMemo(
-    () => new Date(year, month, 1).toLocaleDateString("en-US", { month: "long" }),
-    [year, month],
-  );
-
+  // ── Calendar data ──────────────────────────────────────────────────────────
   const monthDays = useMemo(() => getMonthCalendar(year, month), [year, month]);
   const leadingBlanks = useMemo(
     () => Array(new Date(year, month, 1).getDay()).fill(null),
     [year, month],
   );
-  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
 
-  const parasha = useMemo(() => getCurrentParasha(), []);
-  const allHolidays = useMemo(() => getUpcomingHolidays(60), []);
+  // Hebrew month range for subtitle: "Tamuz - Av 5786"
+  const hebrewSubtitle = useMemo(() => {
+    const firstHDate = getHebrewDate(new Date(year, month, 1));
+    const lastHDate = getHebrewDate(new Date(year, month + 1, 0)); // last day
+    const hYear = firstHDate.getFullYear();
+    const firstMon = getHebrewMonthName(firstHDate);
+    const lastMon = getHebrewMonthName(lastHDate);
+    const months =
+      firstMon === lastMon ? firstMon : `${firstMon} - ${lastMon}`;
+    return `${months} ${hYear}`;
+  }, [year, month]);
 
-  // Single most upcoming holy day for the Next Holy Day card
-  const nextHolyDay = useMemo(
-    () => [...allHolidays].sort((a, b) => a.date.getTime() - b.date.getTime())[0] ?? null,
-    [allHolidays],
-  );
-
-  const todayZm = useMemo(
-    () => calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes),
-    [location, today],
-  );
-
-  const omerDay = useMemo(() => getOmerDay(hdate), [hdate]);
-
-  // Today's badge: Shabbat > Holiday > Omer Day > null
-  const todayBadge = useMemo(() => {
-    if (today.getDay() === 6) return "Shabbat Shalom";
-    const todaysHoliday = allHolidays.find((h) => {
-      const d = h.date;
-      return d.getFullYear() === today.getFullYear()
-        && d.getMonth() === today.getMonth()
-        && d.getDate() === today.getDate();
+  // Candle lighting map: gregorianDay → "7:31 PM" for all Fridays
+  const candleMap = useMemo(() => {
+    const map: Record<number, string> = {};
+    monthDays.forEach((day) => {
+      if (day.date.getDay() === 5) {
+        try {
+          const zm = calculateZmanim(
+            day.date,
+            location.lat,
+            location.lng,
+            location.candleLightingMinutes,
+          );
+          if (zm.candleLighting instanceof Date) {
+            map[day.gregorianDay] = formatTime(zm.candleLighting);
+          }
+        } catch {
+          // skip
+        }
+      }
     });
-    if (todaysHoliday) return todaysHoliday.name;
-    if (omerDay !== null) return `Omer Day ${omerDay}`;
-    return null;
-  }, [today, allHolidays, omerDay]);
+    return map;
+  }, [monthDays, location]);
 
-  // Next prayer from today's zmanim — first upcoming time after now
-  const nextPrayer = useMemo(() => {
-    const now = new Date();
-    const points: { name: string; time: Date }[] = [
-      { name: "Dawn", time: todayZm.alotHaShachar! },
-      { name: "Sunrise", time: todayZm.sunrise! },
-      { name: "Latest Shema", time: todayZm.latestShema! },
-      { name: "Latest Shacharit", time: todayZm.latestShacharit! },
-      { name: "Midday", time: todayZm.chatzot! },
-      { name: "Mincha Gedolah", time: todayZm.minchaGedolah! },
-      { name: "Mincha Ketanah", time: todayZm.minchaKetana! },
-      { name: "Plag HaMincha", time: todayZm.plagHamincha! },
-      ...(todayZm.candleLighting ? [{ name: "Candle Lighting", time: todayZm.candleLighting }] : []),
-      { name: "Sunset", time: todayZm.sunset! },
-      { name: "Nightfall", time: todayZm.tzais! },
-      ...(todayZm.havdalah ? [{ name: "Havdalah", time: todayZm.havdalah }] : []),
-    ].filter((p): p is { name: string; time: Date } =>
-      p.time instanceof Date && !isNaN(p.time.getTime()),
-    );
-    return points.find((p) => p.time > now) ?? null;
-  }, [todayZm]);
-
-  // This Week chips — Parasha + Shabbat + any holidays this week + Omer
-  const thisWeekChips = useMemo(() => {
-    const sun = new Date(today);
-    sun.setDate(today.getDate() - today.getDay());
-    const sat = new Date(sun);
-    sat.setDate(sun.getDate() + 6);
-    const chips: string[] = [`Parashat ${parasha}`, "Shabbat"];
-    allHolidays.forEach((h) => {
-      if (h.date >= sun && h.date <= sat) chips.push(h.name);
-    });
-    if (omerDay !== null) chips.push(`Omer ${omerDay}`);
-    return [...new Set(chips)].slice(0, 6);
-  }, [today, allHolidays, parasha, omerDay]);
-
-  // ── Month navigation with fade+slide ────────────────────────────────────────
-  const monthOpacity = useRef(new Animated.Value(1)).current;
-  const monthTranslate = useRef(new Animated.Value(0)).current;
-
-  const animateMonthChange = useCallback((direction: 1 | -1, apply: () => void) => {
-    if (reducedMotion) { apply(); return; }
-    Animated.timing(monthOpacity, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => {
-      apply();
-      monthTranslate.setValue(10 * direction);
-      Animated.parallel([
-        Animated.timing(monthOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.timing(monthTranslate, { toValue: 0, duration: 200, useNativeDriver: true }),
-      ]).start();
-    });
-  }, [monthOpacity, monthTranslate, reducedMotion]);
+  // ── Month navigation ───────────────────────────────────────────────────────
+  const { opacity: gridOpacity, translateX: gridTransX, run: animateMonth } =
+    useMonthAnim(reducedMotion);
 
   const prevMonth = useCallback(() => {
-    animateMonthChange(-1, () => {
-      if (month === 0) { setMonth(11); setYear((y) => y - 1); } else setMonth((m) => m - 1);
+    animateMonth(-1, () => {
       setSelected(null);
+      if (month === 0) {
+        setMonth(11);
+        setYear((y) => y - 1);
+      } else {
+        setMonth((m) => m - 1);
+      }
     });
-  }, [animateMonthChange, month]);
+  }, [animateMonth, month]);
 
   const nextMonth = useCallback(() => {
-    animateMonthChange(1, () => {
-      if (month === 11) { setMonth(0); setYear((y) => y + 1); } else setMonth((m) => m + 1);
+    animateMonth(1, () => {
       setSelected(null);
+      if (month === 11) {
+        setMonth(0);
+        setYear((y) => y + 1);
+      } else {
+        setMonth((m) => m + 1);
+      }
     });
-  }, [animateMonthChange, month]);
+  }, [animateMonth, month]);
 
   const goToday = useCallback(() => {
-    animateMonthChange(1, () => {
+    animateMonth(1, () => {
       setYear(today.getFullYear());
       setMonth(today.getMonth());
       setSelected(null);
     });
-  }, [animateMonthChange, today]);
+  }, [animateMonth, today]);
 
   const onSelectDay = useCallback((day: CalendarDay) => {
-    setSelected((prev) => (prev?.date.getTime() === day.date.getTime() ? null : day));
+    setSelected((prev) =>
+      prev?.date.getTime() === day.date.getTime() ? null : day,
+    );
   }, []);
 
-  // ── Press scales ────────────────────────────────────────────────────────────
-  const navPressPrev = usePressScale(reducedMotion, 0.85);
-  const navPressNext = usePressScale(reducedMotion, 0.85);
-  const todayBtnPress = usePressScale(reducedMotion, 0.92);
-  const holyDayPress = usePressScale(reducedMotion, 0.97);
-  const zmanimPress = usePressScale(reducedMotion, 0.97);
+  // ── Press scales ───────────────────────────────────────────────────────────
+  const prevPress = usePressScale(reducedMotion, 0.82);
+  const nextPress = usePressScale(reducedMotion, 0.82);
+  const todayPress = usePressScale(reducedMotion, 0.92);
 
-  // ── Entrance animations — staggered ────────────────────────────────────────
-  const a0 = useEntrance(0, reducedMotion);   // Hero
-  const a1 = useEntrance(50, reducedMotion);  // Calendar card
-  const a2 = useEntrance(100, reducedMotion); // Next Holy Day
-  const a3 = useEntrance(140, reducedMotion); // Sacred Time
-  const a4 = useEntrance(180, reducedMotion); // This Week
+  // ── Header gradient stops ──────────────────────────────────────────────────
+  const headerGrad = isLight
+    ? (["#C4920A", "#D4A843", "#B8810A"] as const)
+    : (["#9A6E18", "#C4922A", "#8A6010"] as const);
 
   const topPad = insets.top > 0 ? insets.top : Platform.OS === "web" ? 48 : 20;
-  const gold = colors.accentGold;
-  const HX = sp[4];
 
-  // ── Theme-aware hero gradient ────────────────────────────────────────────────
-  const heroGrad = isLight
-    ? (["#F7EED8", "#EDD9A3", "#F7EED8"] as const)
-    : isSapphire
-    ? (["#0c1830", "#132040", "#0c1830"] as const)
-    : (["#0d1520", "#15202e", "#0d1520"] as const);
-
-  const heroDateColor = isLight ? "#1a1208" : "#f4ecd8";
-  const heroDimColor = isLight ? "#7a6030" : "#a09070";
-
-  // ── Next Holy Day computed values ────────────────────────────────────────────
-  const nextHolyDayDays = nextHolyDay
-    ? Math.max(0, Math.round((nextHolyDay.date.getTime() - today.getTime()) / 86_400_000))
-    : null;
-  const nextHolyDayHebrew = useMemo(() => {
-    if (!nextHolyDay) return "";
-    try { return formatHebrewDate(getHebrewDate(nextHolyDay.date)); } catch { return ""; }
-  }, [nextHolyDay]);
-  const isFastDay = nextHolyDay
-    ? /fast|tzom|tisha|ta'?anit|taanis/i.test(nextHolyDay.name)
-    : false;
+  // Gregorian month label e.g. "JULY 2026"
+  const monthLabel = useMemo(
+    () =>
+      new Date(year, month, 1)
+        .toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        .toUpperCase(),
+    [year, month],
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: (insets.bottom || 0) + 104 }}
+        contentContainerStyle={{
+          paddingTop: topPad,
+          paddingBottom: (insets.bottom || 0) + 110,
+          paddingHorizontal: CARD_MARGIN,
+        }}
       >
 
-        {/* ══════════════════════════════════════════════════════════════════
-            1. TODAY HERO
-            Visual anchor. Eyes land here first.
-            Large Gregorian date · Hebrew date · Shabbat/holiday badge.
-            Max height ~140dp. Minimal. Premium.
-            ══════════════════════════════════════════════════════════════════ */}
-        <Animated.View style={a0}>
+        {/* ══════════════════════════════════════════════════════════
+            MAIN CALENDAR CARD
+            Gold-gradient header + full month grid in one card.
+            ══════════════════════════════════════════════════════════ */}
+        <View
+          style={{
+            borderRadius: rd.xl,
+            overflow: "hidden",
+            ...shadow.level2,
+            borderWidth: 1,
+            borderColor: isLight ? "rgba(180,130,20,0.25)" : "rgba(212,168,67,0.18)",
+          }}
+        >
+
+          {/* ── Gold-gradient header ── */}
           <LinearGradient
-            colors={heroGrad}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={{ paddingTop: topPad + 14, paddingBottom: 28, paddingHorizontal: HX }}
+            colors={headerGrad}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ paddingVertical: 14, paddingHorizontal: GRID_H_PAD }}
           >
-            {/* Ambient glow — decorative, no clip art */}
-            <View pointerEvents="none" style={{ position: "absolute", top: 0, right: 20, width: 200, height: 200, borderRadius: 100, backgroundColor: gold + "0c" }} />
-            <View pointerEvents="none" style={{ position: "absolute", bottom: -60, left: -20, width: 140, height: 140, borderRadius: 70, backgroundColor: gold + "08" }} />
+            {/* Ambient shimmer */}
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                top: -30,
+                right: -20,
+                width: 140,
+                height: 140,
+                borderRadius: 70,
+                backgroundColor: "rgba(255,255,255,0.08)",
+              }}
+            />
 
-            {/* Row: TODAY label + location */}
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-              <Text
-                allowFontScaling={false}
-                style={{ fontSize: 9, fontWeight: "700", letterSpacing: 2.8, color: gold, textTransform: "uppercase" }}
-              >
-                TODAY
-              </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Feather name="map-pin" size={10} color={heroDimColor} />
-                <Text
-                  allowFontScaling={false}
-                  style={{ fontSize: 11, color: heroDimColor }}
-                  numberOfLines={1}
-                >
-                  {location.name}
-                </Text>
-              </View>
-            </View>
-
-            {/* Large Gregorian date + day/month stack */}
-            <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 14, marginBottom: 10 }}>
-              <Text
-                allowFontScaling={false}
-                style={{ fontSize: 76, fontWeight: "800", letterSpacing: -3, color: heroDateColor, lineHeight: 76 }}
-              >
-                {today.getDate()}
-              </Text>
-              <View style={{ paddingBottom: 8 }}>
-                <Text
-                  allowFontScaling={false}
-                  style={{ fontSize: 16, fontWeight: "700", color: heroDateColor, letterSpacing: 0.1 }}
-                >
-                  {today.toLocaleDateString("en-US", { weekday: "long" })}
-                </Text>
-                <Text
-                  allowFontScaling={false}
-                  style={{ fontSize: 13, color: heroDimColor, marginTop: 2 }}
-                >
-                  {gregMonthName} {year}
-                </Text>
-              </View>
-            </View>
-
-            {/* Hebrew date — gold, reads as sacred layer */}
-            <Text
-              allowFontScaling={false}
-              style={{ fontSize: 18, fontWeight: "600", color: gold, letterSpacing: 0.2 }}
-            >
-              {hebrewNumeralStr || hebrewDateStr}
-            </Text>
-            <Text
-              allowFontScaling={false}
-              style={{ fontSize: 12, color: heroDimColor, marginTop: 3 }}
-            >
-              {hebrewMonthName} {hdate.getFullYear()}
-            </Text>
-
-            {/* Shabbat / Holiday / Omer badge */}
-            {todayBadge && (
-              <View
-                style={{
-                  alignSelf: "flex-start", marginTop: 14,
-                  borderRadius: 9999,
-                  borderWidth: 1, borderColor: gold + "50",
-                  backgroundColor: gold + "18",
-                  paddingHorizontal: 13, paddingVertical: 5,
-                }}
-              >
-                <Text
-                  allowFontScaling={false}
-                  style={{ fontSize: 12, fontWeight: "600", color: gold }}
-                >
-                  {todayBadge}
-                </Text>
-              </View>
-            )}
-          </LinearGradient>
-        </Animated.View>
-
-        {/* ══════════════════════════════════════════════════════════════════
-            2 + 3. MONTH NAVIGATION + CALENDAR
-            One premium card surface. Navigation compact, centered.
-            Calendar grid inside — today/selected/shabbat/holiday each
-            have distinct visual language. Selected detail inside same card.
-            ══════════════════════════════════════════════════════════════════ */}
-        <Animated.View style={[{ marginHorizontal: HX, marginTop: 20, marginBottom: 18 }, a1]}>
-          <View
-            style={{
-              backgroundColor: colors.surfacePrimary,
-              borderRadius: rd.xl, borderWidth: 1,
-              borderColor: colors.borderDefault,
-              overflow: "hidden",
-              ...shadow.level2,
-            }}
-          >
-            {/* ── Compact month navigation bar ── */}
+            {/* Nav row */}
             <View
               style={{
-                flexDirection: "row", alignItems: "center",
+                flexDirection: "row",
+                alignItems: "center",
                 justifyContent: "space-between",
-                paddingHorizontal: sp[3],
-                paddingTop: sp[3], paddingBottom: sp[3],
-                borderBottomWidth: 1, borderBottomColor: colors.borderDefault,
               }}
             >
-              {/* Prev button */}
-              <Animated.View style={{ transform: [{ scale: navPressPrev.scale }] }}>
+              {/* Prev */}
+              <Animated.View style={{ transform: [{ scale: prevPress.scale }] }}>
                 <Pressable
                   onPress={prevMonth}
-                  onPressIn={navPressPrev.onPressIn}
-                  onPressOut={navPressPrev.onPressOut}
-                  hitSlop={14}
+                  onPressIn={prevPress.onPressIn}
+                  onPressOut={prevPress.onPressOut}
+                  hitSlop={16}
                   accessibilityRole="button"
                   accessibilityLabel="Previous month"
-                  style={{ width: 40, height: 36, alignItems: "center", justifyContent: "center" }}
-                >
-                  <Feather name="chevron-left" size={18} color={colors.textSecondary} />
-                </Pressable>
-              </Animated.View>
-
-              {/* Centered month + year — small, low visual weight */}
-              <View style={{ flex: 1, alignItems: "center" }}>
-                <Animated.View style={{ opacity: monthOpacity, transform: [{ translateX: monthTranslate }], flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Text
-                    allowFontScaling={false}
-                    style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary, letterSpacing: 0.1 }}
-                  >
-                    {navMonthLabel} {year}
-                  </Text>
-                  {!isCurrentMonth && (
-                    <Animated.View style={{ transform: [{ scale: todayBtnPress.scale }] }}>
-                      <Pressable
-                        onPress={goToday}
-                        onPressIn={todayBtnPress.onPressIn}
-                        onPressOut={todayBtnPress.onPressOut}
-                        accessibilityRole="button"
-                        accessibilityLabel="Return to today"
-                        style={{
-                          borderWidth: 1, borderColor: gold + "55",
-                          backgroundColor: gold + "12",
-                          borderRadius: 9999, paddingHorizontal: 9,
-                          minHeight: 26, justifyContent: "center",
-                        }}
-                      >
-                        <Text allowFontScaling={false} style={{ fontSize: 10, fontWeight: "600", color: gold }}>Today</Text>
-                      </Pressable>
-                    </Animated.View>
-                  )}
-                </Animated.View>
-              </View>
-
-              {/* Next button */}
-              <Animated.View style={{ transform: [{ scale: navPressNext.scale }] }}>
-                <Pressable
-                  onPress={nextMonth}
-                  onPressIn={navPressNext.onPressIn}
-                  onPressOut={navPressNext.onPressOut}
-                  hitSlop={14}
-                  accessibilityRole="button"
-                  accessibilityLabel="Next month"
-                  style={{ width: 40, height: 36, alignItems: "center", justifyContent: "center" }}
-                >
-                  <Feather name="chevron-right" size={18} color={colors.textSecondary} />
-                </Pressable>
-              </Animated.View>
-            </View>
-
-            {/* ── Day-of-week column headers ── */}
-            <View style={{ flexDirection: "row", paddingHorizontal: sp[2], paddingTop: sp[3], paddingBottom: sp[2] }}>
-              {DAY_LABELS.map((d, i) => (
-                <Text
-                  key={`dlbl-${i}`}
-                  allowFontScaling={false}
                   style={{
-                    flex: 1, textAlign: "center",
-                    fontSize: 10, fontWeight: "600", letterSpacing: 0.8,
-                    textTransform: "uppercase",
-                    color: i === 6 ? gold + "bb" : colors.textMuted,
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  {d}
-                </Text>
-              ))}
-            </View>
+                  <Feather name="chevron-left" size={18} color="#fff" />
+                </Pressable>
+              </Animated.View>
 
-            {/* ── Calendar grid ── */}
-            <Animated.View
+              {/* Center: month + year + Hebrew subtitle */}
+              <View style={{ flex: 1, alignItems: "center" }}>
+                <Text
+                  allowFontScaling={false}
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "800",
+                    color: "#fff",
+                    letterSpacing: 1.5,
+                    textAlign: "center",
+                  }}
+                >
+                  {monthLabel}
+                </Text>
+                <Text
+                  allowFontScaling={false}
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.82)",
+                    marginTop: 3,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  — {hebrewSubtitle} —
+                </Text>
+              </View>
+
+              {/* Next */}
+              <Animated.View style={{ transform: [{ scale: nextPress.scale }] }}>
+                <Pressable
+                  onPress={nextMonth}
+                  onPressIn={nextPress.onPressIn}
+                  onPressOut={nextPress.onPressOut}
+                  hitSlop={16}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next month"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Feather name="chevron-right" size={18} color="#fff" />
+                </Pressable>
+              </Animated.View>
+            </View>
+          </LinearGradient>
+
+          {/* ── Calendar grid body ── */}
+          <View
+            style={{
+              backgroundColor: isLight ? "#fff" : colors.surface,
+              paddingHorizontal: GRID_H_PAD,
+              paddingBottom: 12,
+            }}
+          >
+
+            {/* Day-of-week column headers */}
+            <View
               style={{
-                opacity: monthOpacity,
-                transform: [{ translateX: monthTranslate }],
-                flexDirection: "row", flexWrap: "wrap",
-                paddingHorizontal: sp[2], paddingBottom: selected ? sp[2] : sp[3],
+                flexDirection: "row",
+                borderBottomWidth: 1,
+                borderBottomColor: isLight
+                  ? "rgba(0,0,0,0.08)"
+                  : colors.border,
+                paddingVertical: 8,
               }}
             >
+              {DAY_LABELS_EN.map((label, i) => {
+                const isSatCol = i === 6;
+                return (
+                  <View
+                    key={label}
+                    style={{ width: cellW, alignItems: "center" }}
+                  >
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 11,
+                        fontWeight: "700",
+                        letterSpacing: 0.5,
+                        color: isSatCol
+                          ? "#dc2626"
+                          : colors.textPrimary,
+                      }}
+                    >
+                      {label}
+                    </Text>
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 7.5,
+                        color: isSatCol ? "#dc262680" : colors.textMuted,
+                        marginTop: 1,
+                      }}
+                    >
+                      {DAY_LABELS_HE[i]}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Grid rows */}
+            <Animated.View
+              style={{
+                opacity: gridOpacity,
+                transform: [{ translateX: gridTransX }],
+                flexDirection: "row",
+                flexWrap: "wrap",
+                marginTop: 4,
+              }}
+            >
+              {/* Leading blanks */}
               {leadingBlanks.map((_, i) => (
-                <View key={`blank-${i}`} style={{ width: "14.28%", aspectRatio: 0.92 }} />
+                <View
+                  key={`blank-${i}`}
+                  style={{ width: cellW, height: cellH }}
+                />
               ))}
+
+              {/* Day cells */}
               {monthDays.map((day) => (
                 <DayCell
                   key={day.gregorianDay}
                   day={day}
-                  isSelected={selected?.date.getTime() === day.date.getTime()}
+                  candleTime={candleMap[day.gregorianDay] ?? null}
+                  isSelected={
+                    selected?.date.getTime() === day.date.getTime()
+                  }
+                  cellW={cellW}
+                  cellH={cellH}
                   reducedMotion={reducedMotion}
-                  colors={colors}
+                  accentGold={gold}
+                  textPrimary={colors.textPrimary}
+                  textMuted={colors.textMuted}
                   onPress={onSelectDay}
                 />
               ))}
             </Animated.View>
 
-            {/* ── Selected day detail — inside the card ── */}
-            {selected && (
-              <View
-                style={{
-                  marginHorizontal: sp[4], marginBottom: sp[4],
-                  backgroundColor: colors.card,
-                  borderRadius: rd.lg,
-                  borderWidth: 1, borderColor: gold + "2e",
-                  padding: sp[4],
-                }}
-              >
-                <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[type.label, { color: colors.textPrimary }]}>
-                      {selected.date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-                    </Text>
-                    <Text style={[type.hebrewBody, { color: gold, marginTop: 2 }]}>
-                      {hebrewDayNumeral(selected.hebrewDay)} {selected.hebrewMonth} {selected.hebrewYear}
-                    </Text>
-                  </View>
-                  {selected.isShabbat && (
-                    <View style={{ borderRadius: 9999, borderWidth: 1, borderColor: gold + "44", backgroundColor: gold + "18", paddingHorizontal: 10, paddingVertical: 4 }}>
-                      <Text style={{ fontSize: 11, fontWeight: "600", color: gold }}>Shabbat</Text>
-                    </View>
-                  )}
-                </View>
-                {selected.roshChodesh && (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: gold }} />
-                    <Text style={[type.bodySm, { color: colors.textPrimary, fontWeight: "600" }]}>Rosh Chodesh</Text>
-                  </View>
-                )}
-                {selected.events.length === 0 && !selected.roshChodesh ? (
-                  <Text style={[type.bodySm, { color: colors.textMuted }]}>No special events</Text>
-                ) : (
-                  selected.events.map((ev) => (
-                    <View key={ev} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: gold }} />
-                      <Text style={[type.bodySm, { color: colors.textPrimary }]}>{ev}</Text>
-                    </View>
-                  ))
-                )}
-              </View>
-            )}
           </View>
-        </Animated.View>
 
-        {/* ══════════════════════════════════════════════════════════════════
-            4. NEXT HOLY DAY
-            Single most upcoming holiday. Days countdown is the visual hero.
-            Gold = sacred. Gray accent = fast days.
-            ══════════════════════════════════════════════════════════════════ */}
-        {nextHolyDay && (
-          <Animated.View style={[{ marginHorizontal: HX, marginBottom: 14 }, a2]}>
-            <View
-              style={{
-                flexDirection: "row", alignItems: "stretch",
-                backgroundColor: colors.surfacePrimary,
-                borderRadius: rd.xl,
-                borderWidth: 1, borderColor: isFastDay ? colors.borderDefault : gold + "3a",
-                overflow: "hidden",
-                ...shadow.level1,
-              }}
-            >
-              {/* Sacred accent stripe — gold for holidays, gray for fasts */}
-              <View style={{ width: 4, backgroundColor: isFastDay ? colors.textMuted + "60" : gold }} />
-
-              {/* Name + date */}
-              <View style={{ flex: 1, paddingHorizontal: sp[4], paddingVertical: sp[4] }}>
-                <Text
-                  allowFontScaling={false}
+          {/* ── Legend + TODAY button ── */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: GRID_H_PAD + 2,
+              paddingVertical: 10,
+              backgroundColor: isLight
+                ? "rgba(0,0,0,0.02)"
+                : "rgba(255,255,255,0.03)",
+              borderTopWidth: 1,
+              borderTopColor: isLight
+                ? "rgba(0,0,0,0.07)"
+                : colors.border,
+            }}
+          >
+            {/* Legend items */}
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              {/* Today */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
                   style={{
-                    fontSize: 9, fontWeight: "700", letterSpacing: 2.2,
-                    color: isFastDay ? colors.textMuted : gold,
-                    textTransform: "uppercase", marginBottom: 6,
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    backgroundColor: gold + "30",
+                    borderWidth: 1.5,
+                    borderColor: gold,
                   }}
-                >
-                  NEXT HOLY DAY
-                </Text>
+                />
                 <Text
                   allowFontScaling={false}
-                  style={{ fontSize: 18, fontWeight: "700", color: colors.textHigh, letterSpacing: -0.2 }}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
+                  style={{ fontSize: 9.5, color: colors.textMuted }}
                 >
-                  {nextHolyDay.name}
+                  Today
                 </Text>
-                <Text
-                  allowFontScaling={false}
-                  style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, lineHeight: 18 }}
-                >
-                  {nextHolyDay.date.toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}
-                </Text>
-                {nextHolyDayHebrew ? (
-                  <Text
-                    allowFontScaling={false}
-                    style={{ fontSize: 11, color: isFastDay ? colors.textMuted : gold + "cc", marginTop: 2 }}
-                  >
-                    {nextHolyDayHebrew}
-                  </Text>
-                ) : null}
               </View>
 
-              {/* Days countdown — the visual hero of this card */}
-              <View
-                style={{
-                  alignItems: "center", justifyContent: "center",
-                  paddingHorizontal: sp[4],
-                  borderLeftWidth: 1, borderLeftColor: colors.borderDefault,
-                  minWidth: 72,
-                }}
-              >
-                <Text
-                  allowFontScaling={false}
+              {/* Shabbat */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
                   style={{
-                    fontSize: 36, fontWeight: "800",
-                    color: isFastDay ? colors.textSecondary : gold,
-                    lineHeight: 40,
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    backgroundColor: "#dc262618",
+                    borderWidth: 1,
+                    borderColor: "#dc262640",
                   }}
-                >
-                  {nextHolyDayDays}
-                </Text>
+                />
                 <Text
                   allowFontScaling={false}
-                  style={{ fontSize: 10, fontWeight: "600", color: colors.textMuted, letterSpacing: 0.5 }}
+                  style={{ fontSize: 9.5, color: colors.textMuted }}
                 >
-                  {nextHolyDayDays === 1 ? "day" : "days"}
+                  Shabbat
+                </Text>
+              </View>
+
+              {/* Fast */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    backgroundColor: "#37415118",
+                    borderWidth: 1,
+                    borderColor: "#37415140",
+                  }}
+                />
+                <Text
+                  allowFontScaling={false}
+                  style={{ fontSize: 9.5, color: colors.textMuted }}
+                >
+                  Fast
+                </Text>
+              </View>
+
+              {/* Yahrzeit */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    backgroundColor: "#7c3aed18",
+                    borderWidth: 1,
+                    borderColor: "#7c3aed50",
+                  }}
+                />
+                <Text
+                  allowFontScaling={false}
+                  style={{ fontSize: 9.5, color: colors.textMuted }}
+                >
+                  Yahrzeit
                 </Text>
               </View>
             </View>
-          </Animated.View>
-        )}
 
-        {/* ══════════════════════════════════════════════════════════════════
-            5. TODAY'S SACRED TIME
-            Compact. One glance. Next prayer + countdown pill.
-            Detail lives on the Zmanim tab — never duplicated here.
-            ══════════════════════════════════════════════════════════════════ */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 18 }, a3]}>
-          <Animated.View style={{ transform: [{ scale: zmanimPress.scale }] }}>
-            <Pressable
-              onPress={() => router.push("/(tabs)/zmanim")}
-              onPressIn={zmanimPress.onPressIn}
-              onPressOut={zmanimPress.onPressOut}
-              accessibilityRole="button"
-              accessibilityLabel="View full prayer schedule on Zmanim screen"
-              style={{
-                backgroundColor: colors.surfacePrimary,
-                borderRadius: rd.xl,
-                borderWidth: 1, borderColor: colors.borderDefault,
-                padding: sp[4],
-                ...shadow.level1,
-              }}
-            >
-              {/* Header row */}
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-                  <Feather name="clock" size={12} color={gold} />
+            {/* TODAY button */}
+            {!isCurrentMonth && (
+              <Animated.View style={{ transform: [{ scale: todayPress.scale }] }}>
+                <Pressable
+                  onPress={goToday}
+                  onPressIn={todayPress.onPressIn}
+                  onPressOut={todayPress.onPressOut}
+                  accessibilityRole="button"
+                  accessibilityLabel="Go to today"
+                  style={{
+                    backgroundColor: gold,
+                    borderRadius: 9999,
+                    paddingHorizontal: 14,
+                    paddingVertical: 6,
+                  }}
+                >
                   <Text
                     allowFontScaling={false}
-                    style={{ fontSize: 9, fontWeight: "700", letterSpacing: 2.2, color: colors.textMuted, textTransform: "uppercase" }}
-                  >
-                    TODAY'S SACRED TIME
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-                  <Text allowFontScaling={false} style={{ fontSize: 11, color: gold, fontWeight: "600" }}>
-                    Full Schedule
-                  </Text>
-                  <Feather name="chevron-right" size={11} color={gold} />
-                </View>
-              </View>
-
-              {/* Next prayer row */}
-              {nextPrayer ? (
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <View>
-                    <Text
-                      allowFontScaling={false}
-                      style={{ fontSize: 10, color: colors.textMuted, marginBottom: 3, fontWeight: "500" }}
-                    >
-                      Next
-                    </Text>
-                    <Text
-                      allowFontScaling={false}
-                      style={{ fontSize: 20, fontWeight: "700", color: colors.textHigh, letterSpacing: -0.3 }}
-                    >
-                      {nextPrayer.name}
-                    </Text>
-                    <Text
-                      allowFontScaling={false}
-                      style={{ fontSize: 13, color: colors.textSecondary, marginTop: 3 }}
-                    >
-                      {formatTime(nextPrayer.time)}
-                    </Text>
-                  </View>
-
-                  {/* Countdown pill */}
-                  <View
                     style={{
-                      alignItems: "center", justifyContent: "center",
-                      backgroundColor: gold + "14",
-                      borderRadius: rd.lg,
-                      paddingHorizontal: sp[4], paddingVertical: sp[3],
-                      borderWidth: 1, borderColor: gold + "30",
-                      minWidth: 88,
+                      fontSize: 11,
+                      fontWeight: "800",
+                      color: "#fff",
+                      letterSpacing: 1,
                     }}
                   >
-                    <Text
-                      allowFontScaling={false}
-                      style={{ fontSize: 18, fontWeight: "800", color: gold }}
-                    >
-                      {formatCountdown(nextPrayer.time)}
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                <Text style={[type.bodySm, { color: colors.textMuted }]}>
-                  All prayer times have passed for today.
+                    TODAY
+                  </Text>
+                </Pressable>
+              </Animated.View>
+            )}
+            {isCurrentMonth && (
+              <Pressable
+                onPress={goToday}
+                accessibilityRole="button"
+                accessibilityLabel="Go to today"
+                style={{
+                  backgroundColor: gold + "22",
+                  borderRadius: 9999,
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  borderWidth: 1,
+                  borderColor: gold + "55",
+                }}
+              >
+                <Text
+                  allowFontScaling={false}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "800",
+                    color: gold,
+                    letterSpacing: 1,
+                  }}
+                >
+                  TODAY
                 </Text>
-              )}
-            </Pressable>
-          </Animated.View>
-        </Animated.View>
+              </Pressable>
+            )}
+          </View>
+        </View>
 
-        {/* ══════════════════════════════════════════════════════════════════
-            6. THIS WEEK — horizontal chips
-            One glance at the week's sacred occasions.
-            Shabbat always highlighted in gold. Parasha always shown.
-            ══════════════════════════════════════════════════════════════════ */}
-        {thisWeekChips.length > 0 && (
-          <Animated.View style={[{ marginBottom: 8 }, a4]}>
-            <Text
-              allowFontScaling={false}
+        {/* ══════════════════════════════════════════════════════════
+            SELECTED DAY DETAIL
+            Appears below the card when a day is tapped.
+            ══════════════════════════════════════════════════════════ */}
+        {selected && (
+          <View
+            style={{
+              marginTop: 14,
+              backgroundColor: colors.surface,
+              borderRadius: rd.xl,
+              borderWidth: 1,
+              borderColor: gold + "30",
+              overflow: "hidden",
+              ...shadow.level1,
+            }}
+          >
+            {/* Accent stripe */}
+            <View
               style={{
-                fontSize: 9, fontWeight: "700", letterSpacing: 2.2,
-                color: colors.textMuted, textTransform: "uppercase",
-                marginHorizontal: HX, marginBottom: 10,
+                height: 3,
+                backgroundColor: isFastEvent(selected.events)
+                  ? "#f59e0b"
+                  : selected.isShabbat
+                  ? "#dc2626"
+                  : gold,
               }}
-            >
-              THIS WEEK
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: HX, gap: 8, flexDirection: "row" }}
-            >
-              {thisWeekChips.map((chip) => {
-                const isShabbat = chip === "Shabbat";
-                return (
+            />
+
+            <View style={{ padding: sp[4] }}>
+              {/* Date row */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  marginBottom: 10,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text
+                    allowFontScaling={false}
+                    style={{
+                      fontSize: 17,
+                      fontWeight: "700",
+                      color: colors.textPrimary,
+                      letterSpacing: -0.2,
+                    }}
+                  >
+                    {selected.date.toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </Text>
+                  <Text
+                    allowFontScaling={false}
+                    style={{ fontSize: 13, color: gold, marginTop: 3 }}
+                  >
+                    {hebrewDayNumeral(selected.hebrewDay)} {selected.hebrewMonth}{" "}
+                    {selected.hebrewYear}
+                  </Text>
+                </View>
+
+                {/* Shabbat / fast badge */}
+                {(selected.isShabbat || isFastEvent(selected.events)) && (
                   <View
-                    key={chip}
                     style={{
                       borderRadius: 9999,
                       borderWidth: 1,
-                      borderColor: isShabbat ? gold + "50" : colors.borderDefault,
-                      backgroundColor: isShabbat ? gold + "14" : colors.card,
-                      paddingHorizontal: 14, paddingVertical: 8,
+                      borderColor: isFastEvent(selected.events)
+                        ? "#f59e0b44"
+                        : "#dc262644",
+                      backgroundColor: isFastEvent(selected.events)
+                        ? "#f59e0b12"
+                        : "#dc262612",
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      marginLeft: 8,
                     }}
                   >
                     <Text
                       allowFontScaling={false}
                       style={{
-                        fontSize: 12,
-                        fontWeight: isShabbat ? "600" : "400",
-                        color: isShabbat ? gold : colors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: "700",
+                        color: isFastEvent(selected.events)
+                          ? "#f59e0b"
+                          : "#dc2626",
                       }}
                     >
-                      {chip}
+                      {isFastEvent(selected.events) ? "Fast Day" : "Shabbat"}
                     </Text>
                   </View>
-                );
-              })}
-            </ScrollView>
-          </Animated.View>
+                )}
+              </View>
+
+              {/* Candle lighting (if Friday) */}
+              {candleMap[selected.gregorianDay] && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    backgroundColor: gold + "10",
+                    borderRadius: rd.md,
+                    marginBottom: 10,
+                    borderWidth: 1,
+                    borderColor: gold + "25",
+                  }}
+                >
+                  <Feather name="sunset" size={14} color={gold} />
+                  <View>
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 10,
+                        color: gold,
+                        fontWeight: "600",
+                        letterSpacing: 0.8,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Candle Lighting
+                    </Text>
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 16,
+                        fontWeight: "700",
+                        color: gold,
+                        marginTop: 1,
+                      }}
+                    >
+                      {candleMap[selected.gregorianDay]}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Events list */}
+              {selected.events.length === 0 && !selected.roshChodesh ? (
+                <Text
+                  allowFontScaling={false}
+                  style={{ fontSize: 13, color: colors.textMuted, fontStyle: "italic" }}
+                >
+                  No special events
+                </Text>
+              ) : (
+                <View style={{ gap: 6 }}>
+                  {selected.roshChodesh && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: "#7c3aed",
+                        }}
+                      />
+                      <Text
+                        allowFontScaling={false}
+                        style={{
+                          fontSize: 13,
+                          color: colors.textPrimary,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Rosh Chodesh
+                      </Text>
+                    </View>
+                  )}
+                  {selected.events.map((ev) => (
+                    <View
+                      key={ev}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: isFastEvent([ev])
+                            ? "#f59e0b"
+                            : /shabbat/i.test(ev)
+                            ? "#dc2626"
+                            : gold,
+                        }}
+                      />
+                      <Text
+                        allowFontScaling={false}
+                        style={{
+                          fontSize: 13,
+                          color: colors.textPrimary,
+                          flex: 1,
+                        }}
+                      >
+                        {ev}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Zmanim link */}
+              <Pressable
+                onPress={() => router.push("/(tabs)/zmanim")}
+                accessibilityRole="button"
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  marginTop: 14,
+                  paddingVertical: 10,
+                  borderRadius: rd.lg,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                }}
+              >
+                <Feather name="clock" size={13} color={gold} />
+                <Text
+                  allowFontScaling={false}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: gold,
+                  }}
+                >
+                  View Prayer Times
+                </Text>
+                <Feather name="chevron-right" size={12} color={gold} />
+              </Pressable>
+            </View>
+          </View>
         )}
 
       </ScrollView>
