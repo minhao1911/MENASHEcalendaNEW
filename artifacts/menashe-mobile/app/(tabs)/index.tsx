@@ -34,9 +34,11 @@ import {
   Animated,
   Dimensions,
   ImageBackground,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -402,6 +404,25 @@ export default function HomeScreen() {
   const insets    = useSafeAreaInsets();
   const { location, setLocation } = useApp();
   const [showLocationPicker, setShowLocationPicker] = React.useState(false);
+  const [showDrawer, setShowDrawer] = React.useState(false);
+  const drawerSlide = useRef(new Animated.Value(-300)).current;
+  const drawerFade  = useRef(new Animated.Value(0)).current;
+
+  const openDrawer = useCallback(() => {
+    setShowDrawer(true);
+    Animated.parallel([
+      Animated.spring(drawerSlide, { toValue: 0,   useNativeDriver: true, damping: 22, stiffness: 220 }),
+      Animated.timing (drawerFade,  { toValue: 1,   useNativeDriver: true, duration: 220 }),
+    ]).start();
+  }, [drawerSlide, drawerFade]);
+
+  const closeDrawer = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(drawerSlide, { toValue: -300, useNativeDriver: true, duration: 200 }),
+      Animated.timing(drawerFade,  { toValue: 0,    useNativeDriver: true, duration: 180 }),
+    ]).start(() => setShowDrawer(false));
+  }, [drawerSlide, drawerFade]);
+
   const { lang, setLang, t } = useLanguage();
 
   const firstName: string | null = null;
@@ -598,6 +619,24 @@ export default function HomeScreen() {
         flexDirection: "row",
         alignItems: "center",
       }, a0]}>
+
+        {/* FAR LEFT — Hamburger nav button */}
+        <TouchableOpacity
+          onPress={openDrawer}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="Open navigation menu"
+          style={{ marginRight: 12 }}
+        >
+          <View style={{
+            width: 40, height: 40, borderRadius: 20,
+            backgroundColor: cardBg,
+            borderWidth: 1, borderColor,
+            alignItems: "center", justifyContent: "center",
+          }}>
+            <Feather name="menu" size={18} color={textPrimary} />
+          </View>
+        </TouchableOpacity>
 
         {/* LEFT — Avatar + Greeting + Location */}
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 13 }}>
@@ -1494,6 +1533,180 @@ export default function HomeScreen() {
       }}
       onClose={() => setShowLocationPicker(false)}
     />
+
+    {/* ─── Navigation Drawer ──────────────────────────────────────────────────── */}
+    <Modal
+      visible={showDrawer}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={closeDrawer}
+      accessibilityViewIsModal
+    >
+      {/* Dim overlay — tap to close */}
+      <Animated.View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.55)",
+          opacity: drawerFade,
+        }}
+      >
+        <Pressable style={{ flex: 1 }} onPress={closeDrawer} accessibilityLabel="Close menu" />
+      </Animated.View>
+
+      {/* Slide-in panel */}
+      <Animated.View style={{
+        position: "absolute",
+        top: 0, left: 0, bottom: 0,
+        width: 288,
+        backgroundColor: pageBg,
+        borderRightWidth: 1,
+        borderRightColor: borderColor,
+        transform: [{ translateX: drawerSlide }],
+        paddingTop: (insets.top || 0) + 12,
+        paddingBottom: (insets.bottom || 0) + 24,
+      }}>
+
+        {/* ── Brand Header ─────────────────────────────── */}
+        <View style={{
+          paddingHorizontal: 20,
+          paddingBottom: 20,
+          borderBottomWidth: 1,
+          borderBottomColor: borderColor,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+        }}>
+          <View style={{
+            width: 48, height: 48, borderRadius: 24,
+            backgroundColor: gold + "14",
+            borderWidth: 1.5, borderColor: gold + "40",
+            alignItems: "center", justifyContent: "center",
+          }}>
+            <Text style={{ fontSize: 22 }}>⛩</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              fontSize: 15, fontWeight: "800",
+              color: gold, letterSpacing: 0.8,
+            }}>
+              BNEI MENASHE
+            </Text>
+            <Text style={{ fontSize: 11, color: textMuted, marginTop: 1 }}>
+              Sacred Calendar
+            </Text>
+          </View>
+          {/* Close X */}
+          <TouchableOpacity
+            onPress={closeDrawer}
+            accessibilityRole="button"
+            accessibilityLabel="Close menu"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="x" size={20} color={textMuted} />
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Nav Links ────────────────────────────────── */}
+        <View style={{ flex: 1, paddingTop: 12, paddingHorizontal: 12 }}>
+          {([
+            { icon: "home",      label: "Home",         route: "/(tabs)/"          },
+            { icon: "clock",     label: "Zmanim",       route: "/(tabs)/zmanim"    },
+            { icon: "calendar",  label: "Calendar",     route: "/(tabs)/calendar"  },
+            { icon: "book-open", label: "Prayer Board", route: "/(tabs)/prayer"    },
+            { icon: "users",     label: "Community",    route: "/(tabs)/community" },
+          ] as { icon: string; label: string; route: string }[]).map((item) => (
+            <TouchableOpacity
+              key={item.route}
+              onPress={() => {
+                closeDrawer();
+                setTimeout(() => router.push(item.route as any), 220);
+              }}
+              accessibilityRole="menuitem"
+              accessibilityLabel={item.label}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 14,
+                paddingHorizontal: 14,
+                paddingVertical: 14,
+                borderRadius: 12,
+                marginBottom: 2,
+              }}
+            >
+              <View style={{
+                width: 36, height: 36, borderRadius: 10,
+                backgroundColor: cardBg,
+                borderWidth: 1, borderColor,
+                alignItems: "center", justifyContent: "center",
+              }}>
+                <Feather name={item.icon as any} size={17} color={gold} />
+              </View>
+              <Text style={{
+                fontSize: 15, fontWeight: "600",
+                color: textPrimary, letterSpacing: -0.1,
+              }}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── Bottom — Settings + Version ──────────────── */}
+        <View style={{
+          paddingHorizontal: 12,
+          paddingTop: 12,
+          borderTopWidth: 1,
+          borderTopColor: borderColor,
+        }}>
+          <TouchableOpacity
+            onPress={() => {
+              closeDrawer();
+              setTimeout(() => router.push("/(tabs)/settings" as any), 220);
+            }}
+            accessibilityRole="menuitem"
+            accessibilityLabel="Settings"
+            activeOpacity={0.7}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              paddingHorizontal: 14,
+              paddingVertical: 14,
+              borderRadius: 12,
+            }}
+          >
+            <View style={{
+              width: 36, height: 36, borderRadius: 10,
+              backgroundColor: cardBg,
+              borderWidth: 1, borderColor,
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Feather name="settings" size={17} color={textMuted} />
+            </View>
+            <Text style={{
+              fontSize: 15, fontWeight: "600",
+              color: textMuted, letterSpacing: -0.1,
+            }}>
+              Settings
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={{
+            fontSize: 11, color: textMuted,
+            textAlign: "center",
+            marginTop: 8,
+            opacity: 0.5,
+            letterSpacing: 0.3,
+          }}>
+            Menashe Calendar · v1.0
+          </Text>
+        </View>
+
+      </Animated.View>
+    </Modal>
+
     </>
   );
 }
