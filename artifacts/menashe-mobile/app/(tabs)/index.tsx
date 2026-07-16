@@ -817,6 +817,46 @@ export default function HomeScreen() {
         </HeroBackgroundCrossfade>
       </Animated.View>
 
+      {/* ─── UPCOMING HOLIDAY (moved: directly below hero) ──────────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 20 }, a2]}>
+        <Pressable
+          style={({ pressed }) => ({
+            backgroundColor: cardBg, borderRadius: rd.lg, borderWidth: 1, borderColor,
+            flexDirection: "row", alignItems: "center",
+            paddingHorizontal: 16, paddingVertical: 14, gap: 12,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+            ...shadow.level1,
+          })}
+          onPress={() => router.push("/(tabs)/calendar")}
+          accessibilityLabel={`${t.homeUpcomingHoliday}${nextHoliday ? ": " + nextHoliday.name : ""}`}
+          accessibilityRole="button"
+        >
+          <View style={{
+            width: 44, height: 44, borderRadius: 22,
+            backgroundColor: gold + "0f", borderWidth: 1, borderColor: gold + "30",
+            alignItems: "center", justifyContent: "center",
+          }}>
+            <Text style={{ fontSize: 19, opacity: 0.85 }}>✡</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 9, fontWeight: "800", letterSpacing: 1.6, textTransform: "uppercase", color: gold, marginBottom: 4 }}>
+              {t.homeUpcomingHoliday}
+            </Text>
+            {nextHoliday ? (
+              <>
+                <Text style={{ fontSize: 18, fontWeight: "700", color: textPrimary }}>{nextHoliday.name}</Text>
+                <Text style={{ fontSize: 13, color: textMuted, marginTop: 2 }}>
+                  {nextHoliday.date.toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}
+                </Text>
+              </>
+            ) : (
+              <Text style={{ fontSize: 13, color: textMuted }}>{t.homeNoHolidays}</Text>
+            )}
+          </View>
+          <Feather name="chevron-right" size={16} color={textMuted} />
+        </Pressable>
+      </Animated.View>
+
       {/* ═══════════════════════════════════════════════════════════════════════
           3. TODAY'S DASHBOARD
           Three stacked cards as one cohesive block:
@@ -1085,46 +1125,6 @@ export default function HomeScreen() {
             </View>
           </Pressable>
         </ScrollView>
-      </Animated.View>
-
-      {/* ─── 9. UPCOMING HOLIDAY ────────────────────────────────────────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 12 }, a8]}>
-        <Pressable
-          style={({ pressed }) => ({
-            backgroundColor: cardBg, borderRadius: rd.lg, borderWidth: 1, borderColor,
-            flexDirection: "row", alignItems: "center",
-            paddingHorizontal: 16, paddingVertical: 14, gap: 12,
-            transform: [{ scale: pressed ? 0.98 : 1 }],
-            ...shadow.level1,
-          })}
-          onPress={() => router.push("/(tabs)/calendar")}
-          accessibilityLabel={`${t.homeUpcomingHoliday}${nextHoliday ? ": " + nextHoliday.name : ""}`}
-          accessibilityRole="button"
-        >
-          <View style={{
-            width: 44, height: 44, borderRadius: 22,
-            backgroundColor: gold + "0f", borderWidth: 1, borderColor: gold + "30",
-            alignItems: "center", justifyContent: "center",
-          }}>
-            <Text style={{ fontSize: 19, opacity: 0.85 }}>✡</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, fontWeight: "800", letterSpacing: 1.6, textTransform: "uppercase", color: gold, marginBottom: 4 }}>
-              {t.homeUpcomingHoliday}
-            </Text>
-            {nextHoliday ? (
-              <>
-                <Text style={{ fontSize: 18, fontWeight: "700", color: textPrimary }}>{nextHoliday.name}</Text>
-                <Text style={{ fontSize: 13, color: textMuted, marginTop: 2 }}>
-                  {nextHoliday.date.toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" })}
-                </Text>
-              </>
-            ) : (
-              <Text style={{ fontSize: 13, color: textMuted }}>{t.homeNoHolidays}</Text>
-            )}
-          </View>
-          <Feather name="chevron-right" size={16} color={textMuted} />
-        </Pressable>
       </Animated.View>
 
       {/* ─── 10. COMMUNITY PREVIEW ──────────────────────────────────────────────── */}
