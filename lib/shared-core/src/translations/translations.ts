@@ -461,6 +461,9 @@ export interface SharedTranslations {
   commLearningComingSoonHint: string;
   commOrgShaveiDesc: string;
   commOrgFedDesc: string;
+  commOrgShivteiName: string;
+  commOrgShivteiTagline: string;
+  commOrgShivteiDesc: string;
   /* events deep screen */
   commEventsSeeAll: string;
   commEventsEmpty: string;
@@ -1064,6 +1067,9 @@ export const sharedEn: SharedTranslations = {
   commLearningComingSoonHint: "Explore Torah study in the Torah tab, or share a request on the Prayer Board.",
   commOrgShaveiDesc: "Connecting and supporting Bnei Menashe worldwide, facilitating aliyah to Israel.",
   commOrgFedDesc: "Community coordination — events, education, cultural preservation, and family support.",
+  commOrgShivteiName: "Shivtei Menashe",
+  commOrgShivteiTagline: "Reconnecting the tribe of Menashe",
+  commOrgShivteiDesc: "A nonprofit strengthening Bnei Menashe in Israel and worldwide — spiritually, culturally, and historically.",
   commEventsSeeAll: "See all events",
   commEventsEmpty: "No upcoming events found. Check back soon.",
   commEventsScreenTitle: "Upcoming Events",
@@ -1657,6 +1663,9 @@ export const sharedTk: SharedTranslations = {
   commLearningComingSoonHint: "Torah tab-ah kihilna zawng rawh, emaw Prayer Board-ah thu dawt siam rawh.",
   commOrgShaveiDesc: "Bnei Menashe mipil khawvel zawng zawng in intlun leh aliyah Israel-ah pui.",
   commOrgFedDesc: "Mipil inkhawm, kihilna, nunpui dan siamna leh chhungkua tanpui.",
+  commOrgShivteiName: "Shivtei Menashe",
+  commOrgShivteiTagline: "Menashe Mipil Inzawng Nawn",
+  commOrgShivteiDesc: "Bnei Menashe mipil Israel-ah leh khawvel zawng zawng-ah tanpui nonprofit — spiritually, culturally, leh historically.",
   commEventsSeeAll: "Zawng En",
   commEventsEmpty: "Lawmman a awm lo. Hla in chhawn rawh.",
   commEventsScreenTitle: "Lawmman Hla",
