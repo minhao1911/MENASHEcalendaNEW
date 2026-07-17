@@ -136,6 +136,13 @@ function resolveNextPrayer(zm: {
   return null;
 }
 
+// Subtitle copy for the upcoming-prayer bottom strip inside the dual card.
+const PRAYER_SUBTITLES: Record<string, string> = {
+  Shacharit: "Open the day in morning prayer",
+  Mincha:    "Pause and connect in afternoon prayer",
+  Maariv:    "Evening prayer opens now",
+};
+
 const TORAH_INSIGHTS = [
   { quote: "\"The Torah is a tree of life to those who hold fast to it.\"",           source: "Proverbs 3:18"       },
   { quote: "\"Who is wise? One who learns from every person.\"",                       source: "Pirkei Avot 4:1"     },
@@ -884,9 +891,11 @@ export default function HomeScreen() {
           borderWidth: 1,
           borderColor,
           overflow: "hidden",
-          flexDirection: "row",
           ...shadow.level1,
         }}>
+
+          {/* ── Top row — Next Prayer + Upcoming Holiday ────────────── */}
+          <View style={{ flexDirection: "row" }}>
 
           {/* ── LEFT HALF — Next Prayer ─────────────────────────────── */}
           <Pressable
@@ -1017,6 +1026,84 @@ export default function HomeScreen() {
             </View>
           </Pressable>
 
+          </View>{/* ── end top row ─────────────────────────────────── */}
+
+          {/* ── Bottom strip — Upcoming Prayer CTA ─────────────────────────── */}
+          {nextPrayer && (
+            <>
+              <View style={{ height: 1, backgroundColor: borderColor }} />
+              <Pressable
+                onPress={() => router.push("/(tabs)/zmanim" as any)}
+                accessibilityRole="button"
+                accessibilityLabel={`Upcoming prayer: ${nextPrayer.name}. Tap to open Sacred Time.`}
+                style={{ overflow: "hidden" }}
+              >
+                <LinearGradient
+                  colors={["#1a0a00", "#5c3008", "#c8852a"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    gap: 12,
+                  }}
+                >
+                  {/* Background glow orb */}
+                  <View style={{
+                    position: "absolute", top: -30, right: -30,
+                    width: 120, height: 120, borderRadius: 60,
+                    backgroundColor: gold + "1a",
+                  }} />
+
+                  {/* Text block */}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{
+                      fontSize: 9, fontWeight: "800", letterSpacing: 1.8,
+                      textTransform: "uppercase", color: gold, marginBottom: 3,
+                    }}>
+                      Upcoming Prayer
+                    </Text>
+                    <Text style={{
+                      fontSize: 16, fontWeight: "800", color: "#f4f0e8",
+                      letterSpacing: -0.2, marginBottom: 3,
+                    }}>
+                      {nextPrayer.name}
+                    </Text>
+                    <Text style={{
+                      fontSize: 12, color: "rgba(240,220,180,0.75)", marginBottom: 12,
+                    }}>
+                      {PRAYER_SUBTITLES[nextPrayer.name] ?? "Open your heart in prayer"}
+                    </Text>
+                    {/* CTA pill */}
+                    <View style={{
+                      flexDirection: "row", alignItems: "center", gap: 4,
+                      alignSelf: "flex-start",
+                      backgroundColor: gold,
+                      paddingHorizontal: 14, paddingVertical: 8,
+                      borderRadius: 9999,
+                    }}>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                        Open Sacred Time
+                      </Text>
+                      <Feather name="chevron-right" size={11} color="#fff" />
+                    </View>
+                  </View>
+
+                  {/* Emoji orb */}
+                  <View style={{
+                    width: 64, height: 64, borderRadius: 32,
+                    backgroundColor: gold + "22",
+                    alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Text style={{ fontSize: 32 }}>🕍</Text>
+                  </View>
+                </LinearGradient>
+              </Pressable>
+            </>
+          )}
+
         </View>
       </Animated.View>
 
@@ -1039,10 +1126,12 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      {/* 3a — Daily Priority — single most-important action */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 8 }, a2]}>
-        <DailyPriorityCard />
-      </Animated.View>
+      {/* 3a — Daily Priority — hidden when prayer is next (surfaced in dual card above) */}
+      {!nextPrayer && (
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 8 }, a2]}>
+          <DailyPriorityCard />
+        </Animated.View>
+      )}
 
       {/* 3b — Today's Focus (holiday / shabbat / omer / default) */}
       <Animated.View style={[{ marginHorizontal: HX, marginBottom: 8 }, a3]}>
