@@ -507,6 +507,13 @@ export default function HomeScreen() {
     [location, today],
   );
 
+  // Tick every 60 s so nextPrayer recalculates as prayer windows pass during the day.
+  const [prayerTick, setPrayerTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setPrayerTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const isShabbat = today.getDay() === 6;
   const isFriday  = today.getDay() === 5;
 
@@ -550,8 +557,10 @@ export default function HomeScreen() {
     return TORAH_INSIGHTS[idx];
   }, [today]);
 
-  // Resolve the next upcoming prayer from today's zmanim
-  const nextPrayer = useMemo(() => resolveNextPrayer(todayZm), [todayZm]);
+  // Resolve the next upcoming prayer from today's zmanim.
+  // prayerTick refreshes this every 60 s so the card updates as prayer windows pass.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const nextPrayer = useMemo(() => resolveNextPrayer(todayZm), [todayZm, prayerTick]);
 
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
