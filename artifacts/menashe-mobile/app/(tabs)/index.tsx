@@ -33,6 +33,7 @@ import {
   AccessibilityInfo,
   Animated,
   Dimensions,
+  Image,
   ImageBackground,
   Modal,
   Platform,
@@ -66,6 +67,7 @@ import { DailyPriorityCard } from "@/src/mobile/components/cards/DailyPriorityCa
 import { hapticLight } from "@/src/mobile/lib/haptics";
 import { useEntrance, useReducedMotion } from "@/src/mobile/lib/useEntrance";
 import { usePressScale } from "@/src/mobile/lib/usePressScale";
+import { useUser } from "@clerk/expo";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import LocationPickerModal from "@/components/LocationPickerModal";
@@ -431,6 +433,7 @@ export default function HomeScreen() {
   }, [drawerSlide, drawerFade]);
 
   const { lang, setLang, t } = useLanguage();
+  const { user } = useUser();
 
   const firstName: string | null = null;
 
@@ -657,7 +660,7 @@ export default function HomeScreen() {
         {/* LEFT — Avatar + Greeting + Location */}
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 13 }}>
 
-          {/* Sacred avatar — gold ring, settable destination */}
+          {/* Avatar — shows user profile picture if uploaded, else ⛩ fallback */}
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/settings" as any)}
             activeOpacity={0.82}
@@ -669,8 +672,17 @@ export default function HomeScreen() {
               backgroundColor: gold + "0f",
               borderWidth: 1.5, borderColor: gold + "50",
               alignItems: "center", justifyContent: "center",
+              overflow: "hidden",
             }}>
-              <Text style={{ fontSize: 19 }}>⛩</Text>
+              {user?.imageUrl ? (
+                <Image
+                  source={{ uri: user.imageUrl }}
+                  style={{ width: 40, height: 40, borderRadius: 20 }}
+                  accessibilityLabel="Your profile picture"
+                />
+              ) : (
+                <Text style={{ fontSize: 19 }}>⛩</Text>
+              )}
             </View>
           </TouchableOpacity>
 
