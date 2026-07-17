@@ -15,15 +15,19 @@ import { PixelRatio, Platform } from "react-native";
 
 // ─── Font families ────────────────────────────────────────────────────────────
 
+// On web the Expo Google Fonts package is skipped (to avoid fontfaceobserver
+// timeouts), so use a CSS font stack that includes Inter for browsers.
+const WEB_SANS = "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
 export const FONT = {
-  thin:       "Inter_300Light",       // reserved for future loading
-  regular:    "Inter_400Regular",
-  medium:     "Inter_500Medium",
-  semiBold:   "Inter_600SemiBold",
-  bold:       "Inter_700Bold",
-  extraBold:  "Inter_800ExtraBold",   // reserved for future loading
+  thin:       Platform.OS === "web" ? WEB_SANS : "Inter_300Light",
+  regular:    Platform.OS === "web" ? WEB_SANS : "Inter_400Regular",
+  medium:     Platform.OS === "web" ? WEB_SANS : "Inter_500Medium",
+  semiBold:   Platform.OS === "web" ? WEB_SANS : "Inter_600SemiBold",
+  bold:       Platform.OS === "web" ? WEB_SANS : "Inter_700Bold",
+  extraBold:  Platform.OS === "web" ? WEB_SANS : "Inter_800ExtraBold",
   /** System default — Hebrew, Aramaic, fallback. */
-  system:     Platform.select({ ios: "System", android: "sans-serif", default: "System" }),
+  system:     Platform.select({ ios: "System", android: "sans-serif", default: WEB_SANS }),
 } as const;
 
 export type FontKey = keyof typeof FONT;

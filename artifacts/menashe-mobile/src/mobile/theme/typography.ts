@@ -5,18 +5,24 @@
  * Complements TEXT scale from constants/colors.ts.
  */
 
+import { Platform } from "react-native";
 import { TEXT } from "@/constants/colors";
 
 export { TEXT };
 
 // ─── Font Families ────────────────────────────────────────────────────────────
-// Inter is loaded via @expo-google-fonts/inter in _layout.tsx.
+// Inter is loaded via @expo-google-fonts/inter in _layout.tsx on native only.
+// On web we skip the font loader (avoids fontfaceobserver timeout) and use a
+// CSS stack — browsers have Inter cached or fall back to system-ui gracefully.
+
+const WEB_SANS = "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const isWeb    = Platform.OS === "web";
 
 export const FONT_FAMILY = {
-  regular:    "Inter_400Regular",
-  medium:     "Inter_500Medium",
-  semiBold:   "Inter_600SemiBold",
-  bold:       "Inter_700Bold",
+  regular:    isWeb ? WEB_SANS : "Inter_400Regular",
+  medium:     isWeb ? WEB_SANS : "Inter_500Medium",
+  semiBold:   isWeb ? WEB_SANS : "Inter_600SemiBold",
+  bold:       isWeb ? WEB_SANS : "Inter_700Bold",
   /** Fallback for Hebrew text — uses system default (generally supports Unicode). */
   hebrew:     undefined,
   /** System default — used as emergency fallback. */

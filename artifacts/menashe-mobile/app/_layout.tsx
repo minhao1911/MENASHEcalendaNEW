@@ -27,12 +27,14 @@ const queryClient = new QueryClient();
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
+  // On web/browser, @expo-google-fonts uses fontfaceobserver which throws an
+  // uncaught error after its 6 000 ms timeout. Pass an empty map on web so
+  // useFonts resolves immediately; the browser will use the system Inter font.
+  const [fontsLoaded, fontError] = useFonts(
+    Platform.OS === "web"
+      ? {}
+      : { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold },
+  );
 
   useEffect(() => {
     if (Platform.OS !== "web" && (fontsLoaded || fontError)) {
