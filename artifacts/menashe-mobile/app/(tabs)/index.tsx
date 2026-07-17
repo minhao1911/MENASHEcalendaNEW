@@ -882,39 +882,44 @@ export default function HomeScreen() {
         </HeroBackgroundCrossfade>
       </Animated.View>
 
-      {/* ─── UPCOMING PRAYER + HOLIDAY — combined official dual card ─────────────── */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 20 }, a2]}>
-        {/* Outer card shell */}
-        <View style={{
-          backgroundColor: cardBg,
-          borderRadius: rd.lg,
-          borderWidth: 1,
-          borderColor,
-          overflow: "hidden",
-          ...shadow.level1,
-        }}>
+      {/* ─── NEXT PRAYER + UPCOMING HOLIDAY — two separate cards ────────────────── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 20, flexDirection: "row", gap: 10 }, a2]}>
 
-          {/* ── Top row — Next Prayer + Upcoming Holiday ────────────── */}
-          <View style={{ flexDirection: "row" }}>
-
-          {/* ── LEFT HALF — Next Prayer ─────────────────────────────── */}
-          <Pressable
-            onPress={() => router.push("/(tabs)/zmanim" as any)}
-            accessibilityRole="button"
-            accessibilityLabel={nextPrayer ? `Next prayer: ${nextPrayer.name}` : t.homeNoPrayer}
-            style={({ pressed }) => ({
-              flex: 1,
-              paddingHorizontal: 14,
-              paddingVertical: 16,
-              backgroundColor: pressed ? gold + "0a" : "transparent",
-            })}
+        {/* ══ LEFT — Next Prayer: warm amber gradient card ══════════════════════ */}
+        <Pressable
+          onPress={() => router.push("/(tabs)/zmanim" as any)}
+          accessibilityRole="button"
+          accessibilityLabel={nextPrayer ? `Next prayer: ${nextPrayer.name}` : t.homeNoPrayer}
+          style={{ flex: 1, borderRadius: rd.lg, overflow: "hidden" }}
+        >
+          <LinearGradient
+            colors={["#1c0900", "#7a3500", "#d47800"]}
+            start={{ x: 0.0, y: 0.0 }}
+            end={{ x: 1.0, y: 1.0 }}
+            style={{ minHeight: 176, padding: 14, overflow: "hidden" }}
           >
-            {/* Overline */}
+            {/* ── Large glowing amber orb behind the mosque emoji ── */}
+            <View style={{
+              position: "absolute",
+              right: -18, top: "50%",
+              width: 140, height: 140, borderRadius: 70,
+              backgroundColor: "#e08800",
+              opacity: 0.45,
+              transform: [{ translateY: -70 }],
+            }} />
+            {/* Softer outer halo */}
+            <View style={{
+              position: "absolute",
+              right: -38, top: "50%",
+              width: 180, height: 180, borderRadius: 90,
+              backgroundColor: "#d47800",
+              opacity: 0.18,
+              transform: [{ translateY: -90 }],
+            }} />
+
+            {/* ── Overline ── */}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 12 }}>
-              <View style={{
-                width: 6, height: 6, borderRadius: 3,
-                backgroundColor: gold,
-              }} />
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: gold }} />
               <Text style={{
                 fontSize: 9, fontWeight: "800", letterSpacing: 1.5,
                 textTransform: "uppercase", color: gold,
@@ -923,188 +928,124 @@ export default function HomeScreen() {
               </Text>
             </View>
 
-            {/* Icon circle */}
-            <View style={{
-              width: 42, height: 42, borderRadius: 21,
-              backgroundColor: gold + "14",
-              borderWidth: 1, borderColor: gold + "35",
-              alignItems: "center", justifyContent: "center",
-              marginBottom: 10,
-            }}>
-              <Feather
-                name={nextPrayer ? nextPrayer.icon : "clock"}
-                size={18}
-                color={gold}
-              />
-            </View>
+            {/* ── Row: text (left) + mosque emoji (right, floating on orb) ── */}
+            <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
 
-            {/* Prayer name */}
-            <Text style={{
-              fontSize: 17, fontWeight: "700",
-              color: textPrimary, marginBottom: 3, letterSpacing: -0.2,
-            }} numberOfLines={1}>
-              {nextPrayer ? nextPrayer.name : "—"}
-            </Text>
+              {/* Text column */}
+              <View style={{ flex: 1, paddingRight: 8 }}>
+                {/* Small prayer icon circle */}
+                <View style={{
+                  width: 40, height: 40, borderRadius: 20,
+                  backgroundColor: "rgba(0,0,0,0.32)",
+                  borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
+                  alignItems: "center", justifyContent: "center",
+                  marginBottom: 10,
+                }}>
+                  <Feather
+                    name={nextPrayer ? nextPrayer.icon : "clock"}
+                    size={17}
+                    color="#f4f0e8"
+                  />
+                </View>
 
-            {/* Time */}
-            <Text style={{ fontSize: 12, color: textMuted, marginBottom: 12 }} numberOfLines={1}>
-              {nextPrayer
-                ? `${nextPrayer.label} ${formatTime(nextPrayer.time, location.tz)}`
-                : t.homeNoPrayer}
-            </Text>
+                {/* Prayer name */}
+                <Text style={{
+                  fontSize: 22, fontWeight: "800",
+                  color: "#f4f0e8", letterSpacing: -0.3, marginBottom: 3,
+                }} numberOfLines={1}>
+                  {nextPrayer ? nextPrayer.name : "—"}
+                </Text>
 
-            {/* Footer CTA */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-              <Text style={{ fontSize: 11, fontWeight: "600", color: gold }}>Zmanim</Text>
-              <Feather name="chevron-right" size={10} color={gold} />
-            </View>
-          </Pressable>
+                {/* Time */}
+                <Text style={{
+                  fontSize: 12, color: "rgba(240,220,180,0.82)", marginBottom: 8,
+                }} numberOfLines={1}>
+                  {nextPrayer
+                    ? `${nextPrayer.label} ${formatTime(nextPrayer.time, location.tz)}`
+                    : t.homeNoPrayer}
+                </Text>
 
-          {/* ── Vertical divider ────────────────────────────────────── */}
-          <View style={{
-            width: 1,
-            backgroundColor: borderColor,
-            marginVertical: 16,
-          }} />
-
-          {/* ── RIGHT HALF — Upcoming Holiday ───────────────────────── */}
-          <Pressable
-            onPress={() => router.push("/(tabs)/calendar" as any)}
-            accessibilityRole="button"
-            accessibilityLabel={nextHoliday ? `Upcoming holiday: ${nextHoliday.name}` : t.homeNoHolidays}
-            style={({ pressed }) => ({
-              flex: 1,
-              paddingHorizontal: 14,
-              paddingVertical: 16,
-              backgroundColor: pressed ? gold + "0a" : "transparent",
-            })}
-          >
-            {/* Overline */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 12 }}>
-              <View style={{
-                width: 6, height: 6, borderRadius: 3,
-                backgroundColor: gold,
-              }} />
-              <Text style={{
-                fontSize: 9, fontWeight: "800", letterSpacing: 1.5,
-                textTransform: "uppercase", color: gold,
-              }}>
-                {t.homeUpcomingHoliday}
-              </Text>
-            </View>
-
-            {/* Icon circle */}
-            <View style={{
-              width: 42, height: 42, borderRadius: 21,
-              backgroundColor: gold + "14",
-              borderWidth: 1, borderColor: gold + "35",
-              alignItems: "center", justifyContent: "center",
-              marginBottom: 10,
-            }}>
-              <Text style={{ fontSize: 20 }}>✡</Text>
-            </View>
-
-            {/* Holiday name */}
-            <Text style={{
-              fontSize: 17, fontWeight: "700",
-              color: textPrimary, marginBottom: 3, letterSpacing: -0.2,
-            }} numberOfLines={2}>
-              {nextHoliday ? nextHoliday.name : "—"}
-            </Text>
-
-            {/* Date */}
-            <Text style={{ fontSize: 12, color: textMuted, marginBottom: 12 }} numberOfLines={1}>
-              {nextHoliday
-                ? nextHoliday.date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
-                : t.homeNoHolidays}
-            </Text>
-
-            {/* Footer CTA */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-              <Text style={{ fontSize: 11, fontWeight: "600", color: gold }}>Calendar</Text>
-              <Feather name="chevron-right" size={10} color={gold} />
-            </View>
-          </Pressable>
-
-          </View>{/* ── end top row ─────────────────────────────────── */}
-
-          {/* ── Bottom strip — Upcoming Prayer CTA ─────────────────────────── */}
-          {nextPrayer && (
-            <>
-              <View style={{ height: 1, backgroundColor: borderColor }} />
-              <Pressable
-                onPress={() => router.push("/(tabs)/zmanim" as any)}
-                accessibilityRole="button"
-                accessibilityLabel={`Upcoming prayer: ${nextPrayer.name}. Tap to open Sacred Time.`}
-                style={{ overflow: "hidden" }}
-              >
-                <LinearGradient
-                  colors={["#1a0a00", "#5c3008", "#c8852a"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                    gap: 12,
-                  }}
-                >
-                  {/* Background glow orb */}
-                  <View style={{
-                    position: "absolute", top: -30, right: -30,
-                    width: 120, height: 120, borderRadius: 60,
-                    backgroundColor: gold + "1a",
-                  }} />
-
-                  {/* Text block */}
-                  <View style={{ flex: 1 }}>
-                    <Text style={{
-                      fontSize: 9, fontWeight: "800", letterSpacing: 1.8,
-                      textTransform: "uppercase", color: gold, marginBottom: 3,
-                    }}>
-                      Upcoming Prayer
-                    </Text>
-                    <Text style={{
-                      fontSize: 16, fontWeight: "800", color: "#f4f0e8",
-                      letterSpacing: -0.2, marginBottom: 3,
-                    }}>
-                      {nextPrayer.name}
-                    </Text>
-                    <Text style={{
-                      fontSize: 12, color: "rgba(240,220,180,0.75)", marginBottom: 12,
-                    }}>
-                      {PRAYER_SUBTITLES[nextPrayer.name] ?? "Open your heart in prayer"}
-                    </Text>
-                    {/* CTA pill */}
-                    <View style={{
-                      flexDirection: "row", alignItems: "center", gap: 4,
-                      alignSelf: "flex-start",
-                      backgroundColor: gold,
-                      paddingHorizontal: 14, paddingVertical: 8,
-                      borderRadius: 9999,
-                    }}>
-                      <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
-                        Open Sacred Time
-                      </Text>
-                      <Feather name="chevron-right" size={11} color="#fff" />
-                    </View>
-                  </View>
-
-                  {/* Emoji orb */}
-                  <View style={{
-                    width: 64, height: 64, borderRadius: 32,
-                    backgroundColor: gold + "22",
-                    alignItems: "center", justifyContent: "center",
+                {/* Subtitle description */}
+                {nextPrayer && (
+                  <Text style={{
+                    fontSize: 12, color: "rgba(240,220,180,0.6)",
+                    lineHeight: 17, flexShrink: 1,
                   }}>
-                    <Text style={{ fontSize: 32 }}>🕍</Text>
-                  </View>
-                </LinearGradient>
-              </Pressable>
-            </>
-          )}
+                    {PRAYER_SUBTITLES[nextPrayer.name] ?? "Open your heart in prayer"}
+                  </Text>
+                )}
+              </View>
 
-        </View>
+              {/* Mosque emoji — large, floats on the amber orb */}
+              <Text style={{ fontSize: 54, marginBottom: -2 }}>🕌</Text>
+            </View>
+          </LinearGradient>
+        </Pressable>
+
+        {/* ══ RIGHT — Upcoming Holiday: dark navy card ══════════════════════════ */}
+        <Pressable
+          onPress={() => router.push("/(tabs)/calendar" as any)}
+          accessibilityRole="button"
+          accessibilityLabel={nextHoliday ? `Upcoming holiday: ${nextHoliday.name}` : t.homeNoHolidays}
+          style={({ pressed }) => ({
+            flex: 1,
+            borderRadius: rd.lg,
+            overflow: "hidden",
+            backgroundColor: pressed ? "#0f1628" : "#0b1020",
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.08)",
+            padding: 14,
+            minHeight: 176,
+            ...shadow.level1,
+          })}
+        >
+          {/* Overline */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 12 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: gold }} />
+            <Text style={{
+              fontSize: 9, fontWeight: "800", letterSpacing: 1.5,
+              textTransform: "uppercase", color: gold,
+            }}>
+              {t.homeUpcomingHoliday}
+            </Text>
+          </View>
+
+          {/* Star of David circle */}
+          <View style={{
+            width: 42, height: 42, borderRadius: 21,
+            backgroundColor: "rgba(255,255,255,0.06)",
+            borderWidth: 1, borderColor: "rgba(255,255,255,0.10)",
+            alignItems: "center", justifyContent: "center",
+            marginBottom: 14,
+          }}>
+            <Text style={{ fontSize: 20 }}>✡️</Text>
+          </View>
+
+          {/* Holiday name */}
+          <Text style={{
+            fontSize: 17, fontWeight: "700",
+            color: textPrimary, marginBottom: 3, letterSpacing: -0.2,
+          }} numberOfLines={2}>
+            {nextHoliday ? nextHoliday.name : "—"}
+          </Text>
+
+          {/* Date / empty state */}
+          <Text style={{ fontSize: 12, color: textMuted, marginBottom: 0 }} numberOfLines={1}>
+            {nextHoliday
+              ? nextHoliday.date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+              : t.homeNoHolidays}
+          </Text>
+
+          {/* Push footer to bottom */}
+          <View style={{ flex: 1 }} />
+
+          {/* Footer CTA */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+            <Text style={{ fontSize: 11, fontWeight: "600", color: gold }}>Calendar</Text>
+            <Feather name="chevron-right" size={10} color={gold} />
+          </View>
+        </Pressable>
+
       </Animated.View>
 
       {/* ═══════════════════════════════════════════════════════════════════════
