@@ -9,7 +9,7 @@
  * in light — never hard-code #d4a843 here.
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -845,23 +845,33 @@ export default function CensusDemographicsScreen() {
   const [loading, setLoading]                   = useState(true);
   const [refreshing, setRefreshing]             = useState(false);
 
+  // Clerk's getToken and isSignedIn are NOT referentially stable — they produce
+  // a new function/value reference on every render. Storing them in refs lets
+  // `load` read the latest values without listing them as deps, which would
+  // rebuild `load` every render and trigger an infinite effect → re-render loop.
+  const getTokenRef  = useRef(getToken);
+  const isSignedInRef = useRef(isSignedIn);
+  useEffect(() => { getTokenRef.current  = getToken;  }, [getToken]);
+  useEffect(() => { isSignedInRef.current = isSignedIn; }, [isSignedIn]);
+
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     try {
-      const gt = () => getToken();
+      const gt = () => getTokenRef.current();
       const [subs, msubs, branch] = await Promise.all([
         fetchCensusSubmissions(gt),
         fetchCensusMemberSubmissions(gt),
-        isSignedIn ? fetchMyBranch(gt) : Promise.resolve(null),
+        isSignedInRef.current ? fetchMyBranch(gt) : Promise.resolve(null),
       ]);
       setSubmissions(subs);
       setMemberSubs(msubs);
       setMyBranch(branch);
     } catch { /* show whatever loaded */ }
     finally { setLoading(false); setRefreshing(false); }
-  }, [getToken, isSignedIn]);
+  }, []); // stable — reads Clerk values via refs, never rebuilds
 
-  useEffect(() => { load(); }, [load]);
+  // Run once on mount only; `load` is stable so this will never re-fire.
+  useEffect(() => { load(); }, []);
 
   async function handleReview(id: string, type: "branch" | "member", status: "approved" | "rejected", note?: string) {
     try {
