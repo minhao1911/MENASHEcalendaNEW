@@ -556,6 +556,28 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* My Personal Journey row */}
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 16, marginBottom: 12 }]}
+          onPress={() => router.push("/(tabs)/journey" as any)}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="My Personal Journey"
+        >
+          <View style={styles.rowBetween}>
+            <View style={styles.rowStart}>
+              <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: "#d4a843" + "20", alignItems: "center", justifyContent: "center" }}>
+                <Feather name="compass" size={16} color="#d4a843" />
+              </View>
+              <View style={{ marginLeft: 12 }}>
+                <Text style={[styles.cardTitle, { color: colors.foreground }]}>My Personal Journey</Text>
+                <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Daily dashboard & family progress</Text>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </View>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.signOutBtn, { borderColor: "#c0392b", marginHorizontal: 16 }]}
           onPress={handleSignOut}

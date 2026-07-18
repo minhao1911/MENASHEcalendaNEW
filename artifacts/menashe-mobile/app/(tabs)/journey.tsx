@@ -38,6 +38,7 @@ import { useEntrance } from "@/src/mobile/lib/useEntrance";
 import { useThemeTokens } from "@/src/mobile/design-system";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
+import { useUser } from "@clerk/expo";
 import {
   getHebrewDate,
   formatHebrewDate,
@@ -475,6 +476,7 @@ export default function JourneyScreen() {
   const { colors, sp } = useThemeTokens();
   const { t, lang } = useLanguage();
   const { location }  = useApp();
+  const { user } = useUser();
   const insets   = useSafeAreaInsets();
   const topPad   = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
@@ -649,7 +651,7 @@ export default function JourneyScreen() {
           </View>
 
           <Text style={[styles.shalomText, { color: colors.foreground }]}>
-            {t.journeyGreeting}
+            {t.journeyGreeting}{user?.firstName ? `, ${user.firstName}` : ""}
           </Text>
 
           <Text style={[styles.hebrewDateText, { color: GOLD }]}>{hebrewStr}</Text>
