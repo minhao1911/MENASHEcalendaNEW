@@ -32,7 +32,6 @@ import React, {
 import {
   AccessibilityInfo,
   Animated,
-  Dimensions,
   Image,
   ImageBackground,
   Modal,
@@ -293,98 +292,6 @@ const PillButton = memo(function PillButton({
 
 
 
-// ─── Phase 5: Quick Action items ──────────────────────────────────────────────
-// Each item carries gradient stops + neon icon colour for the premium
-// glassmorphic card design (neon-icon-grid, reference: uploaded mockup).
-
-const QA_ITEMS = [
-  { id: "48-ways",      label: "48 Ways",      icon: "star"      as const,
-    gradientStart: "#3d2005", gradientEnd: "#92400e", iconColor: "#f59e0b",
-    route: "/mussar"          },
-];
-
-// Card geometry — computed once at module level (never changes on re-render).
-const _SW        = Dimensions.get("window").width;
-const QA_GAP     = 10;
-const QA_H_PAD   = 16;                                          // matches HX
-const QA_CARD_W  = Math.floor((_SW - QA_H_PAD * 2 - QA_GAP * 3) / 4);
-const QA_TILE_S  = Math.floor(QA_CARD_W * 0.76);               // inner gradient square
-const QA_CARD_H  = QA_CARD_W + 26;                             // extra room for label
-
-const QuickActionCard = memo(function QuickActionCard({
-  item,
-}: {
-  item: typeof QA_ITEMS[number];
-}) {
-  const { scale, onPressIn, onPressOut } = usePressScale(0.96);
-  return (
-    <Pressable
-      onPress={() => router.push(item.route as any)}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      accessibilityLabel={item.label}
-      accessibilityRole="button"
-      style={{
-        width:           QA_CARD_W,
-        height:          QA_CARD_H,
-        borderRadius:    22,
-        // Glassmorphic dark shell
-        backgroundColor: "rgba(10, 11, 22, 0.82)",
-        borderWidth:     1,
-        borderColor:     "rgba(255, 255, 255, 0.09)",
-        alignItems:      "center",
-        justifyContent:  "center",
-        gap:             8,
-        // Ambient drop shadow
-        shadowColor:     "#000",
-        shadowOffset:    { width: 0, height: 6 },
-        shadowOpacity:   0.55,
-        shadowRadius:    14,
-        elevation:       10,
-      }}
-    >
-      <Animated.View style={{ transform: [{ scale }], alignItems: "center", gap: 8 }}>
-        {/* Gradient icon tile — iOS-app-icon aesthetic */}
-        <LinearGradient
-          colors={[item.gradientStart, item.gradientEnd]}
-          start={{ x: 0.1, y: 0.1 }}
-          end={{ x: 0.9, y: 0.9 }}
-          style={{
-            width:          QA_TILE_S,
-            height:         QA_TILE_S,
-            borderRadius:   16,
-            alignItems:     "center",
-            justifyContent: "center",
-          }}
-        >
-          {/* Neon glow via iOS shadow on the icon wrapper */}
-          <View style={{
-            alignItems:     "center",
-            justifyContent: "center",
-            shadowColor:    item.iconColor,
-            shadowOffset:   { width: 0, height: 0 },
-            shadowOpacity:  1,
-            shadowRadius:   10,
-          }}>
-            <Feather name={item.icon} size={28} color={item.iconColor} />
-          </View>
-        </LinearGradient>
-
-        {/* Label */}
-        <Text style={{
-          fontSize:      11,
-          fontWeight:    "600",
-          color:         "rgba(255, 255, 255, 0.82)",
-          textAlign:     "center",
-          lineHeight:    14,
-          letterSpacing: 0.1,
-        }}>
-          {item.label}
-        </Text>
-      </Animated.View>
-    </Pressable>
-  );
-});
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
@@ -1117,24 +1024,6 @@ export default function HomeScreen() {
           shadow={shadow}
           isLight={isLight}
         />
-      </Animated.View>
-
-      {/* ═══════════════════════════════════════════════════════════════════════
-          4. QUICK ACTIONS — 8-icon grid, web position: immediately after today
-          ═══════════════════════════════════════════════════════════════════════ */}
-      <Animated.View style={[{ marginBottom: 6 }, a5]}>
-        <SectionTitle
-          eyebrow={t.homeQuickActionsTitle}
-          leadingIcon={<Feather name="grid" size={13} color={gold} />}
-          style={{ paddingHorizontal: HX, marginTop: 0 }}
-        />
-      </Animated.View>
-      <Animated.View style={[{ marginHorizontal: QA_H_PAD, marginBottom: 28 }, a5]}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: QA_GAP }}>
-          {QA_ITEMS.map((item) => (
-            <QuickActionCard key={item.id} item={item} />
-          ))}
-        </View>
       </Animated.View>
 
       {/* ─── 6. SACRED TIME — Phase 3 ───────────────────────────────────────────── */}

@@ -588,7 +588,55 @@ export default function SacredStudyScreen() {
           </View>
         </Animated.View>
 
-        {/* ─── 8. STUDY PATHS ─────────────────────────────────────────────── */}
+        {/* ─── 8. 48 WAYS OF TORAH ────────────────────────────────────────── */}
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a5]}>
+          <SectionHeader icon="star" label="48 Ways of Torah" gold={gold} muted={colors.textMuted} />
+          <Pressable
+            onPress={() => router.push("/mussar" as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Open 48 Ways of Torah"
+            style={{
+              borderRadius: rd.xl,
+              overflow: "hidden",
+              borderWidth: 1,
+              borderColor: "#f59e0b30",
+              ...shadow.level2,
+            }}
+          >
+            <LinearGradient
+              colors={["#1c0e00", "#3d2005", "#6b3510"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: sp[4], flexDirection: "row", alignItems: "center", gap: sp[4] }}
+            >
+              <View style={{ position: "absolute", top: -18, right: -18, opacity: 0.07 }}>
+                <Feather name="star" size={110} color="#f59e0b" />
+              </View>
+              <View style={{
+                width: 50, height: 50, borderRadius: 25,
+                backgroundColor: "#f59e0b22",
+                borderWidth: 1, borderColor: "#f59e0b40",
+                alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <Feather name="star" size={22} color="#f59e0b" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 2, color: "#f59e0b", textTransform: "uppercase", marginBottom: 4 }}>
+                  Personal Growth
+                </Text>
+                <Text style={{ fontSize: 18, fontWeight: "700", letterSpacing: -0.3, color: "#fef3c7" }}>
+                  48 Ways of Torah
+                </Text>
+                <Text style={{ fontSize: 13, color: "#d4974a", marginTop: 3 }}>
+                  48 principles · Pirkei Avot
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={20} color="#a06020" />
+            </LinearGradient>
+          </Pressable>
+        </Animated.View>
+
+        {/* ─── 9. STUDY PATHS ─────────────────────────────────────────────── */}
         <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a6]}>
           <SectionHeader icon="grid" label={t.sacredStudyStudyPaths} gold={gold} muted={colors.textMuted} />
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: sp[3] }}>
