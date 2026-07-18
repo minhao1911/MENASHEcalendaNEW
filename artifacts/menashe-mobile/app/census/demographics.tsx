@@ -37,8 +37,11 @@ import {
   fetchMyBranch,
   saveCensusBranch,
   reviewSubmission,
+  submitBranchForReview,
+  fetchMySubmissionStatus,
 } from "@/lib/censusApi";
 import type { CensusSubmission, MemberSubmission, BranchData } from "@/lib/censusApi";
+import * as ImagePicker from "expo-image-picker";
 
 const GOLD = "#d4a843";
 const GREEN = "#4ade80";
@@ -587,67 +590,147 @@ function AdminTab({
    LOCAL ADMIN TAB
 ══════════════════════════════════════════════════════════════════════════ */
 function LocalAdminTab({
-  myBranch, loading, colors, getToken, onBranchCreated,
+  myBranch, mySubmission, loading, colors, getToken, onBranchSaved, onSubmitted,
 }: {
   myBranch: BranchData | null;
+  mySubmission: CensusSubmission | null;
   loading: boolean;
   colors: ReturnType<typeof useColors>;
   getToken: () => Promise<string | null>;
-  onBranchCreated: (b: BranchData) => void;
+  onBranchSaved: (b: BranchData) => void;
+  onSubmitted: (s: CensusSubmission) => void;
 }) {
-  /* ── Branch setup form state ── */
+  /* ── Image states ── */
+  const [logoUri,      setLogoUri]      = useState("");
+  const [synagogueUri, setSynagogueUri] = useState("");
+  const [pickingImg,   setPickingImg]   = useState<"logo" | "synagogue" | null>(null);
+
+  /* ── Form states ── */
   const [setupName,  setSetupName]  = useState("");
   const [setupCity,  setSetupCity]  = useState(CITIES[0].id);
   const [setupAdmin, setSetupAdmin] = useState("");
   const [setupDate,  setSetupDate]  = useState("");
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
+
+  /* ── Action states ── */
   const [registering, setRegistering] = useState(false);
+  const [showForm,    setShowForm]    = useState(false);
 
   const selectedCity = CITIES.find(c => c.id === setupCity) ?? CITIES[0];
 
-  async function handleRegister() {
-    if (!setupName.trim()) return;
+  /* ── Pre-fill form once loading is done ─────────────────────────────────── */
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (loading || prefilledRef.current) return;
+    prefilledRef.current = true;
+    if (myBranch) {
+      setSetupName(myBranch.name ?? "");
+      setSetupCity(myBranch.cityId ?? CITIES[0].id);
+      setSetupAdmin(myBranch.adminName ?? "");
+      setSetupDate(myBranch.established ?? "");
+      setLogoUri(myBranch.logoUrl ?? "");
+      setSynagogueUri(myBranch.synagogueImageUrl ?? "");
+    }
+    // Show form when: no branch, submission rejected, or no submission yet
+    setShowForm(!myBranch || !mySubmission || mySubmission.status === "rejected");
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Image picker ───────────────────────────────────────────────────────── */
+  async function pickImage(type: "logo" | "synagogue") {
+    haptic();
+    setPickingImg(type);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: type === "logo" ? [1, 1] : [16, 9],
+        quality: type === "logo" ? 0.4 : 0.5,
+        base64: true,
+      });
+      if (!result.canceled && result.assets[0]?.base64) {
+        const uri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        if (type === "logo") setLogoUri(uri);
+        else setSynagogueUri(uri);
+      }
+    } catch { /* ignore */ }
+    finally { setPickingImg(null); }
+  }
+
+  /* ── Register + auto-submit for Global Admin review ─────────────────────── */
+  async function handleRegisterAndSubmit() {
+    if (!setupName.trim()) {
+      Alert.alert("Required", "Branch / congregation name is required.");
+      return;
+    }
     haptic();
     setRegistering(true);
     try {
-      const result = await saveCensusBranch(
-        { name: setupName.trim(), cityId: setupCity, cityName: selectedCity.name, adminName: setupAdmin.trim() || undefined, established: setupDate || undefined },
-        () => getToken(),
+      const saved = await saveCensusBranch(
+        {
+          id:                myBranch?.id,
+          name:              setupName.trim(),
+          cityId:            setupCity,
+          cityName:          selectedCity.name,
+          adminName:         setupAdmin.trim() || undefined,
+          established:       setupDate || undefined,
+          logoUrl:           logoUri || undefined,
+          synagogueImageUrl: synagogueUri || undefined,
+        },
+        getToken,
       );
-      if (result) onBranchCreated(result);
-    } catch { /* ignore */ } finally {
+      if (!saved) throw new Error("save failed");
+      onBranchSaved(saved);
+      const sub = await submitBranchForReview(saved, getToken);
+      if (sub) { onSubmitted(sub); setShowForm(false); }
+    } catch {
+      Alert.alert("Error", "Could not register branch. Please try again.");
+    } finally {
       setRegistering(false);
     }
   }
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={GOLD} />
-      </View>
-    );
+    return <View style={styles.center}><ActivityIndicator color={GOLD} /></View>;
   }
 
-  const total = myBranch ? myBranch.families.reduce((s, f) => s + 1 + f.members.length, 0) : 0;
+  /* ══ APPROVED ═══════════════════════════════════════════════════════════ */
+  if (mySubmission?.status === "approved" && !showForm) {
+    return (
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.tabContent, { paddingBottom: 48 }]} showsVerticalScrollIndicator={false}>
+        <View style={[styles.statusBanner, { backgroundColor: "#14532d20", borderColor: "#22c55e44" }]}>
+          <View style={styles.statusIconRow}>
+            <View style={[styles.statusIcon, { backgroundColor: "#22c55e22" }]}>
+              <Feather name="check-circle" size={24} color="#22c55e" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.statusTitle, { color: "#22c55e" }]}>Branch Approved!</Text>
+              <Text style={[styles.statusBody, { color: colors.mutedForeground }]}>
+                Your branch is verified. Community members can now submit their family census to your branch.
+              </Text>
+            </View>
+          </View>
+          {mySubmission.reviewNote ? (
+            <View style={[styles.reviewNoteBox, { backgroundColor: "#22c55e12", borderColor: "#22c55e33" }]}>
+              <Feather name="message-circle" size={12} color="#22c55e" />
+              <Text style={[styles.reviewNoteText, { color: "#22c55e" }]}>"{mySubmission.reviewNote}"</Text>
+            </View>
+          ) : null}
+        </View>
 
-  return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={[styles.tabContent, { paddingBottom: 48 }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {myBranch ? (
-        <>
-          {/* Branch identity card */}
+        {myBranch && (
           <View style={[styles.overviewCard, { backgroundColor: BLUE + "0D", borderColor: BLUE + "33" }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE[3] }}>
-              {myBranch.logoUrl && (
-                <Image source={{ uri: myBranch.logoUrl }} style={{ width: 48, height: 48, borderRadius: RADIUS.md }} />
+              {myBranch.logoUrl ? (
+                <Image source={{ uri: myBranch.logoUrl }} style={{ width: 52, height: 52, borderRadius: 12 }} resizeMode="cover" />
+              ) : (
+                <View style={{ width: 52, height: 52, borderRadius: 12, backgroundColor: BLUE + "22", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 24 }}>🏛️</Text>
+                </View>
               )}
               <View style={{ flex: 1 }}>
-                <Text style={[styles.overviewLabel, { color: BLUE }]}>{myBranch.name}</Text>
-                <Text style={[styles.overviewBody, { color: colors.mutedForeground, marginTop: 2, fontSize: TEXT.sm }]}>
-                  🇮🇳 {myBranch.cityName}{myBranch.established ? ` · Est. ${myBranch.established}` : ""}
+                <Text style={{ fontSize: TEXT.md, fontWeight: "800", color: colors.foreground }}>{myBranch.name}</Text>
+                <Text style={{ fontSize: TEXT.sm, color: colors.mutedForeground, marginTop: 2 }}>
+                  🇮🇳 {myBranch.cityName}{myBranch.adminName ? ` · ${myBranch.adminName}` : ""}
                 </Text>
                 {myBranch.adminName && (
                   <Text style={{ fontSize: TEXT.sm, color: BLUE, marginTop: 2 }}>Admin: {myBranch.adminName}</Text>
@@ -842,6 +925,7 @@ export default function CensusDemographicsScreen() {
   const [submissions, setSubmissions]           = useState<CensusSubmission[]>([]);
   const [memberSubmissions, setMemberSubs]      = useState<MemberSubmission[]>([]);
   const [myBranch, setMyBranch]                 = useState<BranchData | null>(null);
+  const [mySubmission, setMySubmission]         = useState<CensusSubmission | null>(null);
   const [loading, setLoading]                   = useState(true);
   const [refreshing, setRefreshing]             = useState(false);
 
@@ -858,14 +942,16 @@ export default function CensusDemographicsScreen() {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     try {
       const gt = () => getTokenRef.current();
-      const [subs, msubs, branch] = await Promise.all([
+      const [subs, msubs, branch, mySub] = await Promise.all([
         fetchCensusSubmissions(gt),
         fetchCensusMemberSubmissions(gt),
         isSignedInRef.current ? fetchMyBranch(gt) : Promise.resolve(null),
+        isSignedInRef.current ? fetchMySubmissionStatus(gt) : Promise.resolve(null),
       ]);
       setSubmissions(subs);
       setMemberSubs(msubs);
       setMyBranch(branch);
+      setMySubmission(mySub);
     } catch { /* show whatever loaded */ }
     finally { setLoading(false); setRefreshing(false); }
   }, []); // stable — reads Clerk values via refs, never rebuilds
@@ -982,10 +1068,12 @@ export default function CensusDemographicsScreen() {
           isSignedIn ? (
             <LocalAdminTab
               myBranch={myBranch}
+              mySubmission={mySubmission}
               loading={loading}
               colors={colors}
               getToken={() => getToken()}
-              onBranchCreated={(b) => setMyBranch(b)}
+              onBranchSaved={(b) => setMyBranch(b)}
+              onSubmitted={(s) => setMySubmission(s)}
             />
           ) : (
             <View style={styles.center}>

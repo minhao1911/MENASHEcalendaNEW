@@ -99,9 +99,18 @@ export async function fetchMyBranch(getToken: GetToken): Promise<BranchData | nu
   }
 }
 
-/** Create or update the current user's branch registration. */
+/** Create or update the current user's branch registration. Returns the saved BranchData. */
 export async function saveCensusBranch(
-  branch: { name: string; cityId: string; cityName: string; adminName?: string; established?: string },
+  branch: {
+    id?: string;
+    name: string;
+    cityId?: string;
+    cityName?: string;
+    adminName?: string;
+    established?: string;
+    logoUrl?: string;
+    synagogueImageUrl?: string;
+  },
   getToken: GetToken,
 ): Promise<BranchData | null> {
   try {
@@ -111,6 +120,41 @@ export async function saveCensusBranch(
     });
   } catch {
     return null;
+  }
+}
+
+/** Submit the branch for global admin review. */
+export async function submitBranchForReview(
+  branchData: BranchData,
+  getToken: GetToken,
+): Promise<CensusSubmission | null> {
+  try {
+    return await authFetch("/census/submissions", getToken, {
+      method: "POST",
+      body: JSON.stringify({ branch: branchData }),
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Get the signed-in user's own branch submission status. */
+export async function fetchMySubmissionStatus(
+  getToken: GetToken,
+): Promise<CensusSubmission | null> {
+  try {
+    return await authFetch("/census/submissions/mine", getToken);
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch all approved branches (public — for member branch selection). */
+export async function fetchApprovedBranches(): Promise<BranchData[]> {
+  try {
+    return await apiFetch("/census/approved-branches");
+  } catch {
+    return [];
   }
 }
 

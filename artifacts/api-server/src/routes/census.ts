@@ -116,7 +116,10 @@ router.put("/census/branch", requireAuth, async (req, res) => {
              updated_at = NOW()`,
       [branchId, userId, name, cityId || "", cityName || "", adminName || null, established || null, logoUrl || null, synagogueImageUrl || null, JSON.stringify(families ?? [])]
     );
-    res.json({ ok: true, id: branchId });
+    const { rows: saved } = await pool.query(
+      "SELECT * FROM census_branches WHERE owner_user_id = $1", [userId]
+    );
+    res.json(rowToBranch(saved[0]));
   } catch (err) {
     logger.error({ err }, "census/branch PUT failed");
     return apiError.internal(res, "Failed to save branch");
@@ -275,6 +278,48 @@ router.patch("/census/member-submissions/:id", requireAdmin, async (req, res) =>
   } catch (err) {
     logger.error({ err }, "census/member-submissions PATCH failed");
     return apiError.internal(res, "Failed to update");
+  }
+});
+
+/* ── Approved branches (public — no auth) ─────────────────────────────────── */
+
+router.get("/census/approved-branches", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT DISTINCT ON (cb.id) cb.*
+         FROM census_branches cb
+         INNER JOIN census_submissions cs ON cs.owner_user_id = cb.owner_user_id
+        WHERE cs.status = 'approved'
+        ORDER BY cb.id, cb.name`
+    );
+    res.json(rows.map(rowToBranch));
+  } catch (err) {
+    logger.error({ err }, "census/approved-branches GET failed");
+    return apiError.internal(res, "Failed to load approved branches");
+  }
+});
+
+/* ── My submission status (auth) ─────────────────────────────────────────── */
+
+router.get("/census/submissions/mine", requireAuth, async (req, res) => {
+  const userId = (req as any).userId;
+  try {
+    const { rows } = await pool.query(
+      `SELECT cs.*,
+              cb.logo_url            AS branch_logo_url,
+              cb.synagogue_image_url AS branch_synagogue_image_url
+         FROM census_submissions cs
+         LEFT JOIN census_branches cb ON cb.owner_user_id = cs.owner_user_id
+        WHERE cs.owner_user_id = $1
+        ORDER BY cs.submitted_at DESC
+        LIMIT 1`,
+      [userId]
+    );
+    if (rows.length === 0) { res.json(null); return; }
+    res.json(rowToSubmission(rows[0]));
+  } catch (err) {
+    logger.error({ err }, "census/submissions/mine GET failed");
+    return apiError.internal(res, "Failed to load submission status");
   }
 });
 

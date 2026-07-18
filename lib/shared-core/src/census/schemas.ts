@@ -55,8 +55,8 @@ export const branchSchema = z.object({
   cityName: z.string().max(200).optional(),
   adminName: z.string().max(200).optional(),
   established: z.string().max(50).optional().nullable(),
-  logoUrl: z.string().max(500).optional().nullable(),
-  synagogueImageUrl: z.string().max(500).optional().nullable(),
+  logoUrl: z.string().max(2000000).optional().nullable(),
+  synagogueImageUrl: z.string().max(2000000).optional().nullable(),
   families: z.array(familySchema).max(500).optional(),
 });
 
