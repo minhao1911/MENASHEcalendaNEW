@@ -68,6 +68,7 @@ import { hapticLight } from "@/src/mobile/lib/haptics";
 import { useEntrance, useReducedMotion } from "@/src/mobile/lib/useEntrance";
 import { usePressScale } from "@/src/mobile/lib/usePressScale";
 import { useUser } from "@clerk/expo";
+import ShabbatModeOverlay from "@/src/mobile/components/ShabbatModeOverlay";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import LocationPickerModal from "@/components/LocationPickerModal";
@@ -1757,6 +1758,14 @@ export default function HomeScreen() {
 
       </Animated.View>
     </Modal>
+
+    {/* ─── Shabbat Mode — full-screen sacred overlay ──────────────────────────── */}
+    <ShabbatModeOverlay
+      isFriday={isFriday}
+      isShabbat={isShabbat}
+      candleLighting={isFriday ? (todayZm.candleLighting ?? null) : null}
+      havdalah={isShabbat ? (todayZm.havdalah ?? null) : (satZm.havdalah ?? null)}
+    />
 
     </>
   );
