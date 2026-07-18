@@ -28,6 +28,7 @@ import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcements
 import { fetchPrayerRequests, amenPrayerRequest, type PrayerRequest } from "@/lib/prayerBoardApi";
 import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "@/lib/communityApi";
 import { fetchCommunityEvents, type CommunityEvent } from "@/lib/eventsApi";
+import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -920,6 +921,7 @@ export default function CommunityScreen() {
         )}
 
       </ScrollView>
+      <RavMenasheFAB />
     </View>
   );
 }

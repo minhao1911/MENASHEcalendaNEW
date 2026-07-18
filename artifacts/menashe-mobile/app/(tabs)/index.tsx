@@ -71,6 +71,7 @@ import ShabbatModeOverlay from "@/src/mobile/components/ShabbatModeOverlay";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import LocationPickerModal from "@/components/LocationPickerModal";
+import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 
 /* ── Hebrew day-number glyph map (days 1–30) ─────────────────────────────── */
 const HEBREW_DAY: Record<number, string> = {
@@ -1319,93 +1320,6 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* ─── 12. RAV MENASHE AI — Phase 8 ──────────────────────────────────────── */}
-      {/* Premium sapphire. Welcoming, not transactional.                           */}
-      <Animated.View style={[{
-        marginHorizontal: HX, marginBottom: 18,
-        borderRadius: rd["2xl"], overflow: "hidden", ...shadow.level2,
-      }, a10]}>
-        <TouchableOpacity
-          onPress={() => router.push("/(tabs)/torah")}
-          activeOpacity={0.92}
-          accessibilityLabel="Ask Rav Menashe AI"
-          accessibilityHint="Opens the AI Torah guide"
-          accessibilityRole="button"
-        >
-          <LinearGradient
-            colors={["#03091a", "#07122e", "#0c1e4a", "#07112a"]}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={{ minHeight: 212, padding: 24 }}
-          >
-            {/* Sapphire ambient glow — layered */}
-            <View style={{
-              position: "absolute", top: -36, right: -36,
-              width: 180, height: 180, borderRadius: 90,
-              backgroundColor: "rgba(99,130,255,0.10)",
-            }} />
-            <View style={{
-              position: "absolute", top: -6, right: -6,
-              width: 100, height: 100, borderRadius: 50,
-              backgroundColor: "rgba(99,130,255,0.07)",
-            }} />
-
-            {/* Constellation stars */}
-            <Text style={{ position: "absolute", top: 14, right: 22,  fontSize: 9,  color: "#6382FF", opacity: 0.72 }}>✦</Text>
-            <Text style={{ position: "absolute", top: 26, right: 44,  fontSize: 5,  color: "#a0b4d8", opacity: 0.60 }}>✦</Text>
-            <Text style={{ position: "absolute", top: 10, right: 62,  fontSize: 6,  color: "#6382FF", opacity: 0.50 }}>✦</Text>
-            <Text style={{ position: "absolute", top: 38, right: 28,  fontSize: 4,  color: "#c4d4ff", opacity: 0.45 }}>✦</Text>
-            <Text style={{ position: "absolute", top: 18, right: 82,  fontSize: 4,  color: "#6382FF", opacity: 0.38 }}>✦</Text>
-
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={{ flex: 1 }}>
-                <Overline text={t.homeAITitle} color={sapphireBlue} />
-                <Text style={{
-                  fontSize: 22, fontWeight: "800",
-                  color: "#dce8ff", marginTop: 8, marginBottom: 6, lineHeight: 28,
-                  letterSpacing: -0.3,
-                }}>
-                  Rav Menashe AI
-                </Text>
-                {/* Conversation preview — welcoming */}
-                <Text style={{ fontSize: 12, color: "#5a7aaa", marginBottom: 4, fontStyle: "italic" }}>
-                  "Ask me about this week's Parashah..."
-                </Text>
-                <Text style={{ fontSize: 13, color: "#8aabcf", marginBottom: 20, lineHeight: 20, maxWidth: 200 }}>
-                  {t.homeAITagline}
-                </Text>
-                <PillButton
-                  label={t.homeAskRavMenashe}
-                  onPress={() => router.push("/(tabs)/torah")}
-                  bg={sapphireBlue}
-                  fg="#ffffff"
-                />
-              </View>
-
-              {/* AI orb — sapphire glow */}
-              <View style={{ alignItems: "center", justifyContent: "center", marginLeft: 18 }}>
-                <View style={{
-                  width: 80, height: 80, borderRadius: 40,
-                  backgroundColor: "rgba(99,130,255,0.16)",
-                  alignItems: "center", justifyContent: "center",
-                }}>
-                  <View style={{
-                    position: "absolute",
-                    width: 56, height: 56, borderRadius: 28,
-                    backgroundColor: "rgba(99,130,255,0.12)",
-                  }} />
-                  <Text style={{
-                    fontSize: 42,
-                    textShadowColor: "rgba(99,130,255,0.85)",
-                    textShadowOffset: { width: 0, height: 0 },
-                    textShadowRadius: 18,
-                  }}>🔮</Text>
-                </View>
-              </View>
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-      </Animated.View>
-
       {/* ─── GO PREMIUM ─────────────────────────────────────────────────────── */}
       <Animated.View style={[{ marginHorizontal: HX, marginBottom: 6 }, a9]}>
         <Pressable
@@ -2108,6 +2022,7 @@ const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
         </View>
 
       </View>
+      <RavMenasheFAB />
     </View>
   );
 });

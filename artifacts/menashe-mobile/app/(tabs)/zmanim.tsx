@@ -13,6 +13,7 @@ import { SectionTitle } from "@/src/mobile/components/display";
 import { useApp } from "@/context/AppContext";
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
 import { getHebrewDate, formatHebrewDate } from "@/lib/hebrewCalendar";
+import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 
 /* ── Hebrew day-number glyph map (days 1–30) ──────────────────────────────── */
 const HEBREW_DAY: Record<number, string> = {
@@ -128,8 +129,9 @@ export default function ZmanimScreen() {
   const sunsetTime   = formatTime(zmanim.sunset   as Date | null, location.tz);
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       showsVerticalScrollIndicator={false}
     >
@@ -336,6 +338,8 @@ export default function ZmanimScreen() {
       </View>
       </Animated.View>
     </ScrollView>
+    <RavMenasheFAB />
+    </View>
   );
 }
 

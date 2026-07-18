@@ -35,6 +35,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { storageGet, storageSet } from "@/lib/storageUtils";
 import { getCurrentParashaInfo, type ParashaInfo } from "@/lib/hebrewCalendar";
 import { getTodayDaf, getSefariaDafUrl } from "@/lib/dafYomi";
+import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -393,57 +394,6 @@ export default function SacredStudyScreen() {
           </Animated.View>
         </Animated.View>
 
-        {/* ─── 2b. RAV MENASHE — Sacred Wisdom ────────────────────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a1]}>
-          <Pressable
-            onPress={() => router.push("/sacred-wisdom" as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Open Rav Menashe — Sacred Wisdom learning companion"
-            style={{
-              backgroundColor: "#0c1830",
-              borderRadius: rd.xl,
-              borderWidth: 1,
-              borderColor: "#6382FF30",
-              overflow: "hidden",
-            }}
-          >
-            <LinearGradient
-              colors={["#050c1a", "#0c1830", "#111f3c"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ padding: sp[4], flexDirection: "row", alignItems: "center", gap: sp[4] }}
-            >
-              {/* Decorative orb */}
-              <View style={{ position: "absolute", top: -20, right: -20, opacity: 0.08 }}>
-                <Feather name="star" size={120} color="#6382FF" />
-              </View>
-
-              <View style={{
-                width: 50, height: 50, borderRadius: 25,
-                backgroundColor: "#6382FF1a",
-                borderWidth: 1, borderColor: "#6382FF30",
-                alignItems: "center", justifyContent: "center", flexShrink: 0,
-              }}>
-                <Feather name="message-circle" size={22} color="#6382FF" />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 2, color: "#6382FF", textTransform: "uppercase", marginBottom: 4 }}>
-                  Sacred Wisdom
-                </Text>
-                <Text style={{ fontSize: 18, fontFamily: "Inter_700Bold", letterSpacing: -0.3, color: "#e8f0ff" }}>
-                  Rav Menashe
-                </Text>
-                <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: "#8ba8d4", marginTop: 3 }}>
-                  Learn · Ask · Discover
-                </Text>
-              </View>
-
-              <Feather name="chevron-right" size={20} color="#4a6090" />
-            </LinearGradient>
-          </Pressable>
-        </Animated.View>
-
         {/* ─── 3. WEEKLY PARASHAH ─────────────────────────────────────────── */}
         {parasha && (
           <Animated.View style={[{ marginHorizontal: HX, marginBottom: 22 }, a1]}>
@@ -696,6 +646,7 @@ export default function SacredStudyScreen() {
           </View>
         </Animated.View>
       </Animated.ScrollView>
+      <RavMenasheFAB />
     </View>
   );
 }

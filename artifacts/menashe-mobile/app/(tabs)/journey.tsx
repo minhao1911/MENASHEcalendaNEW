@@ -62,6 +62,7 @@ import { fetchPrayerRequests, type PrayerRequest } from "@/lib/prayerBoardApi";
 import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
 import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "@/lib/communityApi";
 import { getTodayDaf } from "@/lib/dafYomi";
+import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 
 // ── Today's Learning — minimal display summary (full data in learning-groups.tsx) ──
 
@@ -1188,6 +1189,7 @@ export default function JourneyScreen() {
 
         </View>
       </ScrollView>
+      <RavMenasheFAB />
     </View>
   );
 }
