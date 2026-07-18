@@ -36,14 +36,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
         tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          elevation: 0,
-          height: TAB_BAR_HEIGHT,
-          paddingBottom: isWeb ? 8 : 10,
-          paddingTop: 8,
+          display: "none",
         },
         tabBarLabelStyle: {
           fontSize: 10,

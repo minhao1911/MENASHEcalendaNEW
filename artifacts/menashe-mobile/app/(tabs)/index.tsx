@@ -1663,10 +1663,11 @@ export default function HomeScreen() {
         <View style={{ flex: 1, paddingTop: 12, paddingHorizontal: 12 }}>
           {([
             { icon: "home",      label: "Home",         route: "/(tabs)/"          },
-            { icon: "clock",     label: "Zmanim",       route: "/(tabs)/zmanim"    },
+            { icon: "compass",   label: "Journey",      route: "/(tabs)/journey"   },
             { icon: "calendar",  label: "Calendar",     route: "/(tabs)/calendar"  },
-            { icon: "book-open", label: "Prayer Board", route: "/(tabs)/prayer"    },
+            { icon: "clock",     label: "Zmanim",       route: "/(tabs)/zmanim"    },
             { icon: "users",     label: "Community",    route: "/(tabs)/community" },
+            { icon: "book-open", label: "Torah",        route: "/(tabs)/torah"     },
           ] as { icon: string; label: string; route: string }[]).map((item) => (
             <TouchableOpacity
               key={item.route}
