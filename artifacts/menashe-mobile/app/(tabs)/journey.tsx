@@ -21,6 +21,7 @@
 import React, { useMemo, useState, useCallback } from "react";
 import {
   Animated,
+  Image,
   Platform,
   RefreshControl,
   ScrollView,
@@ -653,6 +654,66 @@ export default function JourneyScreen() {
           <Text style={[styles.shalomText, { color: colors.foreground }]}>
             {t.journeyGreeting}{user?.firstName ? `, ${user.firstName}` : ""}
           </Text>
+
+          {/* ── Profile identity card ─────────────────────────────────────── */}
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/settings" as any)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Your profile — tap to edit"
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              backgroundColor: GOLD + "10",
+              borderWidth: 1,
+              borderColor: GOLD + "30",
+              borderRadius: 16,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              marginBottom: 20,
+            }}
+          >
+            {/* Avatar */}
+            <View style={{
+              width: 48, height: 48, borderRadius: 24,
+              backgroundColor: GOLD + "18",
+              borderWidth: 2, borderColor: GOLD + "55",
+              alignItems: "center", justifyContent: "center",
+              overflow: "hidden",
+            }}>
+              {user?.imageUrl ? (
+                <Image
+                  source={{ uri: user.imageUrl }}
+                  style={{ width: 48, height: 48, borderRadius: 24 }}
+                  accessibilityLabel="Your profile picture"
+                />
+              ) : (
+                <Text style={{ fontSize: 20, fontWeight: "700", color: GOLD }}>
+                  {user?.firstName?.charAt(0) ?? user?.primaryEmailAddress?.emailAddress?.charAt(0)?.toUpperCase() ?? "?"}
+                </Text>
+              )}
+            </View>
+
+            {/* Name + email */}
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground, letterSpacing: -0.2 }} numberOfLines={1}>
+                {user?.fullName ?? user?.firstName ?? "My Account"}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }} numberOfLines={1}>
+                {user?.primaryEmailAddress?.emailAddress ?? ""}
+              </Text>
+            </View>
+
+            {/* Edit arrow */}
+            <View style={{
+              width: 28, height: 28, borderRadius: 14,
+              backgroundColor: GOLD + "18",
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Feather name="edit-2" size={13} color={GOLD} />
+            </View>
+          </TouchableOpacity>
 
           <Text style={[styles.hebrewDateText, { color: GOLD }]}>{hebrewStr}</Text>
           {hebrewNum ? (
