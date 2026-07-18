@@ -99,6 +99,21 @@ export async function fetchMyBranch(getToken: GetToken): Promise<BranchData | nu
   }
 }
 
+/** Create or update the current user's branch registration. */
+export async function saveCensusBranch(
+  branch: { name: string; cityId: string; cityName: string; adminName?: string; established?: string },
+  getToken: GetToken,
+): Promise<BranchData | null> {
+  try {
+    return await authFetch("/census/branch", getToken, {
+      method: "PUT",
+      body: JSON.stringify(branch),
+    });
+  } catch {
+    return null;
+  }
+}
+
 /** Approve or reject a branch/member census submission. */
 export async function reviewSubmission(
   id: string,

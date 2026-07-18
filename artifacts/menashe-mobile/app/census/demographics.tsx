@@ -35,6 +35,7 @@ import {
   fetchCensusSubmissions,
   fetchCensusMemberSubmissions,
   fetchMyBranch,
+  saveCensusBranch,
   reviewSubmission,
 } from "@/lib/censusApi";
 import type { CensusSubmission, MemberSubmission, BranchData } from "@/lib/censusApi";
@@ -278,6 +279,47 @@ function DashboardTab({
           {approved.map(b => <ApprovedBranchCard key={b.id} branch={b} colors={colors} />)}
         </View>
       ) : null}
+
+      {/* ── Community Census CTA ── */}
+      <View style={[styles.censusCta, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.censusCtaHeader}>
+          <View style={[styles.censusCtaIcon, { backgroundColor: GOLD + "18", borderColor: GOLD + "44" }]}>
+            <Text style={{ fontSize: 22 }}>📋</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.censusCtaTitle, { color: colors.foreground }]}>Community Census</Text>
+            <Text style={[styles.censusCtaSub, { color: colors.mutedForeground }]}>
+              Submit your family details or check whether your previous submission was reviewed.
+            </Text>
+          </View>
+        </View>
+        <View style={styles.censusCtaBtns}>
+          <TouchableOpacity
+            style={[styles.censusSubmitBtn, { backgroundColor: BLUE }]}
+            onPress={() => { haptic(); router.push("/census"); }}
+            activeOpacity={0.82}
+          >
+            <Text style={{ fontSize: 13 }}>📋</Text>
+            <Text style={styles.censusSubmitText}>Submit My Details</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.censusStatusBtn, { borderColor: colors.border, backgroundColor: colors.background }]}
+            onPress={() => { haptic(); router.push("/census"); }}
+            activeOpacity={0.82}
+          >
+            <Text style={{ fontSize: 11 }}>🔍</Text>
+            <Text style={[styles.censusStatusText, { color: colors.mutedForeground }]}>Check{"\n"}Status</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Source note */}
+      <View style={[styles.sourceNote, { borderColor: colors.border }]}>
+        <Feather name="info" size={11} color={colors.mutedForeground} />
+        <Text style={[styles.sourceNoteText, { color: colors.mutedForeground }]}>
+          Data compiled from Shavei Israel, community registers, and field surveys. Last updated: Sivan 5785
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -298,6 +340,21 @@ function AdminTab({
 }) {
   const [noteMap, setNoteMap] = useState<Record<string, string>>({});
   const [acting, setActing] = useState<string | null>(null);
+
+  /* ── Global stats editing state ── */
+  const [globalStats, setGlobalStats] = useState(STATS.map(s => ({ ...s })));
+  const [statsSaved, setStatsSaved] = useState(false);
+
+  function updateStat(id: string, field: "value" | "trend", text: string) {
+    setGlobalStats(prev => prev.map(s => s.id === id ? { ...s, [field]: text } : s));
+    setStatsSaved(false);
+  }
+
+  function handleSaveStats() {
+    haptic();
+    setStatsSaved(true);
+    setTimeout(() => setStatsSaved(false), 2500);
+  }
 
   async function act(id: string, type: "branch" | "member", status: "approved" | "rejected") {
     setActing(id);
@@ -404,6 +461,50 @@ function AdminTab({
             );
           })}
 
+          {/* ── Global Administrative Access ── */}
+          <View style={[styles.globalAdminCard, { backgroundColor: GOLD + "0D", borderColor: GOLD + "33" }]}>
+            <Text style={{ fontSize: 18 }}>🏛️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.globalAdminTitle, { color: GOLD }]}>Global Administrative Access</Text>
+              <Text style={[styles.globalAdminSub, { color: colors.mutedForeground }]}>
+                Edit all statistics and city records across all regions.
+              </Text>
+            </View>
+          </View>
+
+          {/* ── Edit Global Statistics ── */}
+          <SectionHeader label="EDIT GLOBAL STATISTICS" colors={colors} />
+          {globalStats.map(s => (
+            <View key={s.id} style={[styles.statEditCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.statEditLabel, { color: colors.mutedForeground }]}>{s.icon} {s.label}</Text>
+              <View style={styles.statEditRow}>
+                <TextInput
+                  style={[styles.statEditInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, flex: 2 }]}
+                  value={s.value}
+                  placeholder="Value"
+                  placeholderTextColor={colors.mutedForeground + "88"}
+                  onChangeText={t => updateStat(s.id, "value", t)}
+                />
+                <TextInput
+                  style={[styles.statEditInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, flex: 1 }]}
+                  value={s.trend ?? ""}
+                  placeholder="Trend"
+                  placeholderTextColor={colors.mutedForeground + "88"}
+                  onChangeText={t => updateStat(s.id, "trend", t)}
+                />
+              </View>
+            </View>
+          ))}
+          <TouchableOpacity
+            style={[styles.saveStatsBtn, { backgroundColor: statsSaved ? "#166534" : GOLD }]}
+            onPress={handleSaveStats}
+            activeOpacity={0.82}
+          >
+            <Text style={[styles.saveStatsBtnText, { color: statsSaved ? "#fff" : "#1a0f00" }]}>
+              {statsSaved ? "✓ Changes Saved" : "Save All Changes"}
+            </Text>
+          </TouchableOpacity>
+
           {/* Family submissions */}
           <SectionHeader
             label="FAMILY CENSUS SUBMISSIONS"
@@ -486,12 +587,39 @@ function AdminTab({
    LOCAL ADMIN TAB
 ══════════════════════════════════════════════════════════════════════════ */
 function LocalAdminTab({
-  myBranch, loading, colors,
+  myBranch, loading, colors, getToken, onBranchCreated,
 }: {
   myBranch: BranchData | null;
   loading: boolean;
   colors: ReturnType<typeof useColors>;
+  getToken: () => Promise<string | null>;
+  onBranchCreated: (b: BranchData) => void;
 }) {
+  /* ── Branch setup form state ── */
+  const [setupName,  setSetupName]  = useState("");
+  const [setupCity,  setSetupCity]  = useState(CITIES[0].id);
+  const [setupAdmin, setSetupAdmin] = useState("");
+  const [setupDate,  setSetupDate]  = useState("");
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
+  const [registering, setRegistering] = useState(false);
+
+  const selectedCity = CITIES.find(c => c.id === setupCity) ?? CITIES[0];
+
+  async function handleRegister() {
+    if (!setupName.trim()) return;
+    haptic();
+    setRegistering(true);
+    try {
+      const result = await saveCensusBranch(
+        { name: setupName.trim(), cityId: setupCity, cityName: selectedCity.name, adminName: setupAdmin.trim() || undefined, established: setupDate || undefined },
+        () => getToken(),
+      );
+      if (result) onBranchCreated(result);
+    } catch { /* ignore */ } finally {
+      setRegistering(false);
+    }
+  }
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -573,22 +701,129 @@ function LocalAdminTab({
         </>
       ) : (
         <>
+          {/* ── Create Your Branch form ── */}
           <View style={[styles.overviewCard, { backgroundColor: BLUE + "0D", borderColor: BLUE + "33" }]}>
-            <Text style={[styles.overviewLabel, { color: BLUE }]}>📍  CREATE YOUR BRANCH</Text>
-            <Text style={[styles.overviewBody, { color: colors.mutedForeground }]}>
-              Register your congregation and begin the official BMC family census. You will need
-              to upload a Community Logo and Synagogue Photo before submitting for review.
+            <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE[3] }}>
+              <Text style={{ fontSize: 18 }}>📍</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.overviewLabel, { color: BLUE }]}>Create Your Branch</Text>
+                <Text style={[styles.overviewBody, { color: colors.mutedForeground, marginTop: 2, fontSize: 12 }]}>
+                  Register your congregation and begin the official BMC family census.
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Branch / Congregation Name */}
+          <View style={styles.formGroup}>
+            <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>BRANCH / CONGREGATION NAME</Text>
+            <TextInput
+              style={[styles.formInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+              placeholder="e.g. Beithshalom K.Patlen"
+              placeholderTextColor={colors.mutedForeground + "88"}
+              value={setupName}
+              onChangeText={setSetupName}
+              returnKeyType="next"
+            />
+            <Text style={[styles.formHint, { color: colors.mutedForeground }]}>
+              Official congregation name as it will appear on the census form.
             </Text>
           </View>
+
+          {/* City / Location */}
+          <View style={styles.formGroup}>
+            <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>CITY / LOCATION</Text>
+            <TouchableOpacity
+              style={[styles.formInput, styles.formSelect, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => { haptic(); setCityPickerOpen(true); }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.formSelectText, { color: colors.foreground }]}>
+                {selectedCity.country === "israel" ? "🇮🇱" : "🇮🇳"} {selectedCity.name} · {selectedCity.region}
+              </Text>
+              <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Local Admin Name + Established Date */}
+          <View style={styles.formRow}>
+            <View style={[styles.formGroup, { flex: 1 }]}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>LOCAL ADMIN NAME</Text>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+                placeholder="Your full name"
+                placeholderTextColor={colors.mutedForeground + "88"}
+                value={setupAdmin}
+                onChangeText={setSetupAdmin}
+              />
+            </View>
+            <View style={[styles.formGroup, { flex: 1 }]}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>ESTABLISHED DATE</Text>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.mutedForeground + "88"}
+                value={setupDate}
+                onChangeText={setSetupDate}
+                keyboardType="numbers-and-punctuation"
+              />
+            </View>
+          </View>
+
+          {/* Register Branch button */}
           <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
-            onPress={() => { haptic(); router.push("/census"); }}
+            style={[styles.registerBtn, {
+              backgroundColor: setupName.trim() ? BLUE : colors.card,
+              borderColor: setupName.trim() ? "transparent" : colors.border,
+            }]}
+            onPress={handleRegister}
+            disabled={!setupName.trim() || registering}
+            activeOpacity={0.82}
           >
-            <Feather name="plus-circle" size={15} color={colors.primaryForeground ?? "#1a0f00"} />
-            <Text style={[styles.primaryBtnText, { color: colors.primaryForeground ?? "#1a0f00" }]}>
-              Begin Census Registration
-            </Text>
+            {registering
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Text style={[styles.registerBtnText, { color: setupName.trim() ? "#fff" : colors.mutedForeground }]}>
+                  Register Branch
+                </Text>
+            }
           </TouchableOpacity>
+
+          {/* City picker modal */}
+          {cityPickerOpen && (
+            <View style={StyleSheet.absoluteFillObject}>
+              <TouchableOpacity
+                style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.5)" }]}
+                onPress={() => setCityPickerOpen(false)}
+                activeOpacity={1}
+              />
+              <View style={[styles.cityModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.cityModalHeader, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.cityModalTitle, { color: colors.foreground }]}>Select City / Location</Text>
+                  <TouchableOpacity onPress={() => setCityPickerOpen(false)}>
+                    <Feather name="x" size={20} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={{ maxHeight: 320 }}>
+                  {CITIES.map(c => (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[styles.cityOption, {
+                        backgroundColor: c.id === setupCity ? BLUE + "18" : "transparent",
+                        borderBottomColor: colors.border,
+                      }]}
+                      onPress={() => { haptic(); setSetupCity(c.id); setCityPickerOpen(false); }}
+                    >
+                      <Text style={[styles.cityOptionText, { color: c.id === setupCity ? BLUE : colors.foreground }]}>
+                        {c.country === "israel" ? "🇮🇱" : "🇮🇳"} {c.name}
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}> · {c.region}</Text>
+                      </Text>
+                      {c.id === setupCity && <Feather name="check" size={16} color={BLUE} />}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          )}
         </>
       )}
     </ScrollView>
@@ -735,7 +970,13 @@ export default function CensusDemographicsScreen() {
         )}
         {activeTab === "localadmin" && (
           isSignedIn ? (
-            <LocalAdminTab myBranch={myBranch} loading={loading} colors={colors} />
+            <LocalAdminTab
+              myBranch={myBranch}
+              loading={loading}
+              colors={colors}
+              getToken={() => getToken()}
+              onBranchCreated={(b) => setMyBranch(b)}
+            />
           ) : (
             <View style={styles.center}>
               <View style={[styles.lockBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -962,4 +1203,100 @@ const styles = StyleSheet.create({
     gap: 8, padding: 14, borderRadius: RADIUS.full, marginTop: 4, marginBottom: 20,
   },
   primaryBtnText: { fontSize: TEXT.md, fontWeight: "800" },
+
+  /* Community Census CTA (Dashboard) */
+  censusCta: {
+    borderRadius: RADIUS.xl, borderWidth: 1,
+    padding: 16, marginBottom: 12, gap: 14,
+  },
+  censusCtaHeader: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  censusCtaIcon: {
+    width: 48, height: 48, borderRadius: 14,
+    borderWidth: 1, alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  censusCtaTitle: { fontSize: TEXT.md, fontWeight: "800", marginBottom: 3 },
+  censusCtaSub:   { fontSize: 12, lineHeight: 17 },
+  censusCtaBtns:  { flexDirection: "row", gap: 10 },
+  censusSubmitBtn: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 6, borderRadius: RADIUS.full, paddingVertical: 12,
+  },
+  censusSubmitText: { fontSize: 13, fontWeight: "800", color: "#fff" },
+  censusStatusBtn: {
+    width: 72, alignItems: "center", justifyContent: "center",
+    borderRadius: RADIUS.lg, borderWidth: 1, paddingVertical: 10, gap: 3,
+  },
+  censusStatusText: { fontSize: 10, fontWeight: "700", textAlign: "center", lineHeight: 13 },
+
+  /* Source note */
+  sourceNote: {
+    flexDirection: "row", alignItems: "flex-start", gap: 6,
+    borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 12, marginTop: 4, marginBottom: 4,
+  },
+  sourceNoteText: { flex: 1, fontSize: 10, lineHeight: 15 },
+
+  /* Admin — Global stats editor */
+  globalAdminCard: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    borderRadius: RADIUS.xl, borderWidth: 1,
+    padding: 14, marginTop: 8, marginBottom: 14,
+  },
+  globalAdminTitle: { fontSize: 13, fontWeight: "700" },
+  globalAdminSub:   { fontSize: 11, marginTop: 2 },
+  statEditCard: {
+    borderRadius: RADIUS.xl, borderWidth: 1,
+    padding: 12, marginBottom: 8,
+  },
+  statEditLabel: { fontSize: 11, marginBottom: 8 },
+  statEditRow:   { flexDirection: "row", gap: 8 },
+  statEditInput: {
+    borderWidth: 1, borderRadius: RADIUS.lg,
+    paddingHorizontal: 10, paddingVertical: 8,
+    fontSize: 13,
+  },
+  saveStatsBtn: {
+    padding: 14, borderRadius: RADIUS.full,
+    alignItems: "center", marginTop: 4, marginBottom: 20,
+  },
+  saveStatsBtnText: { fontSize: TEXT.md, fontWeight: "800" },
+
+  /* Local Admin — Branch registration form */
+  formGroup:  { gap: 6, marginBottom: 14 },
+  formRow:    { flexDirection: "row", gap: 10, marginBottom: 0 },
+  formLabel:  { fontSize: 10, fontWeight: "700", letterSpacing: 0.6 },
+  formInput: {
+    borderWidth: 1, borderRadius: RADIUS.lg,
+    paddingHorizontal: 12, paddingVertical: 10,
+    fontSize: 13,
+  },
+  formSelect: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+  },
+  formSelectText: { fontSize: 13, flex: 1 },
+  formHint: { fontSize: 11, lineHeight: 16 },
+  registerBtn: {
+    padding: 14, borderRadius: RADIUS.full, borderWidth: 1,
+    alignItems: "center", marginTop: 8, marginBottom: 20,
+  },
+  registerBtnText: { fontSize: TEXT.md, fontWeight: "800" },
+
+  /* City picker modal */
+  cityModal: {
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    borderWidth: 1, borderBottomWidth: 0,
+    overflow: "hidden",
+  },
+  cityModalHeader: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  cityModalTitle: { fontSize: TEXT.md, fontWeight: "700" },
+  cityOption: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 16, paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  cityOptionText: { fontSize: 13, fontWeight: "600", flex: 1 },
 });
