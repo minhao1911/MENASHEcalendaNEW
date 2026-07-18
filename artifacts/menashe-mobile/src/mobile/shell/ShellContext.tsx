@@ -32,7 +32,7 @@ import React, {
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-export type TabKey = "home" | "calendar" | "sanctuary" | "study" | "more";
+export type TabKey = "home" | "calendar" | "ai" | "study" | "more";
 
 export interface TabConfig {
   key:   TabKey;
@@ -43,11 +43,11 @@ export interface TabConfig {
 }
 
 export const SHELL_TABS: TabConfig[] = [
-  { key: "home",      label: "Home",      icon: "home" },
-  { key: "calendar",  label: "Calendar",  icon: "calendar" },
-  { key: "sanctuary", label: "Sanctuary", icon: "sun" },
-  { key: "study",     label: "Study",     icon: "book-open" },
-  { key: "more",      label: "More",      icon: "menu" },
+  { key: "home",     label: "Home",         icon: "home" },
+  { key: "calendar", label: "Calendar",     icon: "calendar" },
+  { key: "ai",       label: "Rav Menashe",  icon: "message-circle" },
+  { key: "study",    label: "Study",        icon: "book-open" },
+  { key: "more",     label: "More",         icon: "menu" },
 ];
 
 // ─── Header config ────────────────────────────────────────────────────────────
