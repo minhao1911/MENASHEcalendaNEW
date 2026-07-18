@@ -71,7 +71,6 @@ import ShabbatModeOverlay from "@/src/mobile/components/ShabbatModeOverlay";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import LocationPickerModal from "@/components/LocationPickerModal";
-import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 
 /* ── Hebrew day-number glyph map (days 1–30) ─────────────────────────────── */
 const HEBREW_DAY: Record<number, string> = {
@@ -2022,7 +2021,6 @@ const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
         </View>
 
       </View>
-      <RavMenasheFAB />
     </View>
   );
 });

@@ -38,7 +38,6 @@ import { useReducedMotion } from "@/src/mobile/design-system/accessibility";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
-import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 import {
   getHebrewDate,
   getHebrewMonthName,
@@ -1107,7 +1106,6 @@ export default function CalendarScreen() {
         )}
 
       </ScrollView>
-      <RavMenasheFAB />
     </View>
   );
 }

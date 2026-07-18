@@ -35,7 +35,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { storageGet, storageSet } from "@/lib/storageUtils";
 import { getCurrentParashaInfo, type ParashaInfo } from "@/lib/hebrewCalendar";
 import { getTodayDaf, getSefariaDafUrl } from "@/lib/dafYomi";
-import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -646,7 +645,6 @@ export default function SacredStudyScreen() {
           </View>
         </Animated.View>
       </Animated.ScrollView>
-      <RavMenasheFAB />
     </View>
   );
 }

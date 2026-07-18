@@ -14,7 +14,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import PALETTES, { type ThemeKey } from "@/constants/colors";
 import { LOCATIONS } from "@/lib/locations";
 import LocationPickerModal from "@/components/LocationPickerModal";
-import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 import {
   requestPermission,
   getPermissionStatus,
@@ -605,7 +604,6 @@ export default function SettingsScreen() {
         }}
         onClose={() => setShowLocationPicker(false)}
       />
-      <RavMenasheFAB />
     </View>
   );
 }

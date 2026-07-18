@@ -13,7 +13,6 @@ import { SectionTitle } from "@/src/mobile/components/display";
 import { useApp } from "@/context/AppContext";
 import { calculateZmanim, formatTime } from "@/lib/zmanim";
 import { getHebrewDate, formatHebrewDate } from "@/lib/hebrewCalendar";
-import { RavMenasheFAB } from "@/components/RavMenasheFAB";
 
 /* ── Hebrew day-number glyph map (days 1–30) ──────────────────────────────── */
 const HEBREW_DAY: Record<number, string> = {
@@ -338,7 +337,6 @@ export default function ZmanimScreen() {
       </View>
       </Animated.View>
     </ScrollView>
-    <RavMenasheFAB />
     </View>
   );
 }
