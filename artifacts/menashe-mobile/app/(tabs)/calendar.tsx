@@ -47,6 +47,7 @@ import {
   getHebrewMonthName,
   getMonthCalendar,
   hebrewDayNumeral,
+  getCurrentParashaInfo,
   type CalendarDay,
 } from "@/lib/hebrewCalendar";
 
@@ -253,6 +254,8 @@ const DayCell = memo(
             backgroundColor:
               isSelected && !day.isToday
                 ? accentGold + "0E"
+                : isSat && !day.isToday
+                ? "rgba(220,38,38,0.04)"
                 : "transparent",
             transform: [{ scale }],
             paddingTop: 9,
@@ -455,6 +458,26 @@ export default function CalendarScreen() {
     });
     return map;
   }, [monthDays, location]);
+
+  // ── Selected day parasha (weekly Torah portion) ───────────────────────────
+  const selectedParasha = useMemo(() => {
+    if (!selected) return null;
+    try { return getCurrentParashaInfo(selected.date); } catch { return null; }
+  }, [selected]);
+
+  // ── Havdalah time (Saturday selections only) ──────────────────────────────
+  const havdalahTime = useMemo(() => {
+    if (!selected || selected.date.getDay() !== 6) return null;
+    try {
+      const zm = calculateZmanim(
+        selected.date,
+        location.lat,
+        location.lng,
+        location.candleLightingMinutes,
+      );
+      return zm.havdalah instanceof Date ? formatTime(zm.havdalah) : null;
+    } catch { return null; }
+  }, [selected, location]);
 
   // ── Month navigation ───────────────────────────────────────────────────────
   const { opacity: gridOpacity, translateX: gridTransX, run: animateMonth } =
@@ -1108,6 +1131,77 @@ export default function CalendarScreen() {
                 </View>
               )}
 
+              {/* ── Havdalah (Saturday) ── */}
+              {havdalahTime && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 14,
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    backgroundColor: isLight
+                      ? "rgba(124,58,237,0.05)"
+                      : "rgba(124,58,237,0.07)",
+                    borderRadius: rd.lg,
+                    borderWidth: 1,
+                    borderColor: isLight
+                      ? "rgba(124,58,237,0.20)"
+                      : "rgba(124,58,237,0.16)",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "rgba(124,58,237,0.13)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ fontSize: 20 }}>✨</Text>
+                  </View>
+                  <View>
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 10,
+                        color: "#7c3aed",
+                        fontWeight: "700",
+                        letterSpacing: 1.2,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Havdalah
+                    </Text>
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 26,
+                        fontWeight: "800",
+                        color: "#7c3aed",
+                        lineHeight: 32,
+                        marginTop: 1,
+                        letterSpacing: -0.5,
+                      }}
+                    >
+                      {havdalahTime}
+                    </Text>
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 11,
+                        color: colors.textMuted,
+                        marginTop: 2,
+                      }}
+                    >
+                      Shabbat ends · {location.name}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               {/* ── Events list ── */}
               {selected.events.length === 0 && !selected.roshChodesh ? (
                 <View
@@ -1217,6 +1311,79 @@ export default function CalendarScreen() {
                       </View>
                     );
                   })}
+                </View>
+              )}
+
+              {/* ── Parasha of the week ── */}
+              {selectedParasha && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    backgroundColor: isLight
+                      ? "rgba(212,168,67,0.05)"
+                      : "rgba(212,168,67,0.06)",
+                    borderRadius: rd.md,
+                    borderWidth: 1,
+                    borderColor: isLight
+                      ? "rgba(212,168,67,0.16)"
+                      : "rgba(212,168,67,0.12)",
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 10,
+                        color: gold,
+                        fontWeight: "700",
+                        letterSpacing: 1.0,
+                        textTransform: "uppercase",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Parasha
+                    </Text>
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "700",
+                        color: colors.textPrimary,
+                        letterSpacing: -0.2,
+                      }}
+                    >
+                      {selectedParasha.name}
+                    </Text>
+                    {selectedParasha.hebrewName ? (
+                      <Text
+                        allowFontScaling={false}
+                        style={{
+                          fontSize: 13,
+                          color: gold,
+                          marginTop: 2,
+                          fontWeight: "500",
+                        }}
+                      >
+                        {selectedParasha.hebrewName}
+                      </Text>
+                    ) : null}
+                    <Text
+                      allowFontScaling={false}
+                      numberOfLines={2}
+                      style={{
+                        fontSize: 11,
+                        color: colors.textMuted,
+                        marginTop: 4,
+                        lineHeight: 15,
+                      }}
+                    >
+                      {selectedParasha.book} · {selectedParasha.verses}
+                    </Text>
+                  </View>
                 </View>
               )}
 
