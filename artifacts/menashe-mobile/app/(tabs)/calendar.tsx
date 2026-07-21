@@ -1,14 +1,18 @@
 /**
- * Calendar Screen — Web-Parity Grid View
+ * Calendar Screen — MEP-101 Premium Redesign
  *
- * Full month calendar grid matching the web app design:
- *   - Gold-gradient header card with Month/Year + Hebrew month range
- *   - Day column headers (Sun–Sat) with Hebrew names
- *   - Rich day cells: Hebrew numeral, month name, candle-lighting times,
- *     FAST label, holiday names, special Shabbat names
- *   - Today highlighted in gold; Shabbat (Sat) in crimson; fast in charcoal
- *   - Legend row + TODAY button
- *   - Tap a day for a full detail card below the grid
+ * Visual redesign for Apple-quality parity with the Web Calendar.
+ * All business logic, calculations, and APIs are unchanged.
+ *
+ * Changes (visual only):
+ *   - Taller cells (1.84 ratio) with breathing room
+ *   - Today = solid gold circle around date number (white text)
+ *   - Selected = gold ring border + faint gold tint (no solid fill)
+ *   - Shabbat column header = subtle crimson tint band
+ *   - Candle time absolute-positioned top-right of Friday cells
+ *   - Event labels flex-pushed to cell bottom
+ *   - 22 px month title, larger day-header text
+ *   - Detail card: larger typography, premium candle display, no accent stripe
  */
 
 import React, {
@@ -51,11 +55,9 @@ import {
 const GRID_H_PAD = 14; // px, each side inside the card
 const CARD_MARGIN = 14; // px, card from screen edge
 
-// Full day-of-week labels for header
 const DAY_LABELS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_LABELS_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "ששי", "שבת"];
 
-// Fast-day keyword regex
 const FAST_RE = /fast|tzom|tisha|ta'?anit|taanis/i;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -64,12 +66,10 @@ function isFastEvent(events: string[]): boolean {
   return events.some((e) => FAST_RE.test(e));
 }
 
-/** Return the first holiday/special event that is NOT generic "Shabbat". */
 function primaryEvent(events: string[]): string | null {
   return events.find((e) => !/^shabbat$/i.test(e)) ?? null;
 }
 
-/** Shorten long event names so they fit inside a narrow cell. */
 function shortenEvent(name: string): string {
   return name
     .replace(/Rosh Chodesh\s*/i, "R.Ch. ")
@@ -78,7 +78,6 @@ function shortenEvent(name: string): string {
     .trim();
 }
 
-/** "7:31 PM" → "7:31PM" for tighter cell display */
 function compactTime(t: string): string {
   return t.replace(/\s+/g, "");
 }
@@ -147,11 +146,11 @@ function usePressScale(reducedMotion: boolean, to = 0.94) {
   return { scale, onPressIn, onPressOut };
 }
 
-// ─── DayCell ──────────────────────────────────────────────────────────────────
+// ─── DayCell — Premium Redesign ───────────────────────────────────────────────
 
 interface DayCellProps {
   day: CalendarDay;
-  candleTime: string | null; // pre-computed for Fridays
+  candleTime: string | null;
   isSelected: boolean;
   cellW: number;
   cellH: number;
@@ -175,33 +174,62 @@ const DayCell = memo(
     textMuted,
     onPress,
   }: DayCellProps) {
-    const { scale, onPressIn, onPressOut } = usePressScale(reducedMotion, 0.88);
+    const { scale, onPressIn, onPressOut } = usePressScale(reducedMotion, 0.92);
 
     const isSat = day.date.getDay() === 6;
     const isFri = day.date.getDay() === 5;
     const isFast = isFastEvent(day.events);
     const evLabel = primaryEvent(day.events);
 
-    // Visual state priority: selected > today > shabbat > fast > normal
-    const bgColor = isSelected
-      ? accentGold
-      : day.isToday
-      ? accentGold + "22"
-      : isFast && !isSat
-      ? "#374151" + "18"
-      : "transparent";
+    // Today circle: the gold circle sits behind the date number
+    const circleSize = Math.min(cellW - 12, 32);
 
-    const dayNumColor = isSelected
+    // Date number color hierarchy:
+    // today (on gold circle) → white
+    // selected (non-today) → gold
+    // shabbat → crimson
+    // fast → amber-dark
+    // normal → textPrimary
+    const dayNumColor = day.isToday
       ? "#fff"
-      : day.isToday
+      : isSelected
       ? accentGold
       : isSat
       ? "#dc2626"
       : isFast
-      ? "#374151"
+      ? "#b45309"
       : textPrimary;
 
-    const subColor = isSelected ? "rgba(255,255,255,0.65)" : textMuted;
+    // Hebrew date color: white on today, faint gold on selected, muted otherwise
+    const hebrewColor = day.isToday
+      ? "rgba(255,255,255,0.78)"
+      : isSelected
+      ? accentGold + "BB"
+      : textMuted;
+
+    // Event label color
+    const evColor = day.isToday
+      ? "rgba(255,255,255,0.90)"
+      : isSelected
+      ? accentGold
+      : isFast
+      ? "#b45309"
+      : isSat
+      ? "#dc2626"
+      : "#7c3aed";
+
+    const a11yLabel = [
+      day.date.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }),
+      day.isToday ? "today" : "",
+      isFast ? "fast day" : "",
+      evLabel ?? "",
+    ]
+      .filter(Boolean)
+      .join(", ");
 
     return (
       <Pressable
@@ -209,125 +237,144 @@ const DayCell = memo(
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         accessibilityRole="button"
-        accessibilityLabel={[
-          day.date.toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          }),
-          day.isToday ? "today" : "",
-          isFast ? "fast day" : "",
-          evLabel ?? "",
-        ]
-          .filter(Boolean)
-          .join(", ")}
+        accessibilityLabel={a11yLabel}
         accessibilityState={{ selected: isSelected }}
-        style={{
-          width: cellW,
-          height: cellH,
-          alignItems: "center",
-          justifyContent: "flex-start",
-          paddingTop: 4,
-          paddingBottom: 2,
-        }}
+        style={{ width: cellW, height: cellH }}
       >
         <Animated.View
           style={{
-            width: cellW - 3,
-            height: cellH - 3,
-            borderRadius: 8,
+            width: cellW,
+            height: cellH,
             alignItems: "center",
-            justifyContent: "flex-start",
-            paddingTop: 3,
-            backgroundColor: bgColor,
-            borderWidth: day.isToday && !isSelected ? 1.5 : 0,
+            // Selected (non-today): gold ring + faint tint
+            borderWidth: isSelected && !day.isToday ? 1.5 : 0,
             borderColor: accentGold,
+            borderRadius: 10,
+            backgroundColor:
+              isSelected && !day.isToday
+                ? accentGold + "0E"
+                : "transparent",
             transform: [{ scale }],
-            overflow: "hidden",
+            paddingTop: 9,
           }}
         >
-          {/* Candle lighting time — Fridays */}
-          {candleTime && !isSelected && (
-            <Text
-              allowFontScaling={false}
-              numberOfLines={1}
+          {/* ── Candle + time: absolute top-right on Fridays ── */}
+          {isFri && (
+            <View
+              pointerEvents="none"
               style={{
-                fontSize: 7,
-                fontWeight: "600",
-                color: accentGold,
-                lineHeight: 10,
+                position: "absolute",
+                top: 4,
+                right: 3,
+                alignItems: "flex-end",
               }}
             >
-              {compactTime(candleTime)}
-            </Text>
+              <Text
+                allowFontScaling={false}
+                style={{ fontSize: 9, lineHeight: 11 }}
+              >
+                🕯
+              </Text>
+              {candleTime && (
+                <Text
+                  allowFontScaling={false}
+                  style={{
+                    fontSize: 6,
+                    lineHeight: 8,
+                    fontWeight: "700",
+                    color: day.isToday
+                      ? "rgba(255,255,255,0.85)"
+                      : accentGold,
+                  }}
+                >
+                  {compactTime(candleTime)}
+                </Text>
+              )}
+            </View>
           )}
 
-          {/* Day number */}
-          <Text
-            allowFontScaling={false}
+          {/* ── Today: gold circle | Others: transparent container ── */}
+          <View
             style={{
-              fontSize: cellW > 48 ? 15 : 13,
-              fontWeight: day.isToday || isSelected ? "800" : isSat ? "700" : "500",
-              color: dayNumColor,
-              lineHeight: cellW > 48 ? 18 : 16,
-              marginTop: candleTime && !isSelected ? 0 : isFri ? 2 : 2,
+              width: circleSize,
+              height: circleSize,
+              borderRadius: circleSize / 2,
+              backgroundColor: day.isToday ? accentGold : "transparent",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            {day.gregorianDay}
-          </Text>
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: cellW > 46 ? 16 : 15,
+                fontWeight:
+                  day.isToday || isSelected ? "700" : isSat ? "600" : "400",
+                color: dayNumColor,
+                lineHeight: 20,
+              }}
+            >
+              {day.gregorianDay}
+            </Text>
+          </View>
 
-          {/* Hebrew day numeral */}
+          {/* ── Hebrew day numeral ── */}
           <Text
             allowFontScaling={false}
             style={{
-              fontSize: 8,
-              color: subColor,
-              lineHeight: 11,
-              fontWeight: "400",
+              fontSize: 9.5,
+              fontWeight: "500",
+              color: hebrewColor,
+              lineHeight: 13,
+              marginTop: 2,
             }}
           >
             {hebrewDayNumeral(day.hebrewDay)}
           </Text>
 
-          {/* Hebrew month name */}
+          {/* ── Hebrew month name ── */}
           <Text
             allowFontScaling={false}
             style={{
-              fontSize: 7,
-              color: subColor,
-              lineHeight: 9,
+              fontSize: 7.5,
+              color: hebrewColor,
+              lineHeight: 10,
+              opacity: 0.85,
             }}
           >
             {day.hebrewMonth}
           </Text>
 
-          {/* Event label — fast / holiday / rosh chodesh / special shabbat */}
+          {/* ── Flex spacer: pushes event label to bottom ── */}
+          <View style={{ flex: 1 }} />
+
+          {/* ── Event label at bottom of cell ── */}
           {(isFast || evLabel || day.roshChodesh) && (
-            <Text
-              allowFontScaling={false}
-              numberOfLines={1}
+            <View
               style={{
-                fontSize: 6.5,
-                fontWeight: "700",
-                color: isSelected
-                  ? "rgba(255,255,255,0.85)"
-                  : isFast
-                  ? "#f59e0b"
-                  : isSat
-                  ? "#dc2626"
-                  : "#7c3aed",
-                lineHeight: 9,
-                marginTop: 1,
-                paddingHorizontal: 1,
-                textAlign: "center",
+                paddingBottom: 4,
+                paddingHorizontal: 2,
+                alignItems: "center",
               }}
             >
-              {isFast
-                ? "FAST"
-                : evLabel
-                ? shortenEvent(evLabel).substring(0, 10)
-                : "R.Ch."}
-            </Text>
+              <Text
+                allowFontScaling={false}
+                numberOfLines={1}
+                style={{
+                  fontSize: 6.5,
+                  fontWeight: "700",
+                  color: evColor,
+                  textAlign: "center",
+                  letterSpacing: 0.2,
+                }}
+              >
+                {isFast
+                  ? "FAST"
+                  : evLabel
+                  ? shortenEvent(evLabel).substring(0, 9)
+                  : "R.CH"}
+              </Text>
+            </View>
           )}
         </Animated.View>
       </Pressable>
@@ -366,7 +413,8 @@ export default function CalendarScreen() {
   // ── Grid dimensions ────────────────────────────────────────────────────────
   const gridWidth = screenW - CARD_MARGIN * 2 - GRID_H_PAD * 2;
   const cellW = Math.floor(gridWidth / 7);
-  const cellH = Math.floor(cellW * 1.45); // tall enough for all cell content
+  // MEP-101: taller cells for breathing room (was 1.45)
+  const cellH = Math.floor(cellW * 1.84);
 
   // ── Calendar data ──────────────────────────────────────────────────────────
   const monthDays = useMemo(() => getMonthCalendar(year, month), [year, month]);
@@ -375,19 +423,17 @@ export default function CalendarScreen() {
     [year, month],
   );
 
-  // Hebrew month range for subtitle: "Tamuz - Av 5786"
   const hebrewSubtitle = useMemo(() => {
     const firstHDate = getHebrewDate(new Date(year, month, 1));
-    const lastHDate = getHebrewDate(new Date(year, month + 1, 0)); // last day
+    const lastHDate = getHebrewDate(new Date(year, month + 1, 0));
     const hYear = firstHDate.getFullYear();
     const firstMon = getHebrewMonthName(firstHDate);
     const lastMon = getHebrewMonthName(lastHDate);
     const months =
-      firstMon === lastMon ? firstMon : `${firstMon} - ${lastMon}`;
+      firstMon === lastMon ? firstMon : `${firstMon} – ${lastMon}`;
     return `${months} ${hYear}`;
   }, [year, month]);
 
-  // Candle lighting map: gregorianDay → "7:31 PM" for all Fridays
   const candleMap = useMemo(() => {
     const map: Record<number, string> = {};
     monthDays.forEach((day) => {
@@ -464,14 +510,23 @@ export default function CalendarScreen() {
 
   const topPad = insets.top > 0 ? insets.top : Platform.OS === "web" ? 48 : 20;
 
-  // Gregorian month label e.g. "JULY 2026"
+  // Gregorian month label — "July 2026" (sentence-case, larger feels more premium)
   const monthLabel = useMemo(
     () =>
-      new Date(year, month, 1)
-        .toLocaleDateString("en-US", { month: "long", year: "numeric" })
-        .toUpperCase(),
+      new Date(year, month, 1).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      }),
     [year, month],
   );
+
+  // ── Grid body background (light/clean under the cells) ─────────────────────
+  const gridBg = isLight ? "#faf6ef" : colors.surface;
+
+  // ── Shabbat column tint for day-header bar ─────────────────────────────────
+  const satHeaderBg = isLight
+    ? "rgba(220, 38, 38, 0.07)"
+    : "rgba(220, 38, 38, 0.10)";
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -483,43 +538,46 @@ export default function CalendarScreen() {
           paddingHorizontal: CARD_MARGIN,
         }}
       >
-
-        {/* ══════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════
             MAIN CALENDAR CARD
-            Gold-gradient header + full month grid in one card.
-            ══════════════════════════════════════════════════════════ */}
+            ════════════════════════════════════════════════════════════ */}
         <View
           style={{
             borderRadius: rd.xl,
             overflow: "hidden",
             ...shadow.level2,
             borderWidth: 1,
-            borderColor: isLight ? "rgba(180,130,20,0.25)" : "rgba(212,168,67,0.18)",
+            borderColor: isLight
+              ? "rgba(180,130,20,0.22)"
+              : "rgba(212,168,67,0.14)",
           }}
         >
-
           {/* ── Gold-gradient header ── */}
           <LinearGradient
             colors={headerGrad}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ paddingVertical: 14, paddingHorizontal: GRID_H_PAD }}
+            style={{
+              paddingTop: 16,
+              paddingBottom: 14,
+              paddingHorizontal: GRID_H_PAD,
+            }}
           >
-            {/* Ambient shimmer */}
+            {/* Ambient shimmer orb */}
             <View
               pointerEvents="none"
               style={{
                 position: "absolute",
-                top: -30,
-                right: -20,
-                width: 140,
-                height: 140,
-                borderRadius: 70,
-                backgroundColor: "rgba(255,255,255,0.08)",
+                top: -40,
+                right: -24,
+                width: 160,
+                height: 160,
+                borderRadius: 80,
+                backgroundColor: "rgba(255,255,255,0.07)",
               }}
             />
 
-            {/* Nav row */}
+            {/* Navigation row */}
             <View
               style={{
                 flexDirection: "row",
@@ -527,38 +585,43 @@ export default function CalendarScreen() {
                 justifyContent: "space-between",
               }}
             >
-              {/* Prev */}
+              {/* ‹ Previous */}
               <Animated.View style={{ transform: [{ scale: prevPress.scale }] }}>
                 <Pressable
                   onPress={prevMonth}
                   onPressIn={prevPress.onPressIn}
                   onPressOut={prevPress.onPressOut}
-                  hitSlop={16}
+                  hitSlop={18}
                   accessibilityRole="button"
                   accessibilityLabel="Previous month"
                   style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    backgroundColor: "rgba(255,255,255,0.15)",
+                    width: 38,
+                    height: 38,
+                    borderRadius: 19,
+                    backgroundColor: "rgba(0,0,0,0.16)",
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.18)",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <Feather name="chevron-left" size={18} color="#fff" />
+                  <Feather name="chevron-left" size={19} color="#fff" />
                 </Pressable>
               </Animated.View>
 
-              {/* Center: month + year + Hebrew subtitle */}
+              {/* Center: Month + Year + Hebrew subtitle */}
               <View style={{ flex: 1, alignItems: "center" }}>
                 <Text
                   allowFontScaling={false}
                   style={{
-                    fontSize: 18,
+                    fontSize: 22,
                     fontWeight: "800",
                     color: "#fff",
-                    letterSpacing: 1.5,
+                    letterSpacing: 0.4,
                     textAlign: "center",
+                    textShadowColor: "rgba(0,0,0,0.25)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 3,
                   }}
                 >
                   {monthLabel}
@@ -566,58 +629,54 @@ export default function CalendarScreen() {
                 <Text
                   allowFontScaling={false}
                   style={{
-                    fontSize: 11,
+                    fontSize: 12,
                     color: "rgba(255,255,255,0.82)",
-                    marginTop: 3,
-                    letterSpacing: 0.3,
+                    marginTop: 4,
+                    letterSpacing: 0.8,
+                    fontWeight: "500",
                   }}
                 >
-                  — {hebrewSubtitle} —
+                  {hebrewSubtitle}
                 </Text>
               </View>
 
-              {/* Next */}
+              {/* › Next */}
               <Animated.View style={{ transform: [{ scale: nextPress.scale }] }}>
                 <Pressable
                   onPress={nextMonth}
                   onPressIn={nextPress.onPressIn}
                   onPressOut={nextPress.onPressOut}
-                  hitSlop={16}
+                  hitSlop={18}
                   accessibilityRole="button"
                   accessibilityLabel="Next month"
                   style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    backgroundColor: "rgba(255,255,255,0.15)",
+                    width: 38,
+                    height: 38,
+                    borderRadius: 19,
+                    backgroundColor: "rgba(0,0,0,0.16)",
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.18)",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <Feather name="chevron-right" size={18} color="#fff" />
+                  <Feather name="chevron-right" size={19} color="#fff" />
                 </Pressable>
               </Animated.View>
             </View>
           </LinearGradient>
 
           {/* ── Calendar grid body ── */}
-          <View
-            style={{
-              backgroundColor: isLight ? "#fff" : colors.surface,
-              paddingHorizontal: GRID_H_PAD,
-              paddingBottom: 12,
-            }}
-          >
+          <View style={{ backgroundColor: gridBg, paddingHorizontal: GRID_H_PAD }}>
 
-            {/* Day-of-week column headers */}
+            {/* ── Day-of-week column headers ── */}
             <View
               style={{
                 flexDirection: "row",
                 borderBottomWidth: 1,
                 borderBottomColor: isLight
-                  ? "rgba(0,0,0,0.08)"
-                  : colors.border,
-                paddingVertical: 8,
+                  ? "rgba(0,0,0,0.07)"
+                  : "rgba(255,255,255,0.06)",
               }}
             >
               {DAY_LABELS_EN.map((label, i) => {
@@ -625,17 +684,23 @@ export default function CalendarScreen() {
                 return (
                   <View
                     key={label}
-                    style={{ width: cellW, alignItems: "center" }}
+                    style={{
+                      width: cellW,
+                      alignItems: "center",
+                      paddingTop: 11,
+                      paddingBottom: 9,
+                      backgroundColor: isSatCol ? satHeaderBg : "transparent",
+                    }}
                   >
                     <Text
                       allowFontScaling={false}
                       style={{
-                        fontSize: 11,
+                        fontSize: 11.5,
                         fontWeight: "700",
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.3,
                         color: isSatCol
                           ? "#dc2626"
-                          : colors.textPrimary,
+                          : colors.textSecondary,
                       }}
                     >
                       {label}
@@ -643,9 +708,12 @@ export default function CalendarScreen() {
                     <Text
                       allowFontScaling={false}
                       style={{
-                        fontSize: 7.5,
-                        color: isSatCol ? "#dc262680" : colors.textMuted,
-                        marginTop: 1,
+                        fontSize: 8,
+                        color: isSatCol
+                          ? "rgba(220,38,38,0.60)"
+                          : colors.textMuted,
+                        marginTop: 1.5,
+                        fontWeight: "400",
                       }}
                     >
                       {DAY_LABELS_HE[i]}
@@ -655,17 +723,18 @@ export default function CalendarScreen() {
               })}
             </View>
 
-            {/* Grid rows */}
+            {/* ── Grid rows ── */}
             <Animated.View
               style={{
                 opacity: gridOpacity,
                 transform: [{ translateX: gridTransX }],
                 flexDirection: "row",
                 flexWrap: "wrap",
-                marginTop: 4,
+                marginTop: 3,
+                marginBottom: 8,
               }}
             >
-              {/* Leading blanks */}
+              {/* Leading blank cells */}
               {leadingBlanks.map((_, i) => (
                 <View
                   key={`blank-${i}`}
@@ -692,7 +761,6 @@ export default function CalendarScreen() {
                 />
               ))}
             </Animated.View>
-
           </View>
 
           {/* ── Legend + TODAY button ── */}
@@ -702,102 +770,113 @@ export default function CalendarScreen() {
               alignItems: "center",
               justifyContent: "space-between",
               paddingHorizontal: GRID_H_PAD + 2,
-              paddingVertical: 10,
+              paddingTop: 10,
+              paddingBottom: 12,
               backgroundColor: isLight
-                ? "rgba(0,0,0,0.02)"
-                : "rgba(255,255,255,0.03)",
+                ? "rgba(0,0,0,0.025)"
+                : colors.backgroundSubtle,
               borderTopWidth: 1,
               borderTopColor: isLight
-                ? "rgba(0,0,0,0.07)"
-                : colors.border,
+                ? "rgba(0,0,0,0.06)"
+                : "rgba(255,255,255,0.05)",
             }}
           >
-            {/* Legend items */}
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+            {/* Legend */}
+            <View
+              style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
+            >
               {/* Today */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+              >
                 <View
                   style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 3,
-                    backgroundColor: gold + "30",
-                    borderWidth: 1.5,
-                    borderColor: gold,
+                    width: 11,
+                    height: 11,
+                    borderRadius: 5.5,
+                    backgroundColor: gold,
                   }}
                 />
                 <Text
                   allowFontScaling={false}
-                  style={{ fontSize: 9.5, color: colors.textMuted }}
+                  style={{ fontSize: 10, color: colors.textMuted, fontWeight: "500" }}
                 >
                   Today
                 </Text>
               </View>
 
               {/* Shabbat */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+              >
                 <View
                   style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 3,
-                    backgroundColor: "#dc262618",
-                    borderWidth: 1,
-                    borderColor: "#dc262640",
+                    width: 11,
+                    height: 11,
+                    borderRadius: 5.5,
+                    backgroundColor: "rgba(220,38,38,0.15)",
+                    borderWidth: 1.5,
+                    borderColor: "rgba(220,38,38,0.45)",
                   }}
                 />
                 <Text
                   allowFontScaling={false}
-                  style={{ fontSize: 9.5, color: colors.textMuted }}
+                  style={{ fontSize: 10, color: colors.textMuted, fontWeight: "500" }}
                 >
                   Shabbat
                 </Text>
               </View>
 
               {/* Fast */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+              >
                 <View
                   style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 3,
-                    backgroundColor: "#37415118",
-                    borderWidth: 1,
-                    borderColor: "#37415140",
+                    width: 11,
+                    height: 11,
+                    borderRadius: 5.5,
+                    backgroundColor: "rgba(180,83,9,0.12)",
+                    borderWidth: 1.5,
+                    borderColor: "rgba(180,83,9,0.38)",
                   }}
                 />
                 <Text
                   allowFontScaling={false}
-                  style={{ fontSize: 9.5, color: colors.textMuted }}
+                  style={{ fontSize: 10, color: colors.textMuted, fontWeight: "500" }}
                 >
                   Fast
                 </Text>
               </View>
 
-              {/* Yahrzeit */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              {/* Holiday */}
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+              >
                 <View
                   style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 3,
-                    backgroundColor: "#7c3aed18",
-                    borderWidth: 1,
-                    borderColor: "#7c3aed50",
+                    width: 11,
+                    height: 11,
+                    borderRadius: 5.5,
+                    backgroundColor: "rgba(124,58,237,0.12)",
+                    borderWidth: 1.5,
+                    borderColor: "rgba(124,58,237,0.38)",
                   }}
                 />
                 <Text
                   allowFontScaling={false}
-                  style={{ fontSize: 9.5, color: colors.textMuted }}
+                  style={{ fontSize: 10, color: colors.textMuted, fontWeight: "500" }}
                 >
-                  Yahrzeit
+                  Holiday
                 </Text>
               </View>
             </View>
 
             {/* TODAY button */}
-            {!isCurrentMonth && (
-              <Animated.View style={{ transform: [{ scale: todayPress.scale }] }}>
+            {!isCurrentMonth ? (
+              <Animated.View
+                style={{ transform: [{ scale: todayPress.scale }] }}
+              >
                 <Pressable
                   onPress={goToday}
                   onPressIn={todayPress.onPressIn}
@@ -817,35 +896,34 @@ export default function CalendarScreen() {
                       fontSize: 11,
                       fontWeight: "800",
                       color: "#fff",
-                      letterSpacing: 1,
+                      letterSpacing: 0.8,
                     }}
                   >
                     TODAY
                   </Text>
                 </Pressable>
               </Animated.View>
-            )}
-            {isCurrentMonth && (
+            ) : (
               <Pressable
                 onPress={goToday}
                 accessibilityRole="button"
                 accessibilityLabel="Go to today"
                 style={{
-                  backgroundColor: gold + "22",
+                  backgroundColor: gold + "1A",
                   borderRadius: 9999,
                   paddingHorizontal: 14,
                   paddingVertical: 6,
                   borderWidth: 1,
-                  borderColor: gold + "55",
+                  borderColor: gold + "44",
                 }}
               >
                 <Text
                   allowFontScaling={false}
                   style={{
                     fontSize: 11,
-                    fontWeight: "800",
+                    fontWeight: "700",
                     color: gold,
-                    letterSpacing: 1,
+                    letterSpacing: 0.8,
                   }}
                 >
                   TODAY
@@ -855,128 +933,149 @@ export default function CalendarScreen() {
           </View>
         </View>
 
-        {/* ══════════════════════════════════════════════════════════
-            SELECTED DAY DETAIL
-            Appears below the card when a day is tapped.
-            ══════════════════════════════════════════════════════════ */}
+        {/* ════════════════════════════════════════════════════════════
+            SELECTED DAY DETAIL CARD
+            Appears below the calendar when a day is tapped.
+            ════════════════════════════════════════════════════════════ */}
         {selected && (
           <View
             style={{
-              marginTop: 14,
+              marginTop: 16,
               backgroundColor: colors.surface,
               borderRadius: rd.xl,
               borderWidth: 1,
-              borderColor: gold + "30",
+              borderColor: isLight
+                ? "rgba(212,168,67,0.22)"
+                : "rgba(212,168,67,0.16)",
               overflow: "hidden",
-              ...shadow.level1,
+              ...shadow.level2,
             }}
           >
-            {/* Accent stripe */}
+            {/* ── Header: date + badge ── */}
             <View
               style={{
-                height: 3,
-                backgroundColor: isFastEvent(selected.events)
-                  ? "#f59e0b"
-                  : selected.isShabbat
-                  ? "#dc2626"
-                  : gold,
+                paddingHorizontal: sp[5],
+                paddingTop: sp[5],
+                paddingBottom: sp[4],
+                borderBottomWidth: 1,
+                borderBottomColor: isLight
+                  ? "rgba(0,0,0,0.06)"
+                  : "rgba(255,255,255,0.05)",
+                flexDirection: "row",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
               }}
-            />
-
-            <View style={{ padding: sp[4] }}>
-              {/* Date row */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  marginBottom: 10,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text
-                    allowFontScaling={false}
-                    style={{
-                      fontSize: 17,
-                      fontWeight: "700",
-                      color: colors.textPrimary,
-                      letterSpacing: -0.2,
-                    }}
-                  >
-                    {selected.date.toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </Text>
-                  <Text
-                    allowFontScaling={false}
-                    style={{ fontSize: 13, color: gold, marginTop: 3 }}
-                  >
-                    {hebrewDayNumeral(selected.hebrewDay)} {selected.hebrewMonth}{" "}
-                    {selected.hebrewYear}
-                  </Text>
-                </View>
-
-                {/* Shabbat / fast badge */}
-                {(selected.isShabbat || isFastEvent(selected.events)) && (
-                  <View
-                    style={{
-                      borderRadius: 9999,
-                      borderWidth: 1,
-                      borderColor: isFastEvent(selected.events)
-                        ? "#f59e0b44"
-                        : "#dc262644",
-                      backgroundColor: isFastEvent(selected.events)
-                        ? "#f59e0b12"
-                        : "#dc262612",
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
-                      marginLeft: 8,
-                    }}
-                  >
-                    <Text
-                      allowFontScaling={false}
-                      style={{
-                        fontSize: 11,
-                        fontWeight: "700",
-                        color: isFastEvent(selected.events)
-                          ? "#f59e0b"
-                          : "#dc2626",
-                      }}
-                    >
-                      {isFastEvent(selected.events) ? "Fast Day" : "Shabbat"}
-                    </Text>
-                  </View>
-                )}
+            >
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                {/* Gregorian date */}
+                <Text
+                  allowFontScaling={false}
+                  style={{
+                    fontSize: 19,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                    letterSpacing: -0.3,
+                    lineHeight: 24,
+                  }}
+                >
+                  {selected.date.toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </Text>
+                {/* Hebrew date */}
+                <Text
+                  allowFontScaling={false}
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: gold,
+                    marginTop: 4,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  {hebrewDayNumeral(selected.hebrewDay)}{" "}
+                  {selected.hebrewMonth}{" "}
+                  {selected.hebrewYear}
+                </Text>
               </View>
 
-              {/* Candle lighting (if Friday) */}
+              {/* Shabbat / Fast badge */}
+              {(selected.isShabbat || isFastEvent(selected.events)) && (
+                <View
+                  style={{
+                    borderRadius: 9999,
+                    borderWidth: 1,
+                    borderColor: isFastEvent(selected.events)
+                      ? "rgba(180,83,9,0.35)"
+                      : "rgba(220,38,38,0.35)",
+                    backgroundColor: isFastEvent(selected.events)
+                      ? "rgba(180,83,9,0.10)"
+                      : "rgba(220,38,38,0.08)",
+                    paddingHorizontal: 11,
+                    paddingVertical: 5,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <Text
+                    allowFontScaling={false}
+                    style={{
+                      fontSize: 11.5,
+                      fontWeight: "700",
+                      color: isFastEvent(selected.events)
+                        ? "#b45309"
+                        : "#dc2626",
+                      letterSpacing: 0.3,
+                    }}
+                  >
+                    {isFastEvent(selected.events) ? "Fast Day" : "Shabbat"}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={{ padding: sp[5], gap: sp[3] }}>
+
+              {/* ── Candle Lighting (Friday) ── */}
               {candleMap[selected.gregorianDay] && (
                 <View
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    gap: 8,
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    backgroundColor: gold + "10",
-                    borderRadius: rd.md,
-                    marginBottom: 10,
+                    gap: 14,
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    backgroundColor: isLight
+                      ? "rgba(212,168,67,0.07)"
+                      : "rgba(212,168,67,0.08)",
+                    borderRadius: rd.lg,
                     borderWidth: 1,
-                    borderColor: gold + "25",
+                    borderColor: isLight
+                      ? "rgba(212,168,67,0.22)"
+                      : "rgba(212,168,67,0.18)",
                   }}
                 >
-                  <Feather name="sunset" size={14} color={gold} />
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: gold + "18",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ fontSize: 20 }}>🕯️</Text>
+                  </View>
                   <View>
                     <Text
                       allowFontScaling={false}
                       style={{
                         fontSize: 10,
                         color: gold,
-                        fontWeight: "600",
-                        letterSpacing: 0.8,
+                        fontWeight: "700",
+                        letterSpacing: 1.2,
                         textTransform: "uppercase",
                       }}
                     >
@@ -985,126 +1084,181 @@ export default function CalendarScreen() {
                     <Text
                       allowFontScaling={false}
                       style={{
-                        fontSize: 16,
-                        fontWeight: "700",
+                        fontSize: 26,
+                        fontWeight: "800",
                         color: gold,
+                        lineHeight: 32,
                         marginTop: 1,
+                        letterSpacing: -0.5,
                       }}
                     >
                       {candleMap[selected.gregorianDay]}
+                    </Text>
+                    <Text
+                      allowFontScaling={false}
+                      style={{
+                        fontSize: 11,
+                        color: colors.textMuted,
+                        marginTop: 2,
+                      }}
+                    >
+                      {location.candleLightingMinutes} min before sunset
                     </Text>
                   </View>
                 </View>
               )}
 
-              {/* Events list */}
+              {/* ── Events list ── */}
               {selected.events.length === 0 && !selected.roshChodesh ? (
-                <Text
-                  allowFontScaling={false}
-                  style={{ fontSize: 13, color: colors.textMuted, fontStyle: "italic" }}
+                <View
+                  style={{
+                    paddingVertical: 16,
+                    alignItems: "center",
+                  }}
                 >
-                  No special events
-                </Text>
+                  <Text
+                    allowFontScaling={false}
+                    style={{
+                      fontSize: 13.5,
+                      color: colors.textMuted,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    No special events
+                  </Text>
+                </View>
               ) : (
-                <View style={{ gap: 6 }}>
+                <View style={{ gap: 8 }}>
                   {selected.roshChodesh && (
                     <View
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        gap: 10,
+                        gap: 12,
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        backgroundColor: isLight
+                          ? "rgba(124,58,237,0.05)"
+                          : "rgba(124,58,237,0.08)",
+                        borderRadius: rd.md,
+                        borderWidth: 1,
+                        borderColor: "rgba(124,58,237,0.18)",
                       }}
                     >
                       <View
                         style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: 3,
+                          width: 7,
+                          height: 7,
+                          borderRadius: 3.5,
                           backgroundColor: "#7c3aed",
                         }}
                       />
                       <Text
                         allowFontScaling={false}
                         style={{
-                          fontSize: 13,
-                          color: colors.textPrimary,
+                          fontSize: 14,
                           fontWeight: "600",
+                          color: colors.textPrimary,
+                          flex: 1,
                         }}
                       >
                         Rosh Chodesh
                       </Text>
                     </View>
                   )}
-                  {selected.events.map((ev) => (
-                    <View
-                      key={ev}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
+
+                  {selected.events.map((ev) => {
+                    const isFastEv = isFastEvent([ev]);
+                    const isShabbatEv = /shabbat/i.test(ev);
+                    const dotColor = isFastEv
+                      ? "#b45309"
+                      : isShabbatEv
+                      ? "#dc2626"
+                      : gold;
+                    const rowBg = isLight
+                      ? "rgba(212,168,67,0.05)"
+                      : "rgba(212,168,67,0.06)";
+                    return (
                       <View
+                        key={ev}
                         style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: 3,
-                          backgroundColor: isFastEvent([ev])
-                            ? "#f59e0b"
-                            : /shabbat/i.test(ev)
-                            ? "#dc2626"
-                            : gold,
-                        }}
-                      />
-                      <Text
-                        allowFontScaling={false}
-                        style={{
-                          fontSize: 13,
-                          color: colors.textPrimary,
-                          flex: 1,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 12,
+                          paddingVertical: 10,
+                          paddingHorizontal: 14,
+                          backgroundColor: rowBg,
+                          borderRadius: rd.md,
+                          borderWidth: 1,
+                          borderColor: isLight
+                            ? "rgba(212,168,67,0.15)"
+                            : "rgba(212,168,67,0.12)",
                         }}
                       >
-                        {ev}
-                      </Text>
-                    </View>
-                  ))}
+                        <View
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: 3.5,
+                            backgroundColor: dotColor,
+                          }}
+                        />
+                        <Text
+                          allowFontScaling={false}
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "500",
+                            color: colors.textPrimary,
+                            flex: 1,
+                          }}
+                        >
+                          {ev}
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
 
-              {/* Zmanim link */}
+              {/* ── Prayer Times link ── */}
               <Pressable
-                onPress={() => router.push("/(tabs)/zmanim")}
+                onPress={() => router.push("/(tabs)/zmanim" as any)}
                 accessibilityRole="button"
+                accessibilityLabel="View prayer times"
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 6,
-                  marginTop: 14,
-                  paddingVertical: 10,
+                  gap: 7,
+                  marginTop: 4,
+                  paddingVertical: 12,
                   borderRadius: rd.lg,
                   borderWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: colors.card,
+                  borderColor: isLight
+                    ? "rgba(212,168,67,0.28)"
+                    : colors.border,
+                  backgroundColor: isLight
+                    ? "rgba(212,168,67,0.05)"
+                    : colors.card,
                 }}
               >
-                <Feather name="clock" size={13} color={gold} />
+                <Feather name="clock" size={14} color={gold} />
                 <Text
                   allowFontScaling={false}
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: "600",
                     color: gold,
+                    letterSpacing: 0.2,
                   }}
                 >
                   View Prayer Times
                 </Text>
-                <Feather name="chevron-right" size={12} color={gold} />
+                <Feather name="chevron-right" size={13} color={gold} />
               </Pressable>
             </View>
           </View>
         )}
-
       </ScrollView>
     </View>
   );
