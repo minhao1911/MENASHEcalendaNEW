@@ -133,21 +133,32 @@ const SectionHeader = memo(function SectionHeader({
   onAction?: () => void;
 }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 }}>
       <View style={{
-        width: 30, height: 30, borderRadius: 9,
-        backgroundColor: gold + "1a",
-        borderWidth: 1, borderColor: gold + "30",
+        width: 32, height: 32, borderRadius: 10,
+        backgroundColor: gold + "1e",
+        borderWidth: 1, borderColor: gold + "38",
         alignItems: "center", justifyContent: "center",
       }}>
-        <Feather name={icon} size={13} color={gold} />
+        <Feather name={icon} size={14} color={gold} />
       </View>
-      <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.8, color: gold, textTransform: "uppercase", flex: 1 }}>
+      <Text style={{
+        fontSize: 10, fontWeight: "800", letterSpacing: 2.2,
+        color: gold, textTransform: "uppercase", flex: 1,
+      }}>
         {label}
       </Text>
       {actionLabel && onAction && (
-        <Pressable onPress={onAction} hitSlop={10} accessibilityRole="button" accessibilityLabel={actionLabel}>
-          <Text style={{ fontSize: 12, fontWeight: "600", color: muted, letterSpacing: 0.2 }}>{actionLabel} →</Text>
+        <Pressable onPress={onAction} hitSlop={12} accessibilityRole="button" accessibilityLabel={actionLabel}>
+          <View style={{
+            flexDirection: "row", alignItems: "center", gap: 4,
+            backgroundColor: gold + "12",
+            borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4,
+            borderWidth: 1, borderColor: gold + "28",
+          }}>
+            <Text style={{ fontSize: 11, fontWeight: "700", color: gold }}>{actionLabel}</Text>
+            <Feather name="arrow-right" size={10} color={gold} />
+          </View>
         </Pressable>
       )}
     </View>
@@ -181,16 +192,31 @@ const CollectionTile = memo(function CollectionTile({
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${sub}`}
         style={{
-          backgroundColor: colors.card, borderRadius: rd.lg, borderWidth: 1, borderColor: colors.cardBorder,
-          padding: sp[4], minHeight: 116, justifyContent: "space-between",
+          backgroundColor: colors.card,
+          borderRadius: rd.lg,
+          borderWidth: 1,
+          borderColor: color + "28",
+          padding: sp[4],
+          minHeight: 120,
+          justifyContent: "space-between",
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
+          elevation: 3,
         }}
       >
-        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: color + "18", alignItems: "center", justifyContent: "center" }}>
-          <Feather name={icon} size={18} color={color} />
+        <View style={{
+          width: 44, height: 44, borderRadius: 13,
+          backgroundColor: color + "1c",
+          borderWidth: 1, borderColor: color + "28",
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <Feather name={icon} size={19} color={color} />
         </View>
-        <View>
-          <Text style={[type.label, { color: colors.textPrimary }]}>{label}</Text>
-          <Text style={[type.caption, { color: colors.textMuted, marginTop: 2 }]} numberOfLines={1}>{sub}</Text>
+        <View style={{ gap: 3 }}>
+          <Text style={[type.label, { color: colors.textPrimary, fontSize: 14 }]}>{label}</Text>
+          <Text style={[type.caption, { color: colors.textMuted, marginTop: 1 }]} numberOfLines={1}>{sub}</Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -223,39 +249,42 @@ const DailyLearningCard = memo(function DailyLearningCard({
         accessibilityLabel={`${title}: ${subtitle}`}
         style={{
           backgroundColor: colors.card,
-          borderRadius: 18,
+          borderRadius: 20,
           borderWidth: 1,
-          borderColor: accent + "25",
+          borderColor: accent + "28",
           padding: 18,
           flexDirection: "row",
           alignItems: "center",
           gap: 14,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.14,
-          shadowRadius: 10,
+          shadowColor: accent,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.16,
+          shadowRadius: 12,
           elevation: 4,
         }}
       >
         {/* Icon orb */}
         <View style={{
-          width: 52, height: 52, borderRadius: 26,
-          backgroundColor: accent + "18",
-          borderWidth: 1.5, borderColor: accent + "35",
+          width: 54, height: 54, borderRadius: 27,
+          backgroundColor: accent + "1c",
+          borderWidth: 1.5, borderColor: accent + "38",
           alignItems: "center", justifyContent: "center",
           flexShrink: 0,
         }}>
-          <Text style={{ fontSize: 24 }}>{emoji}</Text>
+          <Text style={{ fontSize: 26 }}>{emoji}</Text>
         </View>
 
         {/* Text */}
-        <View style={{ flex: 1, gap: 3 }}>
+        <View style={{ flex: 1, gap: 4 }}>
           {badge && (
-            <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.4, color: accent, textTransform: "uppercase" }}>
+            <Text style={{
+              fontSize: 9, fontWeight: "800", letterSpacing: 1.8,
+              color: accent, textTransform: "uppercase",
+            }}>
               {badge}
             </Text>
           )}
-          <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, letterSpacing: -0.2 }}>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, letterSpacing: -0.3 }}>
             {title}
           </Text>
           <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: 18 }} numberOfLines={1}>
@@ -263,16 +292,14 @@ const DailyLearningCard = memo(function DailyLearningCard({
           </Text>
         </View>
 
-        {/* CTA */}
-        <View style={{ alignItems: "center", gap: 3 }}>
-          <View style={{
-            backgroundColor: accent + "18",
-            borderWidth: 1, borderColor: accent + "35",
-            borderRadius: 12,
-            paddingHorizontal: 12, paddingVertical: 7,
-          }}>
-            <Text style={{ fontSize: 11, fontWeight: "700", color: accent }}>Continue</Text>
-          </View>
+        {/* CTA pill */}
+        <View style={{
+          backgroundColor: accent + "1c",
+          borderWidth: 1, borderColor: accent + "38",
+          borderRadius: 12,
+          paddingHorizontal: 13, paddingVertical: 8,
+        }}>
+          <Text style={{ fontSize: 11, fontWeight: "800", color: accent }}>Open</Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -304,41 +331,135 @@ const LibraryCategory = memo(function LibraryCategory({
         accessibilityLabel={`${label}: ${sub}`}
         style={{
           backgroundColor: colors.card,
-          borderRadius: 16,
+          borderRadius: 18,
           borderWidth: 1,
           borderColor: accent + "28",
-          paddingVertical: 16,
-          paddingHorizontal: 14,
+          paddingVertical: 18,
+          paddingHorizontal: 15,
           marginBottom: 10,
           alignItems: "flex-start",
-          gap: 10,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 6,
-          elevation: 2,
+          gap: 12,
+          shadowColor: accent,
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.13,
+          shadowRadius: 8,
+          elevation: 3,
         }}
       >
         <View style={{
-          width: 42, height: 42, borderRadius: 12,
-          backgroundColor: accent + "18",
+          width: 46, height: 46, borderRadius: 14,
+          backgroundColor: accent + "1c",
+          borderWidth: 1, borderColor: accent + "28",
           alignItems: "center", justifyContent: "center",
         }}>
-          <Text style={{ fontSize: 20 }}>{emoji}</Text>
+          <Text style={{ fontSize: 22 }}>{emoji}</Text>
         </View>
-        <View>
-          <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary, letterSpacing: -0.1 }}>{label}</Text>
-          <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }} numberOfLines={1}>{sub}</Text>
+        <View style={{ gap: 3 }}>
+          <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary, letterSpacing: -0.2 }}>{label}</Text>
+          <Text style={{ fontSize: 11, color: colors.textMuted }} numberOfLines={1}>{sub}</Text>
         </View>
         <View style={{
-          flexDirection: "row", alignItems: "center", gap: 3,
-          backgroundColor: accent + "14",
-          borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
+          flexDirection: "row", alignItems: "center", gap: 4,
+          backgroundColor: accent + "16",
+          borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4,
           alignSelf: "flex-start",
+          borderWidth: 1, borderColor: accent + "25",
         }}>
-          <Feather name="arrow-right" size={10} color={accent} />
-          <Text style={{ fontSize: 10, fontWeight: "600", color: accent }}>Open</Text>
+          <Text style={{ fontSize: 10, fontWeight: "700", color: accent }}>Open</Text>
+          <Feather name="arrow-right" size={9} color={accent} />
         </View>
+      </Pressable>
+    </Animated.View>
+  );
+});
+
+// ─── Learning Path Card (extracted to fix Rules of Hooks — no hooks in map) ───
+
+interface LearningPathCardProps {
+  label: string;
+  sub: string;
+  emoji: string;
+  accent: string;
+  done: boolean;
+  colors: ReturnType<typeof useThemeTokens>["colors"];
+  onPress: () => void;
+}
+
+const LearningPathCard = memo(function LearningPathCard({
+  label, sub, emoji, accent, done, colors, onPress,
+}: LearningPathCardProps) {
+  const { scale, onPressIn, onPressOut } = usePressScale(0.95);
+  return (
+    <Animated.View style={{ transform: [{ scale }], width: 148 }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${sub}`}
+        style={{
+          borderRadius: 20,
+          overflow: "hidden",
+          borderWidth: done ? 1.5 : 1,
+          borderColor: done ? accent + "70" : colors.cardBorder,
+          shadowColor: done ? accent : "#000",
+          shadowOffset: { width: 0, height: done ? 8 : 3 },
+          shadowOpacity: done ? 0.32 : 0.12,
+          shadowRadius: done ? 18 : 8,
+          elevation: done ? 8 : 3,
+        }}
+      >
+        <LinearGradient
+          colors={done
+            ? [accent + "38", accent + "14", colors.card]
+            : [colors.card, colors.card]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{ padding: 18, minHeight: 150, justifyContent: "space-between" }}
+        >
+          {/* Top row */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <Text style={{ fontSize: 30 }}>{emoji}</Text>
+            {done ? (
+              <View style={{
+                width: 22, height: 22, borderRadius: 11,
+                backgroundColor: accent,
+                alignItems: "center", justifyContent: "center",
+                shadowColor: accent,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.5,
+                shadowRadius: 4,
+              }}>
+                <Feather name="check" size={12} color="#fff" />
+              </View>
+            ) : (
+              <View style={{
+                width: 22, height: 22, borderRadius: 11,
+                borderWidth: 1.5, borderColor: colors.cardBorder,
+                alignItems: "center", justifyContent: "center",
+              }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.cardBorder }} />
+              </View>
+            )}
+          </View>
+
+          {/* Bottom text */}
+          <View style={{ gap: 5 }}>
+            <Text style={{
+              fontSize: 14, fontWeight: "800", color: colors.textPrimary,
+              letterSpacing: -0.3, lineHeight: 18,
+            }}>
+              {label}
+            </Text>
+            <Text style={{
+              fontSize: 11, fontWeight: "600",
+              color: done ? accent : colors.textMuted,
+              letterSpacing: 0.2,
+            }}>
+              {done ? "Completed ✓" : sub}
+            </Text>
+          </View>
+        </LinearGradient>
       </Pressable>
     </Animated.View>
   );
@@ -461,10 +582,10 @@ export default function SacredStudyScreen() {
   }, [reducedMotion]);
 
   const heroGradient = isLight
-    ? (["#F7F0DE", "#EFDFB8", "#DFC489"] as const)
+    ? (["#F7F0DE", "#EDE0B8", "#DFC489"] as const)
     : isSapphire
-    ? (["#060e1e", "#0f1d38", "#060e1e"] as const)
-    : (["#080c14", "#0f1420", "#080c14"] as const);
+    ? (["#040c1c", "#0c1830", "#060e20"] as const)
+    : (["#060a12", "#0d1420", "#060a12"] as const);
 
   const heroAnim = useBookOpen(reducedMotion);
   const a0 = useEntrance(60);
@@ -514,95 +635,150 @@ export default function SacredStudyScreen() {
         <Animated.View style={heroAnim}>
           <LinearGradient
             colors={heroGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ paddingTop: topPad + 20, paddingHorizontal: HX, paddingBottom: 36, overflow: "hidden" }}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={{ paddingTop: topPad + 20, paddingHorizontal: HX, paddingBottom: 40, overflow: "hidden" }}
           >
-            {/* Decorative Torah scroll illustration — large radial glow */}
-            <View pointerEvents="none" style={{ position: "absolute", top: -60, right: -50, opacity: isLight ? 0.08 : 0.06 }}>
-              <Feather name="star" size={280} color={gold} />
+            {/* Layered decorative background — Torah scroll atmosphere */}
+            {/* Outer glow ring */}
+            <View pointerEvents="none" style={{
+              position: "absolute", top: -80, right: -80,
+              width: 320, height: 320, borderRadius: 160,
+              backgroundColor: gold + "0a",
+            }} />
+            {/* Mid accent orb */}
+            <View pointerEvents="none" style={{
+              position: "absolute", top: topPad - 10, left: -40,
+              width: 180, height: 180, borderRadius: 90,
+              backgroundColor: gold + "0d",
+            }} />
+            {/* Small floating orb — top right */}
+            <View pointerEvents="none" style={{
+              position: "absolute", top: topPad + 40, right: 30,
+              width: 80, height: 80, borderRadius: 40,
+              backgroundColor: isSapphire ? "#6382FF18" : gold + "12",
+            }} />
+            {/* Bottom corner accent */}
+            <View pointerEvents="none" style={{
+              position: "absolute", bottom: -30, right: -20,
+              width: 120, height: 120, borderRadius: 60,
+              backgroundColor: gold + "0a",
+            }} />
+            {/* Star menorah illustration — large ghost */}
+            <View pointerEvents="none" style={{
+              position: "absolute", top: 20, right: -60, opacity: isLight ? 0.07 : 0.05,
+            }}>
+              <Feather name="star" size={300} color={gold} />
             </View>
-            <View pointerEvents="none" style={{ position: "absolute", top: -30, left: -20, width: 160, height: 160, borderRadius: 80, backgroundColor: gold + "10" }} />
-            <View pointerEvents="none" style={{ position: "absolute", bottom: -20, right: -16, width: 100, height: 100, borderRadius: 50, backgroundColor: gold + "0c" }} />
-            <View pointerEvents="none" style={{ position: "absolute", top: 80, right: 20, width: 70, height: 70, borderRadius: 35, backgroundColor: isLight ? gold + "20" : "#6382FF18" }} />
+            {/* Inner detail star */}
+            <View pointerEvents="none" style={{
+              position: "absolute", bottom: 30, left: HX + 10, opacity: 0.08,
+            }}>
+              <Feather name="star" size={60} color={gold} />
+            </View>
 
             {/* Hebrew date badge */}
             {hebrewDateStr ? (
               <View style={{
-                flexDirection: "row", alignItems: "center", gap: 6,
-                backgroundColor: gold + "18",
-                borderWidth: 1, borderColor: gold + "35",
-                borderRadius: 24, paddingHorizontal: 12, paddingVertical: 5,
-                alignSelf: "flex-start", marginBottom: 20,
+                flexDirection: "row", alignItems: "center", gap: 7,
+                backgroundColor: isLight ? gold + "22" : gold + "1c",
+                borderWidth: 1, borderColor: gold + "40",
+                borderRadius: 100, paddingHorizontal: 14, paddingVertical: 6,
+                alignSelf: "flex-start", marginBottom: 22,
+                shadowColor: gold,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 6,
               }}>
-                <Text style={{ fontSize: 11, color: gold }}>☀</Text>
-                <Text style={{ fontSize: 11, fontWeight: "600", color: isLight ? "#6b5323" : gold, letterSpacing: 0.3 }}>
+                <Text style={{ fontSize: 12, color: gold }}>✦</Text>
+                <Text style={{
+                  fontSize: 12, fontWeight: "700", letterSpacing: 0.4,
+                  color: isLight ? "#5a4010" : gold,
+                }}>
                   {hebrewDateStr}
                 </Text>
               </View>
             ) : (
-              <View style={{ height: 30, marginBottom: 20 }} />
+              <View style={{ height: 36, marginBottom: 22 }} />
             )}
 
-            {/* Eyebrow */}
-            <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 2.2, color: isLight ? "#8a6a1e" : gold + "cc", textTransform: "uppercase", marginBottom: 14 }}>
+            {/* Eyebrow label */}
+            <Text style={{
+              fontSize: 10, fontWeight: "800", letterSpacing: 2.4,
+              color: isLight ? "#8a6a1e" : gold + "bb",
+              textTransform: "uppercase", marginBottom: 16,
+            }}>
               {t.navTorah} · Today's Torah Journey
             </Text>
 
             {parasha ? (
               <>
-                {/* Parasha badge */}
+                {/* Parasha badge pill */}
                 <View style={{
                   flexDirection: "row", alignItems: "center", gap: 8,
-                  backgroundColor: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)",
-                  borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5,
-                  alignSelf: "flex-start", marginBottom: 12,
-                  borderWidth: 1, borderColor: isLight ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)",
+                  backgroundColor: isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)",
+                  borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6,
+                  alignSelf: "flex-start", marginBottom: 14,
+                  borderWidth: 1, borderColor: isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)",
                 }}>
-                  <Text style={{ fontSize: 10, color: isLight ? "#6b5323" : "#c9bfa0", fontWeight: "600", letterSpacing: 0.8 }}>
+                  <Text style={{ fontSize: 10, color: isLight ? "#6b5323" : "#c9bfa0", fontWeight: "600", letterSpacing: 1 }}>
                     THIS WEEK'S PARASHAH
                   </Text>
                   <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: gold }} />
-                  <Text style={{ fontSize: 10, color: isLight ? "#8a6a1e" : gold, fontWeight: "700", letterSpacing: 0.5 }}>
+                  <Text style={{ fontSize: 10, color: isLight ? "#8a6a1e" : gold, fontWeight: "800", letterSpacing: 0.6 }}>
                     {parasha.book}
                   </Text>
                 </View>
 
                 {/* Parasha name — large premium typography */}
-                <Text style={{ fontSize: 38, fontWeight: "800", letterSpacing: -0.8, color: isLight ? "#241a08" : "#f4ecd8", lineHeight: 42 }}>
+                <Text style={{
+                  fontSize: 40, fontWeight: "900", letterSpacing: -1.2,
+                  color: isLight ? "#1c1408" : "#f5eedd",
+                  lineHeight: 44,
+                }}>
                   {parasha.name}
                 </Text>
+                {/* Hebrew name */}
                 <Text style={{
-                  fontSize: 28, marginTop: 8, textAlign: "left",
+                  fontSize: 26, marginTop: 10, textAlign: "left",
                   color: isLight ? "#6b5323" : gold,
                   writingDirection: "rtl",
                   fontWeight: "600",
+                  letterSpacing: 0.5,
                 }}>
                   {parasha.hebrewName}
                 </Text>
               </>
             ) : (
-              <Text style={{ fontSize: 30, fontWeight: "800", color: isLight ? "#241a08" : "#f4ecd8", letterSpacing: -0.5 }}>
+              <Text style={{
+                fontSize: 32, fontWeight: "900",
+                color: isLight ? "#1c1408" : "#f5eedd",
+                letterSpacing: -0.8,
+              }}>
                 A Sacred Space to Learn
               </Text>
             )}
 
             {/* Warm greeting */}
-            <Text style={{ fontSize: 13, color: isLight ? "#7a6030" : "#9a8a6a", marginTop: 14, lineHeight: 20, fontStyle: "italic" }}>
+            <Text style={{
+              fontSize: 13, color: isLight ? "#7a6030" : "#9a8a6a",
+              marginTop: 16, lineHeight: 22,
+              fontStyle: "italic", letterSpacing: 0.1,
+            }}>
               {greeting}
             </Text>
 
             {/* Weekly progress pill */}
             {journeyStats.thisWeek > 0 && (
               <View style={{
-                flexDirection: "row", alignItems: "center", gap: 8, marginTop: 18,
-                backgroundColor: isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)",
-                borderRadius: 12, paddingHorizontal: 12, paddingVertical: 7,
+                flexDirection: "row", alignItems: "center", gap: 8, marginTop: 20,
+                backgroundColor: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)",
+                borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8,
                 alignSelf: "flex-start",
                 borderWidth: 1, borderColor: isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)",
               }}>
                 <Feather name="trending-up" size={13} color={isLight ? "#6b5323" : GREEN} />
-                <Text style={{ fontSize: 12, fontWeight: "600", color: isLight ? "#6b5323" : GREEN }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: isLight ? "#6b5323" : GREEN }}>
                   {journeyStats.thisWeek} session{journeyStats.thisWeek !== 1 ? "s" : ""} this week
                 </Text>
               </View>
@@ -612,83 +788,101 @@ export default function SacredStudyScreen() {
 
         {/* ── ② THIS WEEK'S PARASHAH ──────────────────────────────────────── */}
         {parasha && (
-          <Animated.View style={[{ marginHorizontal: HX, marginTop: 24, marginBottom: 24 }, a0]}>
+          <Animated.View style={[{ marginHorizontal: HX, marginTop: 28, marginBottom: 28 }, a0]}>
             <SectionHeader icon="star" label="This Week's Parashah" gold={gold} muted={colors.textMuted} />
 
             {/* Premium feature card */}
             <View style={{
-              borderRadius: 22,
+              borderRadius: 24,
               overflow: "hidden",
-              borderWidth: 1,
-              borderColor: gold + "35",
+              borderWidth: 1.5,
+              borderColor: gold + "40",
               shadowColor: gold,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.15,
-              shadowRadius: 16,
-              elevation: 6,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.22,
+              shadowRadius: 20,
+              elevation: 8,
             }}>
-              {/* Gold top accent strip */}
+              {/* Gold top accent strip — gradient */}
               <LinearGradient
-                colors={[gold + "cc", gold + "44", "transparent"]}
+                colors={[gold, gold + "88", gold + "22", "transparent"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={{ height: 3 }}
               />
 
-              <View style={{ backgroundColor: colors.card, padding: 22 }}>
-                {/* Decorative watermark */}
-                <View pointerEvents="none" style={{ position: "absolute", top: -10, right: -10, opacity: 0.04 }}>
-                  <Feather name="star" size={130} color={gold} />
+              <View style={{ backgroundColor: colors.card, padding: 24 }}>
+                {/* Decorative ghost watermark */}
+                <View pointerEvents="none" style={{ position: "absolute", top: -16, right: -16, opacity: 0.04 }}>
+                  <Feather name="star" size={150} color={gold} />
                 </View>
 
                 {/* Name row */}
-                <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                  <View style={{ flex: 1, paddingRight: 12 }}>
-                    <Text style={{ fontSize: 24, fontWeight: "800", color: colors.textPrimary, letterSpacing: -0.5, lineHeight: 28 }}>
+                <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+                  <View style={{ flex: 1, paddingRight: 14 }}>
+                    <Text style={{ fontSize: 26, fontWeight: "900", color: colors.textPrimary, letterSpacing: -0.7, lineHeight: 30 }}>
                       {parasha.name}
                     </Text>
-                    <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4, letterSpacing: 0.3 }}>
+                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 5, letterSpacing: 0.3 }}>
                       {parasha.book} · {parasha.verses}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 22, color: gold, writingDirection: "rtl", fontWeight: "600" }}>
-                    {parasha.hebrewName}
-                  </Text>
+                  <View style={{
+                    backgroundColor: gold + "14",
+                    borderWidth: 1, borderColor: gold + "30",
+                    borderRadius: 12, padding: 10,
+                  }}>
+                    <Text style={{ fontSize: 22, color: gold, writingDirection: "rtl", fontWeight: "700" }}>
+                      {parasha.hebrewName}
+                    </Text>
+                  </View>
                 </View>
 
                 {/* Progress bar */}
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                  <View style={{ flex: 1, height: 3, backgroundColor: colors.cardBorder, borderRadius: 2 }}>
-                    <View style={{ width: `${Math.min(100, journeyStats.thisWeek * 15)}%`, height: 3, backgroundColor: gold, borderRadius: 2 }} />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 }}>
+                  <View style={{ flex: 1, height: 4, backgroundColor: colors.cardBorder, borderRadius: 2, overflow: "hidden" }}>
+                    <LinearGradient
+                      colors={[gold, gold + "88"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={{ width: `${Math.min(100, Math.max(4, journeyStats.thisWeek * 15))}%`, height: 4, borderRadius: 2 }}
+                    />
                   </View>
-                  <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: "600" }}>
+                  <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: "700" }}>
                     {journeyStats.thisWeek > 0 ? `${Math.min(journeyStats.thisWeek, 7)}/7 days` : "Not started"}
                   </Text>
                 </View>
 
-                {/* Summary */}
+                {/* Summary — expandable */}
                 <Pressable
                   onPress={toggleParasha}
                   accessibilityRole="button"
                   accessibilityLabel={parashaExpanded ? "Show less" : "Read summary"}
                 >
                   <Text
-                    style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 23 }}
+                    style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 24 }}
                     numberOfLines={parashaExpanded ? undefined : 3}
                   >
                     {parasha.summary}
                   </Text>
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: gold, marginTop: 6 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: gold, marginTop: 7 }}>
                     {parashaExpanded ? "Show less ↑" : "Read more ↓"}
                   </Text>
                 </Pressable>
 
-                {/* Reading time + CTA */}
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, marginBottom: 18 }}>
-                  <Feather name="clock" size={12} color={colors.textMuted} />
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}>{readingMinutes} min read</Text>
+                {/* Reading time */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, marginBottom: 20 }}>
+                  <View style={{
+                    flexDirection: "row", alignItems: "center", gap: 5,
+                    backgroundColor: colors.cardBorder + "60",
+                    borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4,
+                  }}>
+                    <Feather name="clock" size={11} color={colors.textMuted} />
+                    <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: "600" }}>{readingMinutes} min read</Text>
+                  </View>
                 </View>
 
+                {/* Continue Reading CTA */}
                 <Animated.View style={{ transform: [{ scale: parashaPress.scale }] }}>
                   <Pressable
                     onPress={studyParasha}
@@ -697,25 +891,33 @@ export default function SacredStudyScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Continue Reading this week's Parashah"
                     style={{
-                      backgroundColor: gold,
-                      borderRadius: 14,
-                      paddingVertical: 16,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexDirection: "row",
-                      gap: 8,
-                      minHeight: 52,
+                      borderRadius: 16,
+                      overflow: "hidden",
                       shadowColor: gold,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.35,
-                      shadowRadius: 10,
-                      elevation: 5,
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.42,
+                      shadowRadius: 14,
+                      elevation: 7,
                     }}
                   >
-                    <Feather name="book-open" size={16} color={isLight ? "#241a08" : "#0f0c04"} />
-                    <Text style={{ fontSize: 15, fontWeight: "800", color: isLight ? "#241a08" : "#0f0c04", letterSpacing: 0.2 }}>
-                      Continue Reading
-                    </Text>
+                    <LinearGradient
+                      colors={isLight ? [gold, gold + "cc"] : [gold + "ee", gold + "aa"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={{
+                        paddingVertical: 17,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexDirection: "row",
+                        gap: 10,
+                        minHeight: 54,
+                      }}
+                    >
+                      <Feather name="book-open" size={17} color={isLight ? "#241a08" : "#0f0c04"} />
+                      <Text style={{ fontSize: 15, fontWeight: "900", color: isLight ? "#241a08" : "#0f0c04", letterSpacing: 0.3 }}>
+                        Continue Reading
+                      </Text>
+                    </LinearGradient>
                   </Pressable>
                 </Animated.View>
               </View>
@@ -724,7 +926,7 @@ export default function SacredStudyScreen() {
         )}
 
         {/* ── ③ DAILY LEARNING ────────────────────────────────────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a1]}>
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a1]}>
           <SectionHeader icon="layers" label="Daily Learning" gold={gold} muted={colors.textMuted} />
 
           {/* Daf Yomi */}
@@ -775,7 +977,7 @@ export default function SacredStudyScreen() {
         </Animated.View>
 
         {/* ── ④ FEATURED STUDY (Torah Insight — editorial card) ───────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a2]}>
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a2]}>
           <SectionHeader icon="sunrise" label="Featured Study" gold={gold} muted={colors.textMuted} actionLabel="Bookmark" onAction={scrollToBookmarks} />
 
           <Pressable
@@ -783,67 +985,77 @@ export default function SacredStudyScreen() {
             accessibilityRole="button"
             accessibilityLabel={`${insight.title}. ${insightExpanded ? "Collapse" : "Expand"} insight`}
             style={{
-              borderRadius: 22,
+              borderRadius: 24,
               overflow: "hidden",
               borderWidth: 1,
-              borderColor: CORAL + "35",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 5 },
-              shadowOpacity: 0.2,
-              shadowRadius: 16,
-              elevation: 6,
+              borderColor: CORAL + "38",
+              shadowColor: CORAL,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.22,
+              shadowRadius: 20,
+              elevation: 7,
             }}
           >
-            {/* Header gradient */}
             <LinearGradient
-              colors={isLight ? ["#fff8f0", "#fff0e0"] : ["#1c1008", "#281508"]}
+              colors={isLight ? ["#fff8f2", "#fff0e4", "#ffe8d4"] : ["#1e0e06", "#2c1208", "#1e0e06"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ padding: 22 }}
+              style={{ padding: 24 }}
             >
-              {/* Decorative star */}
-              <View pointerEvents="none" style={{ position: "absolute", top: -15, right: -15, opacity: 0.07 }}>
-                <Feather name="star" size={100} color={CORAL} />
+              {/* Decorative background star */}
+              <View pointerEvents="none" style={{ position: "absolute", top: -20, right: -20, opacity: 0.07 }}>
+                <Feather name="star" size={120} color={CORAL} />
               </View>
 
-              {/* Badge */}
-              <View style={{
-                flexDirection: "row", alignItems: "center", gap: 5,
-                backgroundColor: CORAL + "20",
-                borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4,
-                alignSelf: "flex-start", marginBottom: 14,
-                borderWidth: 1, borderColor: CORAL + "30",
-              }}>
-                <Feather name="feather" size={10} color={CORAL} />
-                <Text style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.4, color: CORAL, textTransform: "uppercase" }}>
-                  Torah Insight
-                </Text>
+              {/* Badge row */}
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <View style={{
+                  flexDirection: "row", alignItems: "center", gap: 6,
+                  backgroundColor: CORAL + "20",
+                  borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5,
+                  borderWidth: 1, borderColor: CORAL + "30",
+                }}>
+                  <Feather name="feather" size={10} color={CORAL} />
+                  <Text style={{ fontSize: 9, fontWeight: "800", letterSpacing: 1.6, color: CORAL, textTransform: "uppercase" }}>
+                    Torah Insight
+                  </Text>
+                </View>
+                {/* Estimated time badge */}
+                <View style={{
+                  flexDirection: "row", alignItems: "center", gap: 5,
+                  backgroundColor: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)",
+                  borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4,
+                }}>
+                  <Feather name="clock" size={10} color={isLight ? "#9a7a48" : "#8a7a5a"} />
+                  <Text style={{ fontSize: 10, fontWeight: "600", color: isLight ? "#9a7a48" : "#8a7a5a" }}>
+                    {estimateReadingMinutes(insight.body)} min
+                  </Text>
+                </View>
               </View>
 
               {/* Title */}
-              <Text style={{ fontSize: 22, fontWeight: "800", color: isLight ? "#241a08" : "#f4e8d0", letterSpacing: -0.4, lineHeight: 26, marginBottom: 12 }}>
+              <Text style={{
+                fontSize: 24, fontWeight: "900",
+                color: isLight ? "#1e0e06" : "#f5e8d0",
+                letterSpacing: -0.5, lineHeight: 28,
+                marginBottom: 14,
+              }}>
                 {insight.title}
               </Text>
 
               {/* Body — expandable */}
               <Text
-                style={{ fontSize: 14, color: isLight ? "#5a3a18" : "#c8b898", lineHeight: 24 }}
+                style={{ fontSize: 14, color: isLight ? "#5a3a18" : "#c8b898", lineHeight: 25 }}
                 numberOfLines={insightExpanded ? undefined : 4}
               >
                 {insight.body}
               </Text>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: CORAL, marginTop: 8 }}>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: CORAL, marginTop: 10 }}>
                 {insightExpanded ? "Show less ↑" : "Read more ↓"}
               </Text>
 
               {/* Footer */}
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Feather name="clock" size={12} color={isLight ? "#9a7a48" : "#8a7a5a"} />
-                  <Text style={{ fontSize: 11, color: isLight ? "#9a7a48" : "#8a7a5a" }}>
-                    {estimateReadingMinutes(insight.body)} min read
-                  </Text>
-                </View>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginTop: 16 }}>
                 <Pressable
                   onPress={scrollToBookmarks}
                   hitSlop={10}
@@ -851,12 +1063,13 @@ export default function SacredStudyScreen() {
                   accessibilityLabel="Bookmark this insight"
                 >
                   <View style={{
-                    flexDirection: "row", alignItems: "center", gap: 5,
-                    backgroundColor: CORAL + "18",
-                    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5,
+                    flexDirection: "row", alignItems: "center", gap: 6,
+                    backgroundColor: CORAL + "1c",
+                    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7,
+                    borderWidth: 1, borderColor: CORAL + "30",
                   }}>
                     <Feather name="bookmark" size={12} color={CORAL} />
-                    <Text style={{ fontSize: 11, fontWeight: "600", color: CORAL }}>Save</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: CORAL }}>Save</Text>
                   </View>
                 </Pressable>
               </View>
@@ -865,100 +1078,55 @@ export default function SacredStudyScreen() {
         </Animated.View>
 
         {/* ── ⑤ LEARNING PATH ─────────────────────────────────────────────── */}
-        <Animated.View style={[{ marginBottom: 24 }, a3]}>
+        <Animated.View style={[{ marginBottom: 28 }, a3]}>
           <View style={{ marginHorizontal: HX }}>
             <SectionHeader icon="trending-up" label={t.sacredStudyStudyPaths} gold={gold} muted={colors.textMuted} />
           </View>
 
-          {/* Horizontal scroll of path cards */}
+          {/* Horizontal scroll — LearningPathCard extracted (fixes Rules of Hooks) */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: HX, gap: 12 }}
           >
             {[
-              { label: "Alef-Bet", sub: "Foundation", emoji: "א", accent: gold, route: "goSiddur", param: "Hebrew", done: journeyStats.studyDays >= 1 },
-              { label: "Beginner Torah", sub: "Start here", emoji: "📖", accent: GREEN, route: "goSiddur", param: "Beginner", done: journeyStats.studyDays >= 3 },
-              { label: "Intermediate", sub: "Build deeper", emoji: "🌿", accent: TEAL, route: "goSiddur", param: "Intermediate", done: journeyStats.studyDays >= 7 },
-              { label: "Advanced", sub: "Full immersion", emoji: "✡", accent: PURPLE, route: "goSiddur", param: "Advanced", done: journeyStats.studyDays >= 14 },
-            ].map((path) => {
-              const { scale, onPressIn, onPressOut } = usePressScale(0.95);
-              return (
-                <Animated.View
-                  key={path.label}
-                  style={{ transform: [{ scale }], width: 140 }}
-                >
-                  <Pressable
-                    onPress={() => goSiddur(path.param)}
-                    onPressIn={onPressIn}
-                    onPressOut={onPressOut}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${path.label}: ${path.sub}`}
-                    style={{
-                      borderRadius: 18,
-                      overflow: "hidden",
-                      borderWidth: path.done ? 1.5 : 1,
-                      borderColor: path.done ? path.accent + "70" : colors.cardBorder,
-                      shadowColor: path.done ? path.accent : "#000",
-                      shadowOffset: { width: 0, height: path.done ? 6 : 2 },
-                      shadowOpacity: path.done ? 0.28 : 0.1,
-                      shadowRadius: path.done ? 14 : 6,
-                      elevation: path.done ? 6 : 2,
-                    }}
-                  >
-                    <LinearGradient
-                      colors={path.done
-                        ? [path.accent + "30", path.accent + "10", colors.card]
-                        : [colors.card, colors.card]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 0, y: 1 }}
-                      style={{ padding: 16, minHeight: 136, justifyContent: "space-between" }}
-                    >
-                      {/* Top: done indicator */}
-                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <Text style={{ fontSize: 28 }}>{path.emoji}</Text>
-                        {path.done && (
-                          <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: path.accent, alignItems: "center", justifyContent: "center" }}>
-                            <Feather name="check" size={11} color="#fff" />
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Bottom: text */}
-                      <View>
-                        <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary, letterSpacing: -0.2, marginBottom: 3 }}>
-                          {path.label}
-                        </Text>
-                        <Text style={{ fontSize: 11, color: path.done ? path.accent : colors.textMuted, fontWeight: "600" }}>
-                          {path.done ? "Completed ✓" : path.sub}
-                        </Text>
-                      </View>
-                    </LinearGradient>
-                  </Pressable>
-                </Animated.View>
-              );
-            })}
+              { label: "Alef-Bet",       sub: "Foundation",   emoji: "א", accent: gold,   param: "Hebrew",       done: journeyStats.studyDays >= 1 },
+              { label: "Beginner Torah", sub: "Start here",   emoji: "📖", accent: GREEN,  param: "Beginner",     done: journeyStats.studyDays >= 3 },
+              { label: "Intermediate",   sub: "Build deeper", emoji: "🌿", accent: TEAL,   param: "Intermediate", done: journeyStats.studyDays >= 7 },
+              { label: "Advanced",       sub: "Full immersion", emoji: "✡", accent: PURPLE, param: "Advanced",     done: journeyStats.studyDays >= 14 },
+            ].map((path) => (
+              <LearningPathCard
+                key={path.label}
+                label={path.label}
+                sub={path.sub}
+                emoji={path.emoji}
+                accent={path.accent}
+                done={path.done}
+                colors={colors}
+                onPress={() => goSiddur(path.param)}
+              />
+            ))}
           </ScrollView>
         </Animated.View>
 
         {/* ── ⑥ LIBRARY ───────────────────────────────────────────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a4]}>
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a4]}>
           <SectionHeader icon="book-open" label="Sacred Library" gold={gold} muted={colors.textMuted} actionLabel="Browse All" onAction={() => goSiddur("All")} />
 
           <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 0 }}>
-            <LibraryCategory emoji="🔵" label="Siddur"          sub="Daily prayers"           accent={gold}   colors={colors} onPress={() => goSiddur("Siddur")} />
-            <LibraryCategory emoji="📿" label="Tehillim"        sub="Psalms of David"         accent={PURPLE} colors={colors} onPress={() => goSiddur("Tehillim")} />
-            <LibraryCategory emoji="📜" label="Tanakh"          sub="Torah · Nevi'im · Ketuvim" accent={AMBER} colors={colors} onPress={() => goSiddur("Tanakh")} />
-            <LibraryCategory emoji="📚" label="Mishnah"         sub="Oral law · Six orders"   accent={TEAL}   colors={colors} onPress={() => goSiddur("Mishnah")} />
-            <LibraryCategory emoji="🏛" label="Talmud"          sub="Gemara · Daily Daf"       accent={PURPLE} colors={colors} onPress={goDaf} />
-            <LibraryCategory emoji="🌿" label="Mussar"          sub="Character & ethics"       accent={GREEN}  colors={colors} onPress={() => router.push("/mussar" as any)} />
-            <LibraryCategory emoji="🎵" label="Kuki Resources"  sub="Bnei Menashe traditions"  accent={CORAL}  colors={colors} onPress={() => goSiddur("Kuki")} />
-            <LibraryCategory emoji="📖" label="Prayer Books"    sub="Siddurim & tefillot"       accent={PINK}   colors={colors} onPress={() => goSiddur("Prayer Books")} />
+            <LibraryCategory emoji="🔵" label="Siddur"         sub="Daily prayers"              accent={gold}   colors={colors} onPress={() => goSiddur("Siddur")} />
+            <LibraryCategory emoji="📿" label="Tehillim"       sub="Psalms of David"            accent={PURPLE} colors={colors} onPress={() => goSiddur("Tehillim")} />
+            <LibraryCategory emoji="📜" label="Tanakh"         sub="Torah · Nevi'im · Ketuvim"  accent={AMBER}  colors={colors} onPress={() => goSiddur("Tanakh")} />
+            <LibraryCategory emoji="📚" label="Mishnah"        sub="Oral law · Six orders"      accent={TEAL}   colors={colors} onPress={() => goSiddur("Mishnah")} />
+            <LibraryCategory emoji="🏛" label="Talmud"         sub="Gemara · Daily Daf"         accent={PURPLE} colors={colors} onPress={goDaf} />
+            <LibraryCategory emoji="🌿" label="Mussar"         sub="Character & ethics"         accent={GREEN}  colors={colors} onPress={() => router.push("/mussar" as any)} />
+            <LibraryCategory emoji="🎵" label="Kuki Resources" sub="Bnei Menashe traditions"    accent={CORAL}  colors={colors} onPress={() => goSiddur("Kuki")} />
+            <LibraryCategory emoji="📖" label="Prayer Books"   sub="Siddurim & tefillot"        accent={PINK}   colors={colors} onPress={() => goSiddur("Prayer Books")} />
           </View>
         </Animated.View>
 
         {/* ── Siddur Times of Prayer (preserved — original §5) ────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a4]}>
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a4]}>
           <SectionHeader icon="sun" label="Times of Prayer" gold={gold} muted={colors.textMuted} />
           <View style={{ flexDirection: "row", gap: sp[3] }}>
             {SIDDUR_TIMES.map((s) => (
@@ -979,105 +1147,110 @@ export default function SacredStudyScreen() {
         </Animated.View>
 
         {/* ── 48 Ways of Torah (preserved — original §8) ──────────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a5]}>
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a5]}>
           <SectionHeader icon="star" label="48 Ways of Torah" gold={gold} muted={colors.textMuted} />
           <Pressable
             onPress={() => router.push("/mussar" as any)}
             accessibilityRole="button"
             accessibilityLabel="Open 48 Ways of Torah"
             style={{
-              borderRadius: 22,
+              borderRadius: 24,
               overflow: "hidden",
               borderWidth: 1,
-              borderColor: "#f59e0b35",
+              borderColor: "#f59e0b40",
               shadowColor: "#f59e0b",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.15,
-              shadowRadius: 12,
-              elevation: 5,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.22,
+              shadowRadius: 16,
+              elevation: 7,
             }}
           >
             <LinearGradient
-              colors={["#1c0e00", "#3d2005", "#6b3510"]}
+              colors={["#160900", "#3a1c04", "#6a3210"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ padding: 22, flexDirection: "row", alignItems: "center", gap: sp[4] }}
+              style={{ padding: 24, flexDirection: "row", alignItems: "center", gap: sp[4] }}
             >
-              <View pointerEvents="none" style={{ position: "absolute", top: -18, right: -18, opacity: 0.07 }}>
-                <Feather name="star" size={110} color="#f59e0b" />
+              <View pointerEvents="none" style={{ position: "absolute", top: -20, right: -20, opacity: 0.07 }}>
+                <Feather name="star" size={120} color="#f59e0b" />
               </View>
               <View style={{
-                width: 54, height: 54, borderRadius: 27,
+                width: 58, height: 58, borderRadius: 29,
                 backgroundColor: "#f59e0b22",
-                borderWidth: 1, borderColor: "#f59e0b40",
+                borderWidth: 1.5, borderColor: "#f59e0b44",
                 alignItems: "center", justifyContent: "center", flexShrink: 0,
               }}>
-                <Feather name="star" size={24} color="#f59e0b" />
+                <Feather name="star" size={26} color="#f59e0b" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 2, color: "#f59e0b", textTransform: "uppercase", marginBottom: 5 }}>
+                <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 2, color: "#f59e0b", textTransform: "uppercase", marginBottom: 6 }}>
                   Personal Growth · Pirkei Avot
                 </Text>
-                <Text style={{ fontSize: 20, fontWeight: "800", letterSpacing: -0.4, color: "#fef3c7" }}>
+                <Text style={{ fontSize: 22, fontWeight: "900", letterSpacing: -0.5, color: "#fef3c7", lineHeight: 26 }}>
                   48 Ways of Torah
                 </Text>
-                <Text style={{ fontSize: 13, color: "#d4974a", marginTop: 4 }}>
+                <Text style={{ fontSize: 13, color: "#d4974a", marginTop: 5 }}>
                   48 principles for a life of wisdom
                 </Text>
               </View>
-              <Feather name="chevron-right" size={20} color="#a06020" />
+              <Feather name="chevron-right" size={22} color="#a06020" />
             </LinearGradient>
           </Pressable>
         </Animated.View>
 
         {/* ── ⑦ TODAY'S WISDOM (premium quote card) ───────────────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a6]}>
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a6]}>
           <SectionHeader icon="feather" label="Today's Wisdom" gold={gold} muted={colors.textMuted} />
 
           <View style={{
             backgroundColor: colors.card,
-            borderRadius: 22,
+            borderRadius: 24,
             borderWidth: 1,
-            borderColor: gold + "28",
+            borderColor: gold + "30",
             overflow: "hidden",
             shadowColor: gold,
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.12,
-            shadowRadius: 12,
-            elevation: 4,
+            shadowOffset: { width: 0, height: 5 },
+            shadowOpacity: 0.18,
+            shadowRadius: 16,
+            elevation: 5,
           }}>
-            {/* Gold left border accent */}
+            {/* Gold left border accent — gradient */}
             <View style={{ flexDirection: "row" }}>
               <LinearGradient
-                colors={[gold, gold + "60", "transparent"]}
+                colors={[gold, gold + "88", gold + "20", "transparent"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={{ width: 4 }}
               />
 
-              <View style={{ flex: 1, padding: 22 }}>
-                {/* Decorative quote mark */}
+              <View style={{ flex: 1, padding: 24 }}>
+                {/* Decorative quote mark — large ghost */}
                 <Text style={{
-                  fontSize: 72, lineHeight: 60,
-                  color: gold + "18",
+                  fontSize: 96, lineHeight: 72,
+                  color: gold + "14",
                   fontWeight: "900",
-                  position: "absolute", top: 10, right: 16,
+                  position: "absolute", top: 8, right: 14,
+                  fontStyle: "normal",
                 }}>
                   "
                 </Text>
 
-                <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.6, color: gold, textTransform: "uppercase", marginBottom: 14 }}>
+                <Text style={{
+                  fontSize: 10, fontWeight: "800", letterSpacing: 1.8,
+                  color: gold, textTransform: "uppercase", marginBottom: 16,
+                }}>
                   A Quiet Moment
                 </Text>
 
                 {/* Quote — large, premium typography */}
                 <Text style={{
-                  fontSize: 17,
+                  fontSize: 18,
                   fontStyle: "italic",
-                  lineHeight: 28,
+                  lineHeight: 30,
                   color: colors.textSecondary,
                   letterSpacing: 0.1,
-                  marginBottom: 16,
+                  marginBottom: 20,
+                  paddingRight: 32,
                 }}>
                   "{reflection.thought}"
                 </Text>
@@ -1094,13 +1267,13 @@ export default function SacredStudyScreen() {
                     accessibilityLabel="Share this wisdom"
                   >
                     <View style={{
-                      flexDirection: "row", alignItems: "center", gap: 5,
-                      backgroundColor: gold + "15",
-                      borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5,
+                      flexDirection: "row", alignItems: "center", gap: 6,
+                      backgroundColor: gold + "18",
+                      borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6,
                       borderWidth: 1, borderColor: gold + "30",
                     }}>
                       <Feather name="share-2" size={12} color={gold} />
-                      <Text style={{ fontSize: 11, fontWeight: "600", color: gold }}>Share</Text>
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: gold }}>Share</Text>
                     </View>
                   </Pressable>
                 </View>
@@ -1110,17 +1283,17 @@ export default function SacredStudyScreen() {
         </Animated.View>
 
         {/* ── Study Collections (preserved — original §9) ─────────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a6]}>
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a6]}>
           <SectionHeader icon="grid" label={t.sacredStudyStudyPaths} gold={gold} muted={colors.textMuted} />
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: sp[3] }}>
-            <CollectionTile icon="star" label="Parashah" sub={parasha?.name ?? "This week"} color={gold} colors={colors} rd={rd} sp={sp} type={type} onPress={studyParasha} />
-            <CollectionTile icon="feather" label="Torah" sub="Track your study" color={GREEN} colors={colors} rd={rd} sp={sp} type={type} onPress={goTorahTracker} />
-            <CollectionTile icon="book" label="Daf Yomi" sub={daf.tractate} color={PURPLE} colors={colors} rd={rd} sp={sp} type={type} onPress={goDaf} />
-            <CollectionTile icon="book-open" label="Siddur" sub="Prayer texts" color="#6382FF" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("Siddur")} />
-            <CollectionTile icon="sun" label="Prayer" sub="Daily Tefillah" color="#f0a020" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("Prayer Books")} />
-            <CollectionTile icon="calendar" label={t.sacredStudyJewishCalendar} sub="Hebrew dates & holidays" color={TEAL} colors={colors} rd={rd} sp={sp} type={type} onPress={goCalendar} />
-            <CollectionTile icon="layers" label="Learning Library" sub="All sacred texts" color={CORAL} colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("All")} />
-            <CollectionTile icon="bookmark" label={t.sacredStudyBookmarks} sub={bookmarks.length ? `${bookmarks.length} saved` : "Nothing saved yet"} color={PINK} colors={colors} rd={rd} sp={sp} type={type} onPress={scrollToBookmarks} />
+            <CollectionTile icon="star"      label="Parashah"        sub={parasha?.name ?? "This week"}                 color={gold}    colors={colors} rd={rd} sp={sp} type={type} onPress={studyParasha} />
+            <CollectionTile icon="feather"   label="Torah"           sub="Track your study"                             color={GREEN}   colors={colors} rd={rd} sp={sp} type={type} onPress={goTorahTracker} />
+            <CollectionTile icon="book"      label="Daf Yomi"        sub={daf.tractate}                                 color={PURPLE}  colors={colors} rd={rd} sp={sp} type={type} onPress={goDaf} />
+            <CollectionTile icon="book-open" label="Siddur"          sub="Prayer texts"                                 color="#6382FF" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("Siddur")} />
+            <CollectionTile icon="sun"       label="Prayer"          sub="Daily Tefillah"                               color="#f0a020" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("Prayer Books")} />
+            <CollectionTile icon="calendar"  label={t.sacredStudyJewishCalendar} sub="Hebrew dates & holidays"         color={TEAL}    colors={colors} rd={rd} sp={sp} type={type} onPress={goCalendar} />
+            <CollectionTile icon="layers"    label="Learning Library" sub="All sacred texts"                           color={CORAL}   colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("All")} />
+            <CollectionTile icon="bookmark"  label={t.sacredStudyBookmarks} sub={bookmarks.length ? `${bookmarks.length} saved` : "Nothing saved yet"} color={PINK} colors={colors} rd={rd} sp={sp} type={type} onPress={scrollToBookmarks} />
           </View>
         </Animated.View>
 
@@ -1129,15 +1302,21 @@ export default function SacredStudyScreen() {
           ref={bookmarksRef}
           onLayout={(e) => { bookmarksY.current = e.nativeEvent.layout.y; }}
         >
-          <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a7]}>
+          <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a7]}>
             <SectionHeader icon="bookmark" label={t.sacredStudyBookmarks} gold={gold} muted={colors.textMuted} />
             {bookmarks.length === 0 ? (
               <View style={{
-                backgroundColor: colors.card, borderRadius: 16,
+                backgroundColor: colors.card, borderRadius: 18,
                 borderWidth: 1, borderColor: colors.cardBorder,
-                padding: 20, alignItems: "center", gap: 8,
+                padding: 24, alignItems: "center", gap: 10,
               }}>
-                <Feather name="bookmark" size={22} color={colors.textMuted} />
+                <View style={{
+                  width: 48, height: 48, borderRadius: 24,
+                  backgroundColor: gold + "12",
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <Feather name="bookmark" size={22} color={colors.textMuted} />
+                </View>
                 <Text style={[type.bodySm, { color: colors.textMuted, textAlign: "center" }]}>
                   {t.sacredStudyNoBookmarks}
                 </Text>
@@ -1153,20 +1332,21 @@ export default function SacredStudyScreen() {
                     style={{
                       backgroundColor: colors.card, borderRadius: rd.md, padding: sp[3.5],
                       flexDirection: "row", alignItems: "center", gap: sp[3],
-                      borderWidth: 1, borderColor: colors.cardBorder, minHeight: 52,
+                      borderWidth: 1, borderColor: colors.cardBorder, minHeight: 56,
                       shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
+                      shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.08,
-                      shadowRadius: 4,
+                      shadowRadius: 6,
                       elevation: 2,
                     }}
                   >
                     <View style={{
-                      width: 34, height: 34, borderRadius: 10,
-                      backgroundColor: gold + "15",
+                      width: 36, height: 36, borderRadius: 11,
+                      backgroundColor: gold + "18",
+                      borderWidth: 1, borderColor: gold + "28",
                       alignItems: "center", justifyContent: "center",
                     }}>
-                      <Feather name="bookmark" size={15} color={gold} />
+                      <Feather name="bookmark" size={16} color={gold} />
                     </View>
                     <Text style={[type.bodySm, { color: colors.textPrimary, flex: 1 }]} numberOfLines={1}>{item.label}</Text>
                     <Feather name="chevron-right" size={16} color={colors.textMuted} />
@@ -1178,12 +1358,12 @@ export default function SacredStudyScreen() {
         </View>
 
         {/* ── Learning Journey Stats (preserved) ──────────────────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 24 }, a7]}>
+        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a7]}>
           <SectionHeader icon="trending-up" label={t.sacredStudyLearningJourney} gold={gold} muted={colors.textMuted} />
           <View style={{ flexDirection: "row", gap: sp[3] }}>
-            <JourneyStat value={journeyStats.studyDays}       label={t.sacredStudyStudyDays}       colors={colors} type={type} rd={rd} sp={sp} shadow={shadow} icon="sun" />
-            <JourneyStat value={journeyStats.lessonsCompleted} label={t.sacredStudyLessonsCompleted} colors={colors} type={type} rd={rd} sp={sp} shadow={shadow} icon="check-circle" />
-            <JourneyStat value={journeyStats.thisWeek}         label={t.sacredStudyThisWeek}         colors={colors} type={type} rd={rd} sp={sp} shadow={shadow} icon="calendar" />
+            <JourneyStat value={journeyStats.studyDays}        label={t.sacredStudyStudyDays}        colors={colors} type={type} rd={rd} sp={sp} shadow={shadow} icon="sun" />
+            <JourneyStat value={journeyStats.lessonsCompleted} label={t.sacredStudyLessonsCompleted}  colors={colors} type={type} rd={rd} sp={sp} shadow={shadow} icon="check-circle" />
+            <JourneyStat value={journeyStats.thisWeek}         label={t.sacredStudyThisWeek}          colors={colors} type={type} rd={rd} sp={sp} shadow={shadow} icon="calendar" />
           </View>
         </Animated.View>
 
@@ -1207,35 +1387,35 @@ export default function SacredStudyScreen() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
-                  borderRadius: 22,
+                  borderRadius: 24,
                   padding: 24,
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: 16,
-                  minHeight: 88,
-                  borderWidth: 1,
-                  borderColor: lastStudy ? gold + "50" : colors.cardBorder,
+                  gap: 18,
+                  minHeight: 92,
+                  borderWidth: lastStudy ? 1.5 : 1,
+                  borderColor: lastStudy ? gold + "55" : colors.cardBorder,
                   shadowColor: lastStudy ? gold : "#000",
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: lastStudy ? 0.3 : 0.08,
-                  shadowRadius: 16,
-                  elevation: lastStudy ? 7 : 2,
+                  shadowOffset: { width: 0, height: lastStudy ? 8 : 2 },
+                  shadowOpacity: lastStudy ? 0.36 : 0.08,
+                  shadowRadius: lastStudy ? 20 : 6,
+                  elevation: lastStudy ? 9 : 2,
                 }}
               >
                 {/* Decorative watermark */}
                 {lastStudy && (
-                  <View pointerEvents="none" style={{ position: "absolute", top: -10, right: -10, opacity: 0.12 }}>
-                    <Feather name="star" size={90} color={isLight ? "#241a08" : "#241a08"} />
+                  <View pointerEvents="none" style={{ position: "absolute", top: -12, right: -12, opacity: 0.12 }}>
+                    <Feather name="star" size={100} color={isLight ? "#241a08" : "#241a08"} />
                   </View>
                 )}
 
                 <View style={{
-                  width: 52, height: 52, borderRadius: 26,
+                  width: 56, height: 56, borderRadius: 28,
                   backgroundColor: lastStudy
                     ? (isLight ? "rgba(0,0,0,0.12)" : "rgba(0,0,0,0.25)")
                     : colors.card,
                   alignItems: "center", justifyContent: "center",
-                  borderWidth: 1,
+                  borderWidth: 1.5,
                   borderColor: lastStudy
                     ? (isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)")
                     : colors.cardBorder,
@@ -1250,17 +1430,17 @@ export default function SacredStudyScreen() {
 
                 <View style={{ flex: 1 }}>
                   <Text style={{
-                    fontSize: 11, fontWeight: "700", letterSpacing: 1.4,
+                    fontSize: 11, fontWeight: "800", letterSpacing: 1.6,
                     color: lastStudy ? (isLight ? "#241a08cc" : "#0f0c04bb") : colors.textMuted,
-                    textTransform: "uppercase", marginBottom: 4,
+                    textTransform: "uppercase", marginBottom: 5,
                   }}>
                     {lastStudy ? "Continue Learning" : t.sacredStudyBeginJourney.toUpperCase()}
                   </Text>
                   <Text
                     style={{
-                      fontSize: 16, fontWeight: "800",
+                      fontSize: 17, fontWeight: "900",
                       color: lastStudy ? (isLight ? "#241a08" : "#0f0c04") : colors.textMuted,
-                      letterSpacing: -0.3,
+                      letterSpacing: -0.4,
                     }}
                     numberOfLines={1}
                   >
@@ -1270,11 +1450,11 @@ export default function SacredStudyScreen() {
 
                 {lastStudy && (
                   <View style={{
-                    width: 40, height: 40, borderRadius: 20,
+                    width: 44, height: 44, borderRadius: 22,
                     backgroundColor: isLight ? "rgba(0,0,0,0.12)" : "rgba(0,0,0,0.2)",
                     alignItems: "center", justifyContent: "center",
                   }}>
-                    <Feather name="arrow-right" size={18} color={isLight ? "#241a08" : "#0f0c04"} />
+                    <Feather name="arrow-right" size={20} color={isLight ? "#241a08" : "#0f0c04"} />
                   </View>
                 )}
               </LinearGradient>
@@ -1315,16 +1495,17 @@ const SiddurTimeCard = memo(function SiddurTimeCard({
         accessibilityLabel={`${label} prayer — ${sub}`}
         style={{
           backgroundColor: colors.card, borderRadius: rd.lg, padding: sp[3.5],
-          alignItems: "center", gap: 6, borderWidth: 1, borderColor: colors.cardBorder,
-          minHeight: 96, justifyContent: "center", ...shadow.level1,
+          alignItems: "center", gap: 7, borderWidth: 1, borderColor: colors.cardBorder,
+          minHeight: 100, justifyContent: "center", ...shadow.level1,
         }}
       >
         <View style={{
-          width: 36, height: 36, borderRadius: 18,
-          backgroundColor: colors.accentGold + "18",
+          width: 40, height: 40, borderRadius: 20,
+          backgroundColor: colors.accentGold + "1c",
+          borderWidth: 1, borderColor: colors.accentGold + "28",
           alignItems: "center", justifyContent: "center",
         }}>
-          <Feather name={icon} size={16} color={colors.accentGold} />
+          <Feather name={icon} size={17} color={colors.accentGold} />
         </View>
         <Text style={[type.label, { color: colors.textPrimary }]}>{label}</Text>
         <Text style={[type.caption, { color: colors.textMuted }]}>{sub}</Text>
@@ -1354,18 +1535,19 @@ const JourneyStat = memo(function JourneyStat({ value, label, colors, type, rd, 
       style={{
         flex: 1, backgroundColor: colors.card, borderRadius: rd.lg, padding: sp[3.5],
         alignItems: "center", gap: 6, borderWidth: 1, borderColor: colors.cardBorder,
-        minHeight: 96, justifyContent: "center", ...shadow.level1,
+        minHeight: 100, justifyContent: "center", ...shadow.level1,
       }}
     >
       <View style={{
-        width: 32, height: 32, borderRadius: 10,
-        backgroundColor: colors.accentGold + "18",
+        width: 36, height: 36, borderRadius: 11,
+        backgroundColor: colors.accentGold + "1c",
+        borderWidth: 1, borderColor: colors.accentGold + "28",
         alignItems: "center", justifyContent: "center",
         marginBottom: 2,
       }}>
-        <Feather name={icon} size={14} color={colors.accentGold} />
+        <Feather name={icon} size={15} color={colors.accentGold} />
       </View>
-      <Text style={{ fontSize: 22, fontWeight: "800", color: colors.textPrimary, letterSpacing: -0.5 }}>{value}</Text>
+      <Text style={{ fontSize: 24, fontWeight: "900", color: colors.textPrimary, letterSpacing: -0.8 }}>{value}</Text>
       <Text style={[type.caption, { color: colors.textMuted, textAlign: "center" }]} numberOfLines={2}>{label}</Text>
     </View>
   );
