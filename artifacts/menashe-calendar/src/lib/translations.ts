@@ -30,6 +30,8 @@ export interface Translations {
   navSiddur: string;
   navSettings: string;
   navChat: string;
+  navNotifications: string;
+  navNotifications: string;
 
   /* ── Beta Feedback ── */
   feedbackButtonLabel: string;
@@ -1287,6 +1289,48 @@ export const en: Translations = {
   journeyOpenSiddur: "Open Siddur",
   journeyPersonal: "Personal Reminders",
   journeyNotSignedIn: "Sign in to see your personal journey",
+
+  /* ── Notifications Page ── */
+  notifPageTitle: "Notifications",
+  notifMarkAllRead: "Mark All Read",
+  notifTabAll: "All",
+  notifTabTorah: "Torah",
+  notifTabPrayer: "Prayer",
+  notifTabHolidays: "Holidays",
+  notifTabCommunity: "Community",
+  notifTabAccount: "Account",
+  notifEmptyCta: "Continue Learning",
+  notifActivityTitle: "Activity",
+  notifQuickActions: "Quick Actions",
+  notifResumeStudy: "Resume Torah Study",
+  notifPrayerTimes: "Prayer Times",
+  notifOpenYahrzeit: "Yahrzeit",
+  notifOpenCommunity: "Community",
+  notifSettingsTitle: "Notification Settings",
+  notifPrayerReminders: "Daily Prayers",
+  notifPrayerRemindersSub: "Shacharit, Mincha & Maariv",
+  notifShabbatCandles: "Shabbat Candle Lighting",
+  notifShabbatCandlesSub: "18 min before candles",
+  notifHavdalahReminder: "Havdalah",
+  notifShemaReminder: "Latest Shema",
+  notifShemaReminderSub: "Deadline alert",
+  notifTorahReminders: "Weekly Parasha",
+  notifTorahRemindersSub: "Friday morning reminder",
+  notifHolidayReminders: "Holiday Alerts",
+  notifHolidayRemindersSub: "Day before each holiday",
+  notifYahrzeitReminders: "Yahrzeit Reminders",
+  notifOmerCount: "Omer Count",
+  notifShabbatDigest: "Shabbat Digest",
+  notifShabbatDigestSub: "Weekly summary on Friday",
+  notifLeadTime: "Reminder Lead Time",
+  notifPushNotifications: "Push Notifications",
+  notifPushSubscribe: "Enable Push",
+  notifPushUnsubscribe: "Disable Push",
+  notifPushTest: "Send Test Notification",
+  notifPermissionDenied: "Notifications are blocked in your browser. Open browser settings to enable them.",
+  notifRetry: "Try Again",
+  notifNoActivity: "No activity yet — start your learning journey!",
+  notifStartStudy: "Start logging Torah study →",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1922,6 +1966,48 @@ export const tk: Translations = {
   journeyOpenSiddur: "Siddur Hawn",
   journeyPersonal: "Ka Thilsim",
   journeyNotSignedIn: "Na lamka en theih dingin lut ta",
+
+  /* ── Notifications Page ── */
+  notifPageTitle: "Hlabu Thar",
+  notifMarkAllRead: "Thleng Zo Tih",
+  notifTabAll: "Zawng",
+  notifTabTorah: "Torah",
+  notifTabPrayer: "Thu Dawt",
+  notifTabHolidays: "Ni Thianghlim",
+  notifTabCommunity: "Mipui",
+  notifTabAccount: "Account",
+  notifEmptyCta: "Zir Ta",
+  notifActivityTitle: "Thilom",
+  notifQuickActions: "Kal Tawp",
+  notifResumeStudy: "Torah Zir Ta",
+  notifPrayerTimes: "Thu Dawt Hun",
+  notifOpenYahrzeit: "Yahrzeit",
+  notifOpenCommunity: "Mipui",
+  notifSettingsTitle: "Hlabu Siam Thar",
+  notifPrayerReminders: "Ni Tin Thu Dawt",
+  notifPrayerRemindersSub: "Shacharit, Mincha & Maariv",
+  notifShabbatCandles: "Shabbat Kerhi",
+  notifShabbatCandlesSub: "Kerhi hma 18 min",
+  notifHavdalahReminder: "Havdalah",
+  notifShemaReminder: "Shema Thar Ber",
+  notifShemaReminderSub: "Thar ber hlabu",
+  notifTorahReminders: "Parasha Khatvei",
+  notifTorahRemindersSub: "Farlang chawk hlabu",
+  notifHolidayReminders: "Ni Thianghlim Hlabu",
+  notifHolidayRemindersSub: "Ni hma ni khat",
+  notifYahrzeitReminders: "Yahrzeit Hlabu",
+  notifOmerCount: "Omer Chhiar",
+  notifShabbatDigest: "Shabbat Digest",
+  notifShabbatDigestSub: "Khatvei Farlang chawk",
+  notifLeadTime: "Hlabu Hma Hun",
+  notifPushNotifications: "Push Hlabu",
+  notifPushSubscribe: "Push On",
+  notifPushUnsubscribe: "Push Off",
+  notifPushTest: "Test Hlabu Thawn",
+  notifPermissionDenied: "Hlabu a block — browser siam dan-ah on siam rawh.",
+  notifRetry: "Chhiar Leh",
+  notifNoActivity: "Thilom om lo — na lamka phun ta!",
+  notifStartStudy: "Torah zir phun ta →",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };
