@@ -224,6 +224,19 @@ export interface SharedTranslations {
   homeGoPremium: string;
   homeSupportMission: string;
   homeViewBenefits: string;
+  /* ── Premium Screen (MEP-301) ── */
+  premiumTitle: string;
+  premiumTagline: string;
+  premiumHeroSubtitle: string;
+  premiumComingSoon: string;
+  premiumComingSoonBody: string;
+  premiumContactSupport: string;
+  premiumFreeLabel: string;
+  premiumProLabel: string;
+  premiumCompareTitle: string;
+  premiumFeaturesTitle: string;
+  premiumBack: string;
+  premiumEarlyAccess: string;
   homeSanctuaryAction: string;
   homeStudyAction: string;
   homeMoreAction: string;
@@ -863,6 +876,18 @@ export const sharedEn: SharedTranslations = {
   homeGoPremium: "Go Premium",
   homeSupportMission: "Support the mission. Unlock more.",
   homeViewBenefits: "View Benefits",
+  premiumTitle: "Menashe Premium",
+  premiumTagline: "Unlock the full depth of your sacred journey",
+  premiumHeroSubtitle: "Sacred study, AI insights, audio guides, and more",
+  premiumComingSoon: "Coming Soon",
+  premiumComingSoonBody: "Premium membership is under active development. Payments are not yet available — we are working hard to bring this to you soon. Contact us to request early access.",
+  premiumContactSupport: "Contact Support",
+  premiumFreeLabel: "Free",
+  premiumProLabel: "Premium",
+  premiumCompareTitle: "Free vs Premium",
+  premiumFeaturesTitle: "What's Included",
+  premiumBack: "Back",
+  premiumEarlyAccess: "Request Early Access",
   homeSanctuaryAction: "Sanctuary",
   homeStudyAction: "Study",
   homeMoreAction: "More",
@@ -1484,6 +1509,18 @@ export const sharedTk: SharedTranslations = {
   homeGoPremium: "Premium Nei Ta",
   homeSupportMission: "Mission tanpui la zawng zawng en rawh.",
   homeViewBenefits: "Fimkhur Dan En",
+  premiumTitle: "Menashe Premium",
+  premiumTagline: "Na biak thlak then hnuaiah zuk lut rawh",
+  premiumHeroSubtitle: "Zirna thianghlim, AI thusawi, audio guide, leh zawk",
+  premiumComingSoon: "Hnuhnung Tur",
+  premiumComingSoonBody: "Premium membership chu hmasawn zawng a ni. Hlawkna thleng theihna chu a awm tawh lo — in hma min pe turin kan thawk tlat a ni. Early access dil turin min contact rawh.",
+  premiumContactSupport: "Support Contact Rawh",
+  premiumFreeLabel: "Free",
+  premiumProLabel: "Premium",
+  premiumCompareTitle: "Free vs Premium",
+  premiumFeaturesTitle: "Entir Zawng",
+  premiumBack: "Zin chhuak",
+  premiumEarlyAccess: "Early Access Dil",
   homeSanctuaryAction: "Inn Thianghlim",
   homeStudyAction: "Zir",
   homeMoreAction: "Zawk",

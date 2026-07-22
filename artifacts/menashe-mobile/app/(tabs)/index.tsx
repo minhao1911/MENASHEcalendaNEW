@@ -1570,7 +1570,7 @@ export default function HomeScreen() {
             transform: [{ scale: pressed ? 0.98 : 1 }],
             ...shadow.level1,
           })}
-          onPress={() => {}}
+          onPress={() => { hapticLight(); router.push("/premium" as any); }}
           accessibilityLabel={t.homeGoPremium}
           accessibilityRole="button"
         >
@@ -1587,7 +1587,7 @@ export default function HomeScreen() {
           </View>
           <PillButton
             label={t.homeViewBenefits}
-            onPress={() => {}}
+            onPress={() => { hapticLight(); router.push("/premium" as any); }}
             bg={gold}
             fg={colors.primaryForeground}
             small
