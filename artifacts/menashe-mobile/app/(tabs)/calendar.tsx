@@ -439,7 +439,7 @@ export default function CalendarScreen() {
 
   const candleMap = useMemo(() => {
     const map: Record<number, string> = {};
-    monthDays.forEach((day) => {
+    monthDays.forEach((day: CalendarDay) => {
       if (day.date.getDay() === 5) {
         try {
           const zm = calculateZmanim(
@@ -516,7 +516,7 @@ export default function CalendarScreen() {
   }, [animateMonth, today]);
 
   const onSelectDay = useCallback((day: CalendarDay) => {
-    setSelected((prev) =>
+    setSelected((prev: CalendarDay | null) =>
       prev?.date.getTime() === day.date.getTime() ? null : day,
     );
   }, []);
@@ -766,7 +766,7 @@ export default function CalendarScreen() {
               ))}
 
               {/* Day cells */}
-              {monthDays.map((day) => (
+              {monthDays.map((day: CalendarDay) => (
                 <DayCell
                   key={day.gregorianDay}
                   day={day}
@@ -1261,7 +1261,7 @@ export default function CalendarScreen() {
                     </View>
                   )}
 
-                  {selected.events.map((ev) => {
+                  {selected.events.map((ev: string) => {
                     const isFastEv = isFastEvent([ev]);
                     const isShabbatEv = /shabbat/i.test(ev);
                     const dotColor = isFastEv
