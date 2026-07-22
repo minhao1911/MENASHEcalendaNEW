@@ -1304,22 +1304,53 @@ function WeekStrip({ onNavigate }: { onNavigate: (page: string) => void }) {
     return { date, hd, isToday, isShabbat, hasEvent: events.length > 0 };
   });
 
+  // Today's Gregorian month abbreviation for the calendar icon
+  const calIconMonth = today.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const calIconDay   = today.getDate() - today.getDay() + 0; // Sunday of this week day number
+  // use the first day of the week for the mini icon (Sunday)
+  const weekSunday = new Date(sunday);
+
   return (
-    <div className="card" style={{ marginBottom: 12, padding: "12px 14px 14px" }}>
+    <div className="card" style={{ marginBottom: 12, padding: "14px 14px 16px" }}>
       <style>{`
         @keyframes todayPop {
-          from { transform: scale(0.88); opacity: 0; }
+          from { transform: scale(0.82); opacity: 0; }
           to   { transform: scale(1);    opacity: 1; }
+        }
+        @keyframes weekCellHover {
+          from { transform: scale(1); }
+          to   { transform: scale(1.04); }
         }
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 13 }}>📅</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Mini calendar icon */}
+          <div style={{
+            width: 34, height: 34, borderRadius: 8, overflow: "hidden", flexShrink: 0,
+            border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+          }}>
+            <div style={{
+              background: "#e53935", height: 11,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 6.5, fontWeight: 900, color: "white", letterSpacing: "0.04em" }}>
+                {calIconMonth}
+              </span>
+            </div>
+            <div style={{
+              background: "white", flex: 1, height: 23,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 900, color: "#1a1a2e", lineHeight: 1 }}>
+                {weekSunday.getDate()}
+              </span>
+            </div>
+          </div>
           <span style={{
-            fontSize: 10, fontWeight: 800, letterSpacing: "0.12em",
-            color: "var(--text-muted)", textTransform: "uppercase",
+            fontSize: 11, fontWeight: 900, letterSpacing: "0.14em",
+            color: "var(--text-primary)", textTransform: "uppercase",
           }}>
             {t.weekStripTitle}
           </span>
@@ -1328,15 +1359,19 @@ function WeekStrip({ onNavigate }: { onNavigate: (page: string) => void }) {
           onClick={() => onNavigate("calendar")}
           style={{
             background: "none", border: "none", padding: 0, cursor: "pointer",
-            fontSize: 10, fontWeight: 700, color: "#d4a843", letterSpacing: "0.04em",
+            fontSize: 11, fontWeight: 700, color: "#d4a843", letterSpacing: "0.04em",
+            display: "flex", alignItems: "center", gap: 3,
           }}
         >
           {t.weekStripViewCal}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4a843" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </button>
       </div>
 
       {/* ── Day cells ── */}
-      <div style={{ display: "flex", gap: 3 }}>
+      <div style={{ display: "flex", gap: 4 }}>
         {days.map(({ date, hd, isToday, isShabbat, hasEvent }, i) => (
           <button
             key={i}
@@ -1344,35 +1379,38 @@ function WeekStrip({ onNavigate }: { onNavigate: (page: string) => void }) {
             style={{
               flex: 1, minWidth: 0, border: "none", cursor: "pointer",
               background: isToday
-                ? "linear-gradient(160deg, rgba(212,168,67,0.22) 0%, rgba(212,168,67,0.08) 100%)"
+                ? "linear-gradient(160deg, #d4a843 0%, #c9941f 100%)"
                 : isShabbat
-                ? "rgba(110,70,220,0.07)"
+                ? "rgba(110,70,220,0.18)"
                 : "transparent",
-              borderRadius: 10,
-              padding: "7px 2px 6px",
+              borderRadius: 12,
+              padding: "8px 2px 7px",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
               outline: isToday
-                ? "1px solid rgba(212,168,67,0.48)"
+                ? "none"
                 : isShabbat
-                ? "1px solid rgba(110,70,220,0.14)"
+                ? "1px solid rgba(140,100,240,0.28)"
                 : "1px solid transparent",
-              boxShadow: isToday ? "0 0 12px rgba(212,168,67,0.15), inset 0 1px 0 rgba(212,168,67,0.12)" : "none",
-              animation: isToday ? "todayPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both" : "none",
-              transition: "background 0.15s, outline-color 0.15s",
+              boxShadow: isToday
+                ? "0 3px 14px rgba(212,168,67,0.35), inset 0 1px 0 rgba(255,255,255,0.25)"
+                : "none",
+              animation: isToday ? "todayPop 0.38s cubic-bezier(0.34,1.56,0.64,1) both" : "none",
+              transition: "background 0.15s",
             }}
           >
             {/* Day abbrev */}
             <div style={{
-              fontSize: 7.5, fontWeight: 800, letterSpacing: "0.06em", lineHeight: 1,
-              color: isToday ? "#d4a843" : isShabbat ? "rgba(160,130,240,0.85)" : "var(--text-muted)",
+              fontSize: 8, fontWeight: 900, letterSpacing: "0.08em", lineHeight: 1,
+              color: isToday ? "rgba(20,12,0,0.75)" : isShabbat ? "rgba(190,165,255,0.85)" : "var(--text-muted)",
             }}>
               {dayLabels[i]}
             </div>
 
             {/* Gregorian number */}
             <div style={{
-              fontSize: 16, fontWeight: isToday ? 900 : 700, lineHeight: 1,
-              color: isToday ? "#f0c050" : isShabbat ? "rgba(190,165,255,0.9)" : "var(--text-primary)",
+              fontSize: 17, fontWeight: isToday ? 900 : 700, lineHeight: 1,
+              color: isToday ? "#1a0d00" : isShabbat ? "rgba(210,190,255,0.95)" : "var(--text-primary)",
+              letterSpacing: isToday ? "-0.3px" : "0",
             }}>
               {date.getDate()}
             </div>
@@ -1381,26 +1419,24 @@ function WeekStrip({ onNavigate }: { onNavigate: (page: string) => void }) {
             <div style={{
               fontFamily: "'Noto Serif Hebrew', serif",
               fontSize: 10, fontWeight: 600, lineHeight: 1, direction: "rtl",
-              color: isToday ? "rgba(240,192,80,0.8)" : isShabbat ? "rgba(160,130,240,0.65)" : "var(--text-muted)",
+              color: isToday ? "rgba(20,12,0,0.55)" : isShabbat ? "rgba(180,155,240,0.65)" : "var(--text-muted)",
             }}>
               {hebrewDayNumeral(hd.getDate())}
             </div>
 
-            {/* Holiday / event dot */}
-            {hasEvent && (
+            {/* Holiday dot */}
+            {hasEvent && !isToday && (
               <div style={{
-                width: 4, height: 4, borderRadius: "50%", marginTop: 1,
-                background: isToday ? "#f0c050" : "#d4a843",
-                boxShadow: isToday ? "0 0 4px rgba(240,192,80,0.7)" : "none",
+                width: 4, height: 4, borderRadius: "50%",
+                background: isShabbat ? "rgba(190,165,255,0.7)" : "#d4a843",
               }} />
             )}
 
             {/* Today underline bar */}
             {isToday && (
               <div style={{
-                width: "60%", height: 2.5, borderRadius: 99, marginTop: 1,
-                background: "linear-gradient(90deg, #d4a843, #f0c050)",
-                boxShadow: "0 0 6px rgba(212,168,67,0.5)",
+                width: "55%", height: 2.5, borderRadius: 99, marginTop: 1,
+                background: "rgba(20,12,0,0.35)",
               }} />
             )}
           </button>
@@ -1443,77 +1479,99 @@ function ZmanimTimeline({
 
   const nowPct = pct(now);
 
-  type Marker = { key: string; label: string; time: Date | null; emoji: string; above: boolean };
+  type Marker = { key: string; label: string; time: Date | null; emoji: string };
   const markers: Marker[] = [
-    { key: "sunrise",  label: t.zmanimTimelineSunrise, time: zmanim.sunrise,       emoji: "🌅", above: true  },
-    { key: "shema",    label: t.zmanimTimelineShema,   time: zmanim.latestShema,   emoji: "📖", above: false },
-    { key: "midday",   label: t.zmanimTimelineMidday,  time: zmanim.chatzot,       emoji: "☀️", above: true  },
-    { key: "mincha",   label: t.zmanimTimelineMincha,  time: zmanim.minchaKetana,  emoji: "🙏", above: false },
-    { key: "sunset",   label: t.zmanimTimelineSunset,  time: zmanim.sunset,        emoji: "🌇", above: true  },
+    { key: "dawn",    label: "Dawn",        time: zmanim.alotHaShachar, emoji: "🌌" },
+    { key: "sunrise", label: t.zmanimTimelineSunrise, time: zmanim.sunrise,      emoji: "🌅" },
+    { key: "midday",  label: t.zmanimTimelineMidday,  time: zmanim.chatzot,      emoji: "☀️" },
+    { key: "mincha",  label: t.zmanimTimelineMincha,  time: zmanim.minchaKetana, emoji: "🙏" },
+    { key: "sunset",  label: t.zmanimTimelineSunset,  time: zmanim.sunset,       emoji: "🌇" },
   ].filter(m => m.time !== null) as Marker[];
 
   return (
     <div
       className="card card-interactive"
       onClick={() => onNavigate("zmanim")}
-      style={{ marginBottom: 12, padding: "12px 14px 14px", overflow: "hidden" }}
+      style={{ marginBottom: 12, padding: "14px 14px 14px", overflow: "hidden" }}
     >
       <style>{`
         @keyframes nowPulse {
           0%,100% { box-shadow: 0 0 0 3px rgba(240,192,80,0.30), 0 0 14px rgba(240,192,80,0.55); }
           50%      { box-shadow: 0 0 0 5px rgba(240,192,80,0.15), 0 0 22px rgba(240,192,80,0.35); }
         }
+        @keyframes nowPillPulse {
+          0%,100% { box-shadow: 0 0 0 2px rgba(240,192,80,0.25), 0 2px 12px rgba(212,168,67,0.35); }
+          50%      { box-shadow: 0 0 0 3px rgba(240,192,80,0.12), 0 2px 20px rgba(212,168,67,0.2); }
+        }
       `}</style>
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 13 }}>🕐</span>
-          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "var(--text-muted)", textTransform: "uppercase" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: "50%",
+            background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.25)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 14,
+          }}>🕐</div>
+          <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", color: "var(--text-primary)", textTransform: "uppercase" }}>
             {t.zmanimTimelineTitle}
           </span>
         </div>
-        <span style={{ fontSize: 10, fontWeight: 700, color: "#d4a843", letterSpacing: "0.04em" }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#d4a843", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: 3 }}>
           {t.zmanimTimelineTap}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4a843" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </span>
       </div>
 
-      {/* ── Track area ── */}
-      <div style={{ position: "relative", paddingTop: 26, paddingBottom: 26 }}>
-
-        {/* ABOVE labels */}
-        {markers.filter(m => m.above).map(m => (
-          <div key={m.key} style={{
-            position: "absolute",
-            left: `${pct(m.time)}%`,
-            top: 0,
-            transform: "translateX(-50%)",
-            textAlign: "center",
-            opacity: isPast(m.time) ? 0.38 : 1,
-            transition: "opacity 0.4s",
-          }}>
-            <div style={{ fontSize: 8, fontWeight: 700, color: isPast(m.time) ? "var(--text-muted)" : "#d4a843", whiteSpace: "nowrap", marginBottom: 2, letterSpacing: "0.04em" }}>
-              {m.emoji} {formatTime(m.time, location.tz)}
+      {/* ── Time labels row (all above the track) ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+        {markers.map(m => {
+          const past = isPast(m.time);
+          return (
+            <div key={m.key} style={{
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+              opacity: past ? 0.42 : 1, transition: "opacity 0.4s",
+              flex: 1,
+            }}>
+              <span style={{ fontSize: 14, lineHeight: 1 }}>{m.emoji}</span>
+              <div style={{
+                fontSize: 9.5, fontWeight: 800,
+                color: past ? "var(--text-muted)" : "white",
+                letterSpacing: "0.02em", whiteSpace: "nowrap",
+              }}>
+                {formatTime(m.time, location.tz)}
+              </div>
+              <div style={{
+                fontSize: 8, fontWeight: 700,
+                color: past ? "var(--text-muted)" : "rgba(255,255,255,0.45)",
+                letterSpacing: "0.04em", whiteSpace: "nowrap",
+              }}>
+                {m.label}
+              </div>
             </div>
-            <div style={{ width: 1, height: 7, background: isPast(m.time) ? "rgba(255,255,255,0.08)" : "rgba(212,168,67,0.35)", margin: "0 auto" }} />
-          </div>
-        ))}
+          );
+        })}
+      </div>
 
-        {/* ── Track bar ── */}
+      {/* ── Track bar ── */}
+      <div style={{ position: "relative" }}>
         <div style={{
           position: "relative",
-          height: 9,
-          borderRadius: 5,
-          background: "linear-gradient(90deg, #12103a 0%, #1c2f6e 12%, #2a6080 26%, #d4a843 44%, #fbbf24 54%, #f97316 70%, #7f1d1d 88%, #120820 100%)",
-          boxShadow: "inset 0 1px 3px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(255,255,255,0.04)",
+          height: 10,
+          borderRadius: 6,
+          background: "linear-gradient(90deg, #4c1d95 0%, #1e3a8a 18%, #0e7490 30%, #d97706 50%, #fbbf24 58%, #ea580c 72%, #9b1c1c 88%, #1a0a2e 100%)",
+          boxShadow: "inset 0 1px 4px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,255,255,0.04)",
         }}>
           {/* Past dimmer */}
           {nowPct > 0 && nowPct < 100 && (
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0,
               width: `${nowPct}%`,
-              background: "rgba(0,0,0,0.52)",
-              borderRadius: "5px 0 0 5px",
+              background: "rgba(0,0,0,0.48)",
+              borderRadius: "6px 0 0 6px",
               pointerEvents: "none",
             }} />
           )}
@@ -1525,11 +1583,11 @@ function ZmanimTimeline({
               left: `${pct(m.time)}%`,
               top: "50%",
               transform: "translate(-50%, -50%)",
-              width: 11, height: 11,
+              width: 13, height: 13,
               borderRadius: "50%",
-              background: isPast(m.time) ? "rgba(80,90,110,0.7)" : "#fff",
-              border: `2.5px solid ${isPast(m.time) ? "rgba(100,110,130,0.4)" : "#d4a843"}`,
-              boxShadow: isPast(m.time) ? "none" : "0 0 8px rgba(212,168,67,0.55)",
+              background: isPast(m.time) ? "rgba(70,80,100,0.7)" : "white",
+              border: `2.5px solid ${isPast(m.time) ? "rgba(90,100,120,0.35)" : "rgba(212,168,67,0.9)"}`,
+              boxShadow: isPast(m.time) ? "none" : "0 0 8px rgba(212,168,67,0.6)",
               zIndex: 1,
               transition: "background 0.4s, border-color 0.4s, box-shadow 0.4s",
             }} />
@@ -1542,51 +1600,57 @@ function ZmanimTimeline({
               left: `${nowPct}%`,
               top: "50%",
               transform: "translate(-50%, -50%)",
-              width: 15, height: 15,
+              width: 17, height: 17,
               borderRadius: "50%",
-              background: "radial-gradient(circle at 35% 35%, #fff9c4, #f0c050)",
-              border: "2.5px solid #fff",
+              background: "radial-gradient(circle at 35% 30%, #fffde7, #f0c050 60%, #c9941f)",
+              border: "2.5px solid rgba(255,255,255,0.9)",
               animation: "nowPulse 2.4s ease-in-out infinite",
               zIndex: 3,
             }} />
           )}
         </div>
 
-        {/* BELOW labels */}
-        {markers.filter(m => !m.above).map(m => (
-          <div key={m.key} style={{
-            position: "absolute",
-            left: `${pct(m.time)}%`,
-            bottom: 0,
-            transform: "translateX(-50%)",
-            textAlign: "center",
-            opacity: isPast(m.time) ? 0.38 : 1,
-            transition: "opacity 0.4s",
+        {/* NOW pill — centered below the track */}
+        {nowPct >= 0 && nowPct <= 100 && (
+          <div style={{
+            position: "relative",
+            display: "flex", justifyContent: "center",
+            marginTop: 9,
           }}>
-            <div style={{ width: 1, height: 7, background: isPast(m.time) ? "rgba(255,255,255,0.08)" : "rgba(148,163,184,0.4)", margin: "0 auto 2px" }} />
-            <div style={{ fontSize: 8, fontWeight: 700, color: isPast(m.time) ? "var(--text-muted)" : "var(--text-secondary)", whiteSpace: "nowrap", letterSpacing: "0.04em" }}>
-              {m.emoji} {formatTime(m.time, location.tz)}
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              background: "rgba(20,16,6,0.88)",
+              border: "1px solid rgba(212,168,67,0.45)",
+              borderRadius: 20, padding: "4px 10px",
+              animation: "nowPillPulse 2.4s ease-in-out infinite",
+            }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: "#f0c050",
+                boxShadow: "0 0 6px rgba(240,192,80,0.8)",
+              }} />
+              <span style={{
+                fontSize: 10, fontWeight: 800, color: "#f0c050",
+                letterSpacing: "0.08em",
+              }}>
+                {t.zmanimTimelineNow} · {formatTime(now, location.tz)}
+              </span>
             </div>
           </div>
-        ))}
+        )}
       </div>
 
-      {/* ── Footer: dawn / now / nightfall ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 4 }}>
-        <div style={{ fontSize: 8, color: "var(--text-muted)", fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
-          🌌 <span>{t.zmanimTimelineDawn}</span>
-          <span style={{ opacity: 0.6 }}>{formatTime(zmanim.alotHaShachar, location.tz)}</span>
+      {/* ── Footer: dawn / nightfall ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+        <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontSize: 12 }}>🌌</span>
+          <span style={{ color: "rgba(255,255,255,0.55)" }}>{t.zmanimTimelineDawn}</span>
+          <span style={{ fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.35)" }}>{formatTime(zmanim.alotHaShachar, location.tz)}</span>
         </div>
-
-        {/* Now indicator label */}
-        <div style={{ fontSize: 9, fontWeight: 800, color: "#f0c050", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 3 }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#f0c050", boxShadow: "0 0 6px rgba(240,192,80,0.7)" }} />
-          {t.zmanimTimelineNow} · {formatTime(now, location.tz)}
-        </div>
-
-        <div style={{ fontSize: 8, color: "var(--text-muted)", fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
-          <span style={{ opacity: 0.6 }}>{formatTime(zmanim.tzais, location.tz)}</span>
-          <span>{t.zmanimTimelineNightfall}</span> ⭐
+        <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.35)" }}>{formatTime(zmanim.tzais, location.tz)}</span>
+          <span style={{ color: "rgba(255,255,255,0.55)" }}>{t.zmanimTimelineNightfall}</span>
+          <span style={{ fontSize: 12 }}>🌙</span>
         </div>
       </div>
     </div>
@@ -2996,46 +3060,55 @@ const Home = memo(function Home({
           category="TODAY"
           backgroundLayer={<TimeAwareBackground sunrise={zmanim.sunrise} sunset={zmanim.sunset} />}
           icon={
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 20 }}>
-              {/* Hebrew date */}
-              <div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 18 }}>
+              {/* Hebrew date box — dark card with gold letter */}
+              <div style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                padding: "10px 14px 8px", borderRadius: 16,
+                background: "rgba(8,10,22,0.72)",
+                border: "1px solid rgba(212,168,67,0.35)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+                flexShrink: 0,
+              }}>
                 <span style={{
                   fontFamily: "'Noto Serif Hebrew', serif",
-                  fontSize: 44, color: "#c9a227", lineHeight: 1, display: "block",
-                  filter: "drop-shadow(0 0 10px rgba(201,162,39,0.5))",
+                  fontSize: 56, color: "#c9a227", lineHeight: 1,
+                  filter: "drop-shadow(0 0 14px rgba(201,162,39,0.55))",
+                  display: "block",
                 }}>
                   {hebrewDay}
                 </span>
                 <span style={{
                   fontFamily: "'Noto Serif Hebrew', serif",
-                  fontSize: 12, color: "rgba(201,162,39,0.75)", fontWeight: 700,
-                  display: "block", direction: "rtl", marginTop: 3, letterSpacing: "0.02em",
+                  fontSize: 12, color: "rgba(201,162,39,0.8)", fontWeight: 700,
+                  display: "block", direction: "rtl", marginTop: 4, letterSpacing: "0.02em",
+                  textAlign: "center",
                 }}>
                   {hebrewMonth}
                 </span>
               </div>
-              {/* Divider */}
-              <div style={{ width: 1, height: 42, background: "rgba(255,255,255,0.12)", marginBottom: 4, flexShrink: 0 }} />
-              {/* Gregorian date */}
-              <div>
-                <span style={{
-                  fontSize: 44, fontWeight: 900, color: "#a8c4ff", lineHeight: 1,
-                  display: "block", letterSpacing: "-2px",
-                  filter: "drop-shadow(0 0 10px rgba(120,160,255,0.45))",
+              {/* Gregorian date — large day + month */}
+              <div style={{ paddingTop: 2 }}>
+                <div style={{
+                  fontSize: 82, fontWeight: 900, color: "white", lineHeight: 0.88,
+                  letterSpacing: "-4px",
+                  textShadow: "0 2px 24px rgba(255,255,255,0.18), 0 0 40px rgba(120,160,255,0.12)",
                 }}>
                   {today.getDate()}
-                </span>
-                <span style={{
-                  fontSize: 12, color: "rgba(140,180,255,0.75)", fontWeight: 700,
-                  display: "block", marginTop: 3, letterSpacing: "0.08em",
+                </div>
+                <div style={{
+                  fontSize: 17, fontWeight: 800, color: "#6c9fff",
+                  marginTop: 8, letterSpacing: "0.14em",
+                  textShadow: "0 0 12px rgba(99,149,255,0.4)",
                 }}>
-                  {today.toLocaleDateString("en-US", { month: "short" }).toUpperCase()}
-                </span>
+                  {today.toLocaleDateString("en-US", { month: "long" }).toUpperCase()}
+                </div>
               </div>
             </div>
           }
           title={`${hebrewYear}  ·  ${yearStr}`}
-          subtitle={`${dayName} · ${location.name}`}
+          subtitle={`${dayName.toUpperCase()}${todayHolidays[0] ? ` · ${todayHolidays[0]}` : ` · ${location.name}`}`}
           previewContent={
             /* Stop pointer events from bubbling to the card's tap-open handler */
             <div
