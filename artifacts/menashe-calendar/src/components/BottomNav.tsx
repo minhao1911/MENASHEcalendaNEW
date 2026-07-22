@@ -66,6 +66,15 @@ function ChevronIcon({ collapsed }: { collapsed: boolean }) {
   );
 }
 
+function JourneyIcon({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill={active ? "rgba(212,168,67,0.15)" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" fill={active ? "rgba(212,168,67,0.25)" : "none"} />
+      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+    </svg>
+  );
+}
+
 function SettingsIcon({ active }: { active: boolean }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -83,6 +92,7 @@ const BottomNav = memo(function BottomNav({ active, onNavigate, collapsed = fals
     { id: "calendar", label: t.navCalendar, icon: CalendarIcon, ariaLabel: "Calendar",       handler: () => onNavigate("calendar") },
     { id: "zmanim",   label: t.navZmanim,   icon: ClockIcon,    ariaLabel: "Prayer times",   handler: () => onNavigate("zmanim") },
     { id: "siddur",   label: t.navSiddur,   icon: SiddurIcon,   ariaLabel: "Siddur library", handler: () => onNavigate("siddur") },
+    { id: "journey",  label: t.navJourney,  icon: JourneyIcon,  ariaLabel: "My Journey",     handler: () => onNavigate("journey") },
     { id: "settings", label: t.navSettings, icon: SettingsIcon, ariaLabel: "Settings",       handler: () => onNavigate("settings") },
   ];
 

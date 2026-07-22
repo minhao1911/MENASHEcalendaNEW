@@ -624,6 +624,33 @@ export interface Translations {
   memWalkEntrance: string;
   memWalkOverview: string;
   memWalkMode: string;
+
+  /* ── Journey Page ── */
+  navJourney: string;
+  journeyTitle: string;
+  journeySubtitle: string;
+  journeyEditProfile: string;
+  journeyMemberSince: string;
+  journeyStreak: string;
+  journeyCandles: string;
+  journeyAchievements: string;
+  journeyBadgesEarned: string;
+  journeyActivity: string;
+  journeySaved: string;
+  journeyGoals: string;
+  journeyAccount: string;
+  journeySettings: string;
+  journeyPremium: string;
+  journeyHelp: string;
+  journeySignOut: string;
+  journeyNoActivity: string;
+  journeyStudySession: string;
+  journeyTorahGoal: string;
+  journeyWeeklyProgress: string;
+  journeyBookmarks: string;
+  journeyOpenSiddur: string;
+  journeyPersonal: string;
+  journeyNotSignedIn: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -1233,6 +1260,33 @@ export const en: Translations = {
   memWalkEntrance: "Entrance",
   memWalkOverview: "Overview",
   memWalkMode: "Walk",
+
+  /* ── Journey Page ── */
+  navJourney: "Journey",
+  journeyTitle: "My Journey",
+  journeySubtitle: "Your personal sacred path",
+  journeyEditProfile: "Edit Profile",
+  journeyMemberSince: "Member since",
+  journeyStreak: "Study Streak",
+  journeyCandles: "Candles Lit",
+  journeyAchievements: "Achievements",
+  journeyBadgesEarned: "badges earned",
+  journeyActivity: "Recent Activity",
+  journeySaved: "Saved Content",
+  journeyGoals: "My Goals",
+  journeyAccount: "Account",
+  journeySettings: "Settings",
+  journeyPremium: "Premium",
+  journeyHelp: "Help & Feedback",
+  journeySignOut: "Sign Out",
+  journeyNoActivity: "No activity yet — start your journey!",
+  journeyStudySession: "Study session",
+  journeyTorahGoal: "Weekly Torah Goal",
+  journeyWeeklyProgress: "Progress this week",
+  journeyBookmarks: "Siddur Bookmarks",
+  journeyOpenSiddur: "Open Siddur",
+  journeyPersonal: "Personal Reminders",
+  journeyNotSignedIn: "Sign in to see your personal journey",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1841,6 +1895,33 @@ export const tk: Translations = {
   memWalkEntrance: "Lut Hmun",
   memWalkOverview: "Hmai Thlir",
   memWalkMode: "Kal",
+
+  /* ── Journey Page ── */
+  navJourney: "Lamka",
+  journeyTitle: "Ka Lamka",
+  journeySubtitle: "Na lamka thianghlim",
+  journeyEditProfile: "Profile Siam Thar",
+  journeyMemberSince: "Member ni hun",
+  journeyStreak: "Zir Streak",
+  journeyCandles: "Meihal Hmat",
+  journeyAchievements: "Thilpek",
+  journeyBadgesEarned: "badge dawn",
+  journeyActivity: "Thilom Thar",
+  journeySaved: "Thilphat Chim",
+  journeyGoals: "Ka Beidawn",
+  journeyAccount: "Account",
+  journeySettings: "Settings",
+  journeyPremium: "Premium",
+  journeyHelp: "Pui Leh Thupek",
+  journeySignOut: "Tawp Ta",
+  journeyNoActivity: "Thilom om lo — na lamka phun ta!",
+  journeyStudySession: "Zir hun",
+  journeyTorahGoal: "Khatvei Torah Beidawn",
+  journeyWeeklyProgress: "Khatvei thilphat",
+  journeyBookmarks: "Siddur Bookmark",
+  journeyOpenSiddur: "Siddur Hawn",
+  journeyPersonal: "Ka Thilsim",
+  journeyNotSignedIn: "Na lamka en theih dingin lut ta",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

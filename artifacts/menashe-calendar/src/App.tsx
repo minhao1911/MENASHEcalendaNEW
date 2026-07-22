@@ -20,6 +20,7 @@ const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const ZmanimPage = lazy(() => import("./pages/ZmanimPage"));
 const SiddurPage = lazy(() => import("./pages/SiddurPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const JourneyPage  = lazy(() => import("./pages/JourneyPage"));
 const PremiumPage = lazy(() => import("./pages/PremiumPage"));
 import BottomNav from "./components/BottomNav";
 import FeedbackButton from "./components/FeedbackButton";
@@ -207,7 +208,7 @@ const darkCardAppearance = {
   },
 };
 
-type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium";
+type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium" | "journey";
 type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
@@ -686,6 +687,18 @@ function AppShell() {
           <PremiumPage
             onUpgrade={showPremiumModal}
             onBack={goHome}
+          />
+        );
+      case "journey":
+        return (
+          <JourneyPage
+            isPremium={isPremium}
+            publicProfile={publicProfile}
+            onNavigate={onNavigate}
+            onShowProfile={showProfile}
+            onShowPremium={showPremiumPage}
+            onShowTorahTracker={showTorahTracker}
+            onSignOut={onSignOut}
           />
         );
     }

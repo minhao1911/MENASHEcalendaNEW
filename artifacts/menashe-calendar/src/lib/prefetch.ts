@@ -11,7 +11,7 @@
  *   prefetchAdjacentPages("home");   // call in useEffect on activePage change
  */
 
-type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium";
+type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium" | "journey";
 
 type Importer = () => Promise<unknown>;
 
@@ -73,6 +73,12 @@ const PAGES: Record<Page, Importer[]> = {
   premium: [
     () => import("../pages/Home"),
     () => import("../modals/PremiumModal"),
+  ],
+  journey: [
+    () => import("../pages/Home"),
+    () => import("../pages/SettingsPage"),
+    () => import("../modals/ProfileModal"),
+    () => import("../modals/TorahTrackerModal"),
   ],
 };
 
