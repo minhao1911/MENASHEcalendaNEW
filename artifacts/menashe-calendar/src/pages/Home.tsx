@@ -28,7 +28,6 @@ import {
   FAB_POS_KEY, FAB_HINT_KEY,
   HOLIDAY_EMOJI, getHolidayEmoji,
   HOLIDAY_THEMES,
-  TORAH_THOUGHTS,
   AI_SUGGESTED, AI_FOLLOWUPS_EN, AI_FOLLOWUPS_TK,
 } from "./home/data";
 import {
@@ -218,8 +217,6 @@ function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
   onShowOmer: () => void;
 }) {
   const { t } = useLanguage();
-  const dayIndex = Math.abs(hdate.abs()) % TORAH_THOUGHTS.length;
-  const thought = TORAH_THOUGHTS[dayIndex];
   const specialStatus = getTodaySpecialStatus(today);
   const isShabbat = today.getDay() === 6;
 
@@ -251,9 +248,8 @@ function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
       {/* Status bar */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "10px 14px 8px",
+        padding: "14px 16px",
         background: statusBg,
-        borderBottom: `1px solid ${statusBorder}`,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 14 }}>
@@ -288,24 +284,6 @@ function DailyBriefingCard({ today, hdate, omerDay, onShowOmer }: {
         )}
       </div>
 
-      {/* Torah thought */}
-      <div style={{ padding: "12px 14px 14px" }}>
-        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", color: "var(--text-muted)", marginBottom: 8 }}>
-          {t.homeDailyTorah}
-        </div>
-        <blockquote style={{
-          margin: 0, padding: "10px 12px",
-          background: "rgba(212,168,67,0.05)", borderRadius: 10,
-          borderLeft: "3px solid rgba(212,168,67,0.4)",
-        }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.6, margin: "0 0 6px" }}>
-            "{thought.quote}"
-          </p>
-          <p style={{ fontSize: 11, color: "#d4a843", fontWeight: 700, margin: 0 }}>
-            — {thought.source}
-          </p>
-        </blockquote>
-      </div>
     </div>
   );
 }
