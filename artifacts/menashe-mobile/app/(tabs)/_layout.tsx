@@ -123,10 +123,10 @@ function TabItem({
       style={styles.tabOuter}
     >
       <Animated.View style={[styles.tabInner, { transform: [{ scale: scaleAnim }] }]}>
-        <Feather name={item.icon} size={iconSize} color={iconColor} />
         {active && (
-          <View style={[styles.activeDot, { backgroundColor: GOLD }]} />
+          <View style={[styles.activePill, { backgroundColor: GOLD }]} />
         )}
+        <Feather name={item.icon} size={iconSize} color={iconColor} />
         <Text
           allowFontScaling={false}
           numberOfLines={1}
@@ -367,10 +367,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap:        3,
   },
-  activeDot: {
-    width:        4,
-    height:       4,
+  activePill: {
+    width:        24,
+    height:       3,
     borderRadius: 2,
+    marginBottom: 2,
   },
   tabLabel: {
     fontSize:      10,

@@ -77,46 +77,62 @@ export const SectionTitle = memo<SectionTitleProps>(function SectionTitle({
       ) : null}
 
       {hasTitleRow ? (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems:    "center",
-            justifyContent: "space-between",
-          }}
-        >
+        <View style={{ flexDirection: "row", alignItems: "stretch" }}>
+          {/* Web-parity gold accent bar — 3 dp left border matching web section headers */}
+          <View
+            style={{
+              width:        3,
+              borderRadius: 2,
+              backgroundColor: colors.accentGold,
+              marginRight:  sp[2],
+              alignSelf:    "stretch",
+              minHeight:    22,
+            }}
+          />
+
+          {/* Title row */}
           <View
             style={{
               flexDirection: "row",
               alignItems:    "center",
-              gap:           sp[2],
+              justifyContent: "space-between",
               flex:          1,
             }}
           >
-            {leadingIcon != null ? leadingIcon : null}
-            {title != null ? (
-              <Text
-                style={[
-                  type.subtitle,
-                  { color: colors.textPrimary, flexShrink: 1 },
-                ]}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems:    "center",
+                gap:           sp[2],
+                flex:          1,
+              }}
+            >
+              {leadingIcon != null ? leadingIcon : null}
+              {title != null ? (
+                <Text
+                  style={[
+                    type.subtitle,
+                    { color: colors.textPrimary, flexShrink: 1 },
+                  ]}
+                >
+                  {title}
+                </Text>
+              ) : null}
+            </View>
+
+            {actionLabel != null && onAction != null ? (
+              <Pressable
+                onPress={onAction}
+                accessibilityRole="button"
+                accessibilityLabel={actionLabel}
+                hitSlop={8}
               >
-                {title}
-              </Text>
+                <Text style={[type.label, { color: colors.primary, fontSize: 13 }]}>
+                  {actionLabel}
+                </Text>
+              </Pressable>
             ) : null}
           </View>
-
-          {actionLabel != null && onAction != null ? (
-            <Pressable
-              onPress={onAction}
-              accessibilityRole="button"
-              accessibilityLabel={actionLabel}
-              hitSlop={8}
-            >
-              <Text style={[type.label, { color: colors.primary, fontSize: 13 }]}>
-                {actionLabel}
-              </Text>
-            </Pressable>
-          ) : null}
         </View>
       ) : null}
 

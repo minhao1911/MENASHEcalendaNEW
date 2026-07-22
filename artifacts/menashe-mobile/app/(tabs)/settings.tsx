@@ -229,10 +229,11 @@ export default function SettingsScreen() {
 
   // ── Inline render helpers ─────────────────────────────────────────────────────
 
-  /** Uppercase section label with generous top padding */
+  /** Uppercase section label with generous top padding — gold accent matching web */
   const SectionLabel = ({ label }: { label: string }) => (
-    <View style={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 10 }}>
-      <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.8, color: colors.textMuted }}>
+    <View style={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 10, flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ width: 3, height: 13, borderRadius: 2, backgroundColor: GOLD }} />
+      <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.8, color: GOLD }}>
         {label}
       </Text>
     </View>
@@ -318,13 +319,13 @@ export default function SettingsScreen() {
             borderBottomWidth: 1,
             borderBottomColor: colors.border,
           }}>
-            {/* Screen label */}
-            <Text style={{
-              fontSize: 11, fontWeight: "700", letterSpacing: 1.8,
-              color: colors.textMuted, marginBottom: 22,
-            }}>
-              ACCOUNT & PREFERENCES
-            </Text>
+            {/* Screen label — gold accent matching web section-header pattern */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 22 }}>
+              <View style={{ width: 3, height: 13, borderRadius: 2, backgroundColor: GOLD }} />
+              <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.8, color: GOLD }}>
+                ACCOUNT & PREFERENCES
+              </Text>
+            </View>
 
             {/* Avatar + identity */}
             <View style={{ flexDirection: "row", alignItems: "center" }}>
