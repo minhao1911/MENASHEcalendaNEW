@@ -341,6 +341,12 @@ export default function HomeScreen() {
     : hour < 17 ? t.homeGoodAfternoon
     : t.homeGoodEvening;
 
+  const greetingIcon    = hour < 12 ? "🌅" : hour < 17 ? "☀️" : "🌙";
+  const greetingSubtext =
+    hour < 12 ? "Baruch HaShem — a new day begins"
+    : hour < 17 ? "May wisdom guide your afternoon"
+    : "The evening stars shine over Zion";
+
   const hdate            = useMemo(() => getHebrewDate(today), [today]);
   const hebrewDateStr    = useMemo(() => formatHebrewDate(hdate), [hdate]);
   const hebrewNumeralStr = useMemo(() => {
@@ -693,11 +699,12 @@ export default function HomeScreen() {
             locations={[0, 0.50, 1]}
             style={{ paddingTop: 20, paddingHorizontal: 20, paddingBottom: 20 }}
           >
-            {/* Top row: TODAY badge + greeting */}
+            {/* Top row: TODAY badge + PREMIUM pill */}
             <View style={{
               flexDirection: "row", alignItems: "center",
-              justifyContent: "space-between", marginBottom: 14,
+              justifyContent: "space-between", marginBottom: 16,
             }}>
+              {/* TODAY pill */}
               <View style={{
                 borderRadius: 20, borderWidth: 1,
                 borderColor: gold + "60",
@@ -708,11 +715,62 @@ export default function HomeScreen() {
                   TODAY
                 </Text>
               </View>
-              <Text style={{
-                fontSize: 12, fontWeight: "600",
-                color: "rgba(240,220,160,0.82)", letterSpacing: 0.2,
-              }}>
-                {greeting}{firstName ? `, ${firstName}` : ""}
+
+              {/* Small PREMIUM badge — taps to Premium screen */}
+              <TouchableOpacity
+                onPress={() => { hapticLight(); router.push("/premium" as any); }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="View Premium features"
+              >
+                <LinearGradient
+                  colors={["rgba(212,168,67,0.28)", "rgba(212,168,67,0.12)"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    flexDirection: "row", alignItems: "center", gap: 5,
+                    borderRadius: 20, borderWidth: 1,
+                    borderColor: gold + "80",
+                    paddingHorizontal: 11, paddingVertical: 5,
+                  }}
+                >
+                  <Text style={{ fontSize: 11, lineHeight: 13 }}>💎</Text>
+                  <Text style={{ fontSize: 9, fontWeight: "800", letterSpacing: 1.5, color: gold }}>
+                    PREMIUM
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            {/* ── Greeting block ─────────────────────────────────────────── */}
+            <View style={{ marginBottom: 18 }}>
+              {/* Time icon + greeting text */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 5 }}>
+                <Text style={{ fontSize: 26, lineHeight: 32 }}>{greetingIcon}</Text>
+                <Text
+                  allowFontScaling={false}
+                  style={{
+                    fontSize: 26, fontWeight: "800", letterSpacing: -0.5,
+                    color: "#FFFFFF", flex: 1,
+                    textShadowColor: "rgba(0,0,0,0.55)",
+                    textShadowOffset: { width: 0, height: 2 },
+                    textShadowRadius: 8,
+                  }}
+                  numberOfLines={1}
+                >
+                  {greeting}{firstName ? `, ${firstName}` : ""}
+                </Text>
+              </View>
+              {/* Sacred sub-greeting */}
+              <Text
+                allowFontScaling={false}
+                style={{
+                  fontSize: 12, fontWeight: "500", letterSpacing: 0.2,
+                  color: "rgba(240,220,160,0.68)",
+                  marginLeft: 36,
+                }}
+              >
+                {greetingSubtext}
               </Text>
             </View>
 
