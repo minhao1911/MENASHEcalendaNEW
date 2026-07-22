@@ -717,7 +717,8 @@ function LocalAdminTab({
           ) : null}
         </View>
 
-        {myBranch && (
+        {myBranch ? (
+          <>
           <View style={[styles.overviewCard, { backgroundColor: BLUE + "0D", borderColor: BLUE + "33" }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE[3] }}>
               {myBranch.logoUrl ? (
