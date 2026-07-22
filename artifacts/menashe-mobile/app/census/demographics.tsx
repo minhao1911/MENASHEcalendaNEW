@@ -860,7 +860,7 @@ function LocalAdminTab({
               backgroundColor: setupName.trim() ? BLUE : colors.card,
               borderColor: setupName.trim() ? "transparent" : colors.border,
             }]}
-            onPress={handleRegister}
+            onPress={handleRegisterAndSubmit}
             disabled={!setupName.trim() || registering}
             activeOpacity={0.82}
           >
@@ -912,6 +912,10 @@ function LocalAdminTab({
       )}
     </ScrollView>
   );
+}
+
+/* ── LocalAdminTab: fallthrough for non-approved / unauthenticated state ── */
+  return null;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
