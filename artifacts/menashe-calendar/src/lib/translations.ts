@@ -31,7 +31,6 @@ export interface Translations {
   navSettings: string;
   navChat: string;
   navNotifications: string;
-  navNotifications: string;
 
   /* ── Beta Feedback ── */
   feedbackButtonLabel: string;
@@ -653,6 +652,65 @@ export interface Translations {
   journeyOpenSiddur: string;
   journeyPersonal: string;
   journeyNotSignedIn: string;
+
+  /* ── Notifications Page ── */
+  notifPageTitle: string;
+  notifMarkAllRead: string;
+  notifTabAll: string;
+  notifTabTorah: string;
+  notifTabPrayer: string;
+  notifTabHolidays: string;
+  notifTabCommunity: string;
+  notifTabAccount: string;
+  notifEmptyCta: string;
+  notifActivityTitle: string;
+  notifQuickActions: string;
+  notifResumeStudy: string;
+  notifPrayerTimes: string;
+  notifOpenYahrzeit: string;
+  notifOpenCommunity: string;
+  notifSettingsTitle: string;
+  notifPrayerReminders: string;
+  notifPrayerRemindersSub: string;
+  notifShabbatCandles: string;
+  notifShabbatCandlesSub: string;
+  notifHavdalahReminder: string;
+  notifShemaReminder: string;
+  notifShemaReminderSub: string;
+  notifTorahReminders: string;
+  notifTorahRemindersSub: string;
+  notifHolidayReminders: string;
+  notifHolidayRemindersSub: string;
+  notifYahrzeitReminders: string;
+  notifOmerCount: string;
+  notifShabbatDigest: string;
+  notifShabbatDigestSub: string;
+  notifLeadTime: string;
+  notifPushNotifications: string;
+  notifPushSubscribe: string;
+  notifPushUnsubscribe: string;
+  notifPushTest: string;
+  notifPermissionDenied: string;
+  notifRetry: string;
+  notifNoActivity: string;
+  notifStartStudy: string;
+
+  /* ── Notifications Page (extended) ── */
+  notifFilterUnread: string;
+  notifFilterRead: string;
+  notifAllCaughtUp: string;
+  notifAllCaughtUpSub: string;
+  notifQuietHours: string;
+  notifQuietHoursDesc: string;
+  notifQuietFrom: string;
+  notifQuietTo: string;
+  notifPushActive: string;
+  notifPushInactive: string;
+  notifSignInMsg: string;
+  notifErrorTitle: string;
+  notifErrorSub: string;
+  notifUnread: string;
+  notifBack: string;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -686,6 +744,7 @@ export const en: Translations = {
   navSiddur: "Siddur",
   navSettings: "Settings",
   navChat: "Chat",
+  navNotifications: "Notifications",
 
   /* ── Beta Feedback ── */
   feedbackButtonLabel: "Feedback",
@@ -1331,6 +1390,21 @@ export const en: Translations = {
   notifRetry: "Try Again",
   notifNoActivity: "No activity yet — start your learning journey!",
   notifStartStudy: "Start logging Torah study →",
+  notifFilterUnread: "Unread",
+  notifFilterRead: "Read",
+  notifAllCaughtUp: "You're all caught up",
+  notifAllCaughtUpSub: "No new notifications right now.",
+  notifQuietHours: "Quiet Hours",
+  notifQuietHoursDesc: "Silence all alerts during these hours",
+  notifQuietFrom: "From",
+  notifQuietTo: "To",
+  notifPushActive: "Push alerts are active",
+  notifPushInactive: "Get alerts even when the app is closed",
+  notifSignInMsg: "Sign in to see your personalised alerts and activity.",
+  notifErrorTitle: "Something went wrong",
+  notifErrorSub: "We couldn't load your notifications.",
+  notifUnread: "unread",
+  notifBack: "Back",
 };
 
 /* ──────────────────────────────────────────────────────────────
@@ -1364,6 +1438,7 @@ export const tk: Translations = {
   navSiddur: "Thu Ziak",
   navSettings: "Siam Dan",
   navChat: "Chat",
+  navNotifications: "Hlabu Thar",
 
   /* ── Beta Feedback ── */
   feedbackButtonLabel: "Thu Pe",
@@ -2008,6 +2083,21 @@ export const tk: Translations = {
   notifRetry: "Chhiar Leh",
   notifNoActivity: "Thilom om lo — na lamka phun ta!",
   notifStartStudy: "Torah zir phun ta →",
+  notifFilterUnread: "Ziak Lo",
+  notifFilterRead: "Ziak Zo",
+  notifAllCaughtUp: "Na thleng zo",
+  notifAllCaughtUpSub: "Hlabu thar om lo.",
+  notifQuietHours: "Beng Hun",
+  notifQuietHoursDesc: "Hei hun-ah hlabu zawng beng rawh",
+  notifQuietFrom: "Atanga",
+  notifQuietTo: "Inkar",
+  notifPushActive: "Push hlabu a on mek",
+  notifPushInactive: "App a tawp a lo, hlabu dawng theih tur",
+  notifSignInMsg: "Na thilom en theih dingin lut ta.",
+  notifErrorTitle: "Thil dang a tlung",
+  notifErrorSub: "Na hlabu load theih lo.",
+  notifUnread: "ziak lo",
+  notifBack: "Kir Leh",
 };
 
 const translations: Record<Lang, Translations> = { en, tk };

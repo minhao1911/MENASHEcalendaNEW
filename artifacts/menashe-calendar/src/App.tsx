@@ -63,6 +63,7 @@ const CommunityYahrzeitModal = lazy(() => import("./modals/CommunityYahrzeitModa
 const MoreToolsModal = lazy(() => import("./pages/MoreToolsModal"));
 const ChatModal = lazy(() => import("./modals/ChatModal"));
 const NotificationDrawer = lazy(() => import("./components/NotificationDrawer"));
+const NotificationsPage  = lazy(() => import("./pages/NotificationsPage"));
 const InstallPrompt = lazy(() => import("./components/InstallPrompt"));
 const ShabbatBanner = lazy(() => import("./components/ShabbatBanner"));
 const WhatsNewModal = lazy(() => import("./modals/WhatsNewModal"));
@@ -208,7 +209,7 @@ const darkCardAppearance = {
   },
 };
 
-type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium" | "journey";
+type Page = "home" | "calendar" | "zmanim" | "siddur" | "settings" | "premium" | "journey" | "notifications";
 type Modal =
   | "location" | "holidays" | "premium" | "parashah" | "dafyomi" | "zmaniminfo"
   | "torahnote" | "birthday" | "tahara" | "yartzeit" | "community" | "census"
@@ -549,7 +550,7 @@ function AppShell() {
   const showCommunity         = useCallback(() => setModal("community"),        []);
   const showCensus            = useCallback(() => setModal("census"),           []);
   const showMembers           = useCallback(() => setModal("members"),          []);
-  const showNotifications     = useCallback(() => setModal("notifications"),    []);
+  const showNotifications     = useCallback(() => setActivePage("notifications"), []);
   const showAnnouncements     = useCallback(() => setModal("announcements"),    []);
   const showEvents            = useCallback(() => setModal("events"),           []);
   const showCommunityYahrzeit = useCallback(() => setModal("community-yahrzeit"), []);
@@ -699,6 +700,32 @@ function AppShell() {
             onShowPremium={showPremiumPage}
             onShowTorahTracker={showTorahTracker}
             onSignOut={onSignOut}
+          />
+        );
+      case "notifications":
+        return (
+          <NotificationsPage
+            notifPermission={notifPermission}
+            notifPrefs={notifPrefs}
+            leadTime={leadTime}
+            onUpdateNotifPref={updateNotifPref}
+            onUpdateLeadTime={updateLeadTime}
+            pushSubscribed={pushSubscribed}
+            pushSupported={pushSupported}
+            pushLoading={pushLoading}
+            pushError={pushError}
+            onSubscribePush={subscribePush}
+            onUnsubscribePush={unsubscribePush}
+            onSendTestPush={sendTestPush}
+            announcements={announcements}
+            isPremium={isPremium}
+            onNavigate={onNavigate}
+            onShowTorahTracker={showTorahTracker}
+            onShowPrayers={showPrayerBoard}
+            onShowYartzeit={showYartzeit}
+            onShowCommunity={showCommunity}
+            onShowAnnouncements={showAnnouncements}
+            onGoBack={goHome}
           />
         );
     }
