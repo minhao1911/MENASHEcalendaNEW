@@ -119,6 +119,14 @@ function getConvTitle(messages: Message[]): string {
   return text.length > 50 ? text.slice(0, 47) + "…" : text;
 }
 
+function formatTime(ts: number): string {
+  const d = new Date(ts);
+  const h = d.getHours();
+  const m = d.getMinutes().toString().padStart(2, "0");
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${h % 12 || 12}:${m} ${ampm}`;
+}
+
 // ─── Streaming ────────────────────────────────────────────────────────────────
 
 async function* streamChat(
@@ -406,12 +414,19 @@ const MessageBubble = memo(function MessageBubble({
         ) : null}
       </View>
 
-      {/* Provider badge */}
-      {!isUser && !isStreaming && message.provider && (
-        <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 5, fontFamily: "Inter_400Regular" }}>
-          via {message.provider === "openai" ? "OpenAI" : message.provider === "gemini" ? "Gemini" : "Grok"}
-        </Text>
-      )}
+      {/* Timestamp + Provider badge */}
+      <View style={{ flexDirection: isUser ? "row-reverse" : "row", alignItems: "center", gap: 8, marginTop: 5 }}>
+        {!isStreaming && (
+          <Text style={{ fontSize: 10, color: colors.textMuted + "80", fontFamily: "Inter_400Regular" }}>
+            {formatTime(message.timestamp)}
+          </Text>
+        )}
+        {!isUser && !isStreaming && message.provider && (
+          <Text style={{ fontSize: 9, color: colors.textMuted + "99", fontFamily: "Inter_400Regular" }}>
+            via {message.provider === "openai" ? "OpenAI" : message.provider === "gemini" ? "Gemini" : "Grok"}
+          </Text>
+        )}
+      </View>
 
       {/* ─── Section 4: Learning Suggestions — shown after every assistant response ─ */}
       {isLastAssistant && !isStreaming && message.content.length > 0 && (
@@ -596,6 +611,43 @@ const ConversationItem = memo(function ConversationItem({
   );
 });
 
+// ─── Hebrew Date Badge ────────────────────────────────────────────────────────
+
+function HebrewDateBadge({ accentGold }: { accentGold: string }) {
+  const label = useMemo(() => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { HDate } = require("@hebcal/core") as typeof import("@hebcal/core");
+      return new HDate(new Date()).render("en");
+    } catch {
+      return null;
+    }
+  }, []);
+  if (!label) return null;
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        marginTop: 18,
+        alignSelf: "flex-start",
+        backgroundColor: accentGold + "15",
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: accentGold + "30",
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+      }}
+    >
+      <Text style={{ fontSize: 11, color: accentGold }}>☀</Text>
+      <Text style={{ fontSize: 11, color: accentGold, fontFamily: "Inter_500Medium", letterSpacing: 0.2 }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 // ─── Home View ────────────────────────────────────────────────────────────────
 
 interface HomeViewProps {
@@ -706,6 +758,9 @@ function HomeView({
           <Text style={{ fontSize: 17, fontFamily: "Inter_400Regular", color: "#8ba8d4", marginTop: 10, lineHeight: 26 }}>
             {t.sacredWisdomTagline}
           </Text>
+
+          {/* Hebrew date badge */}
+          <HebrewDateBadge accentGold={accentGold} />
 
           {/* Start chat input tap target */}
           <Pressable
@@ -942,7 +997,29 @@ function ChatView({
           maxWidth: READING_MAX_WIDTH,
           width: "100%",
           alignSelf: "center",
+          flexGrow: 1,
         }}
+        ListEmptyComponent={
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 64, paddingHorizontal: 32 }}>
+            <View
+              style={{
+                width: 72, height: 72, borderRadius: 36,
+                backgroundColor: accentPrimary + "18",
+                borderWidth: 1, borderColor: accentPrimary + "30",
+                alignItems: "center", justifyContent: "center",
+                marginBottom: 22,
+              }}
+            >
+              <Text style={{ fontSize: 32 }}>✡</Text>
+            </View>
+            <Text style={{ color: colors.textPrimary, fontSize: 22, fontFamily: "Inter_700Bold", letterSpacing: -0.4, marginBottom: 10, textAlign: "center" }}>
+              Ask Rav Menashe
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 22, maxWidth: 260 }}>
+              Your trusted guide to Torah, prayer, and the traditions of Bnei Menashe
+            </Text>
+          </View>
+        }
         showsVerticalScrollIndicator={false}
         removeClippedSubviews={Platform.OS !== "web"}
         maxToRenderPerBatch={10}
