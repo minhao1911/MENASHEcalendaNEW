@@ -11,6 +11,45 @@ export interface SharedTranslations {
   navSiddur: string;
   navJourney: string;
   libraryBrowseCategories: string;
+  libraryTitle: string;
+  libraryBooksAvailable: string;
+  librarySearchPlaceholder: string;
+  libraryVoiceSearch: string;
+  libraryFilter: string;
+  libraryBack: string;
+  libraryFilterTitle: string;
+  libraryFilterAll: string;
+  libraryFilterFree: string;
+  libraryFilterPremium: string;
+  libraryTotalBooks: string;
+  libraryInLibrary: string;
+  libraryPremium: string;
+  libraryProContent: string;
+  libraryFree: string;
+  libraryAvailableToRead: string;
+  libraryFreeBadge: string;
+  libraryProBadge: string;
+  libraryLocked: string;
+  libraryDownloaded: string;
+  libraryNew: string;
+  libraryRecent: string;
+  libraryOpen: string;
+  libraryLockedDescription: string;
+  libraryNoBooksFound: string;
+  libraryNoBooksInCategory: string;
+  libraryTrySearch: string;
+  libraryCheckBack: string;
+  libraryBookActions: string;
+  libraryClose: string;
+  libraryCategoryAll: string;
+  libraryCategorySiddur: string;
+  libraryCategoryTehillim: string;
+  libraryCategoryTorahPortions: string;
+  libraryCategoryDailyStudy: string;
+  libraryCategoryPrayerBooks: string;
+  libraryCategoryHebrewLearning: string;
+  libraryCategoryCommunity: string;
+  libraryCategoryPremium: string;
 
   /* ── Journey ── */
   journeyGreeting: string;
@@ -669,6 +708,45 @@ export const sharedEn: SharedTranslations = {
   navSettings: "Settings",
   navJourney: "Journey",
   libraryBrowseCategories: "Browse by category",
+  libraryTitle: "Library",
+  libraryBooksAvailable: "books available",
+  librarySearchPlaceholder: "Search books, authors, topics…",
+  libraryVoiceSearch: "Voice search",
+  libraryFilter: "Filter library",
+  libraryBack: "Go back",
+  libraryFilterTitle: "Show me",
+  libraryFilterAll: "All books",
+  libraryFilterFree: "Free books",
+  libraryFilterPremium: "Premium books",
+  libraryTotalBooks: "Total Books",
+  libraryInLibrary: "In your library",
+  libraryPremium: "Premium",
+  libraryProContent: "Pro content",
+  libraryFree: "Free",
+  libraryAvailableToRead: "Available to read",
+  libraryFreeBadge: "FREE",
+  libraryProBadge: "PRO",
+  libraryLocked: "Locked",
+  libraryDownloaded: "Downloaded",
+  libraryNew: "NEW",
+  libraryRecent: "Recent",
+  libraryOpen: "Open book",
+  libraryLockedDescription: "This book is not available to open yet.",
+  libraryNoBooksFound: "No books found",
+  libraryNoBooksInCategory: "No books in this category",
+  libraryTrySearch: "Try a different search term.",
+  libraryCheckBack: "Check back soon — more books are being added.",
+  libraryBookActions: "Book actions",
+  libraryClose: "Close",
+  libraryCategoryAll: "All",
+  libraryCategorySiddur: "Siddur",
+  libraryCategoryTehillim: "Tehillim",
+  libraryCategoryTorahPortions: "Torah Portions",
+  libraryCategoryDailyStudy: "Daily Study",
+  libraryCategoryPrayerBooks: "Prayer Books",
+  libraryCategoryHebrewLearning: "Hebrew Learning",
+  libraryCategoryCommunity: "Community",
+  libraryCategoryPremium: "Premium",
 
   journeyGreeting: "Shalom",
   journeySummaryTitle: "Your Journey",
@@ -1303,6 +1381,45 @@ export const sharedTk: SharedTranslations = {
   navSettings: "Siam Dan",
   navJourney: "Zuangthu",
   libraryBrowseCategories: "Thlang dan tawh",
+  libraryTitle: "Library",
+  libraryBooksAvailable: "bu a om",
+  librarySearchPlaceholder: "Bu, thu leh thupi zawng…",
+  libraryVoiceSearch: "Thawng thawm hmanga zawng",
+  libraryFilter: "Library thlang dan",
+  libraryBack: "Kir leh",
+  libraryFilterTitle: "Hengte chauh en",
+  libraryFilterAll: "Bu zawng zawng",
+  libraryFilterFree: "A man lo bu",
+  libraryFilterPremium: "Premium bu",
+  libraryTotalBooks: "Bu Zawng Zawng",
+  libraryInLibrary: "Na library-ah",
+  libraryPremium: "Premium",
+  libraryProContent: "Pro thu",
+  libraryFree: "Man lo",
+  libraryAvailableToRead: "En dingin a om",
+  libraryFreeBadge: "MAN LO",
+  libraryProBadge: "PRO",
+  libraryLocked: "Khawng",
+  libraryDownloaded: "Download zawh",
+  libraryNew: "THAR",
+  libraryRecent: "Changkhat",
+  libraryOpen: "Bu hawn",
+  libraryLockedDescription: "He bu hi tunah hawn theih a la ni lo.",
+  libraryNoBooksFound: "Bu hmuh a awm lo",
+  libraryNoBooksInCategory: "He thlang dan-ah bu a awm lo",
+  libraryTrySearch: "Thu dang zawng in.",
+  libraryCheckBack: "Hun reuh ah en leh rawh — bu dangte belh zel ding.",
+  libraryBookActions: "Bu thiltihte",
+  libraryClose: "Khawng",
+  libraryCategoryAll: "Zawng zawng",
+  libraryCategorySiddur: "Siddur",
+  libraryCategoryTehillim: "Tehillim",
+  libraryCategoryTorahPortions: "Torah sunthal",
+  libraryCategoryDailyStudy: "Ni tin zirna",
+  libraryCategoryPrayerBooks: "Thumna bu",
+  libraryCategoryHebrewLearning: "Hebrew zirna",
+  libraryCategoryCommunity: "Mipil",
+  libraryCategoryPremium: "Premium",
 
   journeyGreeting: "Shalom",
   journeySummaryTitle: "Na Zuangthu",
