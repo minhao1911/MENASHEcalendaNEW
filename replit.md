@@ -1,16 +1,17 @@
 # Menashe Calendar
 
-## Setup Status (as of 2026-07-12)
+## Setup Status (as of 2026-07-22)
 
 Project imported from GitHub and set up on Replit:
 
 - **Dependencies**: `pnpm install` run at root — all 1728 packages resolved and hoisted to root `node_modules` via `shamefully-hoist=true` (.npmrc).
 - **Database**: Replit-managed PostgreSQL provisioned and reachable. Drizzle migrations run automatically on API server startup (`runMigrations()` in `artifacts/api-server/src/index.ts`).
-- **Workflows**: All three core workflows confirmed running:
+- **Workflows**: All four workflows confirmed running:
   - `artifacts/menashe-calendar: web` — Vite dev server on port 21636 ✓
   - `artifacts/api-server: API Server` — Express on port 8080, migrations applied ✓
-  - `artifacts/menashe-mobile: expo` — Metro bundler on port 25726, Expo QR code available ✓
-- **Secrets configured**: `CLERK_SECRET_KEY` added to Replit Secrets. All other required env vars (`CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`, `ADMIN_PIN`, `ADMIN_USER_ID`) are already set in shared environment.
+  - `artifacts/menashe-mobile: expo` — Metro bundler on port 25726 ✓
+  - `artifacts/mockup-sandbox: Component Preview Server` — Vite on port 8081 ✓
+- **Secrets pending**: `CLERK_SECRET_KEY` is **not yet set** — authentication middleware is disabled and all protected routes return 401 until this is added as a Replit Secret. All public env vars (`CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`, `ADMIN_PIN`, `ADMIN_USER_ID`) are already configured in shared environment.
 - **Optional secrets not yet set**: `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `GROK_API_KEY` (AI chat), `VAPID_PRIVATE_KEY` (push notifications), `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET` (payments) — app runs without these but those features are disabled.
 
 A sacred Jewish calendar app for the Bnei Menashe community — featuring Hebrew/Jewish calendar, Zmanim (prayer times), Parasha, Daf Yomi, holidays, a Siddur library, 3D Memorial Sanctuary, community tools, and AI-powered sacred wisdom chat.
