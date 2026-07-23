@@ -92,6 +92,7 @@ const HEBREW_DAY: Record<number, string> = {
 };
 
 const HERO_BG = require("../../assets/images/saipikhup-photo.jpg");
+const MEMORIAL_SANCTUARY_CARD = require("../../assets/images/memorial-sanctuary-card.png");
 
 /* ── Hero card background rotation — crossfades between sacred-site photos ─── */
 const HERO_BG_IMAGES = [
@@ -436,17 +437,6 @@ export default function HomeScreen() {
   const borderColor   = colors.cardBorder;
   const successColor  = colors.success;
   const sapphireBlue  = "#6382FF" as const;
-
-  // RC-002 Task 3: Memorial card — theme-aware candlelight/sanctuary palette
-  const memGradient: readonly [string, string, string, string] = isSapphire
-    ? ["#1a0e2a", "#0e0820", "#160c22", "#1a1030"]
-    : ["#1c0e02", "#0e0700", "#140b00", "#1c1005"];
-  const memTitleColor   = isSapphire ? "#d4c8f0" : "#f4e0c4";
-  const memTaglineColor = isSapphire ? "#a898cc" : "#c4b090";
-  const memOuterGlow    = isSapphire ? "rgba(99,130,255,0.12)" : "rgba(212,120,10,0.12)";
-  const memInnerGlow    = isSapphire ? "rgba(99,130,255,0.07)" : "rgba(240,150,20,0.07)";
-  const memCandleOuter  = isSapphire ? "rgba(99,130,255,0.14)" : "rgba(212,120,10,0.16)";
-  const memCandleInner  = isSapphire ? "rgba(99,130,255,0.08)" : "rgba(240,160,30,0.10)";
 
   // MEP-005: staggered entrance — 40ms stagger, shared useEntrance hook
   const a0  = useEntrance(0);
@@ -1141,65 +1131,86 @@ export default function HomeScreen() {
           accessibilityHint="Opens the Sacred Memory experience"
           accessibilityRole="button"
         >
-          <LinearGradient
-            colors={memGradient}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={{ minHeight: 212, padding: 24 }}
+          <ImageBackground
+            source={MEMORIAL_SANCTUARY_CARD}
+            resizeMode="cover"
+            style={{ minHeight: 264 }}
+            imageStyle={{ transform: [{ scale: 1.02 }] }}
+            accessibilityIgnoresInvertColors
           >
-            <View style={{
-              position: "absolute", top: -32, right: -32,
-              width: 160, height: 160, borderRadius: 80,
-              backgroundColor: memOuterGlow,
-            }} />
-            <View style={{
-              position: "absolute", top: -10, right: -10,
-              width: 90, height: 90, borderRadius: 45,
-              backgroundColor: memInnerGlow,
-            }} />
+            <LinearGradient
+              pointerEvents="none"
+              colors={["rgba(7,10,16,0.04)", "rgba(7,10,16,0.18)", "rgba(7,10,16,0.92)"]}
+              locations={[0, 0.42, 1]}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <LinearGradient
+              pointerEvents="none"
+              colors={["rgba(212,168,67,0.18)", "transparent"]}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 0.72, y: 0 }}
+              style={StyleSheet.absoluteFillObject}
+            />
 
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={{ flex: 1 }}>
-                <Overline text={t.homeMemorialTitle} color={gold} />
+            <View style={{ flex: 1, justifyContent: "space-between", padding: 20 }}>
+              <View style={{
+                alignSelf: "flex-start",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 9999,
+                backgroundColor: "rgba(10,12,16,0.48)",
+                borderWidth: 1,
+                borderColor: "rgba(255,226,160,0.38)",
+              }}>
+                <Feather name="heart" size={13} color="#f5d58b" />
                 <Text style={{
-                  fontSize: 22, fontWeight: "800",
-                  color: memTitleColor, marginTop: 8, marginBottom: 8, lineHeight: 28,
-                  letterSpacing: -0.3,
+                  fontSize: 10,
+                  fontWeight: "800",
+                  letterSpacing: 1.4,
+                  color: "#fff4d6",
+                  textTransform: "uppercase",
+                }}>
+                  {t.homeMemorialTitle}
+                </Text>
+              </View>
+
+              <View style={{ maxWidth: 290 }}>
+                <Text style={{
+                  fontSize: 24,
+                  fontWeight: "800",
+                  color: "#fffaf0",
+                  marginBottom: 7,
+                  lineHeight: 30,
+                  letterSpacing: -0.4,
+                  textShadowColor: "rgba(0,0,0,0.55)",
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 4,
                 }}>
                   Memorial Sanctuary
                 </Text>
-                <Text style={{ fontSize: 13, color: memTaglineColor, marginBottom: 20, lineHeight: 20, maxWidth: 200 }}>
+                <Text style={{
+                  fontSize: 13,
+                  color: "rgba(255,248,231,0.84)",
+                  marginBottom: 16,
+                  lineHeight: 19,
+                  textShadowColor: "rgba(0,0,0,0.65)",
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 4,
+                }}>
                   {t.homeMemorialTagline}
                 </Text>
                 <PillButton
                   label={t.homeEnterSanctuary}
                   onPress={() => router.push("/sacred-memory")}
-                  bg={gold}
+                  bg="#e0b957"
                   fg="#1a0f00"
                 />
               </View>
-
-              {/* Candle — warm glowing orb */}
-              <View style={{ alignItems: "center", justifyContent: "center", marginLeft: 18 }}>
-                <View style={{
-                  width: 80, height: 80, borderRadius: 40,
-                  backgroundColor: memCandleOuter,
-                  alignItems: "center", justifyContent: "center",
-                }}>
-                  <View style={{
-                    position: "absolute",
-                    width: 56, height: 56, borderRadius: 28,
-                    backgroundColor: memCandleInner,
-                  }} />
-                  <Text style={{
-                    fontSize: 42,
-                    textShadowColor: "rgba(255,160,30,0.80)",
-                    textShadowOffset: { width: 0, height: 0 },
-                    textShadowRadius: 16,
-                  }}>🕯</Text>
-                </View>
-              </View>
             </View>
-          </LinearGradient>
+          </ImageBackground>
         </TouchableOpacity>
       </Animated.View>
 
