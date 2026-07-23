@@ -534,15 +534,9 @@ export default function SacredStudyScreen() {
     router.push("/(tabs)/calendar");
   }, []);
 
-  const bookmarksRef = useRef<View>(null);
   const scrollRef = useRef<any>(null);
-  const bookmarksY = useRef(0);
 
-  const scrollToBookmarks = useCallback(() => {
-    scrollRef.current?.scrollTo?.({ y: Math.max(bookmarksY.current - 24, 0), animated: !reducedMotion });
-  }, [reducedMotion]);
 
-  const bookmarks = useMemo(() => history.slice(1, 5), [history]);
   const journeyStats = useMemo(() => computeJourneyStats(history), [history]);
 
   const goSiddur = useCallback((category: string) => {
@@ -978,7 +972,7 @@ export default function SacredStudyScreen() {
 
         {/* ── ④ FEATURED STUDY (Torah Insight — editorial card) ───────────── */}
         <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a2]}>
-          <SectionHeader icon="sunrise" label="Featured Study" gold={gold} muted={colors.textMuted} actionLabel="Bookmark" onAction={scrollToBookmarks} />
+          <SectionHeader icon="sunrise" label="Featured Study" gold={gold} muted={colors.textMuted} />
 
           <Pressable
             onPress={toggleInsight}
@@ -1054,25 +1048,6 @@ export default function SacredStudyScreen() {
                 {insightExpanded ? "Show less ↑" : "Read more ↓"}
               </Text>
 
-              {/* Footer */}
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginTop: 16 }}>
-                <Pressable
-                  onPress={scrollToBookmarks}
-                  hitSlop={10}
-                  accessibilityRole="button"
-                  accessibilityLabel="Bookmark this insight"
-                >
-                  <View style={{
-                    flexDirection: "row", alignItems: "center", gap: 6,
-                    backgroundColor: CORAL + "1c",
-                    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7,
-                    borderWidth: 1, borderColor: CORAL + "30",
-                  }}>
-                    <Feather name="bookmark" size={12} color={CORAL} />
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: CORAL }}>Save</Text>
-                  </View>
-                </Pressable>
-              </View>
             </LinearGradient>
           </Pressable>
         </Animated.View>
@@ -1293,69 +1268,8 @@ export default function SacredStudyScreen() {
             <CollectionTile icon="sun"       label="Prayer"          sub="Daily Tefillah"                               color="#f0a020" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("Prayer Books")} />
             <CollectionTile icon="calendar"  label={t.sacredStudyJewishCalendar} sub="Hebrew dates & holidays"         color={TEAL}    colors={colors} rd={rd} sp={sp} type={type} onPress={goCalendar} />
             <CollectionTile icon="layers"    label="Learning Library" sub="All sacred texts"                           color={CORAL}   colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("All")} />
-            <CollectionTile icon="bookmark"  label={t.sacredStudyBookmarks} sub={bookmarks.length ? `${bookmarks.length} saved` : "Nothing saved yet"} color={PINK} colors={colors} rd={rd} sp={sp} type={type} onPress={scrollToBookmarks} />
           </View>
         </Animated.View>
-
-        {/* ── Bookmarks (preserved) ───────────────────────────────────────── */}
-        <View
-          ref={bookmarksRef}
-          onLayout={(e) => { bookmarksY.current = e.nativeEvent.layout.y; }}
-        >
-          <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a7]}>
-            <SectionHeader icon="bookmark" label={t.sacredStudyBookmarks} gold={gold} muted={colors.textMuted} />
-            {bookmarks.length === 0 ? (
-              <View style={{
-                backgroundColor: colors.card, borderRadius: 18,
-                borderWidth: 1, borderColor: colors.cardBorder,
-                padding: 24, alignItems: "center", gap: 10,
-              }}>
-                <View style={{
-                  width: 48, height: 48, borderRadius: 24,
-                  backgroundColor: gold + "12",
-                  alignItems: "center", justifyContent: "center",
-                }}>
-                  <Feather name="bookmark" size={22} color={colors.textMuted} />
-                </View>
-                <Text style={[type.bodySm, { color: colors.textMuted, textAlign: "center" }]}>
-                  {t.sacredStudyNoBookmarks}
-                </Text>
-              </View>
-            ) : (
-              <View style={{ gap: sp[2] }}>
-                {bookmarks.map((item, idx) => (
-                  <Pressable
-                    key={`${item.route}-${item.at}-${idx}`}
-                    onPress={() => router.push(item.params ? ({ pathname: item.route, params: item.params } as any) : (item.route as any))}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t.sacredStudyRecentlySaved}: ${item.label}`}
-                    style={{
-                      backgroundColor: colors.card, borderRadius: rd.md, padding: sp[3.5],
-                      flexDirection: "row", alignItems: "center", gap: sp[3],
-                      borderWidth: 1, borderColor: colors.cardBorder, minHeight: 56,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.08,
-                      shadowRadius: 6,
-                      elevation: 2,
-                    }}
-                  >
-                    <View style={{
-                      width: 36, height: 36, borderRadius: 11,
-                      backgroundColor: gold + "18",
-                      borderWidth: 1, borderColor: gold + "28",
-                      alignItems: "center", justifyContent: "center",
-                    }}>
-                      <Feather name="bookmark" size={16} color={gold} />
-                    </View>
-                    <Text style={[type.bodySm, { color: colors.textPrimary, flex: 1 }]} numberOfLines={1}>{item.label}</Text>
-                    <Feather name="chevron-right" size={16} color={colors.textMuted} />
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </Animated.View>
-        </View>
 
         {/* ── Learning Journey Stats (preserved) ──────────────────────────── */}
         <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a7]}>
