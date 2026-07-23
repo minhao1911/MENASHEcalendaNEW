@@ -145,6 +145,8 @@ const BookCard = memo(function BookCard({
   book,
   index,
   cardWidth,
+  cardHeight,
+  coverHeight,
   colors,
   t,
   onOpen,
@@ -153,6 +155,8 @@ const BookCard = memo(function BookCard({
   book: Book;
   index: number;
   cardWidth: number;
+  cardHeight: number;
+  coverHeight: number;
   colors: ReturnType<typeof useThemeTokens>["colors"];
   t: ReturnType<typeof useLanguage>["t"];
   onOpen: (book: Book) => void;
@@ -191,6 +195,7 @@ const BookCard = memo(function BookCard({
         style={[
           styles.bookCard,
           {
+            height: cardHeight,
             backgroundColor: book.isPremium ? "#141927" : colors.card,
             borderColor: book.isPremium ? "#E6B93D" : colors.border,
             shadowColor: book.isPremium ? "#E6B93D" : "#000",
@@ -213,8 +218,10 @@ const BookCard = memo(function BookCard({
             </Text>
           </View>
 
-          <View style={[styles.cover, { backgroundColor: book.coverColor + "36" }]}>
-            <Text style={[styles.coverEmoji, !available && styles.lockedCover]}>{book.coverEmoji}</Text>
+          <View style={[styles.cover, { height: coverHeight, backgroundColor: book.coverColor + "36" }]}>
+            <Text style={[styles.coverEmoji, { fontSize: Math.max(38, coverHeight * 0.5) }, !available && styles.lockedCover]}>
+              {book.coverEmoji}
+            </Text>
             {!available && (
               <View style={[styles.lockOverlay, { backgroundColor: colors.background + "B8" }]}>
                 <Feather name="lock" size={18} color={colors.textPrimary} />
@@ -303,6 +310,8 @@ export default function LibraryScreen() {
   const horizontalPadding = width >= 700 ? 24 : 16;
   const gap = width >= 700 ? 14 : 10;
   const cardWidth = (Math.min(width, 1280) - horizontalPadding * 2 - gap * (columns - 1)) / columns;
+  const cardHeight = Math.max(238, Math.min(264, cardWidth * 1.58));
+  const coverHeight = Math.max(78, Math.min(108, cardWidth * 0.54));
   const premiumCount = books.filter((book) => book.isPremium).length;
   const freeCount = books.length - premiumCount;
 
@@ -462,6 +471,8 @@ export default function LibraryScreen() {
                 book={book}
                 index={index}
                 cardWidth={cardWidth}
+                cardHeight={cardHeight}
+                coverHeight={coverHeight}
                 colors={colors}
                 t={t}
                 onOpen={openBook}
@@ -575,40 +586,39 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
   statCard: {
     flex: 1,
-    minHeight: 106,
-    borderRadius: 18,
+    minHeight: 96,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 12,
+    padding: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
+    gap: 8,
   },
-  statIcon: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  statIcon: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   statCopy: { flex: 1, minWidth: 0 },
-  statValue: { fontSize: 22, fontWeight: "800", lineHeight: 25 },
-  statLabel: { fontSize: 12, fontWeight: "600", marginTop: 2 },
-  statSub: { fontSize: 10, marginTop: 2 },
+  statValue: { fontSize: 20, fontWeight: "800", lineHeight: 23 },
+  statLabel: { fontSize: 11, fontWeight: "600", marginTop: 1 },
+  statSub: { fontSize: 9, marginTop: 1 },
   grid: { flexDirection: "row", flexWrap: "wrap" },
   bookCard: {
-    height: 286,
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
     overflow: "hidden",
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 18,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 14,
+    elevation: 4,
   },
-  bookCardPressable: { flex: 1, padding: 12, justifyContent: "space-between" },
-  badge: { alignSelf: "flex-start", borderRadius: 5, paddingHorizontal: 6, paddingVertical: 3 },
-  badgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
-  cover: { height: 108, borderRadius: 18, alignItems: "center", justifyContent: "center", overflow: "hidden", marginVertical: 8 },
-  coverEmoji: { fontSize: 54 },
+  bookCardPressable: { flex: 1, padding: 10, justifyContent: "space-between" },
+  badge: { alignSelf: "flex-start", borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 },
+  badgeText: { fontSize: 9, fontWeight: "800", letterSpacing: 0.45 },
+  cover: { borderRadius: 14, alignItems: "center", justifyContent: "center", overflow: "hidden", marginVertical: 6 },
+  coverEmoji: { lineHeight: 58 },
   lockedCover: { opacity: 0.38 },
   lockOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
-  bookTitle: { fontSize: 16, fontWeight: "700", lineHeight: 19, minHeight: 38 },
-  bookCategory: { fontSize: 12, marginTop: 3 },
-  bookFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 28 },
-  moreButton: { width: 32, height: 32, alignItems: "flex-end", justifyContent: "center" },
+  bookTitle: { fontSize: 14, fontWeight: "700", lineHeight: 17, minHeight: 34 },
+  bookCategory: { fontSize: 11, marginTop: 2 },
+  bookFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 24 },
+  moreButton: { width: 28, height: 28, alignItems: "flex-end", justifyContent: "center" },
   centerState: { flex: 1, minHeight: 300, alignItems: "center", justifyContent: "center", padding: 32 },
   emptyIcon: { width: 64, height: 64, borderRadius: 22, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 14 },
   emptyTitle: { fontSize: 18, fontWeight: "700", textAlign: "center" },
