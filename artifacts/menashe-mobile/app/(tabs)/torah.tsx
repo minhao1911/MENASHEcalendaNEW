@@ -1257,19 +1257,6 @@ export default function SacredStudyScreen() {
           </View>
         </Animated.View>
 
-        {/* ── Study Collections (preserved — original §9) ─────────────────── */}
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a6]}>
-          <SectionHeader icon="grid" label={t.sacredStudyStudyPaths} gold={gold} muted={colors.textMuted} />
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: sp[3] }}>
-            <CollectionTile icon="star"      label="Parashah"        sub={parasha?.name ?? "This week"}                 color={gold}    colors={colors} rd={rd} sp={sp} type={type} onPress={studyParasha} />
-            <CollectionTile icon="feather"   label="Torah"           sub="Track your study"                             color={GREEN}   colors={colors} rd={rd} sp={sp} type={type} onPress={goTorahTracker} />
-            <CollectionTile icon="book"      label="Daf Yomi"        sub={daf.tractate}                                 color={PURPLE}  colors={colors} rd={rd} sp={sp} type={type} onPress={goDaf} />
-            <CollectionTile icon="book-open" label="Siddur"          sub="Prayer texts"                                 color="#6382FF" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("Siddur")} />
-            <CollectionTile icon="sun"       label="Prayer"          sub="Daily Tefillah"                               color="#f0a020" colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("Prayer Books")} />
-            <CollectionTile icon="calendar"  label={t.sacredStudyJewishCalendar} sub="Hebrew dates & holidays"         color={TEAL}    colors={colors} rd={rd} sp={sp} type={type} onPress={goCalendar} />
-            <CollectionTile icon="layers"    label="Learning Library" sub="All sacred texts"                           color={CORAL}   colors={colors} rd={rd} sp={sp} type={type} onPress={() => goSiddur("All")} />
-          </View>
-        </Animated.View>
 
         {/* ── Learning Journey Stats (preserved) ──────────────────────────── */}
         <Animated.View style={[{ marginHorizontal: HX, marginBottom: 28 }, a7]}>
