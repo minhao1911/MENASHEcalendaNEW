@@ -10,6 +10,7 @@ export interface SharedTranslations {
   navSettings: string;
   navSiddur: string;
   navJourney: string;
+  libraryBrowseCategories: string;
 
   /* ── Journey ── */
   journeyGreeting: string;
@@ -667,6 +668,7 @@ export const sharedEn: SharedTranslations = {
   navTorah: "Torah",
   navSettings: "Settings",
   navJourney: "Journey",
+  libraryBrowseCategories: "Browse by category",
 
   journeyGreeting: "Shalom",
   journeySummaryTitle: "Your Journey",
@@ -1300,6 +1302,7 @@ export const sharedTk: SharedTranslations = {
   navTorah: "Torah",
   navSettings: "Siam Dan",
   navJourney: "Zuangthu",
+  libraryBrowseCategories: "Thlang dan tawh",
 
   journeyGreeting: "Shalom",
   journeySummaryTitle: "Na Zuangthu",

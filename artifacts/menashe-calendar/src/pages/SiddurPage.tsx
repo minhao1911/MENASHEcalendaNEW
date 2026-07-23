@@ -1,5 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { GOLD, GOLD_GRAD } from "../lib/theme";
+import { useLanguage } from "../context/LanguageContext";
 
 export interface Book {
   id: number;
@@ -42,6 +43,7 @@ interface SiddurPageProps {
 }
 
 const SiddurPage = memo(function SiddurPage({ onReadBook, onAdmin, refreshKey, isPremium, onShowPremium, isAdmin = false }: SiddurPageProps) {
+  const { t } = useLanguage();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -89,6 +91,41 @@ const SiddurPage = memo(function SiddurPage({ onReadBook, onAdmin, refreshKey, i
         @keyframes siddurLockPulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(212,168,67,0); }
           50% { box-shadow: 0 0 0 6px rgba(212,168,67,0.12); }
+        }
+        .library-category-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+        .library-category-button {
+          min-height: 38px;
+          padding: 7px 10px;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          cursor: pointer;
+          white-space: normal;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 650;
+          line-height: 1.2;
+          transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+        }
+        .library-category-button:hover {
+          transform: translateY(-1px);
+        }
+        .library-category-button:focus-visible {
+          outline: 2px solid ${GOLD};
+          outline-offset: 2px;
+        }
+        @media (min-width: 560px) {
+          .library-category-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+        @media (min-width: 900px) {
+          .library-category-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+          }
         }
       `}</style>
 
@@ -190,8 +227,19 @@ const SiddurPage = memo(function SiddurPage({ onReadBook, onAdmin, refreshKey, i
           />
         </div>
 
-        {/* Category tabs */}
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 12, scrollbarWidth: "none" }}>
+        {/* Category filters */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{
+            fontSize: 11,
+            fontWeight: 800,
+            color: "var(--text-muted)",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            marginBottom: 8,
+          }}>
+            {t.libraryBrowseCategories}
+          </div>
+          <div className="library-category-grid" role="group" aria-label={t.libraryBrowseCategories}>
           {CATEGORIES.filter(c => {
             if (c === "All") return true;
             return books.some(b => b.category === c);
@@ -199,17 +247,18 @@ const SiddurPage = memo(function SiddurPage({ onReadBook, onAdmin, refreshKey, i
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
+              className="library-category-button"
+              aria-pressed={activeCategory === cat}
               style={{
-                padding: "6px 14px", borderRadius: 99, border: "none", cursor: "pointer",
-                whiteSpace: "nowrap", fontSize: 12, fontWeight: 600,
                 background: activeCategory === cat ? GOLD : "var(--elevated)",
                 color: activeCategory === cat ? "#1a0f00" : "var(--text-muted)",
-                flexShrink: 0,
+                borderColor: activeCategory === cat ? GOLD : "var(--border)",
               }}
             >
               {cat}
             </button>
           ))}
+          </div>
         </div>
 
         {/* Books grid */}

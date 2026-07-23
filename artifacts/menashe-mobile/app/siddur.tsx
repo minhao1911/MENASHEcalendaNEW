@@ -10,11 +10,13 @@ import { useThemeTokens } from "@/src/mobile/design-system";
 import * as WebBrowser from "expo-web-browser";
 
 import { fetchBooks, type Book } from "@/lib/siddurApi";
+import { useLanguage } from "@/context/LanguageContext";
 
 const CATEGORIES = ["All", "Siddur", "Tehillim", "Torah Portions", "Hebrew Learning", "Prayer Books", "Daily Study", "Kuki Christian Books", "Custom Community Books"];
 
 export default function SiddurScreen() {
-  const { colors } = useThemeTokens();
+  const { colors, type } = useThemeTokens();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
   const params = useLocalSearchParams<{ category?: string }>();
@@ -76,33 +78,37 @@ export default function SiddurScreen() {
         )}
       </View>
 
-      {/* Category pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}
-      >
+      {/* Category filters */}
+      <View style={styles.categorySection}>
+        <Text style={[type.overline, styles.categoryLabel, { color: colors.mutedForeground }]}>
+          {t.libraryBrowseCategories}
+        </Text>
+        <View style={styles.categoryGrid} accessibilityRole="radiogroup">
         {CATEGORIES.map(cat => (
           <TouchableOpacity
             key={cat}
             style={[
-              styles.pill,
+              styles.categoryButton,
               {
                 backgroundColor: cat === category ? colors.primary : colors.card,
                 borderColor: cat === category ? colors.primary : colors.border,
               },
             ]}
             onPress={() => setCategory(cat)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: cat === category }}
+            testID={`library-category-${cat.toLowerCase().replace(/\s+/g, "-")}`}
           >
             <Text style={[
-              styles.pillText,
+              styles.categoryButtonText,
               { color: cat === category ? colors.primaryForeground : colors.mutedForeground },
             ]}>
               {cat}
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+        </View>
+      </View>
 
       {/* Books grid */}
       {loading ? (
@@ -190,8 +196,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 10, gap: 8,
   },
   searchInput: { flex: 1, fontSize: 14 },
-  pill: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 6 },
-  pillText: { fontSize: 12, fontWeight: "600" },
+  categorySection: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
+  categoryLabel: { marginBottom: 8 },
+  categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  categoryButton: {
+    width: "47%",
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryButtonText: { fontSize: 13, fontWeight: "500", textAlign: "center", letterSpacing: 0 },
   grid: { padding: 16, gap: 10 },
   bookCard: {
     flexDirection: "row", alignItems: "center",

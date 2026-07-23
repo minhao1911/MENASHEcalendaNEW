@@ -31,6 +31,7 @@ export interface Translations {
   navSettings: string;
   navChat: string;
   navNotifications: string;
+  libraryBrowseCategories: string;
 
   /* ── Beta Feedback ── */
   feedbackButtonLabel: string;
@@ -745,6 +746,7 @@ export const en: Translations = {
   navSettings: "Settings",
   navChat: "Chat",
   navNotifications: "Notifications",
+  libraryBrowseCategories: "Browse by category",
 
   /* ── Beta Feedback ── */
   feedbackButtonLabel: "Feedback",
@@ -1439,6 +1441,7 @@ export const tk: Translations = {
   navSettings: "Siam Dan",
   navChat: "Chat",
   navNotifications: "Hlabu Thar",
+  libraryBrowseCategories: "Thlang dan tawh",
 
   /* ── Beta Feedback ── */
   feedbackButtonLabel: "Thu Pe",
