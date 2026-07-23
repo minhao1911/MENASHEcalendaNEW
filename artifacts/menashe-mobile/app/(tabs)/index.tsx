@@ -101,16 +101,6 @@ const HERO_BG_IMAGES = [
   HERO_BG,
 ];
 
-function getOmerDay(): number | null {
-  const hd = new HDate(new Date());
-  const m  = hd.getMonth();
-  const d  = hd.getDate();
-  if (m === 1 && d >= 16) return d - 15;
-  if (m === 2)            return 15 + d;
-  if (m === 3 && d <= 5)  return 44 + d;
-  return null;
-}
-
 function getNextWeekday(targetDay: number): Date {
   const d    = new Date();
   let   diff = (targetDay - d.getDay() + 7) % 7;
@@ -118,17 +108,6 @@ function getNextWeekday(targetDay: number): Date {
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
-}
-
-function formatCountdown(ms: number): string {
-  if (ms <= 0) return "—";
-  const totalSecs = Math.floor(ms / 1000);
-  const h = Math.floor(totalSecs / 3600);
-  const m = Math.floor((totalSecs % 3600) / 60);
-  const s = totalSecs % 60;
-  if (h > 0) return `${h}h ${m}m ${s}s`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
 }
 
 // ─── Next-prayer resolver ─────────────────────────────────────────────────────
@@ -388,24 +367,8 @@ export default function HomeScreen() {
   const holidays    = useMemo(() => getUpcomingHolidays(30), []);
   const nextHoliday = holidays[0] ?? null;
 
-  const todayHoliday = useMemo(() => {
-    if (!nextHoliday) return null;
-    const hd = nextHoliday.date;
-    return hd.getFullYear() === today.getFullYear()
-        && hd.getMonth()     === today.getMonth()
-        && hd.getDate()      === today.getDate()
-      ? nextHoliday : null;
-  }, [nextHoliday, today]);
-
-  const todayFast = useMemo(() => {
-    if (!todayHoliday) return null;
-    return /fast|tzom|tisha|ta'?anit|taanis/i.test(todayHoliday.name)
-      ? todayHoliday : null;
-  }, [todayHoliday]);
-
   const daf         = useMemo(() => getTodayDaf(), []);
   const dafProgress = useMemo(() => getDafProgress(daf.tractate, daf.daf), [daf]);
-  const omerDay     = useMemo(() => getOmerDay(), []);
 
   const todayZm = useMemo(
     () => calculateZmanim(today, location.lat, location.lng, location.candleLightingMinutes),
@@ -432,10 +395,6 @@ export default function HomeScreen() {
     return d;
   }, [friday]);
 
-  const fridayZm = useMemo(
-    () => calculateZmanim(friday, location.lat, location.lng, location.candleLightingMinutes),
-    [location, friday],
-  );
   const satZm = useMemo(
     () => calculateZmanim(saturday, location.lat, location.lng),
     [location, saturday],
@@ -444,17 +403,6 @@ export default function HomeScreen() {
   const gregDate = useMemo(
     () => today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }),
     [today],
-  );
-
-  // Countdown mode determined by day-of-week; actual ms computed inside ShabbatCountdownCard.
-  const countdownMode: "candle" | "havdalah" | "upcoming" =
-    isShabbat ? "havdalah" : isFriday ? "candle" : "upcoming";
-
-  const countdownDateStr = useMemo(
-    () => (countdownMode === "havdalah" ? saturday : friday).toLocaleDateString("en-US", {
-      weekday: "long", month: "long", day: "numeric", year: "numeric",
-    }),
-    [countdownMode, friday, saturday],
   );
 
   const todayInsight = useMemo(() => {
@@ -864,75 +812,11 @@ export default function HomeScreen() {
         </HeroBackgroundCrossfade>
       </Animated.View>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          SECTION 3 — TODAY'S DASHBOARD
-          Daily priority · Today's focus · Shabbat times
-          ═══════════════════════════════════════════════════════════════════════ */}
-
-      {/* Section eyebrow label */}
-      <Animated.View style={[{ paddingHorizontal: HX, marginBottom: 16 }, a2]}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-          <Feather name="star" size={11} color={gold} />
-          <Text
-            allowFontScaling={false}
-            style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.8, textTransform: "uppercase", color: gold }}
-          >
-            {t.homeTodaysFocusLabel}
-          </Text>
-        </View>
+      {/* ── Daily priority remains available on Home; the two screenshot cards
+          below it are intentionally kept in the More destinations. ── */}
+      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 12 }, a2]}>
+        <DailyPriorityCard />
       </Animated.View>
-
-      {/* 3a — Daily Priority — hidden when prayer is next */}
-      {!nextPrayer && (
-        <Animated.View style={[{ marginHorizontal: HX, marginBottom: 12 }, a2]}>
-          <DailyPriorityCard />
-        </Animated.View>
-      )}
-
-      {/* 3b — Today's Focus (holiday / shabbat / omer / default) */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 12 }, a3]}>
-        <TodaysFocusCard
-          mode={countdownMode}
-          isShabbat={isShabbat}
-          isFriday={isFriday}
-          omerDay={omerDay}
-          todayHoliday={todayHoliday}
-          todayFast={todayFast}
-          nextHoliday={nextHoliday}
-          candleLightingTime={fridayZm.candleLighting ? formatTime(fridayZm.candleLighting, location.tz) : null}
-          t={t}
-          gold={gold}
-          cardBg={cardBg}
-          borderColor={borderColor}
-          textPrimary={textPrimary}
-          textMuted={textMuted}
-          rd={rd}
-          shadow={shadow}
-          isLight={isLight}
-        />
-      </Animated.View>
-
-      {/* 3c — Shabbat times (compact two-row card) */}
-      <Animated.View style={[{ marginHorizontal: HX, marginBottom: 36 }, a4]}>
-        <ShabbatCountdownCard
-          mode={countdownMode}
-          countdownDateStr={countdownDateStr}
-          candleLightingDate={fridayZm.candleLighting ?? null}
-          havdalahDate={satZm.havdalah ?? null}
-          candleLightingTime={fridayZm.candleLighting ? formatTime(fridayZm.candleLighting, location.tz) : "—"}
-          havdalahTime={satZm.havdalah ? formatTime(satZm.havdalah, location.tz) : "—"}
-          t={t}
-          gold={gold}
-          cardBg={cardBg}
-          borderColor={borderColor}
-          textPrimary={textPrimary}
-          textMuted={textMuted}
-          rd={rd}
-          shadow={shadow}
-          isLight={isLight}
-        />
-      </Animated.View>
-
 
       {/* ─── UPCOMING HOLIDAY + NEXT PRAYER — compact unified strip ────────────── */}
       <Animated.View style={[{
@@ -1838,246 +1722,6 @@ const ZmanimBar = memo(function ZmanimBar({
           </Text>
         </View>
       ) : null)}
-    </View>
-  );
-});
-
-// ─── Today's Focus Card — Phase 2 ─────────────────────────────────────────────
-// Exactly ONE priority item. Priority: Holiday > Fast > Candle > Shabbat > Omer > Upcoming > Default
-
-const TodaysFocusCard = memo(function TodaysFocusCard({
-  mode, isShabbat, isFriday, omerDay, todayHoliday, todayFast, nextHoliday,
-  candleLightingTime, t,
-  gold, cardBg, borderColor, textPrimary, textMuted, rd, shadow, isLight,
-}: {
-  mode:               "candle" | "havdalah" | "upcoming";
-  isShabbat:          boolean;
-  isFriday:           boolean;
-  omerDay:            number | null;
-  todayHoliday:       any;
-  todayFast:          any;
-  nextHoliday:        any;
-  candleLightingTime: string | null;
-  t:                  any;
-  gold: string; cardBg: string; borderColor: string;
-  textPrimary: string; textMuted: string;
-  rd: any; shadow: any; isLight: boolean;
-}) {
-  let icon     = "✦";
-  let title    = "";
-  let subtitle = "";
-  let accent   = gold;
-
-  if (todayHoliday && !todayFast) {
-    icon = "🎉"; title = todayHoliday.name; subtitle = "Observed today"; accent = gold;
-  } else if (todayFast) {
-    icon = "🌿"; title = todayFast.name; subtitle = "Fast day observed today"; accent = "#94a3b8";
-  } else if (isFriday || mode === "candle") {
-    icon = "🕯"; title = t.homeCandleLightingToday;
-    subtitle = (candleLightingTime ?? "") + " · " + t.homePrepareForShabbat; accent = gold;
-  } else if (isShabbat) {
-    icon = "✨"; title = t.homeShabbatInProgress; subtitle = t.homeShavuaTov; accent = "#a78bfa";
-  } else if (omerDay !== null) {
-    icon = "🌾"; title = t.homeOmer; subtitle = `Day ${omerDay} of the Omer`; accent = "#4ade80";
-  } else if (nextHoliday) {
-    const daysUntil = Math.ceil((nextHoliday.date.getTime() - Date.now()) / 86_400_000);
-    icon = "📅"; title = nextHoliday.name;
-    subtitle = daysUntil === 1 ? "Tomorrow" : `In ${daysUntil} days`; accent = gold;
-  } else {
-    icon = "📖"; title = t.homeDailyTorah; subtitle = t.homeWeeklyParasha; accent = gold;
-  }
-
-  return (
-    <Pressable
-      style={({ pressed }) => ({
-        backgroundColor: cardBg,
-        borderRadius: rd.xl,
-        borderWidth: 1, borderColor,
-        flexDirection: "row", alignItems: "center",
-        overflow: "hidden",
-        transform: [{ scale: pressed ? 0.98 : 1 }],
-        ...shadow.level1,
-      })}
-      accessibilityLabel={`Today's focus: ${title}. ${subtitle}`}
-      accessibilityRole="text"
-    >
-      {/* Phase 2: accent strip — thicker for visual importance */}
-      <View style={{ width: 5, alignSelf: "stretch", backgroundColor: accent }} />
-
-      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 16, gap: 14 }}>
-        {/* Icon circle — 48dp touch target equivalent */}
-        <View style={{
-          width: 48, height: 48, borderRadius: 24,
-          backgroundColor: accent + "18", borderWidth: 1, borderColor: accent + "44",
-          alignItems: "center", justifyContent: "center",
-        }}>
-          <Text style={{ fontSize: 22 }}>{icon}</Text>
-        </View>
-
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase", color: accent, marginBottom: 4 }}>
-            {t.homeTodaysFocusLabel}
-          </Text>
-          <Text style={{ fontSize: 16, fontWeight: "700", color: textPrimary, lineHeight: 22 }}>{title}</Text>
-          <Text style={{ fontSize: 12, color: textMuted, marginTop: 2, lineHeight: 17 }}>{subtitle}</Text>
-        </View>
-
-        <Feather name="chevron-right" size={16} color={textMuted} />
-      </View>
-    </Pressable>
-  );
-});
-
-// ─── Shabbat Countdown Card — compact two-row design ──────────────────────────
-// Small, clear, professional. Left gold stripe → two info rows → countdown pill.
-
-const ShabbatCountdownCard = memo(function ShabbatCountdownCard({
-  mode, countdownDateStr,
-  candleLightingDate, havdalahDate,
-  candleLightingTime, havdalahTime,
-  t,
-  gold, cardBg, borderColor, textPrimary, textMuted, rd, shadow, isLight,
-}: {
-  mode:               "candle" | "havdalah" | "upcoming";
-  countdownDateStr:   string;
-  candleLightingDate: Date | null;
-  havdalahDate:       Date | null;
-  candleLightingTime: string;
-  havdalahTime:       string;
-  t:                  any;
-  gold: string; cardBg: string; borderColor: string;
-  textPrimary: string; textMuted: string;
-  rd: any; shadow: any; isLight: boolean;
-}) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const havdalahAccent = "#a78bfa";
-  const targetDate     = mode === "havdalah" ? havdalahDate : candleLightingDate;
-  const countdownMs    = targetDate ? Math.max(0, targetDate.getTime() - now) : 0;
-  const showCountdown  = countdownMs > 0;
-
-  return (
-    <View
-      style={{
-        backgroundColor: cardBg,
-        borderRadius: rd.xl,
-        borderWidth: 1, borderColor,
-        flexDirection: "row",
-        overflow: "hidden",
-        ...shadow.level1,
-      }}
-    >
-      {/* Left accent stripe — gold for candle/upcoming, violet for havdalah */}
-      <View
-        style={{
-          width: 4,
-          backgroundColor: mode === "havdalah" ? havdalahAccent : gold,
-        }}
-      />
-
-      {/* Main content */}
-      <View style={{ flex: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 10 }}>
-
-        {/* Row 1 — Candle Lighting */}
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <View
-            style={{
-              width: 28, height: 28, borderRadius: 14,
-              backgroundColor: gold + "18",
-              alignItems: "center", justifyContent: "center",
-              marginRight: 10,
-            }}
-          >
-            <Text style={{ fontSize: 14 }}>🕯</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
-              allowFontScaling={false}
-              style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase" }}
-            >
-              {t.homeCandleLighting}
-            </Text>
-            <Text
-              allowFontScaling={false}
-              style={{ fontSize: 16, fontWeight: "700", color: gold, marginTop: 1 }}
-            >
-              {candleLightingTime}
-            </Text>
-          </View>
-          {/* Countdown badge — shown only when approaching candle lighting */}
-          {showCountdown && mode !== "havdalah" && (
-            <View
-              style={{
-                backgroundColor: gold + "18",
-                borderWidth: 1, borderColor: gold + "40",
-                borderRadius: 9999,
-                paddingHorizontal: 10, paddingVertical: 4,
-              }}
-            >
-              <Text
-                allowFontScaling={false}
-                style={{ fontSize: 11, fontWeight: "700", color: gold }}
-              >
-                {formatCountdown(countdownMs)}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Thin divider */}
-        <View style={{ height: 1, backgroundColor: borderColor, marginLeft: 38 }} />
-
-        {/* Row 2 — Havdalah */}
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <View
-            style={{
-              width: 28, height: 28, borderRadius: 14,
-              backgroundColor: havdalahAccent + "18",
-              alignItems: "center", justifyContent: "center",
-              marginRight: 10,
-            }}
-          >
-            <Text style={{ fontSize: 14 }}>✨</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
-              allowFontScaling={false}
-              style={{ fontSize: 9, fontWeight: "700", letterSpacing: 1.8, color: textMuted, textTransform: "uppercase" }}
-            >
-              {t.homeHavdalah}
-            </Text>
-            <Text
-              allowFontScaling={false}
-              style={{ fontSize: 16, fontWeight: "700", color: havdalahAccent, marginTop: 1 }}
-            >
-              {havdalahTime}
-            </Text>
-          </View>
-          {/* Countdown badge — shown when in havdalah mode */}
-          {showCountdown && mode === "havdalah" && (
-            <View
-              style={{
-                backgroundColor: havdalahAccent + "18",
-                borderWidth: 1, borderColor: havdalahAccent + "40",
-                borderRadius: 9999,
-                paddingHorizontal: 10, paddingVertical: 4,
-              }}
-            >
-              <Text
-                allowFontScaling={false}
-                style={{ fontSize: 11, fontWeight: "700", color: havdalahAccent }}
-              >
-                {formatCountdown(countdownMs)}
-              </Text>
-            </View>
-          )}
-        </View>
-
-      </View>
     </View>
   );
 });
