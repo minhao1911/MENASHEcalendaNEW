@@ -23,7 +23,7 @@ const BOTTOM_TABS: BottomTabItem[] = [
   { key: "calendar",  icon: "calendar",       route: "calendar"  },
   { key: "ai",        icon: "message-circle", route: null,       isCenter: true },
   { key: "study",     icon: "book-open",      route: "torah"     },
-  { key: "more",      icon: "grid",           route: "community" },
+  { key: "more",      icon: "grid",           route: "more"      },
 ];
 
 // Maps route name → which BOTTOM_TAB is "active"
@@ -31,6 +31,7 @@ const ROUTE_TO_TAB: Record<string, string> = {
   index:     "home",
   calendar:  "calendar",
   torah:     "study",
+  more:      "more",
   community: "more",
   settings:  "more",
   zmanim:    "more",
@@ -295,6 +296,15 @@ export default function TabLayout() {
           title: t.navZmanim,
           tabBarIcon: ({ color, focused }) => (
             <Feather name="clock" size={focused ? 22 : 20} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: "More",
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name="grid" size={focused ? 22 : 20} color={color} />
           ),
         }}
       />
