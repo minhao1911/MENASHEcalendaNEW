@@ -1,7 +1,7 @@
 /**
  * Community Hub — SPR-M009
  * Central hub for all Bnei Menashe community features:
- *   Announcements · Prayer Requests · Memorials · Events · Organizations · Learning · Synagogue
+ *   Prayer Requests · Memorials · Events · Organizations · Learning · Synagogue
  *
  * Design: warm, organised, peaceful — large cards, generous whitespace, premium typography.
  * Reuses: existing community APIs, MMDL color tokens, bilingual t.* strings.
@@ -24,7 +24,6 @@ import { useEntrance } from "@/src/mobile/lib/useEntrance";
 import { SkeletonCard } from "@/src/mobile/components/feedback/LoadingState";
 import { EmptyState } from "@/src/mobile/components/feedback";
 import { useLanguage } from "@/context/LanguageContext";
-import { fetchAnnouncements, type MobileAnnouncement } from "@/lib/announcementsApi";
 import { fetchPrayerRequests, amenPrayerRequest, type PrayerRequest } from "@/lib/prayerBoardApi";
 import { fetchCommunityYahrzeit, type CommunityYahrzeitEntry } from "@/lib/communityApi";
 import { fetchCommunityEvents, type CommunityEvent } from "@/lib/eventsApi";
@@ -64,144 +63,6 @@ function fmtAgo(
 function navigate(path: string) {
   hapticLight();
   router.push(path as any);
-}
-
-// ── Smart Announcement Card Button ────────────────────────────────────────────
-
-type SmartAnnouncementCardProps = {
-  ann: MobileAnnouncement;
-  colors: ReturnType<typeof useThemeTokens>["colors"];
-  ago: (iso: string) => string;
-  t: ReturnType<typeof useLanguage>["t"];
-  onPress: () => void;
-};
-
-function SmartAnnouncementCard({ ann, colors, ago, t, onPress }: SmartAnnouncementCardProps) {
-  const isNew = !!ann.sentAt && Date.now() - new Date(ann.sentAt).getTime() < 86_400_000;
-  const accentColor = ann.pinned ? colors.primary : colors.textMuted;
-
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={ann.title}
-      style={[
-        smartAnnStyles.card,
-        {
-          backgroundColor: ann.pinned ? colors.primary + "0C" : colors.card,
-          borderColor: ann.pinned ? colors.primary + "55" : colors.border,
-          // Glow on pinned
-          shadowColor: ann.pinned ? colors.primary : "#000",
-          shadowOpacity: ann.pinned ? 0.22 : 0.14,
-        },
-      ]}
-    >
-      {/* Left accent bar */}
-      <View style={[smartAnnStyles.accentBar, { backgroundColor: accentColor }]} />
-
-      <View style={{ flex: 1 }}>
-        {/* Header row */}
-        <View style={smartAnnStyles.headerRow}>
-          {/* Icon */}
-          <View style={[smartAnnStyles.iconBox, {
-            backgroundColor: ann.pinned ? colors.primary + "20" : colors.surface + "aa",
-            borderColor: ann.pinned ? colors.primary + "40" : colors.border,
-          }]}>
-            <Text style={{ fontSize: 18 }}>{ann.emoji}</Text>
-          </View>
-
-          {/* Badges */}
-          <View style={smartAnnStyles.badgeRow}>
-            {ann.pinned && (
-              <View style={[smartAnnStyles.badge, { backgroundColor: colors.primary + "20", borderColor: colors.primary + "50" }]}>
-                <Text style={[smartAnnStyles.badgeText, { color: colors.primary }]}>📌 {t.commAnnouncementsPinned}</Text>
-              </View>
-            )}
-            {!ann.pinned && isNew && (
-              <View style={[smartAnnStyles.badge, { backgroundColor: colors.success + "18", borderColor: colors.success + "44" }]}>
-                <View style={[smartAnnStyles.newDot, { backgroundColor: colors.success }]} />
-                <Text style={[smartAnnStyles.badgeText, { color: colors.success }]}>NEW</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Timestamp */}
-          {!!ann.sentAt && (
-            <Text style={[smartAnnStyles.timestamp, { color: colors.textMuted }]}>{ago(ann.sentAt)}</Text>
-          )}
-        </View>
-
-        {/* Title */}
-        <Text style={[smartAnnStyles.title, { color: colors.textPrimary }]} numberOfLines={1}>
-          {ann.title}
-        </Text>
-
-        {/* Body preview */}
-        {!!ann.body && (
-          <Text style={[smartAnnStyles.body, { color: colors.textSecondary }]} numberOfLines={2}>
-            {ann.body}
-          </Text>
-        )}
-
-        {/* Footer CTA */}
-        <View style={[smartAnnStyles.footer, { borderTopColor: accentColor + "22" }]}>
-          <Text style={[smartAnnStyles.readMore, { color: colors.primary }]}>
-            {t.commSeeAll} →
-          </Text>
-          <Feather name="chevron-right" size={14} color={colors.primary} />
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-// ── Smart Announcement Empty Card ─────────────────────────────────────────────
-
-function SmartAnnouncementEmptyCard({
-  colors,
-  onPress,
-  t,
-}: { colors: ReturnType<typeof useThemeTokens>["colors"]; onPress: () => void; t: ReturnType<typeof useLanguage>["t"] }) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.82}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel="Announcements — none yet"
-      style={[
-        smartAnnStyles.emptyCard,
-        { backgroundColor: colors.card, borderColor: colors.border },
-      ]}
-    >
-      {/* Glowing bell ring */}
-      <View style={[smartAnnStyles.emptyRing, {
-        borderColor: colors.primary + "30",
-        shadowColor: colors.primary,
-      }]}>
-        <View style={[smartAnnStyles.emptyIconBox, { backgroundColor: colors.primary + "18" }]}>
-          <Text style={{ fontSize: 26 }}>🔔</Text>
-        </View>
-      </View>
-
-      <Text style={[smartAnnStyles.emptyTitle, { color: colors.textPrimary }]}>
-        {t.commAnnouncementsEmpty}
-      </Text>
-      <Text style={[smartAnnStyles.emptyHint, { color: colors.textMuted }]}>
-        Community updates will appear here
-      </Text>
-
-      {/* Pill badge */}
-      <View style={[smartAnnStyles.emptyPill, {
-        backgroundColor: colors.primary + "14",
-        borderColor: colors.primary + "35",
-      }]}>
-        <Text style={[smartAnnStyles.emptyPillText, { color: colors.primary }]}>
-          📢 Stay Tuned
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
 }
 
 // ── Other Features — Quick Access Card ────────────────────────────────────────
@@ -294,11 +155,10 @@ export default function CommunityScreen() {
   };
   const { t, lang } = useLanguage();
   const insets = useSafeAreaInsets();
-  /** Localized relative-time formatter — wraps module-level fmtAgo with t strings. */
+  /** Localized relative-time formatter for prayer requests. */
   const ago = (iso: string) => fmtAgo(iso, t.commJustNow, t.commMinAgo, t.commHourAgo, t.commDayAgo);
   const topPad = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
-  const [announcements, setAnnouncements] = useState<MobileAnnouncement[]>([]);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [memorials, setMemorials] = useState<CommunityYahrzeitEntry[]>([]);
   const [events, setEvents] = useState<CommunityEvent[]>([]);
@@ -320,13 +180,11 @@ export default function CommunityScreen() {
   }
 
   const refresh = useCallback(async () => {
-    const [anns, prays, mems, evs] = await Promise.allSettled([
-      fetchAnnouncements(),
+    const [prays, mems, evs] = await Promise.allSettled([
       fetchPrayerRequests(),
       fetchCommunityYahrzeit(),
       fetchCommunityEvents(),
     ]);
-    if (anns.status === "fulfilled") setAnnouncements(anns.value);
     if (prays.status === "fulfilled") setPrayers(prays.value);
     if (mems.status === "fulfilled") setMemorials(mems.value);
     if (evs.status === "fulfilled") setEvents(evs.value);
@@ -345,7 +203,6 @@ export default function CommunityScreen() {
     return () => clearInterval(iv);
   }, [refresh]);
 
-  const topAnnouncements = announcements.slice(0, 3);
   const approvedPrayers = prayers.filter((p) => p.status === "approved").slice(0, 3);
   const candleCount = memorials.length;
   const learnerCount = memorials.reduce((s, e) => s + e.learners.length, 0);
@@ -415,31 +272,7 @@ export default function CommunityScreen() {
         ) : (
           <Animated.View style={[{ paddingHorizontal: sp[4] }, cEnter]}>
 
-            {/* ═══ 1. ANNOUNCEMENTS ═══ */}
-            <SectionTitle
-              leadingIcon={<Text style={{ fontSize: 16 }}>📢</Text>}
-              title={t.commAnnouncementsTitle}
-              actionLabel={announcements.length > 0 ? t.commSeeAll : undefined}
-              onAction={() => navigate("/community/announcements")}
-            />
-            {topAnnouncements.length === 0 ? (
-              <SmartAnnouncementEmptyCard
-                colors={colors}
-                onPress={() => navigate("/community/announcements")}
-                t={t}
-              />
-            ) : topAnnouncements.map((ann) => (
-              <SmartAnnouncementCard
-                key={ann.id}
-                ann={ann}
-                colors={colors}
-                ago={ago}
-                t={t}
-                onPress={() => navigate("/community/announcements")}
-              />
-            ))}
-
-            {/* ═══ 2. PRAYER REQUESTS ═══ */}
+            {/* ═══ 1. PRAYER REQUESTS ═══ */}
             <SectionTitle
               leadingIcon={<Text style={{ fontSize: 16 }}>🙏</Text>}
               title={t.commPrayerTitle}
@@ -924,157 +757,6 @@ export default function CommunityScreen() {
   );
 }
 
-// ── Smart Announcement Card styles ────────────────────────────────────────────
-
-const smartAnnStyles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 10,
-    overflow: "hidden",
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  accentBar: {
-    width: 4,
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingTop: 12,
-    paddingRight: 12,
-    paddingLeft: 10,
-  },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  badgeRow: {
-    flex: 1,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-  },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderWidth: 1,
-    borderRadius: 99,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.4,
-  },
-  newDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  timestamp: {
-    fontSize: 11,
-    flexShrink: 0,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: -0.2,
-    marginTop: 6,
-    paddingHorizontal: 10,
-  },
-  body: {
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 3,
-    paddingHorizontal: 10,
-  },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 4,
-    borderTopWidth: 1,
-    marginTop: 10,
-    marginHorizontal: 10,
-    paddingVertical: 8,
-  },
-  readMore: {
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.2,
-  },
-  // Empty state card
-  emptyCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingVertical: 28,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  emptyRing: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 12,
-  },
-  emptyIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    letterSpacing: -0.3,
-    marginBottom: 6,
-    textAlign: "center",
-  },
-  emptyHint: {
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: "center",
-    marginBottom: 14,
-  },
-  emptyPill: {
-    borderWidth: 1,
-    borderRadius: 99,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-  },
-  emptyPillText: {
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.4,
-  },
-});
-
 // ── Other Features — Quick Access Card styles ─────────────────────────────────
 
 const otherCardStyles = StyleSheet.create({
@@ -1282,42 +964,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // Announcement cards
-  annCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.20,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  annIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  pinnedLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  annTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  annBody: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
   timeLabel: {
     fontSize: 11,
   },

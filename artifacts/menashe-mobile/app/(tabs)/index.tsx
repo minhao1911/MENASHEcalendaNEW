@@ -659,6 +659,10 @@ export default function HomeScreen() {
 
           {/* Bell — notification indicator */}
           <TouchableOpacity
+            onPress={() => {
+              hapticLight();
+              router.push("/community/announcements" as any);
+            }}
             style={{
               width: 42, height: 42, borderRadius: 21,
               backgroundColor: cardBg,
@@ -667,7 +671,8 @@ export default function HomeScreen() {
             }}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel="Notifications"
+            accessibilityLabel={lang === "tk" ? "Thupek en" : "View announcements"}
+            accessibilityHint={lang === "tk" ? "Thupek te en nawn" : "Opens community announcements"}
           >
             <Feather name="bell" size={17} color={textPrimary} />
             <View style={{
