@@ -481,8 +481,9 @@ export default function JourneyScreen() {
   const insets   = useSafeAreaInsets();
   const topPad   = insets.top > 0 ? insets.top : (Platform.OS === "web" ? 60 : 20);
 
-  const isLight = (colors.background as string).toLowerCase() === "#f5efe0";
-  const GOLD    = colors.primary as string;
+  const isLight    = (colors.background as string).toLowerCase() === "#f5efe0";
+  const isSapphire = (colors.background as string).toLowerCase() === "#060e1e";
+  const GOLD       = colors.primary as string;
 
   const today      = useMemo(() => new Date(), []);
   const hdate      = useMemo(() => getHebrewDate(today), [today]);
