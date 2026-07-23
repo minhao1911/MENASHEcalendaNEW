@@ -823,6 +823,7 @@ export default function SacredWisdomScreen() {
               editable={!streaming}
               accessible
               accessibilityLabel="Message input"
+              underlineColorAndroid="transparent"
               style={{
                 flex: 1,
                 color: colors.textPrimary,
@@ -831,6 +832,8 @@ export default function SacredWisdomScreen() {
                 lineHeight: 22,
                 maxHeight: 120,
                 paddingVertical: 4,
+                // Remove native focus ring on web and Android
+                ...(Platform.OS === "web" ? { outlineStyle: "none" } : {}),
               }}
             />
             {streaming ? (
