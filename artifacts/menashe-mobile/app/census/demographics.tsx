@@ -741,7 +741,7 @@ function LocalAdminTab({
             <View style={[styles.branchStatsRow, { marginTop: SPACE[4] }]}>
               {[
                 { v: myBranch.families.length, l: "Families", color: BLUE,  bg: BLUE  + "14" },
-                { v: total,                    l: "Members",  color: GREEN,  bg: GREEN + "14" },
+                { v: myBranch.families.reduce((s: number, f: any) => s + 1 + (f.members?.length ?? 0), 0), l: "Members", color: GREEN, bg: GREEN + "14" },
               ].map(s => (
                 <View key={s.l} style={[styles.branchStat, { backgroundColor: s.bg }]}>
                   <Text style={[styles.branchStatNum, { color: s.color }]}>{s.v}</Text>
@@ -1402,4 +1402,48 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   cityOptionText: { fontSize: 13, fontWeight: "600", flex: 1 },
+
+  /* Approved branch status banner */
+  statusBanner: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 12,
+  },
+  statusIconRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  statusIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  statusBody: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  reviewNoteBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    marginTop: 10,
+  },
+  reviewNoteText: {
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 17,
+    fontStyle: "italic",
+  },
 });

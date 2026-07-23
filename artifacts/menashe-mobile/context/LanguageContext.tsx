@@ -51,7 +51,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setTkOverride = useCallback((key: keyof Translations, value: string) => {
-    setTkOverridesState(prev => ({ ...prev, [key]: value }));
+    setTkOverridesState((prev: Partial<Translations>) => ({ ...prev, [key]: value }));
   }, []);
 
   const saveTkOverrides = useCallback(async (overrides: Partial<Translations>) => {

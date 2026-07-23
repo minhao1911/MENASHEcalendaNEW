@@ -131,7 +131,7 @@ export default function TranslationEditorScreen() {
         if (!q) return true;
         const enVal = (defaultEn as any)[k] as string ?? "";
         const tkVal = (edits as any)[k] as string ?? "";
-        return k.toLowerCase().includes(q) || enVal.toLowerCase().includes(q) || tkVal.toLowerCase().includes(q);
+        return (k as string).toLowerCase().includes(q) || enVal.toLowerCase().includes(q) || tkVal.toLowerCase().includes(q);
       });
       if (matching.length === 0) continue;
       result.push({ type: "group", label: (t as any)[group.labelKey] || group.label, count: matching.length });
@@ -148,7 +148,7 @@ export default function TranslationEditorScreen() {
   }, [search, edits, t]);
 
   function handleChange(key: TKey, value: string) {
-    setEdits(prev => ({ ...prev, [key]: value }));
+    setEdits((prev: Partial<Translations>) => ({ ...prev, [key]: value }));
     setSaved(false);
   }
 
@@ -185,7 +185,7 @@ export default function TranslationEditorScreen() {
   async function handleCopy() {
     const payload: Record<string, string> = {};
     (Object.keys(edits) as TKey[]).forEach(k => {
-      payload[k] = (edits as any)[k] ?? "";
+      payload[k as string] = (edits as any)[k] ?? "";
     });
     try {
       await clipboardWrite(JSON.stringify(payload, null, 2));
@@ -212,7 +212,7 @@ export default function TranslationEditorScreen() {
         }
       });
       if (count === 0) throw new Error("No valid keys found");
-      setEdits(prev => ({ ...prev, ...incoming }));
+      setEdits((prev: Partial<Translations>) => ({ ...prev, ...incoming }));
       setSaved(false);
       Alert.alert("Pasted", `${count} labels loaded. Tap Save to apply.`);
     } catch (err: any) {
@@ -271,7 +271,7 @@ export default function TranslationEditorScreen() {
       {/* Rows */}
       <FlatList
         data={rows}
-        keyExtractor={(item, idx) => item.type === "group" ? `g-${idx}` : item.key}
+        keyExtractor={(item, idx) => item.type === "group" ? `g-${idx}` : String(item.key)}
         contentContainerStyle={{ paddingBottom: insets.bottom + 140 }}
         renderItem={({ item }) => {
           if (item.type === "group") {
@@ -295,7 +295,7 @@ export default function TranslationEditorScreen() {
               padding: 12,
             }}>
               <Text style={{ fontSize: 10, fontWeight: "600", color: colors.mutedForeground, marginBottom: 4, letterSpacing: 0.5 }}>
-                {item.key}
+                {String(item.key)}
               </Text>
               <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 8, lineHeight: 18 }}>
                 🇬🇧 {item.en}

@@ -51,13 +51,13 @@ function buildList(query: string): ListItem[] {
   const q = query.trim().toLowerCase();
   const filtered = q
     ? LOCATIONS.filter(
-        (l) =>
+        (l: Location) =>
           l.name.toLowerCase().includes(q) ||
           l.country.toLowerCase().includes(q),
       )
     : LOCATIONS;
 
-  const byCountry = filtered.reduce<Record<string, Location[]>>((acc, loc) => {
+  const byCountry = filtered.reduce<Record<string, Location[]>>((acc: Record<string, Location[]>, loc: Location) => {
     (acc[loc.country] ??= []).push(loc);
     return acc;
   }, {});

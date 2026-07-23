@@ -608,7 +608,7 @@ export default function ZmanimScreen() {
                     const isLast = idx === visibleKeys.length - 1;
 
                     return (
-                      <View key={key}>
+                      <View key={String(key)}>
                         <View style={{
                           flexDirection: "row", alignItems: "center",
                           paddingHorizontal: sp[4], paddingVertical: sp[3],
