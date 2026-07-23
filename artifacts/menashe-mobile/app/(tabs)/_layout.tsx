@@ -164,7 +164,7 @@ function CustomTabBar({ state, navigation }: { state: any; navigation: any }) {
     calendar: t.navCalendar,
     ai:       "Rav Menashe",
     study:    t.navTorah,
-    more:     "More",
+    more:     "Hub",
   };
 
   function handlePress(item: BottomTabItem) {
@@ -302,7 +302,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="more"
         options={{
-          title: "More",
+          title: "Hub",
           tabBarIcon: ({ color, focused }) => (
             <Feather name="grid" size={focused ? 22 : 20} color={color} />
           ),
