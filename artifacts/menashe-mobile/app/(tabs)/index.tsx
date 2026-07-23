@@ -454,6 +454,36 @@ export default function HomeScreen() {
   // Phase 1: hero shimmer
   const shimmerOpacity = useHeroShimmer();
 
+  // Sanctuary card — Ken Burns: slow ambient pan + scale breath, loops forever
+  const reducedMotion  = useReducedMotion();
+  const kbPan          = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const kbScale        = useRef(new Animated.Value(1.10)).current;
+  useEffect(() => {
+    if (reducedMotion) return;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(kbPan,   { toValue: { x: -30, y: -12 }, duration: 14000, useNativeDriver: true }),
+          Animated.timing(kbScale, { toValue: 1.18,               duration: 14000, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(kbPan,   { toValue: { x: 20,  y:  14 }, duration: 12000, useNativeDriver: true }),
+          Animated.timing(kbScale, { toValue: 1.12,               duration: 12000, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(kbPan,   { toValue: { x: -10, y:  -5 }, duration: 13000, useNativeDriver: true }),
+          Animated.timing(kbScale, { toValue: 1.16,               duration: 13000, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(kbPan,   { toValue: { x: 0,   y:   0 }, duration: 11000, useNativeDriver: true }),
+          Animated.timing(kbScale, { toValue: 1.10,               duration: 11000, useNativeDriver: true }),
+        ]),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [kbPan, kbScale, reducedMotion]);
+
   // Phase 9: consistent horizontal page margin
   const HX = 20;
 
@@ -1131,28 +1161,41 @@ export default function HomeScreen() {
           accessibilityHint="Opens the Sacred Memory experience"
           accessibilityRole="button"
         >
-          <ImageBackground
-            source={MEMORIAL_SANCTUARY_CARD}
-            resizeMode="cover"
-            style={{ minHeight: 264 }}
-            imageStyle={{ transform: [{ scale: 1.02 }] }}
-            accessibilityIgnoresInvertColors
-          >
+          {/* Ken Burns animated sanctuary — image pans + breathes in a loop */}
+          <View style={{ minHeight: 264, overflow: "hidden" }}>
+            {/* Animated background image — pans & scales via kbPan / kbScale */}
+            <Animated.Image
+              source={MEMORIAL_SANCTUARY_CARD}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+              style={{
+                position: "absolute",
+                top: -30, left: -30, right: -30, bottom: -30,
+                transform: [
+                  { scale: kbScale },
+                  { translateX: kbPan.x },
+                  { translateY: kbPan.y },
+                ],
+              }}
+            />
+
+            {/* Dark vignette — bottom-heavy so text stays legible */}
             <LinearGradient
               pointerEvents="none"
-              colors={["rgba(7,10,16,0.04)", "rgba(7,10,16,0.18)", "rgba(7,10,16,0.92)"]}
-              locations={[0, 0.42, 1]}
+              colors={["rgba(7,10,16,0.02)", "rgba(7,10,16,0.16)", "rgba(7,10,16,0.90)"]}
+              locations={[0, 0.40, 1]}
               style={StyleSheet.absoluteFillObject}
             />
+            {/* Gold warmth — bottom-left glow matching brand */}
             <LinearGradient
               pointerEvents="none"
-              colors={["rgba(212,168,67,0.18)", "transparent"]}
+              colors={["rgba(212,168,67,0.22)", "transparent"]}
               start={{ x: 0, y: 1 }}
               end={{ x: 0.72, y: 0 }}
               style={StyleSheet.absoluteFillObject}
             />
 
-            <View style={{ flex: 1, justifyContent: "space-between", padding: 20 }}>
+            <View style={{ flex: 1, minHeight: 264, justifyContent: "space-between", padding: 20 }}>
               <View style={{
                 alignSelf: "flex-start",
                 flexDirection: "row",
@@ -1210,7 +1253,7 @@ export default function HomeScreen() {
                 />
               </View>
             </View>
-          </ImageBackground>
+          </View>
         </TouchableOpacity>
       </Animated.View>
 
