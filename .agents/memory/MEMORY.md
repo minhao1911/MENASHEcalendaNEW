@@ -32,3 +32,4 @@
 - [MMDL missing color token aliases](mmdl-color-aliases.md) — ColorTokens had no surfacePrimary/surfaceTertiary/surfaceInteractive/backgroundElevated/backgroundOverlay/borderDefault/borderSoft/textHigh; add as aliases in all 3 theme defs when new screens use them.
 - [shared-core dist build required](shared-core-dist-build.md) — lib/shared-core exports src directly but tsconfig project refs need dist; run `pnpm run typecheck:libs` (tsc --build) from root to build dist/ before mobile tsc check.
 - [Torah tab Library destination](library-torah-tab.md) — Torah is the primary premium Library entry point; legacy /siddur reuses it instead of keeping a second catalog UI.
+- [Expo Library cache refresh](expo-library-cache.md) — restart Expo with Metro cache clearing when mobile Library previews appear stale after UI edits.
