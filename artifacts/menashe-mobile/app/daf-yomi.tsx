@@ -153,6 +153,21 @@ export default function DafYomiScreen() {
           </View>
         );
       })}
+
+      {/* ── Continue: log what you just studied ─────────────────────────── */}
+      <TouchableOpacity
+        onPress={() => router.push("/torah-tracker" as any)}
+        activeOpacity={0.7}
+        style={{
+          flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+          marginHorizontal: 16, marginTop: 8, marginBottom: insets.bottom + 24,
+          borderRadius: 14, borderWidth: 1, borderColor: colors.border,
+          paddingVertical: 14, backgroundColor: colors.card,
+        }}
+      >
+        <Text style={{ fontSize: 14, fontWeight: "600", color: colors.mutedForeground }}>Log Your Study</Text>
+        <Feather name="arrow-right" size={15} color={colors.mutedForeground} />
+      </TouchableOpacity>
     </ScrollView>
   );
 }

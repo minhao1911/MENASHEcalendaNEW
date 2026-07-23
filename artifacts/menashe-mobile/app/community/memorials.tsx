@@ -474,6 +474,20 @@ export default function MemorialsScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+      {/* ── Continue: visit Sacred Memory ─────────────────────────────── */}
+      <TouchableOpacity
+        onPress={() => router.push("/sacred-memory" as any)}
+        activeOpacity={0.7}
+        style={{
+          flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE[2],
+          marginHorizontal: SPACE[4], marginTop: SPACE[2], marginBottom: insets.bottom + SPACE[5],
+          borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border,
+          paddingVertical: SPACE[3], backgroundColor: colors.card,
+        }}
+      >
+        <Text style={{ fontSize: TEXT.sm, fontWeight: "600", color: colors.mutedForeground }}>Sacred Memory</Text>
+        <Feather name="arrow-right" size={15} color={colors.mutedForeground} />
+      </TouchableOpacity>
     </View>
   );
 }

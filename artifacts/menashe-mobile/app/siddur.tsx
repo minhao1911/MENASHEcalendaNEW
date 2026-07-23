@@ -155,6 +155,20 @@ export default function SiddurScreen() {
               </View>
             </TouchableOpacity>
           ))}
+          {/* ── Continue: return to study hub ─────────────────────────── */}
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/torah" as any)}
+            activeOpacity={0.7}
+            style={{
+              flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+              marginTop: 8, marginBottom: insets.bottom + 8,
+              borderRadius: 14, borderWidth: 1, borderColor: colors.border,
+              paddingVertical: 14, backgroundColor: colors.card,
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.mutedForeground }}>Study Hub</Text>
+            <Feather name="arrow-right" size={15} color={colors.mutedForeground} />
+          </TouchableOpacity>
         </ScrollView>
       )}
     </View>
